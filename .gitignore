@@ -1,0 +1,11 @@
+node_modules/
+release/
+release-portable/
+release-installer/
+backend-dist/
+build/
+.venv-packaging/
+.venv/
+__pycache__/
+*.py[cod]
+desktop-server.spec

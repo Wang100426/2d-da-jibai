@@ -1,0 +1,66 @@
+{
+  "name": "2d-da-jibai",
+  "version": "1.0.5",
+  "description": "2D大击败 - 赛博风肉鸽竞技场",
+  "main": "electron/main.cjs",
+  "author": "2D大击败",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.multiplayer.json && tsc -p tsconfig.select.json",
+    "build:map": "tsc -p tsconfig.json",
+    "build:lobby": "tsc -p tsconfig.multiplayer.json",
+    "build:select": "tsc -p tsconfig.select.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.multiplayer.json --noEmit && tsc -p tsconfig.select.json --noEmit",
+    "build:backend": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\\build-backend.ps1",
+    "start:desktop": "electron .",
+    "dist:win": "npm run build && npm run build:backend && electron-builder --win nsis --config.directories.output=release-installer",
+    "dist:portable": "npm run build && npm run build:backend && electron-builder --win portable --config.directories.output=release-portable"
+  },
+  "devDependencies": {
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3",
+    "typescript": "^5.8.3"
+  },
+  "build": {
+    "appId": "com.2ddajibai.game",
+    "productName": "2D大击败",
+    "asar": true,
+    "electronDist": "node_modules/electron/dist",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "backend-dist/desktop-server",
+        "to": "backend"
+      }
+    ],
+    "win": {
+      "icon": "assets/2d_da_jibai_ico.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "installerIcon": "assets/2d_da_jibai_ico.ico",
+      "uninstallerIcon": "assets/2d_da_jibai_ico.ico"
+    }
+  },
+  "allowScripts": {
+    "electron@44.4.5": true
+  }
+}

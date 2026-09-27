@@ -1,0 +1,71 @@
+body.map-page{height:100dvh;overflow:hidden;background:#101722}
+#world{position:fixed;inset:0;width:100%;height:100%;display:block}
+.map-topbar{height:68px;position:fixed;z-index:3;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:0 28px;background:linear-gradient(180deg,#090a13f2,#090a13b8);border-bottom:1px solid #49e6e044}
+.map-location{font:12px 'Chakra Petch';letter-spacing:1px;color:#d5d8eb}
+.map-location b{color:#687087;margin:0 8px}
+.map-hero-card{position:fixed;z-index:2;top:88px;left:22px;display:flex;align-items:center;gap:12px;min-width:225px;padding:11px 15px;background:#0c111ddd;border:1px solid #3a4659;box-shadow:0 8px 25px #0007}
+.map-portrait{width:42px;height:42px;display:grid;place-items:center;background:#512345;color:#ffd3e8;font-size:24px;font-weight:900;clip-path:polygon(50% 0,100% 20%,90% 100%,10% 100%,0 20%)}
+.map-portrait.green{background:#344d2d;color:#e9ffb7}.map-portrait.blue{background:#303d78;color:#e0e4ff}
+.map-portrait.tech{background:#172d67;color:#e1eeff;border:1px solid #438dff}
+.map-hero-card small,.map-hero-card span{display:block;color:#8589a8;font-size:10px}
+.map-hero-card b{display:block;margin:2px 0;font-size:14px}
+.map-tip{position:fixed;z-index:2;top:88px;right:22px;display:flex;flex-direction:column;gap:4px;max-width:300px;padding:12px 16px;background:#0c111ddd;border-right:2px solid #49e6e0}
+.map-tip b{color:#49e6e0;font:12px 'Chakra Petch';letter-spacing:1px}
+.map-tip span{font-size:11px;color:#aab0c3}
+.map-vitals{position:fixed;z-index:2;top:173px;left:22px;width:225px;padding:12px 15px;background:#0c111ddd;border:1px solid #3a4659;color:#aab0c3;font-size:11px}
+.map-vitals>div:not(.loot-count){display:flex;justify-content:space-between;margin:2px 0 5px}.map-vitals b{color:#edf1ff;font:11px 'Chakra Petch'}
+.wave-status{position:fixed;z-index:2;top:88px;left:50%;transform:translateX(-50%);min-width:190px;padding:10px 18px;text-align:center;background:#0c111ddd;border:1px solid #49e6e066;box-shadow:0 6px 24px #0006}
+.wave-status b,.wave-status span{display:block}.wave-status b{color:#ffe45c;font:700 13px 'Chakra Petch';letter-spacing:1px}.wave-status span{margin-top:4px;color:#aab0c3;font-size:10px}
+.duel-opponent{position:fixed;z-index:2;top:88px;right:22px;width:220px;padding:12px 15px;background:#0c111ddd;border:1px solid #ff668d88;color:#aab0c3;font-size:10px}
+.duel-opponent small,.duel-opponent b,.duel-opponent span{display:block}.duel-opponent b{margin:3px 0 7px;color:#edf1ff;font:12px 'Chakra Petch'}.duel-opponent .vital-bar{margin-bottom:4px}.duel-opponent .vital-bar em{background:#ff668d}.duel-opponent span{font:10px 'Chakra Petch'}
+.duel-page .skill-exp-label,.duel-page .vital-bar.skill-exp,.duel-page .loot-count{display:none}
+.duel-upgrade-overlay{position:fixed;z-index:8;inset:0;display:grid;place-items:center;background:#050710d9;backdrop-filter:blur(6px)}
+.duel-upgrade-overlay[hidden]{display:none}.duel-upgrade-panel{border-color:#ff668d99;box-shadow:0 0 55px #ff668d22}.duel-upgrade-panel>.eyebrow{color:#ff668d}.duel-upgrade-panel .upgrade-choice{min-height:118px}.duel-countdown{margin-top:16px;text-align:center;color:#aab0c3;font:12px 'Chakra Petch'}.duel-countdown b{color:#ffe45c;font-size:18px}
+.vital-bar{position:relative;display:block;height:5px;margin-bottom:9px;overflow:hidden;background:#252b3a}.vital-bar em{position:absolute;top:0;bottom:0;left:0;width:100%;background:#ff4fa3;transition:left .15s,width .15s}.vital-bar #shield-bar{background:#fff;box-shadow:0 0 6px #fff}
+.vital-bar.energy em{background:#49e6e0}
+.skill-exp-label b{color:#ffe45c!important}.vital-bar.skill-exp em{background:#ffe45c}
+.loot-count{border-top:1px solid #333b4c;padding-top:8px;margin-top:3px}.loot-count b{float:right;color:#49e6e0}
+.combat-traits{margin-top:7px;color:#aab0c3;font:10px 'Chakra Petch';letter-spacing:.3px}
+.pause-toggle{position:fixed;z-index:4;top:178px;right:22px;padding:9px 14px;background:#0c111ddd;border:1px solid #49e6e088;color:#e8f3ff;font:11px 'Chakra Petch';letter-spacing:.5px;cursor:pointer}
+.pause-toggle:hover{border-color:#49e6e0;background:#14202b}
+.pause-overlay{position:fixed;z-index:9;inset:0;display:grid;place-items:center;background:#050710d9;backdrop-filter:blur(6px)}
+.pause-overlay[hidden]{display:none}.pause-panel{text-align:center;border-color:#49e6e088}.pause-panel .button{margin-top:8px;cursor:pointer}
+.map-toast{position:fixed;z-index:5;top:82px;left:50%;transform:translate(-50%,-12px);opacity:0;pointer-events:none;padding:10px 18px;background:#0b111deF;border:1px solid #49e6e0;color:#f1f5f9;font-size:12px;box-shadow:0 6px 24px #0009;transition:opacity .16s,transform .16s}
+.map-toast.visible{opacity:1;transform:translate(-50%,0)}.map-toast.warning{border-color:#ff668d;color:#ffd7df}
+.pickup-prompt{position:fixed;z-index:3;left:50%;bottom:110px;transform:translateX(-50%);padding:9px 14px;background:#0b111deF;border:1px solid #ffca62;color:#fff4d2;font-size:12px;cursor:pointer}
+.pickup-prompt[hidden]{display:none}.pickup-prompt kbd{padding:2px 6px;margin-right:6px;border:1px solid #ffca62;color:#ffca62;font:11px 'Chakra Petch'}
+.map-skillbar{position:fixed;z-index:3;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:8px}
+.map-skill{position:relative;min-width:156px;padding:13px 12px 10px 42px;text-align:left;background:#0b111deF;border:1px solid #47546a;color:#eff3ff;cursor:pointer}
+.map-skill:hover{border-color:#49e6e0;background:#14202b}.map-skill kbd{position:absolute;left:10px;top:14px;display:grid;place-items:center;width:24px;height:24px;border:1px solid #49e6e0;color:#49e6e0;font:12px 'Chakra Petch'}
+.map-skill b,.map-skill small,.map-skill .skill-rank,.map-skill .skill-cooldown{display:block}.map-skill b{font-size:12px}.map-skill small{margin-top:5px;color:#8589a8;font-size:10px}.map-skill .skill-rank{margin-top:6px;color:#ffe45c;font:9px 'Chakra Petch';letter-spacing:.3px}.map-skill .skill-cooldown{position:absolute;right:10px;top:12px;color:#ff668d;font:11px 'Chakra Petch'}
+.map-skill.cooling{border-color:#6e4056}.map-skill.low-energy{border-color:#75404e}.map-skill.low-energy small{color:#ff899d}
+.map-skill.basic-attack{border-color:#49e6e0}.map-skill.basic-attack kbd{border-color:#49e6e0;color:#49e6e0}
+.upgrade-overlay{position:fixed;z-index:7;inset:0;display:grid;place-items:center;background:#050710c9;backdrop-filter:blur(5px)}
+.upgrade-overlay[hidden]{display:none}.upgrade-panel{width:min(620px,calc(100vw - 32px));padding:28px;background:#111625;border:1px solid #49e6e088;box-shadow:0 0 55px #49e6e022}
+.skill-upgrade-overlay{position:fixed;z-index:7;inset:0;display:grid;place-items:center;background:#050710d9;backdrop-filter:blur(6px)}
+.skill-upgrade-overlay[hidden]{display:none}.skill-upgrade-panel{border-color:#ffe45c99;box-shadow:0 0 55px #ffe45c22}.skill-upgrade-panel>.eyebrow{color:#ffe45c}
+.skill-upgrade-choice{min-height:145px}.skill-upgrade-choice b{color:#ffe45c}
+.upgrade-panel>.eyebrow{margin-bottom:8px}.upgrade-panel h2{margin:0;font-size:26px}.upgrade-panel>p:not(.eyebrow){color:#aab0c3;font-size:12px}
+.upgrade-choices{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:20px}
+.upgrade-choice{min-height:120px;padding:15px;text-align:left;background:#0a0f1b;border:1px solid #343d54;color:#f2f3ff;cursor:pointer}.upgrade-choice:hover{border-color:#49e6e0;transform:translateY(-3px)}
+.upgrade-choice b,.upgrade-choice span{display:block}.upgrade-choice b{margin-bottom:8px;color:#ffe45c;font-size:13px}.upgrade-choice span{color:#aab0c3;font-size:11px;line-height:1.6}
+.run-over-overlay{position:fixed;z-index:8;inset:0;display:grid;place-items:center;background:#050710d9;backdrop-filter:blur(5px)}
+.run-over-overlay[hidden]{display:none}.run-over-panel{text-align:center}.run-over-panel h2{color:#ff668d}.run-over-panel>p:not(.eyebrow){margin:12px 0 22px}.run-over-panel>p b{color:#ffe45c}
+.run-over-actions{display:flex;justify-content:center;gap:10px}.run-over-actions .button{cursor:pointer}
+.map-controls{position:fixed;z-index:2;left:22px;bottom:22px;display:flex;flex-direction:column;align-items:flex-start;gap:7px;padding:10px 13px;background:#0c111ddd;border:1px solid #3a4659;color:#aab0c3;font:11px 'Chakra Petch'}
+.map-controls kbd,.touch-pad button{display:inline-grid;place-items:center;min-width:23px;height:23px;padding:0 5px;margin-right:3px;background:#1b2531;border:1px solid #556477;color:#e9f0fa;font:11px 'Chakra Petch'}
+#minimap{position:fixed;z-index:2;right:22px;bottom:76px;width:180px;height:132px;border:1px solid #49e6e088;background:#101722cc;box-shadow:0 4px 20px #0008}
+.touch-pad{display:none}
+@media(max-width:700px){
+  .map-topbar{height:58px;padding:0 14px}.map-topbar .brand-mark{width:32px;height:32px}.map-location{display:none}.map-hero-card{top:70px;left:12px;min-width:0;padding:8px 10px}.map-tip{top:auto;right:12px;bottom:190px;max-width:190px;padding:9px;font-size:10px}.map-tip span{font-size:10px}
+  .map-vitals{top:132px;left:12px;width:160px;padding:9px 10px}.wave-status{top:68px;min-width:150px;padding:7px 10px}.wave-status b{font-size:11px}.duel-opponent{top:132px;right:12px;width:145px;padding:8px}.map-toast{top:112px;width:max-content;max-width:calc(100vw - 24px);font-size:11px}.map-controls{display:none}
+  .pause-toggle{top:128px;right:12px;padding:7px 10px}
+  .map-skillbar{left:auto;right:10px;bottom:12px;transform:none;flex-direction:column;gap:5px}  .map-skill{min-width:132px;padding:8px 8px 7px 35px}.map-skill kbd{left:7px;top:10px;width:21px;height:21px}.map-skill b{font-size:11px}.map-skill small{font-size:9px;margin-top:3px}.map-skill .skill-rank{font-size:8px;margin-top:3px}.map-skill .skill-cooldown{top:8px;right:7px}
+  .pickup-prompt{left:50%;bottom:260px;white-space:nowrap}.touch-pad{position:fixed;z-index:3;display:grid;grid-template-columns:repeat(3,46px);grid-template-rows:repeat(2,46px);gap:4px;left:12px;bottom:100px;touch-action:none}
+  #minimap{right:12px;top:68px;bottom:auto;width:128px;height:94px}
+  .upgrade-panel{padding:20px}.upgrade-choices{grid-template-columns:1fr}.upgrade-choice{min-height:0;padding:12px}.duel-upgrade-panel .upgrade-choices{max-height:55vh;overflow-y:auto}
+  .skill-upgrade-choice{min-height:0}
+  .run-over-actions{flex-direction:column}
+  .touch-pad button{width:46px;height:46px;margin:0;border-radius:8px;background:#111a27dd;border-color:#49e6e088;font-size:16px;touch-action:none}
+  .touch-pad button[data-move="up"]{grid-column:2;grid-row:1}.touch-pad button[data-move="left"]{grid-column:1;grid-row:2}.touch-pad button[data-move="down"]{grid-column:2;grid-row:2}.touch-pad button[data-move="right"]{grid-column:3;grid-row:2}
+}

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>{% if game_mode == "duel" %}人机对抗{% else %}肉鸽生存{% endif %} · 2D大击败</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='map.css') }}">
+</head>
+<body class="map-page{% if game_mode == 'duel' %} duel-page{% endif %}">
+  <canvas id="world" aria-label="可自由移动的游戏地图"></canvas>
+  <header class="map-topbar">
+    <a class="brand" href="/"><span class="brand-mark">2D</span><span><strong>大击败</strong><small>{% if game_mode == "duel" %}AI DUEL{% else %}ROGUELIKE RUN{% endif %}</small></span></a>
+    <div class="map-location"><span class="status-dot"></span> 霓虹废墟 <b>·</b> <span id="map-mode">{% if game_mode == "duel" %}人机对抗{% else %}肉鸽生存{% endif %}</span></div>
+    <a class="exit-link" href="{% if game_mode == 'duel' %}/select?mode=duel{% else %}/select{% endif %}">返回选人 ×</a>
+  </header>
+  <aside class="map-hero-card">
+    <div class="map-portrait {{ player.accent }}">{{ player.initial }}</div>
+    <div><small>{{ player.class_name }}</small><b>{{ player.name }}</b><span>{% if game_mode == "duel" %}竞技者{% else %}探索者{% endif %} · <span id="run-level">Lv.01</span></span></div>
+  </aside>
+  <aside class="map-vitals">
+    <div><span>生命 + 护盾</span><b id="hp-label">100 / 100</b></div><i class="vital-bar"><em id="hp-bar"></em><em id="shield-bar"></em></i>
+    <div><span>能量</span><b id="energy-label">100 / 100</b></div><i class="vital-bar energy"><em id="energy-bar"></em></i>
+    <div class="skill-exp-label"><span>技能经验</span><b id="skill-exp-label">Lv.1 · 0 / 60</b></div>
+    <i class="vital-bar skill-exp"><em id="skill-exp-bar"></em></i>
+    <div class="loot-count">物资 <b id="loot-count">0</b></div>
+    <div class="combat-traits" id="combat-traits">吸血 0% · 闪避 0%</div>
+  </aside>
+  {% if not multiplayer and game_mode != "duel" %}
+  <button class="pause-toggle" id="pause-toggle" type="button" aria-label="暂停游戏" aria-pressed="false">Ⅱ 暂停</button>
+  <section class="pause-overlay" id="pause-overlay" hidden>
+    <div class="upgrade-panel pause-panel">
+      <p class="eyebrow">RUN PAUSED</p>
+      <h2>游戏已暂停</h2>
+      <p>肉鸽战斗已暂停，准备好后继续。</p>
+      <button class="button button-primary" id="resume-run" type="button">继续游戏</button>
+    </div>
+  </section>
+  {% endif %}
+  <aside class="wave-status">
+    <b id="wave-title">第 1 波 · 集结中</b>
+    <span id="wave-subtitle">敌人即将出现</span>
+  </aside>
+  {% if game_mode == "duel" %}
+  <aside class="duel-opponent" id="duel-opponent">
+    <small>AI 对手</small><b id="duel-opponent-name">敌方单位</b>
+    <i class="vital-bar"><em id="duel-opponent-hp"></em></i>
+    <span id="duel-opponent-vitals">100 / 100</span>
+  </aside>
+  <section class="duel-upgrade-overlay" id="duel-upgrade-overlay" hidden>
+    <div class="upgrade-panel duel-upgrade-panel">
+      <p class="eyebrow">ROUND BREAK · PICK ONE</p>
+      <h2 id="duel-upgrade-title">回合结束 · 选择强化</h2>
+      <p id="duel-upgrade-subtitle">选择一项强化，十秒后开始下一回合。</p>
+      <div id="duel-upgrade-choices" class="upgrade-choices"></div>
+      <div class="duel-countdown">下一回合 <b id="duel-countdown">10</b> 秒后开始</div>
+    </div>
+  </section>
+  {% endif %}
+  <aside class="peer-list" id="peer-list" hidden></aside>
+  <div class="map-toast" id="map-toast" role="status" aria-live="polite"></div>
+  <section class="upgrade-overlay" id="upgrade-overlay" hidden>
+    <div class="upgrade-panel">
+      <p class="eyebrow">WAVE CLEARED · PICK ONE</p>
+      <h2>战场适应</h2>
+      <p>选择一项强化，然后迎接下一波敌人。</p>
+      <div id="upgrade-choices" class="upgrade-choices"></div>
+    </div>
+  </section>
+  <section class="skill-upgrade-overlay" id="skill-upgrade-overlay" hidden>
+    <div class="upgrade-panel skill-upgrade-panel">
+      <p class="eyebrow">SKILL EXPERIENCE · CHOOSE AN UPGRADE</p>
+      <h2 id="skill-upgrade-title">选择技能强化</h2>
+      <p id="skill-upgrade-subtitle">积累技能经验，强化你的战斗方式。</p>
+      <div id="skill-upgrade-choices" class="upgrade-choices"></div>
+    </div>
+  </section>
+  <section class="run-over-overlay" id="run-over-overlay" hidden>
+    <div class="upgrade-panel run-over-panel">
+      <p class="eyebrow">RUN ENDED</p>
+      <h2 id="run-over-title">本局结束</h2>
+      <p id="run-over-description">你倒在第 <b id="final-wave">1</b> 波。整备后再挑战一次。</p>
+      <div class="run-over-actions">
+        <button id="retry-run" class="button button-primary" type="button">重新开始</button>
+        <a class="button button-ghost" href="{% if game_mode == 'duel' %}/select?mode=duel{% else %}/select{% endif %}">返回选人</a>
+      </div>
+    </div>
+  </section>
+  <button class="pickup-prompt" id="pickup-prompt" type="button" hidden><kbd>F</kbd> 收集附近物资</button>
+  <div class="map-controls"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移动</span><span><kbd>Q</kbd><kbd>E</kbd><kbd>R</kbd> 技能</span><span><kbd>F</kbd> 收集</span><span><kbd>SPACE</kbd> 普攻</span></div>
+  <section class="map-skillbar" aria-label="技能">
+    {% for skill in player.skills %}
+    <button class="map-skill" data-skill='{{ skill|tojson }}' type="button">
+      <kbd>{{ ["Q", "E", "R"][loop.index0] }}</kbd>
+      <b>{{ skill.name }}</b>
+      <small>{{ skill.description|default(skill.kind ~ " · " ~ skill.cost ~ " 能量") }}</small>
+      <span class="skill-rank"></span>
+      <span class="skill-cooldown"></span>
+    </button>
+    {% endfor %}
+    <button class="map-skill basic-attack" id="basic-attack" type="button">
+      <kbd>SPACE</kbd>
+      <b>普通攻击</b>
+      <small>{% if player.accent == "tech" %}远程 · 回复 5 能量{% elif player.accent == "blue" %}远程 · 回复 5 能量{% elif player.accent == "green" %}缠绕 · 回复 5 能量{% else %}近身 · 回复 5 能量{% endif %}</small>
+      <span class="skill-cooldown"></span>
+    </button>
+  </section>
+  <canvas id="minimap" aria-label="地图概览"></canvas>
+  <div class="touch-pad" aria-label="移动控制">
+    <button data-move="up" aria-label="向上">▲</button>
+    <button data-move="left" aria-label="向左">◀</button>
+    <button data-move="down" aria-label="向下">▼</button>
+    <button data-move="right" aria-label="向右">▶</button>
+  </div>
+  <script>
+    window.MAP_CONFIG = {
+      name: {{ player.name|tojson }},
+      initial: {{ player.initial|tojson }},
+      accent: {{ player.accent|tojson }},
+      skills: {{ player.skills|tojson }},
+      multiplayer: {{ multiplayer|tojson }},
+      duel: {{ (game_mode == "duel" and not multiplayer)|tojson }},
+      defense: {{ defense|tojson }}
+    };
+  </script>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

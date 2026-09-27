@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "None",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "rootDir": "frontend",
+    "outFile": "static/app.js",
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "files": ["frontend/map.ts"]
+}
