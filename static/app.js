@@ -269,7 +269,6 @@ function updateWaveHud() {
         updateDuelHud();
         return;
     }
-    basicAttackTimer = getBasicAttackCooldown();
     const displayWave = waveState === "starting" ? wave + 1 : wave;
     const title = `第 ${displayWave} 波 · ${waveState === "active" ? "交战中" : waveState === "upgrade" ? "波次完成" : "集结中"}`;
     if (waveTitle.textContent !== title)
