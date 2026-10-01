@@ -2070,6 +2070,7 @@ function basicAttack() {
         showToast(`普攻未命中：${config.accent === "tech" ? "将敌人保持在 330" : config.accent === "blue" ? "将敌人保持在 300" : config.accent === "green" ? "将敌人保持在 150" : "靠近敌人至 95"} 距离内再攻击。`, "warning");
         return;
     }
+    basicAttackTimer = getBasicAttackCooldown();
     const wasEmpowered = empoweredAttack;
     const empoweredSkill = config.skills.find((skill) => skill.action === "empower_attack");
     const damage = wasEmpowered
