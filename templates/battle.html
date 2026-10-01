@@ -5,11 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <link rel="icon" href="{{ url_for('favicon', lang=lang) }}">
   <title>{{ tr("BATTLE_TITLE_DUEL" if game_mode == "duel" else "BATTLE_TITLE_ROGUE") }} · {{ tr("PRODUCT_NAME") }}</title>
+  <link rel="preload" as="image" href="{{ url_for('static', filename='game_loading_1.png') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='map.css') }}">
 </head>
 <body class="map-page{% if game_mode == 'duel' %} duel-page{% endif %}">
   <canvas id="world" aria-label="{{ tr('MAP_ACCESSIBLE') }}"></canvas>
+  <section class="map-transition" id="map-transition" aria-live="polite" aria-label="{{ tr('MAP_TRANSITION_TITLE') }}">
+    <img class="map-transition-art" src="{{ url_for('static', filename='game_loading_1.png') }}" alt="">
+    <div class="map-transition-shade"></div>
+    <div class="map-transition-briefing">
+      <p class="map-transition-kicker">{{ tr("MAP_TRANSITION_TITLE") }}</p>
+      <h1>{{ transition_map_name }}</h1>
+      <span>{{ transition_event }}</span>
+      <div class="map-transition-countdown"><i></i><span>{{ tr("MAP_TRANSITION_START") }}</span></div>
+    </div>
+    <div class="map-transition-hero">
+      <div class="map-portrait {{ player.accent }}">{{ player.initial }}</div>
+      <div><span>{{ tr("MAP_TRANSITION_HERO") }}</span><b>{{ player.name }}</b><small>{{ player.class_name }}</small></div>
+    </div>
+    <div class="map-loading" aria-hidden="true">
+      <div class="map-loader"><i></i><i></i><i></i></div>
+      <span>{{ tr("MAP_LOADING") }}</span>
+    </div>
+  </section>
   <header class="map-topbar">
     <a class="brand" href="/"><img class="brand-mark brand-mark-image" src="{{ url_for('favicon', lang=lang) }}" alt=""><span><strong>{{ tr("PRODUCT_NAME") }}</strong><small>{{ tr("AI_DUEL" if game_mode == "duel" else "ROGUELIKE_RUN") }}</small></span></a>
     <div class="map-location"><span class="status-dot"></span> {{ tr("ARENA") }} <b>·</b> <span id="map-mode">{{ tr("BATTLE_TITLE_DUEL" if game_mode == "duel" else "BATTLE_TITLE_ROGUE") }}</span></div>
@@ -118,6 +137,7 @@
       name: {{ player.name|tojson }},
       initial: {{ player.initial|tojson }},
       accent: {{ player.accent|tojson }},
+      mapTheme: {{ map_theme|tojson }},
       skills: {{ player.skills|tojson }},
       multiplayer: {{ multiplayer|tojson }},
       duel: {{ (game_mode == "duel" and not multiplayer)|tojson }},

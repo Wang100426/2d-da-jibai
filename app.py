@@ -14,6 +14,7 @@ ROOMS = {}
 ROOMS_LOCK = threading.RLock()
 ROOM_CAPACITY = 8
 ROOM_PLAYER_TIMEOUT = 30
+MAP_THEMES = ("city", "hospital", "music", "gym", "airport")
 
 LOCALE_DIRECTORY = Path(__file__).resolve().parent / "locale"
 ASSET_DIRECTORY = Path(__file__).resolve().parent / "assets"
@@ -550,6 +551,7 @@ def battle():
     player_id = request.args.get("pid", "").strip()
     multiplayer_config = None
     game_mode = "duel" if request.args.get("mode") == "duel" else "rogue"
+    map_theme = "city" if game_mode == "duel" else secrets.choice(MAP_THEMES)
     if room_id and player_id:
         with ROOMS_LOCK:
             room, room_player = find_room_player(room_id, player_id)
@@ -571,6 +573,19 @@ def battle():
             }
     lang = request.args.get("lang", request.cookies.get("lang", "zh"))
     player = next(hero for hero in localized_heroes(lang) if hero["id"] == player["id"])
+    transition_map_keys = {
+        "city": ("MAP_CITY", "MAP_EVENT_CITY"),
+        "hospital": ("MAP_HOSPITAL", "MAP_EVENT_HOSPITAL"),
+        "music": ("MAP_MUSIC", "MAP_EVENT_MUSIC"),
+        "gym": ("MAP_GYM", "MAP_EVENT_GYM"),
+        "airport": ("MAP_AIRPORT", "MAP_EVENT_AIRPORT"),
+    }
+    map_name_key, map_event_key = transition_map_keys[map_theme]
+    if game_mode == "duel":
+        map_event_key = "MAP_EVENT_DUEL"
+    elif multiplayer_config:
+        map_event_key = "MAP_EVENT_MULTIPLAYER"
+    locale_ui = get_locale(lang)["ui"]
     return render_template(
         "battle.html",
         player=player,
@@ -578,6 +593,9 @@ def battle():
         multiplayer=multiplayer_config,
         game_mode=game_mode,
         defense=base_defense,
+        map_theme=map_theme,
+        transition_map_name=locale_ui[map_name_key],
+        transition_event=locale_ui[map_event_key],
     )
 
 

@@ -45,6 +45,23 @@
     "BATTLE_TITLE_DUEL": "AI DUEL",
     "BATTLE_TITLE_ROGUE": "ROGUELIKE RUN",
     "ARENA": "NEON RUINS",
+    "MAP_TRANSITION_TITLE": "ENTERING THE ARENA",
+    "MAP_TRANSITION_HERO": "FIGHTER",
+    "MAP_TRANSITION_EVENT": "SPECIAL EVENT",
+    "MAP_TRANSITION_START": "SYNCING BATTLEFIELD · STARTS IN 5 SECONDS",
+    "MAP_LOADING": "LOADING",
+    "MAP_CITY": "Neon District",
+    "MAP_HOSPITAL": "Cyber Hospital",
+    "MAP_MUSIC": "Cyber Music Hall",
+    "MAP_GYM": "Cyber Gymnasium",
+    "MAP_AIRPORT": "Cyber Airport",
+    "MAP_EVENT_CITY": "Traffic surges across the streets. Impacts deal heavy damage and stun.",
+    "MAP_EVENT_HOSPITAL": "Fast anesthetists rush in; their first hit injects anesthetic.",
+    "MAP_EVENT_MUSIC": "Harps land at random and play for 5 seconds, damaging and slowing by 60%.",
+    "MAP_EVENT_GYM": "Musclebound bruisers charge out of buildings and deal massive damage.",
+    "MAP_EVENT_AIRPORT": "Aircraft use one of eight random runways; collisions hit hard and knock back.",
+    "MAP_EVENT_DUEL": "One-on-one arena duel. Be the first to win four rounds.",
+    "MAP_EVENT_MULTIPLAYER": "Fight enemy waves with LAN allies; player attacks and effects are synchronized.",
     "PAUSE": "Ⅱ PAUSE",
     "PAUSED": "GAME PAUSED",
     "PAUSED_HELP": "Combat is paused. Resume when you're ready.",
@@ -330,7 +347,30 @@
       "人机对抗开始！先赢下 4 分获胜，SPACE 普攻，Q / E / R 释放技能。": "AI duel started! First to 4 points wins. SPACE to attack, Q / E / R to use skills.",
       "再战一局": "Play Again",
       "等待其他玩家同步位置…": "Waiting for other players to sync positions...",
-      "选择一项强化，十秒后自动开始下一回合。": "Choose an upgrade; the next round starts automatically in 10 seconds."
+      "选择一项强化，十秒后自动开始下一回合。": "Choose an upgrade; the next round starts automatically in 10 seconds.",
+      "麻醉医生": "Anesthetist",
+      "车流事件开始！注意闪烁道路，车辆会冲过整条街道。": "Traffic surge! Watch the flashing lanes; cars will race across the street.",
+      "车祸眩晕 2.4 秒": "Traffic stun: 2.4s",
+      "车辆撞击 · 眩晕 2.4 秒": "Vehicle impact · Stunned 2.4s",
+      "麻药注射 · 眩晕 2 秒": "Anesthetic · Stunned 2s",
+      "麻醉医生给你注射麻药：眩晕 2 秒！之后医生不会再追击你。": "An anesthetist injected you: stunned for 2s! They will not target you again.",
+      "医生撤离": "Doctor retreating",
+      "警报：麻醉医生正在赶来！注意躲避注射。": "Alert: anesthetists are approaching! Avoid their injections.",
+      "警报：道路车流即将冲出！离开闪烁车道。": "Alert: traffic is about to rush through! Clear the flashing lanes.",
+      "琴弦共鸣！竖琴已落地，演奏 5 秒并伤害、减速附近单位。": "Harp resonance! Harps play for 5 seconds, damaging and slowing nearby units.",
+      "音乐警报！竖琴即将坠落，请及时离开音场。": "Music warning! Harps are about to land; leave the sound field.",
+      "健身房警报！建筑里有肌肉壮汉正在集结。": "Gym warning! Musclebound bruisers are gathering inside the buildings.",
+      "健身房警报！肌肉壮汉冲出建筑，正高速冲向附近单位！": "Gym breach! Musclebound bruisers are charging at nearby units!",
+      "飞机即将起飞！请避开正在使用的跑道。": "Aircraft taking off! Stay clear of the active runway.",
+      "飞机即将降落！请避开正在使用的跑道。": "Aircraft landing! Stay clear of the active runway.",
+      "航班时刻表": "FLIGHT SCHEDULE",
+      "起飞": "DEPART",
+      "降落": "ARRIVE",
+      "停机坪": "APRON",
+      "正在演奏": "Playing",
+      "赛博琴房": "Cyber Music Hall",
+      "赛博体育馆": "Cyber Gymnasium",
+      "赛博机场": "Cyber Airport"
     },
     "patterns": [
       [
@@ -640,6 +680,30 @@
       [
         "(.+)失败：(.+)",
         "$1 failed: $2"
+      ],
+      [
+        "麻醉医生突入！(\\d+)\\ 名高速单位已出现，击败可获得大量技能经验。",
+        "Anesthetists have entered! $1 fast units are here; defeat them for bonus skill XP."
+      ],
+      [
+        "车辆撞中你！受到\\ (\\d+)\\ 点重击并眩晕\\ 2\\.4\\ 秒。",
+        "A car hit you! You took $1 heavy damage and are stunned for 2.4s."
+      ],
+      [
+        "肌肉冲撞 -(\\d+)",
+        "Muscle charge -$1"
+      ],
+      [
+        "肌肉壮汉迎面撞击！造成\\ (\\d+)\\ 点巨额伤害。",
+        "A bruiser slammed into you for $1 massive damage."
+      ],
+      [
+        "飞机撞击 -(\\d+)",
+        "Aircraft impact -$1"
+      ],
+      [
+        "飞机撞击！受到\\ (\\d+)\\ 点重击并被强力击退。",
+        "Aircraft collision! You took $1 heavy damage and were hurled back."
       ]
     ],
     "phrases": {
@@ -691,7 +755,50 @@
       "旧体育馆": "Old Stadium",
       "变电站": "Substation",
       "废弃工厂": "Abandoned Factory",
-      "货运仓库": "Freight Depot"
+      "货运仓库": "Freight Depot",
+      "急诊中心": "Emergency Center",
+      "手术中心": "Surgery Wing",
+      "住院大楼": "Inpatient Tower",
+      "影像科": "Radiology",
+      "检验科": "Laboratory",
+      "康复中心": "Rehabilitation",
+      "药剂科": "Pharmacy",
+      "重症监护室": "Intensive Care",
+      "研究病区": "Research Ward",
+      "护士站": "Nurse Station",
+      "配药室": "Medication Room",
+      "隔离病房": "Isolation Ward",
+      "急救室": "Trauma Room",
+      "隔离带": "Biohazard Barrier",
+      "琴工厂": "Piano Factory",
+      "赛博琴行": "Cyber Piano Store",
+      "电子琴研究所": "Keyboard Research Lab",
+      "合成器工坊": "Synth Workshop",
+      "交响乐厅": "Symphony Hall",
+      "音源仓库": "Soundbank Depot",
+      "声学实验室": "Acoustics Lab",
+      "调音室": "Tuning Room",
+      "黑胶唱片厂": "Vinyl Press",
+      "节拍器工厂": "Metronome Factory",
+      "琴弦加工厂": "String Works",
+      "隔音墙": "Soundproof Barrier",
+      "铁拳健身馆": "Iron Fist Gym",
+      "力量训练中心": "Strength Training Center",
+      "肌肉工厂": "Muscle Factory",
+      "赛博拳击馆": "Cyber Boxing Club",
+      "蛋白质补给站": "Protein Supply",
+      "重训器械库": "Weight Room",
+      "极限举重馆": "Extreme Lifting Hall",
+      "格斗擂台": "Combat Ring",
+      "训练围栏": "Training Fence",
+      "航站楼": "Terminal",
+      "货运中心": "Cargo Center",
+      "机库 A": "Hangar A",
+      "维修机库": "Maintenance Hangar",
+      "机库 B": "Hangar B",
+      "空管塔台": "Air Traffic Control",
+      "行李分拣中心": "Baggage Sorting",
+      "机场消防站": "Airport Fire Station"
     },
     "effects": {
       "加速": "Movement speed up",
@@ -701,6 +808,7 @@
       "眩晕": "Stun",
       "禁锢": "Root",
       "减速": "Slow",
+      "强力减速": "Heavy slow",
       "荆棘护甲": "Thorn armor",
       "中毒": "Poison",
       "月影护盾": "Moon shield"
