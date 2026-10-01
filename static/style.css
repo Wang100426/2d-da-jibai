@@ -101,6 +101,7 @@
 .mode-page .mode-hero-copy h1{font:900 clamp(68px,9vw,132px)/.85 'Chakra Petch';letter-spacing:-6px;margin:0 0 20px;text-shadow:6px 6px 0 #262640}
 .mode-page .mode-hero-copy h1 span{display:block;color:var(--pink);text-shadow:5px 5px 0 #461d48}
 .mode-page .mode-hero-copy .mode-logo{display:block;width:clamp(190px,24vw,280px);height:auto;margin:0 auto 12px;filter:drop-shadow(0 12px 30px #0008)}
+.mode-page .mode-hero-copy .english-game-title{font:900 clamp(58px,8vw,112px)/.95 'Chakra Petch',sans-serif;letter-spacing:-3px;margin:0 0 16px;color:var(--text);text-shadow:6px 6px 0 #262640}
 .mode-page .mode-hero-copy .subtitle{color:#b6b8ce;line-height:1.9;font-size:16px}
 .mode-page .mode-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1120px;width:100%}
 .mode-card{display:flex;flex-direction:column;align-items:center;padding:40px 30px;background:var(--panel);border:1px solid #2a2e48;border-radius:16px;text-decoration:none;color:var(--text);transition:.25s;gap:14px}
@@ -109,6 +110,14 @@
 .mode-card h2{font-size:24px;margin:0;font-family:'Chakra Petch';letter-spacing:2px}
 .mode-card p{color:#aab0c3;font-size:13px;line-height:1.8;margin:0;text-align:center}
 .mode-card small{color:#8589a8;font-size:11px}
+.language-toggle{flex:none;border:1px solid #343a56;background:#121626;color:var(--cyan);padding:8px 12px;font:11px 'Chakra Petch',sans-serif;letter-spacing:.7px;cursor:pointer}
+.language-toggle:hover{border-color:var(--cyan);background:#192236}
+.topbar-actions{display:flex;align-items:center;gap:16px}
+html[lang="en"] body{font-family:'Chakra Petch','Segoe UI',sans-serif}
+html[lang="en"] .mode-page .mode-cards{max-width:1220px}
+html[lang="en"] .mode-card{padding-inline:22px}
+html[lang="en"] .mode-card h2{font-size:21px}
+html[lang="en"] .mode-card p{max-width:340px}
 
 /* Select page */
 .select-page{height:100vh;height:100svh;min-height:620px;display:grid;grid-template-rows:64px minmax(220px,.78fr) 34px;overflow:hidden}

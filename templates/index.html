@@ -1,9 +1,10 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="{{ 'en' if lang == 'en' else 'zh-CN' }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>2D大击败</title>
+  <link rel="icon" href="{{ url_for('favicon', lang=lang) }}">
+  <title>{{ tr("PRODUCT_NAME") }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="mode-page">
@@ -11,41 +12,43 @@
   <header class="topbar">
     <a class="brand" href="/">
       <span class="brand-mark">2D</span>
-      <span><strong>大击败</strong><small>CYBER ARENA</small></span>
+      <span><strong>{{ tr("PRODUCT_NAME") }}</strong><small>{{ tr("CYBER_ARENA") }}</small></span>
     </a>
     <nav>
-      <a class="active" href="/">主界面</a>
-      <a href="/select">英雄档案</a>
-      <a href="/multiplayer">局域网联机</a>
+      <a class="active" href="/">{{ tr("HOME") }}</a>
+      <a href="/select">{{ tr("HEROES") }}</a>
+      <a href="/multiplayer">{{ tr("LAN") }}</a>
     </nav>
+    <button class="language-toggle" type="button" data-language-toggle>{{ tr("LANG_TOGGLE") }}</button>
   </header>
 
   <main class="mode-main">
     <section class="mode-hero-copy">
-      <p class="eyebrow"><span></span> SEASON 01 / 霓虹初醒</p>
-      <img class="mode-logo" src="{{ url_for('static', filename='2d_da_jibai_logo.png') }}" alt="2D大击败">
-      <p class="subtitle">选择你的模式，在霓虹废墟迎接挑战。<br><b>单机肉鸽，独自迎战敌潮；联机对战，与好友同屏竞技。</b></p>
+      <p class="eyebrow"><span></span> {{ tr("SEASON") }}</p>
+      {% if lang == 'en' %}<h1 class="english-game-title">{{ tr("PRODUCT_NAME") }}</h1>{% else %}<img class="mode-logo" src="{{ url_for('static', filename='2d_da_jibai_logo.png') }}" alt="{{ tr('PRODUCT_NAME') }}">{% endif %}
+      <p class="subtitle">{{ tr("HOME_SUBTITLE") }}<br><b>{{ tr("HOME_DESCRIPTION") }}</b></p>
     </section>
 
     <section class="mode-cards">
       <a class="mode-card" href="/select">
-        <div class="mode-card-icon">单</div>
-        <h2>单机肉鸽</h2>
-        <p>独自探索霓虹废墟，波次递增，搜集物资，挑选强化。<br><small>选择英雄 · 开始挑战 · 活过下一波</small></p>
+        <div class="mode-card-icon">{{ tr("ROGUE_ICON") }}</div>
+        <h2>{{ tr("ROGUE") }}</h2>
+        <p>{{ tr("ROGUE_DESCRIPTION") }}<br><small>{{ tr("ROGUE_TAGLINE") }}</small></p>
       </a>
       <a class="mode-card" href="/multiplayer">
-        <div class="mode-card-icon">联</div>
-        <h2>局域网联机</h2>
-        <p>和同一 Wi-Fi 下的朋友进入房间，同步位置，共同迎战敌潮。<br><small>创建房间 · 邀请好友 · 一起战斗</small></p>
+        <div class="mode-card-icon">{{ tr("LAN_ICON") }}</div>
+        <h2>{{ tr("LAN") }}</h2>
+        <p>{{ tr("LAN_DESCRIPTION") }}<br><small>{{ tr("LAN_TAGLINE") }}</small></p>
       </a>
       <a class="mode-card" href="/select?mode=duel">
-        <div class="mode-card-icon">战</div>
-        <h2>人机对抗</h2>
-        <p>选择英雄挑战 AI 对手，先赢下四分。每回合结束后挑选强化。<br><small>一对一竞技 · 十秒整备 · 决胜四分</small></p>
+        <div class="mode-card-icon">{{ tr("DUEL_ICON") }}</div>
+        <h2>{{ tr("DUEL") }}</h2>
+        <p>{{ tr("DUEL_DESCRIPTION") }}<br><small>{{ tr("DUEL_TAGLINE") }}</small></p>
       </a>
     </section>
   </main>
 
-  <footer><span>2D大击败 // 由无聊驱动</span><span>NO RAGE · JUST DAMAGE</span></footer>
+  <footer><span>{{ tr("FOOTER") }}</span><span>{{ tr("SLOGAN") }}</span></footer>
+  <script src="{{ url_for('static', filename='language.js') }}"></script>
 </body>
 </html>

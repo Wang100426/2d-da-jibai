@@ -1,0 +1,762 @@
+{
+  "code": "en",
+  "ui": {
+    "HOME": "HOME",
+    "HEROES": "HEROES",
+    "LAN": "LAN MULTIPLAYER",
+    "SEASON": "SEASON 01 / NEON AWAKENING",
+    "HOME_SUBTITLE": "Choose a mode and face the challenge in the neon ruins.",
+    "HOME_DESCRIPTION": "Survive enemy waves solo, or battle friends together online.",
+    "ROGUE": "ROGUELIKE",
+    "ROGUE_DESCRIPTION": "Explore the neon ruins alone, survive escalating waves, and choose upgrades.",
+    "ROGUE_TAGLINE": "Choose a hero · Start the run · Survive the next wave",
+    "LAN_DESCRIPTION": "Join a room with friends on the same Wi-Fi and fight together.",
+    "LAN_TAGLINE": "Create a room · Invite friends · Fight together",
+    "DUEL": "AI DUEL",
+    "DUEL_DESCRIPTION": "Challenge an AI opponent. First to four wins takes the match; choose an upgrade between rounds.",
+    "DUEL_TAGLINE": "1v1 arena · 10-second break · First to four",
+    "FOOTER": "2DFight Arena // Powered by boredom",
+    "SELECT_SUBTITLE_DUEL": "Choose a fighter to enter the AI duel arena.",
+    "SELECT_SUBTITLE_ROGUE": "Review a fighter's abilities and enter the neon ruins.",
+    "SELECT_HERO": "SELECT A FIGHTER",
+    "SKILLS": "ABILITIES",
+    "SELECTED": "FIGHTER SELECTED",
+    "ENTER": "ENTER",
+    "BACK_SELECT": "BACK TO HERO SELECT",
+    "BACK_HOME": "BACK HOME",
+    "JOIN_LOBBY": "JOIN LOBBY",
+    "NICKNAME": "YOUR NAME",
+    "NICKNAME_PLACEHOLDER": "Enter a player name",
+    "CHOOSE_HERO": "CHOOSE A FIGHTER",
+    "CREATE_ROOM": "CREATE ROOM",
+    "OR_ROOM_CODE": "OR ENTER A ROOM CODE",
+    "JOIN": "JOIN",
+    "ROOM_CODE_PLACEHOLDER": "e.g. A1B2C3",
+    "ROOM_CODE_NOTE": "Share the room code with friends on your local network.",
+    "LAN_ADDRESS": "LOCAL NETWORK ADDRESS",
+    "LOADING_LAN": "Detecting local network address…",
+    "LAN_HELP": "Players on the same network can open this address in a browser.",
+    "PUBLIC_ROOMS": "PUBLIC ROOMS",
+    "REFRESH": "REFRESH",
+    "SEARCHING_ROOMS": "Searching for rooms…",
+    "LEAVE_ROOM": "LEAVE ROOM",
+    "WAITING_PLAYERS": "Waiting for more players…",
+    "START_GAME": "START MATCH",
+    "BATTLE_TITLE_DUEL": "AI DUEL",
+    "BATTLE_TITLE_ROGUE": "ROGUELIKE RUN",
+    "ARENA": "NEON RUINS",
+    "PAUSE": "Ⅱ PAUSE",
+    "PAUSED": "GAME PAUSED",
+    "PAUSED_HELP": "Combat is paused. Resume when you're ready.",
+    "RESUME": "RESUME",
+    "AI_OPPONENT": "AI OPPONENT",
+    "ENEMY": "OPPONENT",
+    "ROUND_BREAK": "ROUND OVER · CHOOSE AN UPGRADE",
+    "ROUND_BREAK_HELP": "Choose an upgrade. The next round starts in 10 seconds.",
+    "NEXT_ROUND": "Next round starts in",
+    "SECONDS": "seconds",
+    "WAVE_CLEARED": "WAVE CLEARED · PICK ONE",
+    "BATTLE_ADAPT": "BATTLE ADAPTATION",
+    "PICK_UPGRADE_NEXT_WAVE": "Choose an upgrade before the next wave.",
+    "SKILL_EXP": "SKILL EXPERIENCE · CHOOSE AN UPGRADE",
+    "CHOOSE_SKILL_UPGRADE": "Choose a skill upgrade",
+    "SKILL_EXP_HELP": "Earn skill experience to strengthen your combat style.",
+    "RUN_ENDED": "RUN OVER",
+    "RUN_OVER": "You fell in wave ",
+    "RUN_OVER_AFTER": ". Prepare and try again.",
+    "WAVE": ". Prepare and try again.",
+    "RETRY": "TRY AGAIN",
+    "RETRY_DUEL": "PLAY AGAIN",
+    "PICKUP": "Collect nearby supplies",
+    "MOVE": "Move",
+    "SKILL": "Skills",
+    "COLLECT": "Collect",
+    "BASIC_ATTACK": "Basic attack",
+    "RANGED_RESTORE": "Ranged · restores 5 energy",
+    "VINE_RESTORE": "Rooting strike · restores 5 energy",
+    "MELEE_RESTORE": "Melee · restores 5 energy",
+    "MAP_OVERVIEW": "Map overview",
+    "MAP_ACCESSIBLE": "Freely explorable game map",
+    "DUELIST": "Duelist",
+    "EXPLORER": "Explorer",
+    "PRODUCT_NAME": "2DFight Arena",
+    "LANG_TOGGLE": "中文",
+    "MP_INTRO": "Join friends on the same Wi-Fi or local network in the neon ruins. The room server synchronizes player attacks, damage, health, and crowd control; PvE waves and upgrades are simulated by each client.",
+    "HEALTH_SHIELD": "Health + Shield",
+    "ENERGY": "Energy",
+    "SKILL_EXPERIENCE": "Skill XP",
+    "SUPPLIES": "Supplies",
+    "COMBAT_TRAITS": "Lifesteal 0% · Dodge 0%",
+    "ROOM": "ROOM",
+    "MOVE_UP": "Up",
+    "MOVE_LEFT": "Left",
+    "MOVE_DOWN": "Down",
+    "MOVE_RIGHT": "Right",
+    "ROGUE_ICON": "R",
+    "LAN_ICON": "L",
+    "DUEL_ICON": "D",
+    "WAVE_ONE_ASSEMBLING": "WAVE 1 · ASSEMBLING",
+    "ENEMIES_INCOMING": "Enemies incoming",
+    "ROOM_LOBBY": "ROOM LOBBY",
+    "CYBER_ARENA": "CYBER ARENA",
+    "SLOGAN": "NO RAGE · JUST DAMAGE",
+    "LAN_MULTIPLAYER": "LAN MULTIPLAYER",
+    "LOCAL_NETWORK_PARTY": "LOCAL NETWORK PARTY",
+    "SELECT_FIGHTER": "SELECT YOUR FIGHTER",
+    "FIGHTER_PROFILE": "FIGHTER PROFILE",
+    "COMBAT_UNIT": "2D // COMBAT UNIT",
+    "AI_DUEL": "AI DUEL",
+    "ROGUELIKE_RUN": "ROGUELIKE RUN",
+    "RUN_PAUSED": "RUN PAUSED",
+    "ROUND_BREAK_PICK": "ROUND BREAK · PICK ONE",
+    "RUN_ENDED_EYEBROW": "RUN ENDED"
+  },
+  "heroes": {
+    "volt": {
+      "name": "Neon Champion",
+      "class_name": "Vanguard Brawler",
+      "tagline": "Close in, knock them back, then land another punch.",
+      "initial": "N",
+      "stats": [
+        "Attack",
+        "Defense",
+        "Mobility"
+      ],
+      "skills": {
+        "volt-ult": {
+          "name": "Thunder Pursuit",
+          "description": "Dash to the nearest enemy · Area stun",
+          "kind": "Ultimate"
+        },
+        "volt-chain": {
+          "name": "Concussive Fist",
+          "description": "Empower your next basic attack · Knockback",
+          "kind": "Skill"
+        },
+        "volt-overdrive": {
+          "name": "Breakthrough Dash",
+          "description": "Dash in your movement direction · Damage along the path",
+          "kind": "Skill"
+        }
+      }
+    },
+    "moss": {
+      "name": "Moss Guardian",
+      "class_name": "Briar Bastion",
+      "tagline": "Turn the battlefield into your garden.",
+      "initial": "M",
+      "stats": [
+        "Attack",
+        "Defense",
+        "Mobility"
+      ],
+      "skills": {
+        "moss-ult": {
+          "name": "Briar Garden",
+          "description": "Root the target area · Root enemies and restore health",
+          "kind": "Ultimate"
+        },
+        "moss-vine": {
+          "name": "Barkskin Bastion",
+          "description": "Gain damage reduction · Melee attackers take thorn damage",
+          "kind": "Skill"
+        },
+        "moss-bark": {
+          "name": "Spore Bloom",
+          "description": "Burst in the target area · Damage over time",
+          "kind": "Skill"
+        }
+      }
+    },
+    "luna": {
+      "name": "Lunar Eclipse",
+      "class_name": "Lunar Artillery",
+      "tagline": "Bring down the night sky from a safe distance.",
+      "initial": "L",
+      "stats": [
+        "Attack",
+        "Defense",
+        "Mobility"
+      ],
+      "skills": {
+        "luna-ult": {
+          "name": "Crescent Meteor",
+          "description": "Choose a distant impact point · Large burst",
+          "kind": "Ultimate"
+        },
+        "luna-orbit": {
+          "name": "Crescent Wave",
+          "description": "Fire a moonblade at the nearest enemy · Pierce in a line",
+          "kind": "Skill"
+        },
+        "luna-phase": {
+          "name": "Moonshadow Shift",
+          "description": "Blink in your movement direction · Gain 30 shield",
+          "kind": "Skill"
+        }
+      }
+    },
+    "tech": {
+      "name": "Tech Fighter",
+      "class_name": "Holographic Skirmisher",
+      "tagline": "Take control with tablets, afterimages, and chained dashes.",
+      "initial": "T",
+      "stats": [
+        "Attack",
+        "Defense",
+        "Mobility"
+      ],
+      "skills": {
+        "tech-ult": {
+          "name": "Overclock Assault",
+          "description": "Stun enemies in basic attack range · Dash in your movement direction",
+          "kind": "Ultimate"
+        },
+        "tech-tablets": {
+          "name": "Five-Screen Convergence",
+          "description": "Launch five tablets · Converge and explode at 200 range",
+          "kind": "Skill"
+        },
+        "tech-afterimage": {
+          "name": "Afterimage Return",
+          "description": "Leave an afterimage · Three invulnerable round-trip dashes that damage and knock back",
+          "kind": "Skill"
+        }
+      }
+    }
+  },
+  "upgrades": {
+    "attack-speed": {
+      "name": "Rapid-Fire Drive",
+      "description": "Basic attack speed +0.25/sec, up to 3.5/sec."
+    },
+    "armor": {
+      "name": "Nano Armor",
+      "description": "Take 8% less damage, up to 60% total reduction."
+    },
+    "power": {
+      "name": "Overloaded Ammo",
+      "description": "Deal 20% more damage."
+    },
+    "lifesteal": {
+      "name": "Bloodsucker Protocol",
+      "description": "Heal for 10% of damage dealt."
+    },
+    "dodge": {
+      "name": "Phase Dodge",
+      "description": "8% chance to completely dodge an incoming hit."
+    },
+    "vitality": {
+      "name": "Alloy Heart",
+      "description": "Gain 25 max health and restore 25 health."
+    },
+    "reactor": {
+      "name": "Pulse Reactor",
+      "description": "Restore energy 50% faster."
+    },
+    "fleet": {
+      "name": "Lightweight Joints",
+      "description": "Move 12% faster."
+    },
+    "medkit": {
+      "name": "Combat First Aid",
+      "description": "Immediately restore 35 health."
+    },
+    "coolant": {
+      "name": "Coolant Injection",
+      "description": "Immediately reduce current skill cooldowns by 2 seconds."
+    },
+    "cooldown": {
+      "name": "Time Fold",
+      "description": "Reduce skill cooldowns by 8%, up to 40%."
+    }
+  },
+  "battle": {
+    "messages": {
+      "眩晕中无法行动": "Stunned: unable to act",
+      "禁锢中无法移动": "Rooted: unable to move",
+      "探索者已被击败": "Explorer defeated",
+      "竞技胜利": "VICTORY",
+      "挑战失败": "DEFEAT",
+      "你击败了 AI 对手！": "You defeated the AI opponent!",
+      "AI 对手赢下了本场比赛。": "The AI opponent won the match.",
+      "选择强化，准备下一波": "Choose an upgrade before the next wave",
+      "敌人即将出现": "Enemies incoming",
+      "先赢下 4 分获得胜利": "First to 4 points wins",
+      "技能已达 3 阶；本次继续获得一项小强化。": "Max rank (3); gain a minor upgrade.",
+      "3阶 · 已满": "Rank 3 · MAX",
+      "交战中": "FIGHTING",
+      "波次完成": "CLEARED",
+      "集结中": "ASSEMBLING",
+      "眩晕": "Stun",
+      "禁锢": "Root",
+      "减速": "Slow",
+      "加速": "Haste",
+      "攻速加成": "Attack speed",
+      "荆棘护甲": "Thorn armor",
+      "中毒": "Poison",
+      "月影护盾": "Moon shield",
+      "无敌闪避": "INVULNERABLE",
+      "闪避": "DODGE",
+      "吸血": "LIFESTEAL",
+      "护盾": "SHIELD",
+      "荆棘反伤": "THORNS",
+      "普通攻击": "Basic attack",
+      "技能施放": "Skill cast",
+      "不能行动": "cannot act",
+      "失败": "failed",
+      "伤害": "damage",
+      "能量不足": "Not enough energy",
+      "无法施放其他技能": "cannot cast other skills",
+      "残影折返尚未结束，暂时": "Afterimage Return is still in progress; temporarily ",
+      "路障": "Barricade",
+      "废弃商场": "Abandoned Mall",
+      "旧城区": "Old Town",
+      "信号塔基站": "Signal Tower",
+      "物流中心": "Logistics Center",
+      "地铁入口": "Metro Entrance",
+      "地下车库": "Underground Garage",
+      "中央枢纽": "Central Hub",
+      "维修厂": "Repair Workshop",
+      "高墙区": "High Wall District",
+      "旧体育馆": "Old Stadium",
+      "变电站": "Substation",
+      "废弃工厂": "Abandoned Factory",
+      "货运仓库": "Freight Depot",
+      "人机对抗": "AI DUEL",
+      "局域网房间": "LAN ROOM",
+      "AI 对手": "AI Opponent",
+      "探索提示：靠近闪光物资后按 F 收集；Q / E / R 释放技能。": "Tip: approach glowing supplies and press F to collect; use Q / E / R to cast skills.",
+      "人机对抗开始！先赢下 4 分获胜，SPACE 普攻，Q / E / R 释放技能。": "AI duel started! First to 4 points wins. SPACE to attack, Q / E / R to use skills.",
+      "再战一局": "Play Again",
+      "等待其他玩家同步位置…": "Waiting for other players to sync positions...",
+      "选择一项强化，十秒后自动开始下一回合。": "Choose an upgrade; the next round starts automatically in 10 seconds."
+    },
+    "patterns": [
+      [
+        "第 (\\d+) 波来袭！准备迎战。",
+        "Wave $1 incoming! Prepare for battle."
+      ],
+      [
+        "第 (\\d+) 波 · (交战中|波次完成|集结中)",
+        "WAVE $1 · $2"
+      ],
+      [
+        "场上 (\\d+) · 正在接近 (\\d+)",
+        "$1 alive · $2 approaching"
+      ],
+      [
+        "剩余敌人 (\\d+)",
+        "$1 enemies remaining"
+      ],
+      [
+        "你 (\\d+) : (\\d+) AI · 第 (\\d+) 回合",
+        "YOU $1 : $2 AI · ROUND $3"
+      ],
+      [
+        "下一回合 (\\d+) 秒后开始",
+        "Next round starts in $1s"
+      ],
+      [
+        "第 (\\d+) 回合结束 · 选择强化",
+        "Round $1 over · Choose an upgrade"
+      ],
+      [
+        "已获得强化：(.+)。等待下一回合开始。",
+        "Upgrade acquired: $1. Waiting for the next round."
+      ],
+      [
+        "获得强化：(.+)。下一波即将开始。",
+        "Upgrade acquired: $1. Next wave soon."
+      ],
+      [
+        "最终比分 (\\d+) : (\\d+)。(.+)",
+        "Final score $1 : $2. $3"
+      ],
+      [
+        "你倒在第 (\\d+) 波。整备后再挑战一次。",
+        "You fell in wave $1. Prepare and try again."
+      ],
+      [
+        "选择技能强化 · 第 (\\d+) 级",
+        "CHOOSE A SKILL UPGRADE · LEVEL $1"
+      ],
+      [
+        "击败敌人获得技能经验，当前还有 (\\d+) 次强化待选择。",
+        "Defeat enemies to gain skill XP. $1 upgrade choice(s) remaining."
+      ],
+      [
+        "小强化：(.+)。本次升阶将解锁：(.+)。",
+        "Minor upgrade: $1. Rank up to unlock: $2."
+      ],
+      [
+        "小强化：(.+)（(\\d+)/(\\d+)），逐步解锁新的技能效果。",
+        "Minor upgrade: $1 ($2/$3). Keep progressing to unlock a new effect."
+      ],
+      [
+        "(.+) · (\\d+) 阶",
+        "$1 · RANK $2"
+      ],
+      [
+        "技能强化完成：(.+)",
+        "Skill upgrade complete: $1"
+      ],
+      [
+        "攻击 (.+)，服务器将校验距离并同步伤害。",
+        "Attacking $1. The server validates range and syncs damage."
+      ],
+      [
+        "同局玩家 (\\d+) 人：(.+)",
+        "$1 players in this room: $2"
+      ],
+      [
+        "\\+(\\d+) 技能经验",
+        "+$1 Skill XP"
+      ],
+      [
+        "附近没有可收集的物资。",
+        "No supplies nearby to collect."
+      ],
+      [
+        "收集成功：恢复 (\\d+) 点生命。",
+        "Collected: restored $1 health."
+      ],
+      [
+        "收集成功：恢复 (\\d+) 点能量。",
+        "Collected: restored $1 energy."
+      ],
+      [
+        "弦月穿波贯穿前方 (\\d+) 距离，命中 (\\d+) 个敌人。",
+        "Crescent Wave pierces up to $1 range, hitting $2 enemies."
+      ],
+      [
+        "五台平板出击：击退沿途敌人，并在前方 (\\d+) 米汇聚爆炸。",
+        "Five tablets launched: knock back enemies along the path and converge at $1 for an explosion."
+      ],
+      [
+        "残影折返：前后冲刺 (\\d+) 次，路径上的敌人会受到伤害并被击退。",
+        "Afterimage Return: dash back and forth $1 times, damaging and knocking back enemies along the path."
+      ],
+      [
+        "五屏汇聚爆炸：范围内命中 (\\d+) 个敌人并施加减速。",
+        "Tablet convergence hits $1 enemies and slows them."
+      ],
+      [
+        "残影折返结束：完成 (\\d+) 次往返冲刺。",
+        "Afterimage Return complete: $1 round-trip dashes."
+      ],
+      [
+        "收集成功：生命值已满。",
+        "Collected: health is already full."
+      ],
+      [
+        "收集成功：能量已满。",
+        "Collected: energy is already full."
+      ],
+      [
+        "技能配置缺失，请检查英雄技能数据。",
+        "Skill data is missing. Check the hero configuration."
+      ],
+      [
+        "(.+) 冷却中，还需 ([\\d.]+) 秒。",
+        "$1 is on cooldown for $2s."
+      ],
+      [
+        "能量不足：(.+) 需要 (\\d+) 点能量。",
+        "Not enough energy: $1 requires $2 energy."
+      ],
+      [
+        "(.+) 施放失败：范围内没有敌人（最大距离 (\\d+)）。",
+        "$1 failed: no enemies in range (max range $2)."
+      ],
+      [
+        "树皮壁垒展开：受到伤害降低 (\\d+)% ，近战敌人会被荆棘反伤。",
+        "Barkskin active: damage taken reduced by $1%; melee attackers take thorn damage."
+      ],
+      [
+        "树皮壁垒展开：受到伤害降低 (\\d+)% ，近战敌人会被荆棘反伤。",
+        "Barkskin active: damage taken reduced by $1%; melee attackers take thorn damage."
+      ],
+      [
+        "超频突袭：眩晕周围 (\\d+) 个敌人，并冲刺 (\\d+) 距离。",
+        "Overclock Assault stuns $1 nearby enemies and dashes $2."
+      ],
+      [
+        "月影相移：闪现 (\\d+) 距离，并获得 (\\d+) 点护盾，持续 ([\\d.]+) 秒。",
+        "Moonshadow Shift blinks $1 and grants $2 shield for $3s."
+      ],
+      [
+        "(.+) 生效：下次普攻造成额外伤害并击退敌人。",
+        "$1 active: your next basic attack deals bonus damage and knocks back."
+      ],
+      [
+        "(.+) 突进 (\\d+) 距离，(\\d+) 范围内命中 (\\d+) 个敌人，造成伤害并眩晕。",
+        "$1 dashes $2, hitting $4 enemies within $3 for damage and stun."
+      ],
+      [
+        "荆棘花园扎根：禁锢 (\\d+) 个敌人，造成范围伤害并回复 (\\d+) 生命。",
+        "Briar Garden roots $1 enemies, dealing area damage and restoring $2 health."
+      ],
+      [
+        "孢子绽放：(\\d+) 个敌人中毒，持续受到伤害。",
+        "Spore Bloom poisons $1 enemies, dealing damage over time."
+      ],
+      [
+        "新月陨星落地：(\\d+) 个敌人受到 (\\d+) 点范围伤害。",
+        "Crescent Meteor hits $1 enemies for $2 area damage."
+      ],
+      [
+        "(.+) 释放成功：(.+) 持续 ([\\d.]+) 秒。",
+        "$1 successful: $2 for $3s."
+      ],
+      [
+        "(.+) 命中，造成 (\\d+) 点伤害并施加(.+)。",
+        "$1 hit for $2 damage and applied $3."
+      ],
+      [
+        "(.+) 命中，造成 (\\d+) 点伤害。",
+        "$1 hit for $2 damage."
+      ],
+      [
+        "普攻未命中：将敌人保持在 (\\d+)",
+        "Basic attack missed: keep enemies within $1"
+      ],
+      [
+        "普攻未命中：靠近敌人至 (\\d+)",
+        "Basic attack missed: move within $1"
+      ],
+      [
+        "(.+) 冲刺 (\\d+) 距离，命中路径上 (\\d+) 个敌人。",
+        "$1 dashed $2, hitting $3 enemies along the path."
+      ],
+      [
+        "(.+) 向前冲刺 (\\d+) 距离，路径上没有敌人。",
+        "$1 dashed forward $2; no enemies along the path."
+      ],
+      [
+        "(.+) 失败：(.+)",
+        "$1 failed: $2"
+      ],
+      [
+        "敌人保持在 (\\d+)",
+        "keep enemies within $1"
+      ],
+      [
+        "距离内再攻击。",
+        " range before attacking."
+      ],
+      [
+        "附近没有存活敌人，等待下一波出现。",
+        "No living enemies nearby. Waiting for the next wave."
+      ],
+      [
+        "强化普攻命中，造成 (\\d+) 点伤害并击退敌人！",
+        "Empowered basic attack hit for $1 damage and knocked the enemy back!"
+      ],
+      [
+        "普通攻击命中，造成 (\\d+) 点伤害。",
+        "Basic attack hit for $1 damage."
+      ],
+      [
+        "获得强化：(.+)",
+        "Upgrade acquired: $1"
+      ],
+      [
+        "防御减伤 (\\d+)%：受到 (\\d+) 点生命伤害(，护盾吸收 (\\d+))?。",
+        "Defense reduced damage by $1%: took $2 health damage$3."
+      ],
+      [
+        "-(\\d+) 护盾",
+        "-$1 shield"
+      ],
+      [
+        "荆棘反伤 (\\d+)",
+        "Thorns $1"
+      ],
+      [
+        "\\+(\\d+) 吸血",
+        "+$1 lifesteal"
+      ],
+      [
+        "已恢复与房间的连接。",
+        "Reconnected to the room."
+      ],
+      [
+        "联机连接中断，请返回大厅重新加入。",
+        "Connection lost. Return to the lobby and rejoin."
+      ],
+      [
+        "这一波没有存活敌人，等待下一波出现。",
+        "No living enemies this wave. Waiting for the next wave."
+      ],
+      [
+        "生命值已满。",
+        "Health is already full."
+      ],
+      [
+        "能量已满。",
+        "Energy is already full."
+      ],
+      [
+        "(\\d+)阶 · 小强化 (\\d+)/(\\d+)",
+        "RANK $1 · MINOR $2/$3"
+      ],
+      [
+        "([\\d.]+) 次/秒 · 回复 5 能量",
+        "$1/sec · restores 5 energy"
+      ],
+      [
+        "([\\d.]+) 次/秒",
+        "$1/sec"
+      ],
+      [
+        "攻速 ([\\d.]+)/秒 · 防御 (\\d+)% · 吸血 (\\d+)% · 闪避 (\\d+)%",
+        "ATK SPD $1/s · DEF $2% · LIFESTEAL $3% · DODGE $4%"
+      ],
+      [
+        "\\d+(\\.\\d+)? 次/秒 · 防御 (\\d+)% · 吸血 (\\d+)% · 闪避 (\\d+)%",
+        "ATK SPD $1/s · DEF $2% · LIFESTEAL $3% · DODGE $4%"
+      ],
+      [
+        "等待其他玩家同步位置…",
+        "Waiting for other players to sync…"
+      ],
+      [
+        "人机对抗开始！先赢下 4 分获胜，SPACE 普攻，Q / E / R 释放技能。",
+        "AI duel started! First to 4 points wins. SPACE to attack, Q / E / R to use skills."
+      ],
+      [
+        "探索提示：靠近闪光物资后按 F 收集；Q / E / R 释放技能。",
+        "Tip: approach glowing supplies and press F to collect; use Q / E / R to cast skills."
+      ],
+      [
+        "局域网房间 (.+)",
+        "LAN ROOM $1"
+      ],
+      [
+        "(\\d+) 人 · 防御",
+        "$1 players · DEF"
+      ],
+      [
+        "(.+)失败：(.+)",
+        "$1 failed: $2"
+      ]
+    ],
+    "phrases": {
+      "小强化": "Minor upgrade",
+      "作用范围": "Area",
+      "效果持续时间": "Effect duration",
+      "伤害小幅提升": "Slightly increased damage",
+      "技能距离": "Skill range",
+      "护盾值": "Shield",
+      "技能冷却": "Cooldown",
+      "眩晕时间": "Stun duration",
+      "范围眩晕半径": "AoE stun radius",
+      "强化普攻额外伤害": "Empowered attack bonus damage",
+      "强化普攻可波及周围敌人": "Empowered attacks hit nearby enemies",
+      "冲刺距离": "Dash distance",
+      "冲刺伤害提高": "Dash damage increased",
+      "荆棘花园半径": "Briar Garden radius",
+      "禁锢时间": "Root duration",
+      "回复生命": "restore health",
+      "荆棘壁垒持续时间": "Barkskin duration",
+      "减伤提升": "Damage reduction increased",
+      "荆棘反伤提高至": "Thorn damage increased to",
+      "中毒每秒伤害": "Poison damage per second",
+      "中毒持续时间": "Poison duration",
+      "陨星爆炸半径": "Meteor blast radius",
+      "月刃伤害": "Moonblade damage",
+      "月刃飞行距离": "Moonblade range",
+      "获得护盾": "Gain shield",
+      "护盾持续时间": "Shield duration",
+      "平板合击爆炸半径": "Tablet convergence blast radius",
+      "减速持续时间": "Slow duration",
+      "残影冲刺伤害提高": "Afterimage dash damage increased",
+      "额外增加一次往返冲刺": "Gain one extra round-trip dash",
+      "技能效果强化": "Skill effect enhanced",
+      "解锁新的技能效果": "Unlock a new skill effect",
+      "逐步解锁新的技能效果。": "Keep progressing to unlock a new effect."
+    },
+    "obstacles": {
+      "路障": "Barricade",
+      "废弃商场": "Abandoned Mall",
+      "旧城区": "Old Town",
+      "信号塔基站": "Signal Tower",
+      "物流中心": "Logistics Center",
+      "地铁入口": "Metro Entrance",
+      "地下车库": "Underground Garage",
+      "中央枢纽": "Central Hub",
+      "维修厂": "Repair Workshop",
+      "高墙区": "High Wall District",
+      "旧体育馆": "Old Stadium",
+      "变电站": "Substation",
+      "废弃工厂": "Abandoned Factory",
+      "货运仓库": "Freight Depot"
+    },
+    "effects": {
+      "加速": "Movement speed up",
+      "攻速加成": "Attack speed up",
+      "攻击力加成": "Attack damage up",
+      "强化普攻": "Next basic attack empowered with knockback",
+      "眩晕": "Stun",
+      "禁锢": "Root",
+      "减速": "Slow",
+      "荆棘护甲": "Thorn armor",
+      "中毒": "Poison",
+      "月影护盾": "Moon shield"
+    }
+  },
+  "lobby": {
+    "messages": {
+      "请先输入昵称。": "Enter a player name first.",
+      "请选择有效英雄。": "Select a valid fighter.",
+      "房间已关闭，请重新加入。": "The room has closed. Please rejoin.",
+      "服务器没有返回房间信息。": "The server did not return room details.",
+      "创建房间失败。": "Could not create the room.",
+      "加入房间失败。": "Could not join the room.",
+      "无法开始游戏。": "Could not start the match.",
+      "房间列表加载失败": "Could not load the room list.",
+      "房间不存在或已关闭。": "The room does not exist or has closed.",
+      "该房间已经开始游戏。": "The match in this room has already started.",
+      "房间人数已满。": "The room is full.",
+      "你已离开房间，请重新加入。": "You left the room. Please rejoin.",
+      "只有房主可以开始游戏。": "Only the host can start the match.",
+      "至少需要两名玩家才能开始。": "At least two players are required to start.",
+      "玩家坐标无效。": "Invalid player coordinates.",
+      "玩家坐标超出地图范围。": "Player coordinates are outside the map.",
+      "房间已关闭或你已掉线。": "The room has closed or you disconnected.",
+      "房间尚未开始。": "The match has not started yet.",
+      "暂时没有等待中的房间，创建一个吧。": "No rooms are waiting. Create one!",
+      "不可加入": "FULL",
+      "加入": "JOIN",
+      "房主": "HOST",
+      "你": "YOU",
+      "无法获取局域网地址。": "Could not detect the local network address.",
+      "未检测到局域网地址，请确认设备已连接网络。": "No local network address found. Check your network connection.",
+      "局域网地址获取失败。": "Could not fetch the local network address.",
+      "至少需要 2 名玩家，分享房间码邀请朋友加入。": "At least 2 players are required. Share the room code with a friend.",
+      "玩家已就绪，房主可以开始探索。": "Players are ready. The host can start the match.",
+      "等待房主开始游戏…": "Waiting for the host to start…",
+      "请求失败": "Request failed",
+      "人": "players"
+    },
+    "patterns": [
+      [
+        "(.+) 的房间",
+        "$1's room"
+      ],
+      [
+        "(\\d+)/(\\d+) 人",
+        "$1/$2 players"
+      ],
+      [
+        "请求失败 \\((\\d+)\\)",
+        "Request failed ($1)"
+      ]
+    ],
+    "room_name": "{name}'s room",
+    "player_separator": ", ",
+    "you": " (YOU)",
+    "host": " · HOST"
+  }
+}

@@ -1,63 +1,129 @@
-# 2D大击败
+# 2D大击败 / 2DFight Arena
 
-Flask renders the pages and hero configuration. The free-roam map is written in TypeScript and compiled to `static/app.js`, which the Flask template loads.
+**中文** | [English](#2dfight-arena)
 
-## Run
+《2D大击败》是一款基于 Flask、HTML、CSS 和 TypeScript 的赛博风 2D 战斗竞技场游戏。选择英雄，在霓虹废墟中迎战敌人、挑战 AI，或与局域网好友组队。游戏支持中英文界面，英文名称为 **2DFight Arena**。
+
+## 游戏模式
+
+- **单机肉鸽**：挑战不断增强的敌潮，每波结束后选择战斗强化。击败敌人可获得技能经验，升级时可强化英雄技能；肉鸽战斗支持暂停。
+- **人机对抗**：与 AI 一对一较量，先赢得四分获胜。每回合结束后可选择强化，十秒后开始下一回合。
+- **局域网联机**：创建或加入房间，与同一局域网的玩家共同战斗。玩家位置、玩家间攻击伤害、生命、能量和控制效果由 Flask 房间服务同步。
+
+## 操作
+
+| 按键 | 操作 |
+| --- | --- |
+| `WASD` / 方向键 | 移动 |
+| `Q`、`E`、`R` | 施放英雄技能 |
+| `Space` | 普通攻击 |
+| `F` | 拾取附近物资 |
+| `P` / `Esc` | 暂停或继续单机肉鸽战斗 |
+
+普通攻击基础攻速为每秒两次，可通过强化提升。英雄拥有不同技能和防御能力；肉鸽强化还包括攻击、防御、吸血、闪避、移动速度、能量恢复和冷却缩减。击败敌人可获得技能经验，技能通过小强化逐步升阶并解锁新效果。
+
+## 本地运行
+
+需要 Python、Node.js 和 npm。安装依赖、构建前端并启动 Flask：
 
 ```powershell
 pip install -r requirements.txt
-bun install
-bun run build
-python server_gui.py
+npm install
+npm run build
+python app.py
 ```
 
-The GUI starts the server on port `5000` and displays the LAN URL to share with other players. They must be on the same network and open that URL in a browser. To run without the GUI, use `python app.py`; it also binds to `0.0.0.0:5000`.
+也可以运行 `python server_gui.py` 启动带局域网地址显示的服务。局域网玩家连接同一网络后，可在浏览器中打开主机显示的地址。房间状态保存在内存中，服务停止后会清除。
 
-## Windows desktop release (1.0.5)
+## Windows 桌面版 1.1.0
 
-Install the Node dependencies and compile the clients:
+构建 Windows x64 安装程序：
 
 ```powershell
 npm install
 npm run dist:win
 ```
 
-The build creates an isolated Python environment and packages Flask into the desktop app, so players do not need to install Python. The Windows x64 installer is written to `release-installer/`. To build a portable executable instead, use `npm run dist:portable`; it is written to `release-portable/`. Separate output folders prevent Electron's unpacked staging directories from conflicting between builds. The Electron desktop app bundles and starts its own Flask service, opens the game window, and shows the local-network multiplayer URL in the lobby. Keep the desktop app running while LAN guests are connected. Windows Firewall may ask permission for network access.
+安装程序生成在 `release-installer/`。便携版可通过 `npm run dist:portable` 构建到 `release-portable/`。桌面程序自带并启动 Flask 服务；作为局域网房主时，请保持桌面程序运行，并允许 Windows 防火墙访问网络。
 
-## Roguelike run
+## 开发
 
-The battle map is a wave-based survival run. Enemies spawn in increasing numbers and gain health and damage as waves progress; clear a wave to pick one of three upgrades before the next begins. Grunts, fast runners, and heavy brutes have different stats. Basic attacks start at 2 hits per second; attack-speed upgrades add 0.25 hits per second, up to 3.5. Hero defense reduces incoming damage based on the selected fighter, and armor upgrades add up to 8 percentage points of damage reduction, capped at 60%. Other upgrades improve attack damage, lifesteal, dodge chance, health, energy regeneration, movement, or cooldowns. Lifesteal heals 10% of damage per upgrade and dodge adds 8% chance per upgrade; both cap at 60%. Killing enemies grants skill experience (grunts 10, runners 18, brutes 30); filling the experience bar pauses combat so one of the three hero skills can be selected for a minor upgrade. Each skill advances from rank 1 to 2 after three minor upgrades, then to rank 3 after four more, unlocking a skill-specific effect at each rank. Cooldown-reduction upgrades shorten ability cooldowns by 8% each, up to 40%.
+- `frontend/map.ts`：地图与战斗逻辑
+- `frontend/select.ts`：英雄选择页面
+- `frontend/multiplayer.ts`：联机大厅
+- `locale/zh.json`、`locale/en.json`：中英文语言包
+- `static/app.js`、`static/select.js`、`static/multiplayer.js`：由 TypeScript 编译生成，请修改对应的 `frontend/*.ts` 源文件
 
-The home page also has a one-on-one AI duel. Choose a hero and win four rounds before the opponent does; between rounds, choose a permanent run upgrade during a 10-second break. The AI selects a different hero and gains health, damage, and defense as rounds progress. AI basic attacks use the same defense reduction, while player basic attacks are rate-limited to the displayed attack speed.
+```powershell
+npm run typecheck
+npm run build
+```
 
-The heroes now have distinct combat identities: the fighter dashes into the nearest enemy with an area stun, can empower a knockback basic attack, and has a damaging fixed-distance dash; the moss guardian roots groups, reflects damage while protected, and poisons enemies; the lunar mage fires ranged moonlight attacks, calls down an area meteor, pierces enemies with moon blades, and can dash while shielded; the tech fighter attacks from range, sends five tablets converging in an explosive slow, and leaves an afterimage while dashing forward and back three times. The afterimage dash grants invulnerability and damages and knocks back enemies along each dash path. His ultimate stuns nearby enemies and dashes in the movement direction.
+浏览器标签页和桌面窗口图标会随所选语言切换。中文图标为 `assets/2d_da_jibai_ico.ico`，英文图标为 `assets/2d_da_jibai_ico_en.ico`。新增或修改界面、英雄、强化、战斗提示和联机大厅文案时，请保持两份语言包的键结构一致。
 
-Hits now create a colored burst of sparks and a glowing impact ring. The tech fighter's tablet convergence has an additional larger explosion effect.
+---
 
-LAN rooms synchronize player positions, PvP attack damage, health, energy, and crowd-control effects through the Flask server. The server checks attacker identity, attack range, skill cost/cooldowns, and invulnerability before applying damage. Tech's afterimage dash registers its invulnerability window with the room server. PvE enemy waves and roguelike upgrades remain local to each browser and are not shared.
+<a id="2dfight-arena"></a>
 
-Open `/multiplayer`, enter a nickname, create a room, and share its room code. The host starts the map after at least one other player joins.
+## 2DFight Arena
 
-The same TypeScript commands also work through npm: `npm install`, `npm run build`, and `npm run typecheck`.
+**English** | [中文](#2d大击败--2dfight-arena)
 
-## Map controls
+2DFight Arena is a cyberpunk 2D combat arena built with Flask, HTML, CSS, and TypeScript. Pick a hero, fight through neon ruins, challenge an AI opponent, or battle with friends over a local network. The interface is available in English and Chinese.
 
-- `WASD` or arrow keys: move.
-- `Q`, `E`, `R`: cast the three selected hero skills.
-- `Space`: basic attack a nearby enemy.
-- Basic attacks are limited by the displayed attacks-per-second stat (2 per second by default).
-- `F`: collect a nearby health or energy supply in roguelike mode.
+### Game modes
 
-The map HUD shows health, energy, collected supplies, skill cooldowns, and cast feedback. Enemy-targeted skills require a nearby target; failed casts explain whether the skill is cooling down, short on energy, or out of range.
-In solo roguelike runs, pause and resume with `P` or `Esc`, or use the on-screen pause button. Pause is disabled in LAN multiplayer.
+- **Roguelike**: Survive escalating enemy waves and choose a combat upgrade after each wave. Defeating enemies grants skill experience; leveling up lets you improve a hero skill. Solo runs can be paused.
+- **AI duel**: Fight one-on-one against an AI opponent. The first fighter to win four rounds takes the match. Choose an upgrade between rounds; the next round starts after ten seconds.
+- **LAN multiplayer**: Create or join a room and play with people on the same local network. The Flask room service synchronizes player positions, PvP damage, health, energy, and crowd-control effects.
 
-In a LAN room, players share the same map; player positions, PvP damage, health, energy, and crowd-control status are synchronized by the Flask server. Room membership and combat state are in memory and are cleared when the server stops.
+### Controls
 
-## Frontend development
+| Key | Action |
+| --- | --- |
+| `WASD` / Arrow keys | Move |
+| `Q`, `E`, `R` | Cast hero skills |
+| `Space` | Basic attack |
+| `F` | Collect nearby supplies |
+| `P` / `Esc` | Pause or resume a solo roguelike run |
 
-- Edit the map in `frontend/map.ts`.
-- Edit the hero selection page in `frontend/select.ts`.
-- Run `bun run typecheck` to check types without emitting files.
-- Run `bun run build` to compile the TypeScript clients to `static/`.
+Basic attacks start at two attacks per second and can be improved with upgrades. Heroes have distinct skills and defenses. Roguelike upgrades can also improve attack, defense, lifesteal, dodge, movement, energy regeneration, and cooldown reduction. Skill upgrades unlock new effects as skills rank up.
 
-`static/app.js`, `static/multiplayer.js`, and `static/select.js` are generated outputs; make changes in the corresponding `frontend/*.ts` source files.
+### Run locally
+
+Install Python and Node.js, then install dependencies, build the frontend, and start Flask:
+
+```powershell
+pip install -r requirements.txt
+npm install
+npm run build
+python app.py
+```
+
+Alternatively, run `python server_gui.py` to start the server with a LAN address display. Players must be on the same network to join using the host's address. Room state is kept in memory and is cleared when the server stops.
+
+### Windows desktop release 1.1.0
+
+Build the Windows x64 installer:
+
+```powershell
+npm install
+npm run dist:win
+```
+
+The installer is written to `release-installer/`. Build a portable application with `npm run dist:portable`; its output goes to `release-portable/`. The desktop app bundles and starts Flask. Keep it running while hosting a LAN room, and allow network access through Windows Firewall.
+
+### Development
+
+- `frontend/map.ts`: map and combat logic
+- `frontend/select.ts`: hero selection page
+- `frontend/multiplayer.ts`: multiplayer lobby
+- `locale/zh.json`, `locale/en.json`: Chinese and English language packs
+- `static/app.js`, `static/select.js`, `static/multiplayer.js`: generated TypeScript outputs; edit the corresponding `frontend/*.ts` files instead
+
+```powershell
+npm run typecheck
+npm run build
+```
+
+The browser-tab and desktop-window icons follow the selected language. The Chinese icon is `assets/2d_da_jibai_ico.ico`; the English icon is `assets/2d_da_jibai_ico_en.ico`. Keep the two locale files' key structures aligned when adding or changing UI, hero, upgrade, battle, or lobby text.

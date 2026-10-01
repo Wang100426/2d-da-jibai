@@ -1,8 +1,38 @@
+interface LocalePackage {
+  code: string;
+  ui: Record<string, string>;
+  heroes: Record<string, {
+    name: string;
+    class_name: string;
+    tagline: string;
+    initial: string;
+    stats: string[];
+    skills: Record<string, { name: string; description: string; kind: string }>;
+  }>;
+  upgrades: Record<string, { name: string; description: string }>;
+  battle: {
+    messages: Record<string, string>;
+    patterns: Array<[string, string]>;
+    phrases: Record<string, string>;
+    obstacles: Record<string, string>;
+    effects: Record<string, string>;
+  };
+  lobby: {
+    messages: Record<string, string>;
+    patterns: Array<[string, string]>;
+    room_name: string;
+    player_separator: string;
+    you: string;
+    host: string;
+  };
+}
+
 interface MapConfig {
   name: string;
   initial: string;
   accent: string;
   skills: SkillConfig[];
+  locale: LocalePackage;
   duel: boolean;
   defense: number;
   multiplayer: {
@@ -221,6 +251,25 @@ const context = requireContext(world);
 const minimap = requireElement<HTMLCanvasElement>("#minimap");
 const miniContext = requireContext(minimap);
 const config = getMapConfig();
+const locale = config.locale;
+const english = locale.code === "en";
+const tx = (source: string): string => localizeBattleText(source);
+
+function localizeBattleText(value: string): string {
+  let text = value;
+  if (english) {
+    for (const [pattern, replacement] of locale.battle.patterns) {
+      text = text.replace(new RegExp(pattern), replacement);
+    }
+    for (const [phrase, translation] of Object.entries(locale.battle.phrases)) {
+      text = text.replaceAll(phrase, translation);
+    }
+  }
+  for (const [source, translation] of Object.entries(locale.battle.messages)) {
+    text = text.replaceAll(source, translation);
+  }
+  return text;
+}
 
 const map = { width: config.duel ? 1400 : 3200, height: config.duel ? 900 : 2400 };
 const player = {
@@ -359,8 +408,8 @@ function playerActionsLocked(): boolean {
 }
 
 function showControlBlocked(action: string): void {
-  const reason = hasPlayerEffect("眩晕") ? "眩晕中无法行动" : "禁锢中无法移动";
-  showToast(`${action}失败：${reason}。`, "warning");
+  const reason = hasPlayerEffect("眩晕") ? tx("眩晕中无法行动") : tx("禁锢中无法移动");
+  showToast(tx(`${action}失败：${reason}。`), "warning");
 }
 
 const obstacles: Obstacle[] = [
@@ -396,42 +445,42 @@ const roads: Rectangle[] = [
 const upgradePool: UpgradeChoice[] = [
   {
     id: "attack-speed",
-    name: "高频驱动",
-    description: "普通攻击速度提高 0.25 次/秒，最高 3.5 次/秒。",
+    name: locale.upgrades["attack-speed"].name,
+    description: locale.upgrades["attack-speed"].description,
     available: () => playerState.attackSpeed < 3.5,
     apply: () => { playerState.attackSpeed = Math.min(3.5, playerState.attackSpeed + 0.25); },
   },
   {
     id: "armor",
-    name: "纳米装甲",
-    description: "受到的伤害额外降低 8%，最多降低至 60%。",
+    name: locale.upgrades.armor.name,
+    description: locale.upgrades.armor.description,
     available: () => playerState.damageReduction < 0.6,
     apply: () => { playerState.damageReduction = Math.min(0.6, playerState.damageReduction + 0.08); },
   },
   {
     id: "power",
-    name: "超载弹药",
-    description: "攻击伤害提高 20%。",
+    name: locale.upgrades.power.name,
+    description: locale.upgrades.power.description,
     apply: () => { playerState.damageMultiplier += 0.2; },
   },
   {
     id: "lifesteal",
-    name: "噬血协议",
-    description: "造成伤害时回复相当于伤害 10% 的生命。",
+    name: locale.upgrades.lifesteal.name,
+    description: locale.upgrades.lifesteal.description,
     available: () => playerState.lifesteal < 0.6,
     apply: () => { playerState.lifesteal = Math.min(0.6, playerState.lifesteal + 0.1); },
   },
   {
     id: "dodge",
-    name: "相位闪避",
-    description: "受到攻击时有 8% 概率完全闪避本次伤害。",
+    name: locale.upgrades.dodge.name,
+    description: locale.upgrades.dodge.description,
     available: () => playerState.dodgeChance < 0.6,
     apply: () => { playerState.dodgeChance = Math.min(0.6, playerState.dodgeChance + 0.08); },
   },
   {
     id: "vitality",
-    name: "合金心脏",
-    description: "最大生命提高 25，并恢复同等生命。",
+    name: locale.upgrades.vitality.name,
+    description: locale.upgrades.vitality.description,
     apply: () => {
       playerState.maxHp += 25;
       playerState.hp = Math.min(playerState.maxHp, playerState.hp + 25);
@@ -439,34 +488,34 @@ const upgradePool: UpgradeChoice[] = [
   },
   {
     id: "reactor",
-    name: "脉冲反应堆",
-    description: "能量恢复速度提高 50%。",
+    name: locale.upgrades.reactor.name,
+    description: locale.upgrades.reactor.description,
     apply: () => { playerState.energyRegen += 0.75; },
   },
   {
     id: "fleet",
-    name: "轻量化关节",
-    description: "移动速度提高 12%。",
+    name: locale.upgrades.fleet.name,
+    description: locale.upgrades.fleet.description,
     apply: () => { player.speed *= 1.12; },
   },
   {
     id: "medkit",
-    name: "战场急救",
-    description: "立即恢复 35 点生命。",
+    name: locale.upgrades.medkit.name,
+    description: locale.upgrades.medkit.description,
     apply: () => { playerState.hp = Math.min(playerState.maxHp, playerState.hp + 35); },
   },
   {
     id: "coolant",
-    name: "冷却液注入",
-    description: "当前技能冷却立即缩短 2 秒。",
+    name: locale.upgrades.coolant.name,
+    description: locale.upgrades.coolant.description,
     apply: () => {
       skillCooldowns.forEach((remaining, id) => skillCooldowns.set(id, Math.max(0, remaining - 2)));
     },
   },
   {
     id: "cooldown",
-    name: "时间折叠",
-    description: "技能冷却时间缩短 8%，最多缩短 40%。",
+    name: locale.upgrades.cooldown.name,
+    description: locale.upgrades.cooldown.description,
     available: () => playerState.cooldownReduction < 0.4,
     apply: () => {
       playerState.cooldownReduction = Math.min(0.4, playerState.cooldownReduction + 0.08);
@@ -481,29 +530,29 @@ function updateWaveHud(): void {
   }
   const displayWave = waveState === "starting" ? wave + 1 : wave;
   const title = `第 ${displayWave} 波 · ${waveState === "active" ? "交战中" : waveState === "upgrade" ? "波次完成" : "集结中"}`;
-  if (waveTitle.textContent !== title) waveTitle.textContent = title;
+  if (waveTitle.textContent !== title) waveTitle.textContent = localizeBattleText(title);
   if (waveState === "active") {
     const alive = enemies.filter((enemy) => enemy.hp > 0).length;
     const subtitle = enemiesToSpawn > 0
-      ? `场上 ${alive} · 正在接近 ${enemiesToSpawn}`
-      : `剩余敌人 ${alive}`;
-    if (waveSubtitle.textContent !== subtitle) waveSubtitle.textContent = subtitle;
+      ? tx(`场上 ${alive} · 正在接近 ${enemiesToSpawn}`)
+      : tx(`剩余敌人 ${alive}`);
+    if (waveSubtitle.textContent !== subtitle) waveSubtitle.textContent = localizeBattleText(subtitle);
   } else {
-    const subtitle = waveState === "upgrade" ? "选择强化，准备下一波" : "敌人即将出现";
-    if (waveSubtitle.textContent !== subtitle) waveSubtitle.textContent = subtitle;
+    const subtitle = waveState === "upgrade" ? tx("选择强化，准备下一波") : tx("敌人即将出现");
+    if (waveSubtitle.textContent !== subtitle) waveSubtitle.textContent = localizeBattleText(subtitle);
   }
 }
 
 function updateDuelHud(): void {
-  const title = `你 ${duelPlayerScore} : ${duelBotScore} AI · 第 ${duelRound} 回合`;
+  const title = localizeBattleText(`你 ${duelPlayerScore} : ${duelBotScore} AI · 第 ${duelRound} 回合`);
   if (waveTitle.textContent !== title) waveTitle.textContent = title;
   const subtitle = duelRoundActive
-    ? "先赢下 4 分获得胜利"
-    : `下一回合 ${Math.max(0, Math.ceil(duelBreakRemaining))} 秒后开始`;
-  if (waveSubtitle.textContent !== subtitle) waveSubtitle.textContent = subtitle;
+    ? tx("先赢下 4 分获得胜利")
+    : tx(`下一回合 ${Math.max(0, Math.ceil(duelBreakRemaining))} 秒后开始`);
+  if (waveSubtitle.textContent !== subtitle) waveSubtitle.textContent = localizeBattleText(subtitle);
   const bot = enemies.find((enemy) => enemy.duelBot);
   if (bot) {
-    if (duelOpponentName && duelOpponentName.textContent !== bot.name) duelOpponentName.textContent = bot.name || "AI 对手";
+    if (duelOpponentName && duelOpponentName.textContent !== bot.name) duelOpponentName.textContent = bot.name || tx("AI 对手");
     if (duelOpponentHp) duelOpponentHp.style.width = `${Math.max(0, bot.hp / bot.maxHp * 100)}%`;
     if (duelOpponentVitals) duelOpponentVitals.textContent = `${Math.ceil(Math.max(0, bot.hp))} / ${bot.maxHp}`;
   }
@@ -520,13 +569,14 @@ function isSpawnPositionClear(x: number, y: number): boolean {
 function createDuelBot(): EnemyUnit {
   const availableHeroes = ["volt", "moss", "luna", "tech"].filter((id) => id !== getHeroId());
   const botHero = availableHeroes[Math.floor(Math.random() * availableHeroes.length)] || "volt";
-  const profiles: Record<string, { name: string; initial: string; accent: string; defense: number }> = {
-    volt: { name: "霓虹拳王", initial: "拳", accent: "pink", defense: 58 },
-    moss: { name: "苔藓守卫", initial: "苔", accent: "green", defense: 94 },
-    luna: { name: "月蚀术士", initial: "蚀", accent: "blue", defense: 48 },
-    tech: { name: "科技男", initial: "科", accent: "tech", defense: 58 },
+  const profiles: Record<string, { accent: string; defense: number }> = {
+    volt: { accent: "pink", defense: 58 },
+    moss: { accent: "green", defense: 94 },
+    luna: { accent: "blue", defense: 48 },
+    tech: { accent: "tech", defense: 58 },
   };
   const profile = profiles[botHero] || profiles.volt;
+  const localizedBot = locale.heroes[botHero] || locale.heroes.volt;
   const maxHp = 125 + (duelRound - 1) * 18;
   return {
     x: map.width / 2 + 220,
@@ -543,8 +593,8 @@ function createDuelBot(): EnemyUnit {
     experienceAwarded: true,
     duelBot: true,
     accent: profile.accent,
-    initial: profile.initial,
-    name: profile.name,
+    initial: localizedBot.initial,
+    name: localizedBot.name,
     skillTimer: 2.5,
     defenseReduction: Math.min(0.38, profile.defense / 250 + (duelRound - 1) * 0.015),
   };
@@ -702,7 +752,7 @@ function startWave(): void {
   enemiesToSpawn = Math.min(4 + wave * 2, 18);
   spawnTimer = 0.3;
   updateWaveHud();
-  showToast(`第 ${wave} 波来袭！准备迎战。`, "warning");
+  showToast(tx(`第 ${wave} 波来袭！准备迎战。`), "warning");
 }
 
 function showWaveUpgrade(): void {
@@ -729,7 +779,7 @@ function showWaveUpgrade(): void {
       playerState.energy = Math.min(playerState.maxEnergy, playerState.energy + 25);
       upgradeOverlay.hidden = true;
       updateHud();
-      showToast(`获得强化：${choice.name}。下一波即将开始。`);
+      showToast(tx(`获得强化：${choice.name}。下一波即将开始。`));
       waveState = "starting";
       breakTimer = 2;
       updateWaveHud();
@@ -771,7 +821,7 @@ function resize(): void {
 }
 
 function showToast(message: string, kind: "success" | "warning" = "success"): void {
-  toast.textContent = message;
+  toast.textContent = localizeBattleText(message);
   toast.classList.toggle("warning", kind === "warning");
   toast.classList.add("visible");
   window.clearTimeout(toastTimer);
@@ -787,7 +837,7 @@ function finishRun(): void {
   keys.clear();
   touchKeys.clear();
   finalWaveLabel.textContent = String(wave);
-  waveSubtitle.textContent = "探索者已被击败";
+  waveSubtitle.textContent = tx("探索者已被击败");
   runOverOverlay.hidden = false;
 }
 
@@ -806,9 +856,10 @@ function finishDuelRound(playerWon: boolean): void {
     const won = duelPlayerScore >= 4;
     const title = document.querySelector<HTMLElement>("#run-over-title");
     const description = document.querySelector<HTMLElement>("#run-over-description");
-    if (title) title.textContent = won ? "竞技胜利" : "挑战失败";
-    if (description) description.textContent = `最终比分 ${duelPlayerScore} : ${duelBotScore}。${won ? "你击败了 AI 对手！" : "AI 对手赢下了本场比赛。"}`;
-    retryRunButton.textContent = "再战一局";
+    if (title) title.textContent = won ? tx("竞技胜利") : tx("挑战失败");
+    if (description) description.textContent = tx(
+      `最终比分 ${duelPlayerScore} : ${duelBotScore}。${won ? "你击败了 AI 对手！" : "AI 对手赢下了本场比赛。"}`);
+    retryRunButton.textContent = tx("再战一局");
     runOverOverlay.hidden = false;
     return;
   }
@@ -821,8 +872,8 @@ function showDuelUpgrade(): void {
   }
   duelBreakRemaining = 10;
   duelUpgradePicked = false;
-  duelUpgradeTitle.textContent = `第 ${duelRound} 回合结束 · 选择强化`;
-  duelUpgradeSubtitle.textContent = "选择一项强化，十秒后自动开始下一回合。";
+  duelUpgradeTitle.textContent = tx(`第 ${duelRound} 回合结束 · 选择强化`);
+  duelUpgradeSubtitle.textContent = tx("选择一项强化，十秒后自动开始下一回合。");
   duelUpgradeChoicesCurrent = upgradePool
     .filter((choice) => choice.id !== "coolant" && (!choice.available || choice.available()))
     .sort(() => Math.random() - 0.5)
@@ -841,7 +892,7 @@ function showDuelUpgrade(): void {
       if (duelUpgradePicked || duelRoundActive) return;
       choice.apply();
       duelUpgradePicked = true;
-      duelUpgradeSubtitle.textContent = `已获得强化：${choice.name}。等待下一回合开始。`;
+      duelUpgradeSubtitle.textContent = tx(`已获得强化：${choice.name}。等待下一回合开始。`);
       duelUpgradeChoices.querySelectorAll<HTMLButtonElement>("button").forEach((item) => {
         item.disabled = true;
       });
@@ -884,8 +935,9 @@ function updateHud(): void {
     lastHudEnergy = energy;
   }
   lootCountLabel.textContent = `${lootCollected}`;
-  combatTraitsLabel.textContent =
-    `攻速 ${playerState.attackSpeed.toFixed(1)}/秒 · 防御 ${Math.round(playerState.damageReduction * 100)}% · 吸血 ${Math.round(playerState.lifesteal * 100)}% · 闪避 ${Math.round(playerState.dodgeChance * 100)}%`;
+  combatTraitsLabel.textContent = localizeBattleText(
+    `攻速 ${playerState.attackSpeed.toFixed(1)}/秒 · 防御 ${Math.round(playerState.damageReduction * 100)}% · 吸血 ${Math.round(playerState.lifesteal * 100)}% · 闪避 ${Math.round(playerState.dodgeChance * 100)}%`,
+  );
   skillExperienceBar.style.width = `${skillExperience / skillExperienceThreshold * 100}%`;
   skillExperienceLabel.textContent = `Lv.${skillExperienceLevel} · ${skillExperience} / ${skillExperienceThreshold}`;
   skillButtons.forEach((button, index) => {
@@ -895,8 +947,8 @@ function updateHud(): void {
     if (!skill || !progress || !rankLabel) return;
     const required = progress.tier === 1 ? 3 : progress.tier === 2 ? 4 : 0;
     rankLabel.textContent = required
-      ? `${progress.tier}阶 · 小强化 ${progress.minorUpgrades}/${required}`
-      : "3阶 · 已满";
+      ? tx(`${progress.tier}阶 · 小强化 ${progress.minorUpgrades}/${required}`)
+      : tx("3阶 · 已满");
   });
   const basicCooldown = basicAttackButton.querySelector<HTMLElement>(".skill-cooldown");
   if (basicCooldown) {
@@ -905,7 +957,7 @@ function updateHud(): void {
   const basicDescription = basicAttackButton.querySelector<HTMLElement>("small");
   if (basicDescription) {
     const rate = getEffectiveAttackSpeed();
-    const label = `${rate.toFixed(1)} 次/秒${config.duel ? "" : " · 回复 5 能量"}`;
+    const label = tx(`${rate.toFixed(1)} 次/秒${config.duel ? "" : " · 回复 5 能量"}`);
     if (basicDescription.textContent !== label) basicDescription.textContent = label;
   }
 }
@@ -1103,8 +1155,9 @@ function applySkillTierEffect(skill: SkillConfig, tier: 2 | 3): string {
 function showSkillUpgrade(): void {
   keys.clear();
   touchKeys.clear();
-  skillUpgradeTitle.textContent = `选择技能强化 · 第 ${skillExperienceLevel} 级`;
-  skillUpgradeSubtitle.textContent = `击败敌人获得技能经验，当前还有 ${pendingSkillChoices} 次强化待选择。`;
+  skillUpgradeTitle.textContent = tx(`选择技能强化 · 第 ${skillExperienceLevel} 级`);
+  skillUpgradeSubtitle.textContent = tx(
+    `击败敌人获得技能经验，当前还有 ${pendingSkillChoices} 次强化待选择。`);
   skillUpgradeChoices.replaceChildren();
   config.skills.forEach((skill) => {
     const progress = skillProgress.get(skill.id);
@@ -1116,11 +1169,11 @@ function showSkillUpgrade(): void {
     const title = document.createElement("b");
     title.textContent = `${skill.name} · ${progress.tier} 阶`;
     const description = document.createElement("span");
-    description.textContent = requirement
+    description.textContent = localizeBattleText(requirement
       ? progress.minorUpgrades + 1 >= requirement
         ? `小强化：${describeSmallSkillUpgrade(skill, progress)}。本次升阶将解锁：${describeSkillTierEffect(skill, (progress.tier + 1) as 2 | 3)}。`
         : `小强化：${describeSmallSkillUpgrade(skill, progress)}（${progress.minorUpgrades + 1}/${requirement}），逐步解锁新的技能效果。`
-      : "技能已达 3 阶；本次继续获得一项小强化。";
+      : "技能已达 3 阶；本次继续获得一项小强化。");
     button.append(title, description);
     button.addEventListener("click", () => {
       const improvement = applySmallSkillUpgrade(skill, progress);
@@ -1141,7 +1194,7 @@ function showSkillUpgrade(): void {
         showSkillUpgrade();
       } else {
         skillUpgradeOverlay.hidden = true;
-        showToast(`技能强化完成：${message}`);
+        showToast(tx(`技能强化完成：${message}`));
       }
     });
     skillUpgradeChoices.append(button);
@@ -1240,7 +1293,7 @@ function drawMap(): void {
     context.fillRect(obstacle.x + 12, obstacle.y + 12, obstacle.w - 24, 28);
     context.fillStyle = "#738091";
     context.font = "13px sans-serif";
-    context.fillText(obstacle.name, obstacle.x + 22, obstacle.y + 31);
+    context.fillText(locale.battle.obstacles[obstacle.name] || obstacle.name, obstacle.x + 22, obstacle.y + 31);
     context.strokeStyle = index % 2 ? "#31585a" : "#4c3e65";
     context.lineWidth = 2;
     for (let x = obstacle.x + 25; x < obstacle.x + obstacle.w - 20; x += 54) {
@@ -1376,7 +1429,7 @@ function drawFloatingTexts(): void {
 }
 
 function addFloatingText(x: number, y: number, text: string, color: string): void {
-  floatingTexts.push({ x, y, text, color, life: 0.8 });
+  floatingTexts.push({ x, y, text: localizeBattleText(text), color, life: 0.8 });
 }
 
 function spawnImpact(x: number, y: number, color: string): void {
@@ -2270,13 +2323,7 @@ function castSkill(index: number): void {
 }
 
 function effectText(effect: string): string {
-  const labels: Record<string, string> = {
-    加速: "移动加速",
-    攻速加成: "技能急速",
-    攻击力加成: "攻击力提升",
-    强化普攻: "下次普攻强化并附带击退",
-  };
-  return labels[effect] || effect;
+  return locale.battle.effects[effect] || effect;
 }
 
 function basicAttack(): void {
@@ -2589,15 +2636,15 @@ function drawRemotePlayers(): void {
     if (crowdControl) {
       context.fillStyle = crowdControl === "眩晕" ? "#ffe45c" : "#b7ef55";
       context.font = "bold 11px sans-serif";
-      context.fillText(crowdControl, 0, 39);
+      context.fillText(localizeBattleText(crowdControl), 0, 39);
     }
     context.restore();
   });
   if (config.multiplayer) {
     peerList.hidden = remotePlayers.size === 0;
     peerList.textContent = remotePlayers.size
-      ? `同局玩家 ${remotePlayers.size} 人：${[...remotePlayers.values()].map((item) => item.name).join("、")}`
-      : "等待其他玩家同步位置…";
+      ? tx(`同局玩家 ${remotePlayers.size} 人：${[...remotePlayers.values()].map((item) => item.name).join("、")}`)
+      : tx("等待其他玩家同步位置…");
   }
 }
 
@@ -2819,15 +2866,15 @@ resumeRunButton?.addEventListener("click", togglePause);
 
 updateHud();
 if (config.multiplayer) {
-  mapMode.textContent = `局域网房间 ${config.multiplayer.room_id}`;
+  mapMode.textContent = tx(`局域网房间 ${config.multiplayer.room_id}`);
   peerList.hidden = false;
 }
 if (config.duel) {
-  mapMode.textContent = "人机对抗";
+  mapMode.textContent = tx("人机对抗");
   startDuelRound();
-  showToast("人机对抗开始！先赢下 4 分获胜，SPACE 普攻，Q / E / R 释放技能。");
+  showToast(tx("人机对抗开始！先赢下 4 分获胜，SPACE 普攻，Q / E / R 释放技能。"));
 } else {
-  showToast("探索提示：靠近闪光物资后按 F 收集；Q / E / R 释放技能。");
+  showToast(tx("探索提示：靠近闪光物资后按 F 收集；Q / E / R 释放技能。"));
 }
 drawMap();
 requestAnimationFrame(drawFrame);

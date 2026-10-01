@@ -1,9 +1,10 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="{{ 'en' if lang == 'en' else 'zh-CN' }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>选择英雄 · 2D大击败</title>
+  <link rel="icon" href="{{ url_for('favicon', lang=lang) }}">
+  <title>{{ tr("SELECT_HERO") }} · {{ tr("PRODUCT_NAME") }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="select-page">
@@ -11,26 +12,27 @@
   <header class="topbar">
     <a class="brand" href="/">
       <span class="brand-mark">2D</span>
-      <span><strong>大击败</strong><small>CYBER ARENA</small></span>
+      <span><strong>{{ tr("PRODUCT_NAME") }}</strong><small>{{ tr("CYBER_ARENA") }}</small></span>
     </a>
     <nav>
-      <a href="/">主界面</a>
-      <a class="active" href="/select">英雄档案</a>
-      <a href="/multiplayer">局域网联机</a>
+      <a href="/">{{ tr("HOME") }}</a>
+      <a class="active" href="/select">{{ tr("HEROES") }}</a>
+      <a href="/multiplayer">{{ tr("LAN") }}</a>
     </nav>
+    <button class="language-toggle" type="button" data-language-toggle>{{ tr("LANG_TOGGLE") }}</button>
   </header>
 
   <main class="select-main">
     <section class="select-hero-copy">
       <div>
-        <p class="eyebrow"><span></span> SELECT YOUR FIGHTER</p>
-        <h1>选择英雄 <span>/ {{ "%02d"|format(heroes|length) }}</span></h1>
+        <p class="eyebrow"><span></span> {{ tr("SELECT_FIGHTER") }}</p>
+        <h1>{{ tr("SELECT_HERO") }} <span>/ {{ "%02d"|format(heroes|length) }}</span></h1>
       </div>
-      <p>{% if game_mode == "duel" %}选择角色，进入人机对抗竞技场。{% else %}选择角色查看技能配置，确认后进入霓虹废墟。{% endif %}</p>
+      <p>{{ tr("SELECT_SUBTITLE_DUEL" if game_mode == "duel" else "SELECT_SUBTITLE_ROGUE") }}</p>
     </section>
 
-    <section class="selection-layout" aria-label="英雄选择">
-      <div class="hero-roster" role="list" aria-label="英雄列表">
+    <section class="selection-layout" aria-label="{{ tr('SELECT_HERO') }}">
+      <div class="hero-roster" role="list" aria-label="{{ tr('HEROES') }}">
         {% for hero in heroes %}
         <button
           class="roster-choice {{ hero.accent }}{% if loop.first %} selected{% endif %}"
@@ -49,13 +51,13 @@
       </div>
 
       <section class="hero-detail" aria-live="polite">
-        <div class="detail-topline"><span class="status-dot"></span> FIGHTER PROFILE <b id="detail-index">01 / 04</b></div>
+        <div class="detail-topline"><span class="status-dot"></span> {{ tr("FIGHTER_PROFILE") }} <b id="detail-index">01 / 04</b></div>
         <div class="detail-main">
           <div class="detail-portrait" id="detail-portrait">
             <span id="detail-initial">{{ heroes[0].initial }}</span>
             <i class="detail-orbit orbit-one"></i>
             <i class="detail-orbit orbit-two"></i>
-            <small>2D // COMBAT UNIT</small>
+            <small>{{ tr("COMBAT_UNIT") }}</small>
           </div>
           <div class="detail-copy">
             <p class="eyebrow" id="detail-class">{{ heroes[0].class_name }}</p>
@@ -70,7 +72,7 @@
               {% endfor %}
             </div>
             <div class="detail-skills">
-              <div class="skills-heading"><h3>技能配置</h3><span>Q / E / R</span></div>
+              <div class="skills-heading"><h3>{{ tr("SKILLS") }}</h3><span>Q / E / R</span></div>
               <div class="detail-skill-list" id="detail-skill-list">
                 {% for skill in heroes[0].skills %}
                 <article class="detail-skill">
@@ -84,15 +86,16 @@
           </div>
         </div>
         <div class="detail-footer">
-          <span><b id="selected-name">{{ heroes[0].name }}</b><small>已选择作战单位</small></span>
-          <a href="/battle?hero={{ heroes[0].id }}{% if game_mode == 'duel' %}&amp;mode=duel{% endif %}" id="enter-battle" class="enter-trapezoid">进入 <b>&gt;&gt;</b></a>
+          <span><b id="selected-name">{{ heroes[0].name }}</b><small>{{ tr("SELECTED") }}</small></span>
+          <a href="/battle?hero={{ heroes[0].id }}{% if game_mode == 'duel' %}&amp;mode=duel{% endif %}" id="enter-battle" class="enter-trapezoid">{{ tr("ENTER") }} <b>&gt;&gt;</b></a>
         </div>
       </section>
     </section>
   </main>
 
-  <footer><span>2D大击败 // 由无聊驱动</span><span>NO RAGE · JUST DAMAGE</span></footer>
+  <footer><span>{{ tr("FOOTER") }}</span><span>{{ tr("SLOGAN") }}</span></footer>
   <script>window.HERO_SELECTION = {{ heroes|tojson }}; window.GAME_MODE = {{ game_mode|tojson }};</script>
   <script src="{{ url_for('static', filename='select.js') }}"></script>
+  <script src="{{ url_for('static', filename='language.js') }}"></script>
 </body>
 </html>

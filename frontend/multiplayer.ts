@@ -45,7 +45,37 @@ interface ServerInfo {
   lan_urls: string[];
 }
 
+interface MultiplayerLocalePackage {
+  code: string;
+  lobby: {
+    messages: Record<string, string>;
+    patterns: Array<[string, string]>;
+    room_name: string;
+    player_separator: string;
+    you: string;
+    host: string;
+  };
+}
+
 declare const MP_HEROES: LobbyHero[];
+declare const MP_LOCALE: MultiplayerLocalePackage;
+
+const locale = MP_LOCALE;
+const english = locale.code === "en";
+const tx = (source: string): string => localizeLobbyText(source);
+
+function localizeLobbyText(message: string): string {
+  let text = message;
+  if (english) {
+    for (const [pattern, replacement] of locale.lobby.patterns) {
+      text = text.replace(new RegExp(pattern), replacement);
+    }
+  }
+  for (const [source, translation] of Object.entries(locale.lobby.messages)) {
+    text = text.replaceAll(source, translation);
+  }
+  return text;
+}
 
 function getElement<T extends HTMLElement>(id: string): T {
   const element = document.getElementById(id);
@@ -81,7 +111,7 @@ try {
 }
 
 function showToast(message: string, warning = false): void {
-  toast.textContent = message;
+  toast.textContent = localizeLobbyText(message);
   toast.classList.toggle("warning", warning);
   toast.classList.add("visible");
   window.clearTimeout(toastTimer);
@@ -95,7 +125,7 @@ async function api(path: string, body?: Record<string, unknown>): Promise<ApiRes
     body: body ? JSON.stringify(body) : undefined,
   });
   const result = await response.json() as ApiResult;
-  if (!response.ok || !result.ok) throw new Error(result.error || `请求失败 (${response.status})`);
+  if (!response.ok || !result.ok) throw new Error(result.error || tx(`请求失败 (${response.status})`));
   return result;
 }
 
@@ -103,18 +133,18 @@ async function showLanAddresses(): Promise<void> {
   try {
     const response = await fetch("/api/server-info");
     const result = await response.json() as ServerInfo;
-    if (!response.ok || !result.ok) throw new Error("无法获取局域网地址。");
+    if (!response.ok || !result.ok) throw new Error(tx("无法获取局域网地址。"));
     lanAddresses.textContent = result.lan_urls.length
       ? result.lan_urls.join(" · ")
-      : "未检测到局域网地址，请确认设备已连接网络。";
+      : tx("未检测到局域网地址，请确认设备已连接网络。");
   } catch (error) {
-    lanAddresses.textContent = error instanceof Error ? error.message : "局域网地址获取失败。";
+    lanAddresses.textContent = localizeLobbyText(error instanceof Error ? error.message : tx("局域网地址获取失败。"));
   }
 }
 
 function currentName(): string {
   const name = nameInput.value.trim();
-  if (!name) throw new Error("请先输入昵称。");
+  if (!name) throw new Error(tx("请先输入昵称。"));
   localStorage.setItem("2d-da-jibai-name", name);
   return name;
 }
@@ -140,7 +170,7 @@ function escapeHtml(value: string): string {
 
 function renderRooms(rooms: RoomSummary[]): void {
   if (!rooms.length) {
-    roomList.innerHTML = '<p class="empty-state">暂时没有等待中的房间，创建一个吧。</p>';
+    roomList.innerHTML = `<p class="empty-state">${tx("暂时没有等待中的房间，创建一个吧。")}</p>`;
     return;
   }
   roomList.innerHTML = rooms.map((room) => {
@@ -148,8 +178,8 @@ function renderRooms(rooms: RoomSummary[]): void {
     const disabled = full || room.status !== "waiting";
     return `<article class="room-row">
       <div class="room-code">${escapeHtml(room.room_id)}</div>
-      <div class="room-summary"><b>${escapeHtml(room.host_name)} 的房间</b><small>${room.count}/${room.capacity} 人 · ${escapeHtml(room.players.join("、"))}</small></div>
-      <button type="button" data-join="${escapeHtml(room.room_id)}" ${disabled ? "disabled" : ""}>${disabled ? "不可加入" : "加入"}</button>
+      <div class="room-summary"><b>${locale.lobby.room_name.replace("{name}", escapeHtml(room.host_name))}</b><small>${room.count}/${room.capacity} ${tx("人")} · ${escapeHtml(room.players.join(locale.lobby.player_separator))}</small></div>
+      <button type="button" data-join="${escapeHtml(room.room_id)}" ${disabled ? "disabled" : ""}>${disabled ? tx("不可加入") : tx("加入")}</button>
     </article>`;
   }).join("");
   roomList.querySelectorAll<HTMLButtonElement>("[data-join]").forEach((button) => {
@@ -162,7 +192,7 @@ async function refreshRooms(): Promise<void> {
     const result = await api("");
     renderRooms(result.rooms || []);
   } catch (error) {
-    roomList.innerHTML = `<p class="empty-state error">${escapeHtml(error instanceof Error ? error.message : "房间列表加载失败")}</p>`;
+    roomList.innerHTML = `<p class="empty-state error">${escapeHtml(localizeLobbyText(error instanceof Error ? error.message : tx("房间列表加载失败")))}</p>`;
   }
 }
 
@@ -176,7 +206,7 @@ function showRoom(room: RoomSnapshot): void {
     const host = player.player_id === room.host_id;
     return `<div class="waiting-player">
       <span class="lobby-avatar ${escapeHtml(hero?.accent || player.accent)}">${escapeHtml(hero?.initial || player.initial)}</span>
-      <span><b>${escapeHtml(player.name)}${player.player_id === playerId ? "（你）" : ""}</b><small>${escapeHtml(player.hero_name)}${host ? " · 房主" : ""}</small></span>
+      <span><b>${escapeHtml(player.name)}${player.player_id === playerId ? locale.lobby.you : ""}</b><small>${escapeHtml(hero?.name || player.hero_name)}${host ? locale.lobby.host : ""}</small></span>
       <i>PLAYER 0${index + 1}</i>
     </div>`;
   }).join("");
@@ -184,8 +214,8 @@ function showRoom(room: RoomSnapshot): void {
   startButton.hidden = !isHost;
   startButton.disabled = room.players.length < 2;
   getElement<HTMLElement>("waiting-message").textContent = room.players.length < 2
-    ? "至少需要 2 名玩家，分享房间码邀请朋友加入。"
-    : isHost ? "玩家已就绪，房主可以开始探索。" : "等待房主开始游戏…";
+    ? tx("至少需要 2 名玩家，分享房间码邀请朋友加入。")
+    : isHost ? tx("玩家已就绪，房主可以开始探索。") : tx("等待房主开始游戏…");
   waitingRoom.hidden = false;
   saveMembership();
   if (room.status === "playing") {
@@ -202,7 +232,7 @@ async function pollRoom(): Promise<void> {
     if (result.room) showRoom(result.room);
   } catch (error) {
     clearMembership();
-    showToast(error instanceof Error ? error.message : "房间已关闭，请重新加入。", true);
+    showToast(error instanceof Error ? error.message : tx("房间已关闭，请重新加入。"), true);
     await refreshRooms();
   }
 }
@@ -211,13 +241,13 @@ async function createRoom(): Promise<void> {
   try {
     const result = await api("", { name: currentName(), hero_id: heroSelect.value });
     playerId = result.player_id || "";
-    if (!result.room || !playerId) throw new Error("服务器没有返回房间信息。");
+    if (!result.room || !playerId) throw new Error(tx("服务器没有返回房间信息。"));
     showRoom(result.room);
     window.clearInterval(roomPollTimer);
     roomPollTimer = window.setInterval(() => void pollRoom(), 1200);
     await refreshRooms();
   } catch (error) {
-    showToast(error instanceof Error ? error.message : "创建房间失败。", true);
+    showToast(error instanceof Error ? error.message : tx("创建房间失败。"), true);
   }
 }
 
@@ -225,13 +255,13 @@ async function joinRoom(roomId: string): Promise<void> {
   try {
     const result = await api("/join", { room_id: roomId, name: currentName(), hero_id: heroSelect.value });
     playerId = result.player_id || "";
-    if (!result.room || !playerId) throw new Error("服务器没有返回房间信息。");
+    if (!result.room || !playerId) throw new Error(tx("服务器没有返回房间信息。"));
     showRoom(result.room);
     window.clearInterval(roomPollTimer);
     roomPollTimer = window.setInterval(() => void pollRoom(), 1200);
     await refreshRooms();
   } catch (error) {
-    showToast(error instanceof Error ? error.message : "加入房间失败。", true);
+    showToast(error instanceof Error ? error.message : tx("加入房间失败。"), true);
   }
 }
 
@@ -240,7 +270,7 @@ async function startGame(): Promise<void> {
     await api(`/${encodeURIComponent(currentRoomId)}/start`, { player_id: playerId });
     await pollRoom();
   } catch (error) {
-    showToast(error instanceof Error ? error.message : "无法开始游戏。", true);
+    showToast(error instanceof Error ? error.message : tx("无法开始游戏。"), true);
   }
 }
 

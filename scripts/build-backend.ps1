@@ -34,6 +34,8 @@ try {
         "--specpath", $work,
         "--add-data", "$(Join-Path $root 'templates');templates",
         "--add-data", "$(Join-Path $root 'static');static",
+        "--add-data", "$(Join-Path $root 'locale');locale",
+        "--add-data", "$(Join-Path $root 'assets');assets",
         (Join-Path $root "desktop_server.py")
     )
     & $python -m PyInstaller @arguments

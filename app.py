@@ -1,9 +1,12 @@
+import copy
+import json
 import secrets
 import socket
 import threading
 import time
+from pathlib import Path
 
-from flask import Flask, jsonify, redirect, render_template, request, url_for
+from flask import Flask, jsonify, redirect, render_template, request, send_file, url_for
 
 
 app = Flask(__name__)
@@ -11,6 +14,58 @@ ROOMS = {}
 ROOMS_LOCK = threading.RLock()
 ROOM_CAPACITY = 8
 ROOM_PLAYER_TIMEOUT = 30
+
+LOCALE_DIRECTORY = Path(__file__).resolve().parent / "locale"
+ASSET_DIRECTORY = Path(__file__).resolve().parent / "assets"
+LOCALE_PACKAGES = {
+    language: json.loads((LOCALE_DIRECTORY / f"{language}.json").read_text(encoding="utf-8"))
+    for language in ("zh", "en")
+}
+
+
+def get_locale(language):
+    return LOCALE_PACKAGES[language if language in LOCALE_PACKAGES else "zh"]
+
+
+def localized_heroes(language):
+    package = get_locale(language)
+    heroes = copy.deepcopy(HEROES)
+    for hero in heroes:
+        localized = package["heroes"][hero["id"]]
+        hero["name"] = localized["name"]
+        hero["class_name"] = localized["class_name"]
+        hero["tagline"] = localized["tagline"]
+        hero["initial"] = localized["initial"]
+        hero["stats"] = dict(zip(localized["stats"], hero["stats"].values()))
+        for skill in hero["skills"]:
+            translation = localized["skills"].get(skill["id"])
+            if translation:
+                skill.update(translation)
+    return heroes
+
+
+@app.context_processor
+def inject_language():
+    lang = request.args.get("lang", request.cookies.get("lang", "zh"))
+    if lang not in LOCALE_PACKAGES:
+        lang = "zh"
+    return {"lang": lang, "locale_pack": get_locale(lang), "tr": lambda key: get_locale(lang)["ui"].get(key, key)}
+
+
+@app.after_request
+def persist_language(response):
+    lang = request.args.get("lang")
+    if lang in LOCALE_PACKAGES:
+        response.set_cookie("lang", lang, max_age=60 * 60 * 24 * 365, samesite="Lax")
+    return response
+
+
+@app.get("/favicon.ico")
+def favicon():
+    language = request.args.get("lang", request.cookies.get("lang", "zh"))
+    icon = "2d_da_jibai_ico_en.ico" if language == "en" else "2d_da_jibai_ico.ico"
+    return send_file(ASSET_DIRECTORY / icon, mimetype="image/vnd.microsoft.icon", max_age=3600)
+
 
 HEROES = [
     {
@@ -80,7 +135,7 @@ def home():
 @app.get("/select")
 def select_hero():
     game_mode = "duel" if request.args.get("mode") == "duel" else "rogue"
-    return render_template("select.html", heroes=HEROES, game_mode=game_mode)
+    return render_template("select.html", heroes=localized_heroes(request.args.get("lang", request.cookies.get("lang", "zh"))), game_mode=game_mode)
 
 
 def public_player(player):
@@ -278,7 +333,7 @@ def error_response(message, status=400):
 
 @app.get("/multiplayer")
 def multiplayer():
-    return render_template("multiplayer.html", heroes=HEROES)
+    return render_template("multiplayer.html", heroes=localized_heroes(request.args.get("lang", request.cookies.get("lang", "zh"))))
 
 
 @app.get("/api/server-info")
@@ -487,7 +542,9 @@ def sync_multiplayer_room(room_id):
 @app.get("/battle")
 def battle():
     selected_id = request.args.get("hero", "volt")
-    player = next((hero for hero in HEROES if hero["id"] == selected_id), HEROES[0])
+    base_player = next((hero for hero in HEROES if hero["id"] == selected_id), HEROES[0])
+    base_defense = base_player["stats"]["防御"]
+    player = base_player
     enemy = next(hero for hero in HEROES if hero["id"] != player["id"])
     room_id = request.args.get("room", "").strip().upper()
     player_id = request.args.get("pid", "").strip()
@@ -499,6 +556,7 @@ def battle():
             if room is None or room_player is None or room["status"] != "playing":
                 return redirect(url_for("multiplayer"))
             player = next(hero for hero in HEROES if hero["id"] == room_player["hero_id"])
+            base_defense = player["stats"]["防御"]
             game_mode = "rogue"
             multiplayer_config = {
                 "room_id": room_id,
@@ -511,13 +569,15 @@ def battle():
                 "energy": room_player["energy"],
                 "max_energy": room_player["max_energy"],
             }
+    lang = request.args.get("lang", request.cookies.get("lang", "zh"))
+    player = next(hero for hero in localized_heroes(lang) if hero["id"] == player["id"])
     return render_template(
         "battle.html",
         player=player,
-        enemy=enemy,
+        enemy=next(hero for hero in localized_heroes(lang) if hero["id"] == enemy["id"]),
         multiplayer=multiplayer_config,
         game_mode=game_mode,
-        defense=player["stats"]["防御"],
+        defense=base_defense,
     )
 
 
