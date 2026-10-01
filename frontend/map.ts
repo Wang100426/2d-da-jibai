@@ -382,12 +382,11 @@ const trafficCars: TrafficCar[] = [];
 const harpFields: HarpField[] = [];
 const gymRushers: GymRusher[] = [];
 const airportPlanes: AirportPlane[] = [];
-let airportTakeoffTimer = 20 + Math.random() * 12;
-let airportLandingTimer = 36 + Math.random() * 14;
-let airportTakeoffsQueued = 0;
-let airportLandingsQueued = 0;
+let airportFlightTimer = 20 + Math.random() * 12;
+let airportFlightsTarget = 0;
 let airportTakeoffsScheduled = 0;
 let airportLandingsScheduled = 0;
+let airportNextFlightTakeoff = true;
 let eventSerial = 0;
 const anesthetizedTargets = new Set<string>();
 let runLevel = 1;
@@ -1664,12 +1663,12 @@ function drawAirportTerminalSign(): void {
   context.fillStyle = "#e6f5ef";
   context.font = "12px sans-serif";
   context.fillText(
-    `${tx("起飞")} ${getAirportFlightCount(true)}/${airportTakeoffsScheduled}x  ${formatFlightTime(airportTakeoffTimer, airportTakeoffsQueued)}`,
+    `${tx("起飞")} ${getAirportFlightCount(true)}/${airportTakeoffsScheduled}x  ${formatFlightTime(airportFlightTimer, airportPlanes.length < airportFlightsTarget && shouldScheduleAirportTakeoff())}`,
     x + 12,
     y + 42,
   );
   context.fillText(
-    `${tx("降落")} ${getAirportFlightCount(false)}/${airportLandingsScheduled}x  ${formatFlightTime(airportLandingTimer, airportLandingsQueued)}`,
+    `${tx("降落")} ${getAirportFlightCount(false)}/${airportLandingsScheduled}x  ${formatFlightTime(airportFlightTimer, !shouldScheduleAirportTakeoff() && airportPlanes.length < airportFlightsTarget)}`,
     x + 178,
     y + 42,
   );
@@ -1677,12 +1676,11 @@ function drawAirportTerminalSign(): void {
 }
 
 function getAirportFlightCount(takeoff: boolean): number {
-  return (takeoff ? airportTakeoffsQueued : airportLandingsQueued) +
-    airportPlanes.filter((plane) => plane.takeoff === takeoff).length;
+  return airportPlanes.filter((plane) => plane.takeoff === takeoff).length;
 }
 
-function formatFlightTime(seconds: number, queued: number): string {
-  if (queued <= 0) return "--:--";
+function formatFlightTime(seconds: number, flightNeeded: boolean): string {
+  if (!flightNeeded) return "--:--";
   const remaining = Math.max(0, Math.ceil(seconds));
   return `${String(Math.floor(remaining / 60)).padStart(2, "0")}:${String(remaining % 60).padStart(2, "0")}`;
 }
@@ -1753,23 +1751,24 @@ function drawGymRusher(rusher: GymRusher): void {
 
 function drawAirportPlane(plane: AirportPlane): void {
   const angle = Math.atan2(plane.endY - plane.startY, plane.endX - plane.startX);
+  const planeColor = plane.takeoff ? "#c9edf0" : "#ffd28a";
   context.save();
   context.translate(plane.x, plane.y);
   context.rotate(angle);
-  context.shadowColor = "#b8f7ff";
+  context.shadowColor = plane.takeoff ? "#b8f7ff" : "#ffae57";
   context.shadowBlur = 22;
-  context.fillStyle = "#c9edf0";
+  context.fillStyle = planeColor;
   context.strokeStyle = "#ffffff";
   context.lineWidth = 2;
   context.beginPath();
   context.moveTo(43, 0);
   context.lineTo(8, -8);
-  context.lineTo(-24, -30);
-  context.lineTo(-15, -7);
+  context.lineTo(-24, plane.takeoff ? -30 : -24);
+  context.lineTo(-15, plane.takeoff ? -7 : -11);
   context.lineTo(-40, -5);
   context.lineTo(-40, 5);
   context.lineTo(-15, 7);
-  context.lineTo(-24, 30);
+  context.lineTo(-24, plane.takeoff ? 30 : 24);
   context.lineTo(8, 8);
   context.closePath();
   context.fill();
@@ -2191,16 +2190,22 @@ function updateGymRushers(dt: number): void {
 }
 
 function scheduleAirportFlightsForWave(): void {
-  const flightCount = Math.min(3, wave);
-  airportTakeoffsScheduled = flightCount;
-  airportLandingsScheduled = flightCount;
-  const activeTakeoffs = airportPlanes.filter((plane) => plane.takeoff).length;
-  const activeLandings = airportPlanes.length - activeTakeoffs;
-  airportTakeoffsQueued = Math.max(airportTakeoffsQueued, flightCount - activeTakeoffs, 0);
-  airportLandingsQueued = Math.max(airportLandingsQueued, flightCount - activeLandings, 0);
-  const firstFlightDelay = Math.max(3, 12 - wave * 1.4) + Math.random() * 2;
-  airportTakeoffTimer = firstFlightDelay;
-  airportLandingTimer = firstFlightDelay;
+  airportFlightsTarget = Math.min(8, wave);
+  airportTakeoffsScheduled = Math.ceil(airportFlightsTarget / 2);
+  airportLandingsScheduled = Math.ceil(airportFlightsTarget / 2);
+  airportFlightTimer = Math.max(1.5, 12 - wave * 1.2) + Math.random() * 2;
+}
+
+function shouldScheduleAirportTakeoff(): boolean {
+  const takeoffsInFlight = getAirportFlightCount(true);
+  const landingsInFlight = getAirportFlightCount(false);
+  return takeoffsInFlight >= airportTakeoffsScheduled
+    ? false
+    : landingsInFlight >= airportLandingsScheduled
+      ? true
+      : takeoffsInFlight === landingsInFlight
+        ? airportNextFlightTakeoff
+        : takeoffsInFlight < landingsInFlight;
 }
 
 function getAvailableAirportRunway(): number | undefined {
@@ -2241,17 +2246,14 @@ function triggerMapEvent(): void {
 }
 
 function updateAirportFlights(dt: number): void {
-  if (airportTakeoffsQueued > 0) airportTakeoffTimer -= dt;
-  if (airportLandingsQueued > 0) airportLandingTimer -= dt;
-
-  const interval = Math.max(4, 17 - wave * 2.4);
-  if (airportTakeoffsQueued > 0 && airportTakeoffTimer <= 0 && startAirportFlight(true)) {
-    airportTakeoffsQueued -= 1;
-    airportTakeoffTimer = airportTakeoffsQueued > 0 ? interval : 0;
-  }
-  if (airportLandingsQueued > 0 && airportLandingTimer <= 0 && startAirportFlight(false)) {
-    airportLandingsQueued -= 1;
-    airportLandingTimer = airportLandingsQueued > 0 ? interval : 0;
+  const interval = Math.max(0.18, 1.4 - wave * 0.16);
+  if (airportPlanes.length < airportFlightsTarget) {
+    airportFlightTimer -= dt;
+    const nextTakeoff = shouldScheduleAirportTakeoff();
+    if (airportFlightTimer <= 0 && startAirportFlight(nextTakeoff)) {
+      airportNextFlightTakeoff = !airportNextFlightTakeoff;
+      airportFlightTimer = interval;
+    }
   }
   for (let index = airportPlanes.length - 1; index >= 0; index -= 1) {
     const plane = airportPlanes[index];
