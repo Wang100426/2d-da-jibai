@@ -10,7 +10,7 @@
 </head>
 <body class="multiplayer-page">
   <header class="topbar">
-    <a class="brand" href="/"><span class="brand-mark">2D</span><span><strong>{{ tr("PRODUCT_NAME") }}</strong><small>{{ tr("LAN_MULTIPLAYER") }}</small></span></a>
+    <a class="brand" href="/"><img class="brand-mark brand-mark-image" src="{{ url_for('favicon', lang=lang) }}" alt=""><span><strong>{{ tr("PRODUCT_NAME") }}</strong><small>{{ tr("LAN_MULTIPLAYER") }}</small></span></a>
     <div class="topbar-actions"><button class="language-toggle" type="button" data-language-toggle>{{ tr("LANG_TOGGLE") }}</button><a class="exit-link" href="/">{{ tr("BACK_HOME") }} ×</a></div>
   </header>
   <main class="mp-main">

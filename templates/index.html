@@ -11,7 +11,7 @@
   <div class="scanlines"></div>
   <header class="topbar">
     <a class="brand" href="/">
-      <span class="brand-mark">2D</span>
+      <img class="brand-mark brand-mark-image" src="{{ url_for('favicon', lang=lang) }}" alt="">
       <span><strong>{{ tr("PRODUCT_NAME") }}</strong><small>{{ tr("CYBER_ARENA") }}</small></span>
     </a>
     <nav>
@@ -25,7 +25,7 @@
   <main class="mode-main">
     <section class="mode-hero-copy">
       <p class="eyebrow"><span></span> {{ tr("SEASON") }}</p>
-      {% if lang == 'en' %}<h1 class="english-game-title">{{ tr("PRODUCT_NAME") }}</h1>{% else %}<img class="mode-logo" src="{{ url_for('static', filename='2d_da_jibai_logo.png') }}" alt="{{ tr('PRODUCT_NAME') }}">{% endif %}
+      {% if lang == 'en' %}<img class="mode-logo" src="{{ url_for('favicon', lang=lang) }}" alt="{{ tr('PRODUCT_NAME') }}">{% else %}<img class="mode-logo" src="{{ url_for('static', filename='2d_da_jibai_logo.png') }}" alt="{{ tr('PRODUCT_NAME') }}">{% endif %}
       <p class="subtitle">{{ tr("HOME_SUBTITLE") }}<br><b>{{ tr("HOME_DESCRIPTION") }}</b></p>
     </section>
 

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, nativeImage, session } = require("electron");
+const { app, BrowserWindow, dialog, nativeImage } = require("electron");
 const { spawn } = require("node:child_process");
 const path = require("node:path");
 
@@ -7,14 +7,12 @@ let backendUrl;
 let mainWindow;
 let quitting = false;
 
-async function updateWindowIcon(serverUrl) {
-  const window = mainWindow;
-  if (!window) return;
-  const [languageCookie] = await session.defaultSession.cookies.get({
-    url: serverUrl,
-    name: "lang",
-  });
-  const iconName = languageCookie?.value === "en"
+async function updateWindowIcon(window) {
+  if (!window || window.isDestroyed() || mainWindow !== window) return;
+  const language = await window.webContents.executeJavaScript(
+    "document.documentElement.lang",
+  );
+  const iconName = language === "en"
     ? "2d_da_jibai_ico_en.ico"
     : "2d_da_jibai_ico.ico";
   const icon = nativeImage.createFromPath(path.join(app.getAppPath(), "assets", iconName));
@@ -112,7 +110,7 @@ async function createWindow() {
     mainWindow = undefined;
   });
   mainWindow.webContents.on("did-finish-load", () => {
-    void updateWindowIcon(serverUrl).catch((error) => {
+    void updateWindowIcon(mainWindow).catch((error) => {
       console.error("Could not update the application icon.", error);
     });
   });

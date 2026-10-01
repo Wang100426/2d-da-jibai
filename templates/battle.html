@@ -11,7 +11,7 @@
 <body class="map-page{% if game_mode == 'duel' %} duel-page{% endif %}">
   <canvas id="world" aria-label="{{ tr('MAP_ACCESSIBLE') }}"></canvas>
   <header class="map-topbar">
-    <a class="brand" href="/"><span class="brand-mark">2D</span><span><strong>{{ tr("PRODUCT_NAME") }}</strong><small>{{ tr("AI_DUEL" if game_mode == "duel" else "ROGUELIKE_RUN") }}</small></span></a>
+    <a class="brand" href="/"><img class="brand-mark brand-mark-image" src="{{ url_for('favicon', lang=lang) }}" alt=""><span><strong>{{ tr("PRODUCT_NAME") }}</strong><small>{{ tr("AI_DUEL" if game_mode == "duel" else "ROGUELIKE_RUN") }}</small></span></a>
     <div class="map-location"><span class="status-dot"></span> {{ tr("ARENA") }} <b>·</b> <span id="map-mode">{{ tr("BATTLE_TITLE_DUEL" if game_mode == "duel" else "BATTLE_TITLE_ROGUE") }}</span></div>
     <div class="topbar-actions"><button class="language-toggle" type="button" data-language-toggle>{{ tr("LANG_TOGGLE") }}</button><a class="exit-link" href="{% if game_mode == 'duel' %}/select?mode=duel{% else %}/select{% endif %}">{{ tr("BACK_SELECT") }} ×</a></div>
   </header>
