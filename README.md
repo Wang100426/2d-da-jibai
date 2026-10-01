@@ -8,6 +8,7 @@
 
 - **单机肉鸽**：挑战不断增强的敌潮，每波结束后选择战斗强化。击败敌人可获得技能经验，升级时可强化英雄技能；肉鸽战斗支持暂停。
 - **随机地图事件**：每局随机进入霓虹城区、赛博医院、赛博琴房、赛博体育馆或赛博机场。地图事件包括高速车流、麻醉医生、音场竖琴、健身房冲锋者和机场航班。
+- **机场航班调度**：飞机数量随波次提升，每类最多 3 架、间隔逐渐缩短；飞机分配到空闲跑道，起降可同时进行且不会占用同一跑道。
 - **战场过渡页**：使用全屏战场概览图，展示地图和特殊事件，左下角显示出战角色；淡入淡出与右下角加载动画持续 5 秒。
 - **人机对抗**：与 AI 一对一较量，先赢得四分获胜。每回合结束后可选择强化，十秒后开始下一回合。
 - **局域网联机**：创建或加入房间，与同一局域网的玩家共同战斗。玩家位置、玩家间攻击伤害、生命、能量和控制效果由 Flask 房间服务同步。
@@ -37,7 +38,7 @@ python app.py
 
 也可以运行 `python server_gui.py` 启动带局域网地址显示的服务。局域网玩家连接同一网络后，可在浏览器中打开主机显示的地址。房间状态保存在内存中，服务停止后会清除。
 
-## Windows 桌面版 1.2.0
+## Windows 桌面版 1.2.1
 
 构建 Windows x64 安装程序：
 
@@ -77,6 +78,7 @@ npm run build
 
 - **Roguelike**: Survive escalating enemy waves and choose a combat upgrade after each wave. Defeating enemies grants skill experience; leveling up lets you improve a hero skill. Solo runs can be paused.
 - **Random map events**: Each run randomly takes place in the Neon District, Cyber Hospital, Cyber Music Hall, Cyber Gymnasium, or Cyber Airport. Events include traffic surges, anesthetists, damaging harp fields, charging bruisers, and runway flights.
+- **Airport traffic**: Flight counts rise with each wave to a maximum of three departures and arrivals, with shorter intervals. Aircraft use free runways, allowing simultaneous takeoffs and landings without sharing a runway.
 - **Battle transition**: A full-screen arena overview shows the map and special event, with the selected fighter in the lower-left corner and a loading animation at lower right for 5 seconds.
 - **AI duel**: Fight one-on-one against an AI opponent. The first fighter to win four rounds takes the match. Choose an upgrade between rounds; the next round starts after ten seconds.
 - **LAN multiplayer**: Create or join a room and play with people on the same local network. The Flask room service synchronizes player positions, PvP damage, health, energy, and crowd-control effects.
@@ -106,7 +108,7 @@ python app.py
 
 Alternatively, run `python server_gui.py` to start the server with a LAN address display. Players must be on the same network to join using the host's address. Room state is kept in memory and is cleared when the server stops.
 
-### Windows desktop release 1.2.0
+### Windows desktop release 1.2.1
 
 Build the Windows x64 installer:
 

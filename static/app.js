@@ -80,6 +80,10 @@ const gymRushers = [];
 const airportPlanes = [];
 let airportTakeoffTimer = 20 + Math.random() * 12;
 let airportLandingTimer = 36 + Math.random() * 14;
+let airportTakeoffsQueued = 0;
+let airportLandingsQueued = 0;
+let airportTakeoffsScheduled = 0;
+let airportLandingsScheduled = 0;
 let eventSerial = 0;
 const anesthetizedTargets = new Set();
 let runLevel = 1;
@@ -134,6 +138,19 @@ const mapTransition = document.querySelector("#map-transition");
 const mapTransitionStartedAt = performance.now();
 let mapTransitionComplete = !mapTransition;
 let mapTransitionLeaving = false;
+let mapTransitionFallbackTimer = 0;
+function finishMapTransition() {
+    if (mapTransitionComplete || !mapTransition)
+        return;
+    window.clearTimeout(mapTransitionFallbackTimer);
+    mapTransition.hidden = true;
+    mapTransitionComplete = true;
+}
+mapTransition?.addEventListener("animationend", (event) => {
+    if (event.target === mapTransition && event.animationName === "map-transition-out") {
+        finishMapTransition();
+    }
+});
 const waveTitle = requireElement("#wave-title");
 const waveSubtitle = requireElement("#wave-subtitle");
 const upgradeOverlay = requireElement("#upgrade-overlay");
@@ -634,6 +651,8 @@ function spawnEnemyForWave() {
 function startWave() {
     wave += 1;
     waveState = "active";
+    if (mapTheme === "airport")
+        scheduleAirportFlightsForWave();
     enemiesToSpawn = Math.min(4 + wave * 2, 18);
     spawnTimer = 0.3;
     updateWaveHud();
@@ -1315,11 +1334,17 @@ function drawAirportTerminalSign() {
     context.fillText(tx("航班时刻表"), x + 12, y + 18);
     context.fillStyle = "#e6f5ef";
     context.font = "12px sans-serif";
-    context.fillText(`${tx("起飞")}  ${formatFlightTime(airportTakeoffTimer)}`, x + 12, y + 42);
-    context.fillText(`${tx("降落")}  ${formatFlightTime(airportLandingTimer)}`, x + 178, y + 42);
+    context.fillText(`${tx("起飞")} ${getAirportFlightCount(true)}/${airportTakeoffsScheduled}x  ${formatFlightTime(airportTakeoffTimer, airportTakeoffsQueued)}`, x + 12, y + 42);
+    context.fillText(`${tx("降落")} ${getAirportFlightCount(false)}/${airportLandingsScheduled}x  ${formatFlightTime(airportLandingTimer, airportLandingsQueued)}`, x + 178, y + 42);
     context.restore();
 }
-function formatFlightTime(seconds) {
+function getAirportFlightCount(takeoff) {
+    return (takeoff ? airportTakeoffsQueued : airportLandingsQueued) +
+        airportPlanes.filter((plane) => plane.takeoff === takeoff).length;
+}
+function formatFlightTime(seconds, queued) {
+    if (queued <= 0)
+        return "--:--";
     const remaining = Math.max(0, Math.ceil(seconds));
     return `${String(Math.floor(remaining / 60)).padStart(2, "0")}:${String(remaining % 60).padStart(2, "0")}`;
 }
@@ -1824,8 +1849,32 @@ function updateGymRushers(dt) {
         }
     }
 }
+function scheduleAirportFlightsForWave() {
+    const flightCount = Math.min(3, wave);
+    airportTakeoffsScheduled = flightCount;
+    airportLandingsScheduled = flightCount;
+    const activeTakeoffs = airportPlanes.filter((plane) => plane.takeoff).length;
+    const activeLandings = airportPlanes.length - activeTakeoffs;
+    airportTakeoffsQueued = Math.max(airportTakeoffsQueued, flightCount - activeTakeoffs, 0);
+    airportLandingsQueued = Math.max(airportLandingsQueued, flightCount - activeLandings, 0);
+    const firstFlightDelay = Math.max(3, 12 - wave * 1.4) + Math.random() * 2;
+    airportTakeoffTimer = firstFlightDelay;
+    airportLandingTimer = firstFlightDelay;
+}
+function getAvailableAirportRunway() {
+    const occupiedRunways = new Set(airportPlanes.map((plane) => plane.runwayIndex));
+    const availableRunways = airportRunways
+        .map((_, index) => index)
+        .filter((index) => !occupiedRunways.has(index));
+    if (!availableRunways.length)
+        return undefined;
+    return availableRunways[Math.floor(Math.random() * availableRunways.length)];
+}
 function startAirportFlight(takeoff) {
-    const runway = airportRunways[Math.floor(Math.random() * airportRunways.length)];
+    const runwayIndex = getAvailableAirportRunway();
+    if (runwayIndex === undefined)
+        return false;
+    const runway = airportRunways[runwayIndex];
     const startX = takeoff ? runway.x : runway.endX;
     const startY = takeoff ? runway.y : runway.endY;
     const endX = takeoff ? runway.endX : runway.x;
@@ -1833,9 +1882,12 @@ function startAirportFlight(takeoff) {
     const length = Math.hypot(endX - startX, endY - startY);
     airportPlanes.push({
         x: startX, y: startY, startX, startY, endX, endY,
+        runwayIndex,
+        takeoff,
         progress: 0, duration: length / 690, hitTargets: new Set(),
     });
     showToast(tx(takeoff ? "飞机即将起飞！请避开正在使用的跑道。" : "飞机即将降落！请避开正在使用的跑道。"), "warning");
+    return true;
 }
 function triggerMapEvent() {
     if (mapTheme === "hospital")
@@ -1850,17 +1902,18 @@ function triggerMapEvent() {
         Math.random() * 13;
 }
 function updateAirportFlights(dt) {
-    airportTakeoffTimer -= dt;
-    airportLandingTimer -= dt;
-    if (!airportPlanes.length) {
-        if (airportTakeoffTimer <= 0 && airportTakeoffTimer <= airportLandingTimer) {
-            startAirportFlight(true);
-            airportTakeoffTimer = 43 + Math.random() * 22;
-        }
-        else if (airportLandingTimer <= 0) {
-            startAirportFlight(false);
-            airportLandingTimer = 47 + Math.random() * 25;
-        }
+    if (airportTakeoffsQueued > 0)
+        airportTakeoffTimer -= dt;
+    if (airportLandingsQueued > 0)
+        airportLandingTimer -= dt;
+    const interval = Math.max(4, 17 - wave * 2.4);
+    if (airportTakeoffsQueued > 0 && airportTakeoffTimer <= 0 && startAirportFlight(true)) {
+        airportTakeoffsQueued -= 1;
+        airportTakeoffTimer = airportTakeoffsQueued > 0 ? interval : 0;
+    }
+    if (airportLandingsQueued > 0 && airportLandingTimer <= 0 && startAirportFlight(false)) {
+        airportLandingsQueued -= 1;
+        airportLandingTimer = airportLandingsQueued > 0 ? interval : 0;
     }
     for (let index = airportPlanes.length - 1; index >= 0; index -= 1) {
         const plane = airportPlanes[index];
@@ -3473,11 +3526,7 @@ function drawFrame(timestamp) {
         if (elapsed >= 4250 && !mapTransitionLeaving) {
             mapTransitionLeaving = true;
             mapTransition.classList.add("leaving");
-        }
-        if (elapsed >= 5000) {
-            mapTransition.hidden = true;
-            mapTransitionComplete = true;
-            lastFrameTime = timestamp;
+            mapTransitionFallbackTimer = window.setTimeout(finishMapTransition, 1000);
         }
     }
     const dt = Math.min((timestamp - (lastFrameTime || timestamp)) / 1000, 0.04);

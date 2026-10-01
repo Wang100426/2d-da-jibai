@@ -1,5 +1,21 @@
 # 更新日志 / Updates
 
+## 1.2.1
+
+### 中文
+
+- 调整赛博机场航班系统：随波次提升，每波起飞和降落航班数从 1 架增加，最多各 3 架；航班间隔随波次推进缩短。
+- 航站楼时刻表显示本波计划架数、待起飞／降落及在途数量，以及下一架飞机的倒计时。
+- 飞机只会分配到当前没有飞机使用的跑道；起飞和降落可以同时进行，但不会在同一跑道上交叉冲突。
+- 应用版本更新至 1.2.1。
+
+### English
+
+- Updated Cyber Airport traffic: departures and arrivals increase from one aircraft per wave to a maximum of three each, while intervals shorten as waves progress.
+- The terminal schedule displays this wave's planned flight count, queued/in-flight departures and arrivals, and the next-flight countdown.
+- Aircraft are assigned only to runways not currently in use. Takeoffs and landings may occur simultaneously on separate runways, avoiding opposing traffic on one runway.
+- Updated the application version to 1.2.1.
+
 ## 1.2.0
 
 ### 中文
