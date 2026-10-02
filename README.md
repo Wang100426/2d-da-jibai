@@ -7,8 +7,9 @@
 ## 游戏模式
 
 - **单机肉鸽**:挑战不断增强的敌潮,每波结束后选择战斗强化。击败敌人可获得技能经验,升级时可强化英雄技能;肉鸽战斗支持暂停。
-- **随机地图事件**:每局随机进入霓虹城区、赛博医院、赛博琴房、赛博体育馆、赛博机场或赛博校园。地图事件包括高速车流、麻醉医生、音场竖琴、健身房冲锋者和机场航班。赛博校园会不定期上课,每次持续 10 秒;上课期间所有人(包括敌人)的移动速度、攻击速度和造成的伤害都会大幅降低。
-- **机场航班调度**:航班随波次持续循环放行,同时在途飞机逐波增加,最多可让八条跑道全部运行;每架飞机离场后会安排后续航班,跑道不会被起降飞机同时占用。
+- **随机地图事件**:每局随机进入霓虹城区、赛博医院、赛博琴房、赛博体育馆、赛博机场或赛博校园。地图事件包括高速车流、麻醉医生、音场竖琴、健身房冲锋者和机场航班。
+  - **赛博校园**:不定期上课,每次持续 10 秒;上课期间所有人(包括敌人)的移动速度、攻击速度和造成的伤害都会大幅降低。
+  - **机场航班调度**:航班随波次持续循环放行,同时在途飞机逐波增加,最多可让八条跑道全部运行;每架飞机离场后会安排后续航班,跑道不会被起降飞机同时占用。
 - **战场过渡页**:使用全屏战场概览图,展示地图和特殊事件,左下角显示出战角色;淡入淡出与右下角加载动画持续 5 秒。
 - **人机对抗**:与 AI 一对一较量,先赢得四分获胜。每回合结束后可选择强化,十秒后开始下一回合。
 - **局域网联机**:创建或加入房间,与同一局域网的玩家共同战斗。玩家位置、玩家间攻击伤害、生命、能量和控制效果由 Flask 房间服务同步。
@@ -77,8 +78,9 @@ npm run build
 ### Game modes
 
 - **Roguelike**: Survive escalating enemy waves and choose a combat upgrade after each wave. Defeating enemies grants skill experience; leveling up lets you improve a hero skill. Solo runs can be paused.
-- **Random map events**: Each run randomly takes place in the Neon District, Cyber Hospital, Cyber Music Hall, Cyber Gymnasium, Cyber Airport, or Cyber Campus. Events include traffic surges, anesthetists, damaging harp fields, charging bruisers, and runway flights. Classes occur irregularly at Cyber Campus and last 10 seconds; during class, everyone's movement speed, attack speed, and damage are greatly reduced, including enemies.
-- **Airport traffic**: Flights cycle continuously and the number of active aircraft rises with each wave, up to all eight runways in use. Departures and arrivals share no runway while it is occupied.
+- **Random map events**: Each run randomly takes place in the Neon District, Cyber Hospital, Cyber Music Hall, Cyber Gymnasium, Cyber Airport, or Cyber Campus. Events include traffic surges, anesthetists, damaging harp fields, charging bruisers, and runway flights.
+  - **Class time**:Classes occur irregularly at Cyber Campus and last 10 seconds; during class, everyone's movement speed, attack speed, and damage are greatly reduced, including enemies.
+  - **Airport traffic**: Flights cycle continuously and the number of active aircraft rises with each wave, up to all eight runways in use. Departures and arrivals share no runway while it is occupied.
 - **Battle transition**: A full-screen arena overview shows the map and special event, with the selected fighter in the lower-left corner and a loading animation at lower right for 5 seconds.
 - **AI duel**: Fight one-on-one against an AI opponent. The first fighter to win four rounds takes the match. Choose an upgrade between rounds; the next round starts after ten seconds.
 - **LAN multiplayer**: Create or join a room and play with people on the same local network. The Flask room service synchronizes player positions, PvP damage, health, energy, and crowd-control effects.
