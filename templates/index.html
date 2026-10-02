@@ -30,23 +30,29 @@
       <p class="subtitle">{{ tr("HOME_SUBTITLE") }}<br><b>{{ tr("HOME_DESCRIPTION") }}</b></p>
     </section>
 
-    <section class="mode-cards">
-      <a class="mode-card" href="/select" data-camp-transition>
-        <div class="mode-card-icon">{{ tr("ROGUE_ICON") }}</div>
-        <h2>{{ tr("ROGUE") }}</h2>
-        <p>{{ tr("ROGUE_DESCRIPTION") }}<br><small>{{ tr("ROGUE_TAGLINE") }}</small></p>
+    <div class="mode-controls">
+      <div class="mode-picker">
+        <button class="mode-picker-current" id="mode-picker-current" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="mode-options">
+          <span class="mode-picker-icon" id="mode-picker-icon">{{ tr("ROGUE_ICON") }}</span>
+          <span class="mode-picker-copy"><small>{{ tr("MODE_PICKER") }}</small><b id="mode-picker-label">{{ tr("ROGUE") }}</b></span>
+          <span class="mode-picker-arrow" aria-hidden="true">⌃</span>
+        </button>
+        <div class="mode-options" id="mode-options" role="listbox" aria-label="{{ tr('MODE_PICKER') }}" hidden>
+          <button type="button" role="option" aria-selected="true" data-mode="rogue" data-mode-label="{{ tr('ROGUE') }}" data-mode-icon="{{ tr('ROGUE_ICON') }}" data-mode-href="/select">
+            <span class="mode-option-icon rogue">{{ tr("ROGUE_ICON") }}</span><span><b>{{ tr("ROGUE") }}</b><small>{{ tr("ROGUE_TAGLINE") }}</small></span>
+          </button>
+          <button type="button" role="option" aria-selected="false" data-mode="lan" data-mode-label="{{ tr('LAN') }}" data-mode-icon="{{ tr('LAN_ICON') }}" data-mode-href="/multiplayer">
+            <span class="mode-option-icon lan">{{ tr("LAN_ICON") }}</span><span><b>{{ tr("LAN") }}</b><small>{{ tr("LAN_TAGLINE") }}</small></span>
+          </button>
+          <button type="button" role="option" aria-selected="false" data-mode="duel" data-mode-label="{{ tr('DUEL') }}" data-mode-icon="{{ tr('DUEL_ICON') }}" data-mode-href="/select?mode=duel">
+            <span class="mode-option-icon duel">{{ tr("DUEL_ICON") }}</span><span><b>{{ tr("DUEL") }}</b><small>{{ tr("DUEL_TAGLINE") }}</small></span>
+          </button>
+        </div>
+      </div>
+      <a class="mode-start" id="mode-start" href="/select" data-camp-transition>
+        <span>{{ tr("HOME_START_GAME") }}</span><b aria-hidden="true">↗</b>
       </a>
-      <a class="mode-card" href="/multiplayer" data-camp-transition>
-        <div class="mode-card-icon">{{ tr("LAN_ICON") }}</div>
-        <h2>{{ tr("LAN") }}</h2>
-        <p>{{ tr("LAN_DESCRIPTION") }}<br><small>{{ tr("LAN_TAGLINE") }}</small></p>
-      </a>
-      <a class="mode-card" href="/select?mode=duel" data-camp-transition>
-        <div class="mode-card-icon">{{ tr("DUEL_ICON") }}</div>
-        <h2>{{ tr("DUEL") }}</h2>
-        <p>{{ tr("DUEL_DESCRIPTION") }}<br><small>{{ tr("DUEL_TAGLINE") }}</small></p>
-      </a>
-    </section>
+    </div>
   </main>
 
   <footer><span>{{ tr("FOOTER") }}</span><span>{{ tr("SLOGAN") }}</span></footer>
@@ -54,7 +60,43 @@
   <script src="{{ url_for('static', filename='language.js') }}"></script>
   <script>
     const campTransition = document.querySelector("#camp-transition");
+    const currentMode = document.querySelector("#mode-picker-current");
+    const modeOptions = document.querySelector("#mode-options");
+    const modeLabel = document.querySelector("#mode-picker-label");
+    const modeIcon = document.querySelector("#mode-picker-icon");
+    const startGame = document.querySelector("#mode-start");
+    const options = [...document.querySelectorAll("[data-mode]")];
     let campTransitionStarted = false;
+    currentMode.addEventListener("click", () => {
+      const expanded = currentMode.getAttribute("aria-expanded") === "true";
+      currentMode.setAttribute("aria-expanded", String(!expanded));
+      modeOptions.hidden = expanded;
+      if (!expanded) options[0].focus();
+    });
+    options.forEach((option) => {
+      option.addEventListener("click", () => {
+        modeLabel.textContent = option.dataset.modeLabel;
+        modeIcon.textContent = option.dataset.modeIcon;
+        startGame.href = option.dataset.modeHref;
+        options.forEach((item) => item.setAttribute("aria-selected", String(item === option)));
+        currentMode.setAttribute("aria-expanded", "false");
+        modeOptions.hidden = true;
+        currentMode.focus();
+      });
+    });
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest(".mode-picker")) {
+        currentMode.setAttribute("aria-expanded", "false");
+        modeOptions.hidden = true;
+      }
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !modeOptions.hidden) {
+        currentMode.setAttribute("aria-expanded", "false");
+        modeOptions.hidden = true;
+        currentMode.focus();
+      }
+    });
     document.querySelectorAll("[data-camp-transition]").forEach((link) => {
       link.addEventListener("click", (event) => {
         if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;

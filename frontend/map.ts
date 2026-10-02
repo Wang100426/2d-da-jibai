@@ -127,6 +127,11 @@ interface SkillConfig {
   empowered_splash_radius?: number;
   heal_bonus?: number;
   extra_round_trips?: number;
+  target_count?: number;
+  minion_hp_multiplier?: number;
+  minion_count?: number;
+  frenzy_duration_bonus?: number;
+  frenzy_attack_speed_bonus?: number;
 }
 
 interface HeroColor {
@@ -183,6 +188,7 @@ interface EnemyUnit {
   pathTargetY?: number;
   attackedTargets?: Set<string>;
   lifeTimer?: number;
+  friendlySummon?: boolean;
 }
 
 interface TrafficCar {
@@ -343,7 +349,7 @@ function localizeBattleText(value: string): string {
   return text;
 }
 
-type MapTheme = "city" | "hospital" | "music" | "gym" | "airport";
+type MapTheme = "city" | "hospital" | "music" | "gym" | "airport" | "school";
 const mapTheme = config.mapTheme;
 const map = { width: config.duel ? 1400 : 3200, height: config.duel ? 900 : 2400 };
 const player = {
@@ -382,12 +388,16 @@ const trafficCars: TrafficCar[] = [];
 const harpFields: HarpField[] = [];
 const gymRushers: GymRusher[] = [];
 const airportPlanes: AirportPlane[] = [];
+const pipaMinions: EnemyUnit[] = [];
 let airportFlightTimer = 20 + Math.random() * 12;
 let airportFlightsTarget = 0;
 let airportTakeoffsScheduled = 0;
 let airportLandingsScheduled = 0;
 let airportNextFlightTakeoff = true;
 let eventSerial = 0;
+let schoolClassTimer = 32 + Math.random() * 12;
+let schoolClassDuration = 0;
+let pipaFrenzyAttackTimer = 0;
 const anesthetizedTargets = new Set<string>();
 let runLevel = 1;
 let skillExperience = 0;
@@ -497,6 +507,7 @@ const colors: Record<string, HeroColor> = {
   green: { main: "#b7ef55", light: "#e9ffb7", dark: "#426b2e" },
   blue: { main: "#8c9aff", light: "#e0e4ff", dark: "#414f9e" },
   tech: { main: "#438dff", light: "#e1eeff", dark: "#183c88" },
+  pipa: { main: "#f1b95b", light: "#fff0b8", dark: "#80552a" },
 };
 const heroColors = colors[config.accent] || colors.pink;
 
@@ -505,15 +516,70 @@ function hasPlayerEffect(effect: string): boolean {
 }
 
 function playerMovementLocked(): boolean {
-  return hasPlayerEffect("眩晕") || hasPlayerEffect("禁锢");
+  return hasPlayerEffect("眩晕") || hasPlayerEffect("禁锢") || hasPlayerEffect("狂舞");
 }
 
 function playerActionsLocked(): boolean {
-  return hasPlayerEffect("眩晕");
+  return hasPlayerEffect("眩晕") || hasPlayerEffect("狂舞");
+}
+
+function pipaFrenzyAttackSpeedMultiplier(): number {
+  const ultimate = config.skills.find((skill) => skill.action === "pipa_kinsnake");
+  return 1 + (ultimate?.frenzy_attack_speed_bonus || 0);
+}
+
+function updateDuelBotFrenzy(bot: EnemyUnit, dt: number): void {
+  bot.attackTimer = Math.max(0, bot.attackTimer - dt * pipaFrenzyAttackSpeedMultiplier());
+  if (bot.attackTimer > 0) return;
+  bot.attackTimer = 0.65;
+  damageEnemyByNpc(bot, bot.attack);
+}
+
+function updatePipaMinions(dt: number): void {
+  for (let index = pipaMinions.length - 1; index >= 0; index -= 1) {
+    const minion = pipaMinions[index];
+    if (minion.hp <= 0) {
+      pipaMinions.splice(index, 1);
+      continue;
+    }
+    minion.attackTimer = Math.max(0, minion.attackTimer - dt * (schoolClassDuration > 0 ? 0.5 : 1));
+    const target = enemies
+      .filter((enemy) => enemy.hp > 0)
+      .sort((left, right) =>
+        Math.hypot(left.x - minion.x, left.y - minion.y) -
+        Math.hypot(right.x - minion.x, right.y - minion.y))[0];
+    if (!target) continue;
+    const distance = Math.hypot(target.x - minion.x, target.y - minion.y);
+    const combatTarget: CombatTarget = {
+      id: target.id || `enemy-${enemies.indexOf(target)}`,
+      x: target.x,
+      y: target.y,
+      player: false,
+      unit: target,
+    };
+    if (distance > 42) {
+      const classSlow = schoolClassDuration > 0 ? 0.4 : 1;
+      moveEnemyToward(minion, combatTarget, minion.speed * classSlow * dt, dt);
+    } else if (minion.attackTimer === 0) {
+      minion.attackTimer = 1.1;
+      damageEnemyByNpc(target, minion.attack);
+    }
+  }
+}
+
+function queuePvpSelfAttack(): void {
+  if (!config.multiplayer || !hasPlayerEffect("狂舞")) return;
+  pendingPvpAttacks.push({
+    id: `${config.multiplayer.player_id}-${Date.now()}-${attackSequence++}`,
+    kind: "basic",
+    target_ids: [config.multiplayer.player_id],
+  });
 }
 
 function showControlBlocked(action: string): void {
-  const reason = hasPlayerEffect("眩晕") ? tx("眩晕中无法行动") : tx("禁锢中无法移动");
+  const reason = hasPlayerEffect("眩晕")
+    ? tx("眩晕中无法行动")
+    : hasPlayerEffect("狂舞") ? tx("狂舞中无法行动") : tx("禁锢中无法移动");
   showToast(tx(`${action}失败：${reason}。`), "warning");
 }
 
@@ -591,6 +657,22 @@ const gymObstacles: Obstacle[] = [
   { x: 2160, y: 1420, w: 145, h: 42, type: "barrier", name: "训练围栏" },
 ];
 
+const schoolObstacles: Obstacle[] = [
+  { x: 270, y: 250, w: 560, h: 310, type: "building", name: "教学楼 A" },
+  { x: 2210, y: 250, w: 690, h: 320, type: "building", name: "教学楼 B" },
+  { x: 300, y: 1710, w: 560, h: 300, type: "building", name: "实验楼" },
+  { x: 2220, y: 1690, w: 650, h: 330, type: "building", name: "体育馆" },
+  { x: 930, y: 320, w: 300, h: 235, type: "building", name: "图书馆" },
+  { x: 1830, y: 320, w: 300, h: 235, type: "building", name: "食堂" },
+  { x: 960, y: 1790, w: 310, h: 220, type: "building", name: "社团活动中心" },
+  { x: 1830, y: 1790, w: 310, h: 220, type: "building", name: "学生宿舍" },
+  { x: 1410, y: 700, w: 380, h: 270, type: "building", name: "办公室" },
+  { x: 830, y: 790, w: 150, h: 38, type: "barrier", name: "校园护栏" },
+  { x: 2170, y: 790, w: 150, h: 38, type: "barrier", name: "校园护栏" },
+  { x: 830, y: 1430, w: 150, h: 38, type: "barrier", name: "校园护栏" },
+  { x: 2170, y: 1430, w: 150, h: 38, type: "barrier", name: "校园护栏" },
+];
+
 const airportObstacles: Obstacle[] = [
   { x: 970, y: 300, w: 430, h: 250, type: "building", name: "航站楼" },
   { x: 260, y: 310, w: 410, h: 250, type: "building", name: "货运中心" },
@@ -642,7 +724,8 @@ const obstacles: Obstacle[] = config.duel
       : mapTheme === "music" ? musicObstacles
         : mapTheme === "gym" ? gymObstacles
           : mapTheme === "airport" ? airportObstacles
-            : cityObstacles,
+            : mapTheme === "school" ? schoolObstacles
+              : cityObstacles,
   );
 const roads: Rectangle[] = config.duel || mapTheme === "airport" ? [] : mapTheme === "hospital"
   ? [
@@ -785,13 +868,14 @@ function isSpawnPositionClear(x: number, y: number): boolean {
 }
 
 function createDuelBot(): EnemyUnit {
-  const availableHeroes = ["volt", "moss", "luna", "tech"].filter((id) => id !== getHeroId());
+  const availableHeroes = ["volt", "moss", "luna", "tech", "pipa"].filter((id) => id !== getHeroId());
   const botHero = availableHeroes[Math.floor(Math.random() * availableHeroes.length)] || "volt";
   const profiles: Record<string, { accent: string; defense: number }> = {
     volt: { accent: "pink", defense: 58 },
     moss: { accent: "green", defense: 94 },
     luna: { accent: "blue", defense: 48 },
     tech: { accent: "tech", defense: 58 },
+    pipa: { accent: "pipa", defense: 66 },
   };
   const profile = profiles[botHero] || profiles.volt;
   const localizedBot = locale.heroes[botHero] || locale.heroes.volt;
@@ -819,7 +903,7 @@ function createDuelBot(): EnemyUnit {
 }
 
 function getHeroId(): string {
-  const heroByAccent: Record<string, string> = { pink: "volt", green: "moss", blue: "luna", tech: "tech" };
+  const heroByAccent: Record<string, string> = { pink: "volt", green: "moss", blue: "luna", tech: "tech", pipa: "pipa" };
   return heroByAccent[config.accent] || "volt";
 }
 
@@ -1184,7 +1268,8 @@ function updateHud(): void {
 
 function getEffectiveAttackSpeed(): number {
   const haste = (statusEffects["加速"] || 0) > 0 || (statusEffects["攻速加成"] || 0) > 0;
-  return Math.min(3.5, playerState.attackSpeed * (haste ? 1.3 : 1));
+  return Math.min(3.5, playerState.attackSpeed * (haste ? 1.3 : 1)) *
+    (schoolClassDuration > 0 ? 0.5 : 1);
 }
 
 function getBasicAttackCooldown(): number {
@@ -1254,6 +1339,9 @@ function describeSkillTierEffect(skill: SkillConfig, tier: 2 | 3): string {
     "tech-ult": ["范围眩晕半径 +40", "眩晕时间 +1 秒"],
     "tech-tablets": ["平板合击爆炸半径 +35", "减速持续时间 +2 秒"],
     "tech-afterimage": ["残影冲刺伤害提高 30%", "额外增加一次往返冲刺"],
+    "pipa-yangchun": ["攻击对象 +1", "禁锢时间 +1 秒"],
+    "pipa-shimian": ["小兵生命 +50%", "小兵数量 +2"],
+    "pipa-ult": ["狂舞时间 +1 秒", "狂舞目标攻速 +20%"],
   };
   return effects[skill.id]?.[tier - 2] || "解锁新的技能效果";
 }
@@ -1367,6 +1455,27 @@ function applySkillTierEffect(skill: SkillConfig, tier: 2 | 3): string {
       }
       skill.extra_round_trips = (skill.extra_round_trips || 0) + 1;
       return "额外增加一次往返冲刺";
+    case "pipa-yangchun":
+      if (tier === 2) {
+        skill.target_count = (skill.target_count || 3) + 1;
+        return "攻击对象 +1";
+      }
+      skill.effect_turns += 1;
+      return "禁锢时间 +1 秒";
+    case "pipa-shimian":
+      if (tier === 2) {
+        skill.minion_hp_multiplier = (skill.minion_hp_multiplier || 1) * 1.5;
+        return "小兵生命 +50%";
+      }
+      skill.minion_count = (skill.minion_count || 5) + 2;
+      return "小兵数量 +2";
+    case "pipa-ult":
+      if (tier === 2) {
+        skill.frenzy_duration_bonus = (skill.frenzy_duration_bonus || 0) + 1;
+        return "狂舞时间 +1 秒";
+      }
+      skill.frenzy_attack_speed_bonus = (skill.frenzy_attack_speed_bonus || 0) + 0.2;
+      return "狂舞目标攻速 +20%";
     default:
       return "技能效果强化";
   }
@@ -1441,13 +1550,15 @@ function drawMap(): void {
   context.fillStyle = mapTheme === "hospital" ? "#17232e"
     : mapTheme === "music" ? "#191426"
       : mapTheme === "gym" ? "#1d171b"
-        : mapTheme === "airport" ? "#15202a" : "#111827";
+        : mapTheme === "airport" ? "#15202a"
+          : mapTheme === "school" ? "#172321" : "#111827";
   context.fillRect(0, 0, map.width, map.height);
 
   context.strokeStyle = mapTheme === "hospital" ? "#29404a"
     : mapTheme === "music" ? "#37294a"
       : mapTheme === "gym" ? "#443331"
-        : mapTheme === "airport" ? "#263c50" : "#20303a";
+        : mapTheme === "airport" ? "#263c50"
+          : mapTheme === "school" ? "#30463d" : "#20303a";
   context.lineWidth = 1;
   for (let x = 0; x <= map.width; x += 64) {
     context.beginPath();
@@ -1467,7 +1578,8 @@ function drawMap(): void {
   if (!config.duel) roads.forEach((road) => {
     context.fillStyle = mapTheme === "hospital" ? "#22333a"
       : mapTheme === "music" ? "#292039"
-        : mapTheme === "gym" ? "#302528" : "#1a2530";
+        : mapTheme === "gym" ? "#302528"
+          : mapTheme === "school" ? "#263034" : "#1a2530";
     context.fillRect(road.x, road.y, road.w, road.h);
     if (randomEventWarning > 0 && mapTheme === "city") {
       context.fillStyle = Math.floor(randomEventWarning * 5) % 2 ? "#7a2938aa" : "#1a2530";
@@ -1475,7 +1587,8 @@ function drawMap(): void {
     }
     context.strokeStyle = mapTheme === "hospital" ? "#52777b"
       : mapTheme === "music" ? "#755386"
-        : mapTheme === "gym" ? "#76504b" : "#34434b";
+        : mapTheme === "gym" ? "#76504b"
+          : mapTheme === "school" ? "#60705d" : "#34434b";
     context.setLineDash([18, 20]);
     context.lineWidth = 2;
     context.beginPath();
@@ -1523,23 +1636,27 @@ function drawMap(): void {
     context.fillStyle = mapTheme === "hospital" ? "#354651"
       : mapTheme === "music" ? "#443653"
         : mapTheme === "gym" ? "#4a3839"
-          : mapTheme === "airport" ? "#3a4b5a" : "#252d3c";
+          : mapTheme === "airport" ? "#3a4b5a"
+            : mapTheme === "school" ? "#35463f" : "#252d3c";
     context.fill();
     context.strokeStyle = mapTheme === "hospital" ? "#70a2a5"
       : mapTheme === "music" ? "#b47dcb"
         : mapTheme === "gym" ? "#c26d58"
-          : mapTheme === "airport" ? "#93adbe" : "#465365";
+          : mapTheme === "airport" ? "#93adbe"
+            : mapTheme === "school" ? "#a5c27d" : "#465365";
     context.lineWidth = 4;
     context.stroke();
     context.fillStyle = mapTheme === "hospital" ? "#45616b"
       : mapTheme === "music" ? "#644b74"
         : mapTheme === "gym" ? "#654745"
-          : mapTheme === "airport" ? "#506579" : "#313c4d";
+          : mapTheme === "airport" ? "#506579"
+            : mapTheme === "school" ? "#4a5b4c" : "#313c4d";
     context.fillRect(obstacle.x + 12, obstacle.y + 12, obstacle.w - 24, 28);
     context.fillStyle = mapTheme === "hospital" ? "#d3eff0"
       : mapTheme === "music" ? "#f0d8ff"
         : mapTheme === "gym" ? "#ffe1cf"
-          : mapTheme === "airport" ? "#e0efff" : "#738091";
+          : mapTheme === "airport" ? "#e0efff"
+            : mapTheme === "school" ? "#e5f1cf" : "#738091";
     context.font = "13px sans-serif";
     context.fillText(locale.battle.obstacles[obstacle.name] || obstacle.name, obstacle.x + 22, obstacle.y + 31);
     context.strokeStyle = mapTheme === "hospital"
@@ -1550,7 +1667,9 @@ function drawMap(): void {
           ? index % 2 ? "#9c5049" : "#7c5b47"
           : mapTheme === "airport"
             ? index % 2 ? "#5d819c" : "#7e9cae"
-            : index % 2 ? "#31585a" : "#4c3e65";
+            : mapTheme === "school"
+              ? index % 2 ? "#77885b" : "#526d61"
+              : index % 2 ? "#31585a" : "#4c3e65";
     context.lineWidth = 2;
     for (let x = obstacle.x + 25; x < obstacle.x + obstacle.w - 20; x += 54) {
       context.beginPath();
@@ -1574,6 +1693,7 @@ function drawMap(): void {
   });
 
   if (mapTheme === "airport") drawAirportTerminalSign();
+  if (mapTheme === "school") drawSchoolOfficeSign();
   trafficCars.forEach(drawTrafficCar);
   harpFields.forEach(drawHarpField);
   gymRushers.forEach(drawGymRusher);
@@ -1582,6 +1702,7 @@ function drawMap(): void {
     if (!supply.collected) drawSupply(supply);
   });
   enemies.forEach(drawEnemy);
+  pipaMinions.forEach(drawPipaMinion);
   drawFloatingTexts();
 
   context.strokeStyle = "#49e6e0";
@@ -1683,6 +1804,36 @@ function formatFlightTime(seconds: number, flightNeeded: boolean): string {
   if (!flightNeeded) return "--:--";
   const remaining = Math.max(0, Math.ceil(seconds));
   return `${String(Math.floor(remaining / 60)).padStart(2, "0")}:${String(remaining % 60).padStart(2, "0")}`;
+}
+
+function drawSchoolOfficeSign(): void {
+  const office = obstacles.find((obstacle) => obstacle.name === "办公室");
+  if (!office) return;
+  const x = office.x + 20;
+  const y = office.y + 62;
+  context.save();
+  roundedRect(context, x, y, office.w - 40, 78, 7);
+  context.fillStyle = "#101b16";
+  context.fill();
+  context.strokeStyle = schoolClassDuration > 0 ? "#ffe45c" : "#a5c27d";
+  context.lineWidth = 2;
+  context.stroke();
+  context.textAlign = "left";
+  context.textBaseline = "middle";
+  context.fillStyle = "#e7f4d2";
+  context.font = "bold 13px sans-serif";
+  context.fillText(tx("上课安排"), x + 12, y + 18);
+  context.fillStyle = schoolClassDuration > 0 ? "#ffe45c" : "#a5c27d";
+  context.font = "bold 16px sans-serif";
+  context.fillText(
+    `${tx(schoolClassDuration > 0 ? "正在上课" : "距上课")} ${formatFlightTime(
+      schoolClassDuration > 0 ? schoolClassDuration : schoolClassTimer,
+      true,
+    )}`,
+    x + 12,
+    y + 50,
+  );
+  context.restore();
 }
 
 function drawHarpField(harp: HarpField): void {
@@ -1824,7 +1975,7 @@ function drawTrafficCar(car: TrafficCar): void {
 }
 
 function drawEffectIndicators(x: number, y: number, effects: Record<string, number>): void {
-  const negativeEffects = ["眩晕", "禁锢", "减速", "强力减速", "中毒"]
+  const negativeEffects = ["眩晕", "禁锢", "减速", "强力减速", "中毒", "狂舞"]
     .filter((effect) => (effects[effect] || 0) > 0);
   if (!negativeEffects.length) return;
   const colorsByEffect: Record<string, string> = {
@@ -1833,6 +1984,7 @@ function drawEffectIndicators(x: number, y: number, effects: Record<string, numb
     "减速": "#70d8ff",
     "强力减速": "#e99cff",
     "中毒": "#9cff65",
+    "狂舞": "#f1b95b",
   };
   context.save();
   context.font = "bold 12px sans-serif";
@@ -1851,6 +2003,32 @@ function drawEffectIndicators(x: number, y: number, effects: Record<string, numb
     context.fillStyle = colorsByEffect[effect] || "#ffffff";
     context.fillText(label, x + xOffset, y - 5);
   });
+  context.restore();
+}
+
+function drawPipaMinion(minion: EnemyUnit): void {
+  if (minion.hp <= 0) return;
+  context.save();
+  context.translate(minion.x, minion.y);
+  context.shadowColor = "#f1b95b";
+  context.shadowBlur = 15;
+  context.fillStyle = "#422d20";
+  context.strokeStyle = "#f1b95b";
+  context.lineWidth = 2;
+  context.beginPath();
+  context.arc(0, 0, 15, 0, Math.PI * 2);
+  context.fill();
+  context.stroke();
+  context.shadowBlur = 0;
+  context.fillStyle = "#fff0b8";
+  context.font = "bold 14px sans-serif";
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillText(locale.code === "en" ? "M" : "兵", 0, 1);
+  context.fillStyle = "#10131e";
+  context.fillRect(-17, -24, 34, 4);
+  context.fillStyle = "#f1b95b";
+  context.fillRect(-17, -24, 34 * minion.hp / minion.maxHp, 4);
   context.restore();
 }
 
@@ -2245,6 +2423,22 @@ function triggerMapEvent(): void {
     Math.random() * 13;
 }
 
+function updateSchoolClass(dt: number): void {
+  if (schoolClassDuration > 0) {
+    schoolClassDuration = Math.max(0, schoolClassDuration - dt);
+    if (schoolClassDuration === 0) {
+      schoolClassTimer = 35 + Math.random() * 15;
+      showToast(tx("下课了！全场单位恢复正常状态。"));
+    }
+    return;
+  }
+  schoolClassTimer = Math.max(0, schoolClassTimer - dt);
+  if (schoolClassTimer === 0) {
+    schoolClassDuration = 10;
+    showToast(tx("上课时间到了！全场移速降低 60%、攻速和伤害降低 50%/20%，持续 10 秒。"), "warning");
+  }
+}
+
 function updateAirportFlights(dt: number): void {
   const interval = Math.max(0.18, 1.4 - wave * 0.16);
   if (airportPlanes.length < airportFlightsTarget) {
@@ -2281,7 +2475,12 @@ function updateAirportFlights(dt: number): void {
 }
 
 function updateRandomMapEvents(dt: number): void {
-  if (config.duel || config.multiplayer || runEnded || waveState !== "active") return;
+  if (config.duel || runEnded) return;
+  if (mapTheme === "school") {
+    updateSchoolClass(dt);
+    return;
+  }
+  if (config.multiplayer || waveState !== "active") return;
   if (mapTheme === "airport") {
     updateAirportFlights(dt);
   } else {
@@ -2670,14 +2869,33 @@ function addEnemyLoot(enemy: EnemyUnit): void {
 
 function damageEnemyByNpc(enemy: EnemyUnit, damage: number): void {
   if (enemy.hp <= 0) return;
+  if (schoolClassDuration > 0) damage *= 0.8;
   const actualDamage = Math.min(enemy.hp, Math.max(1, Math.round(damage)));
   enemy.hp = Math.max(0, enemy.hp - actualDamage);
   addFloatingText(enemy.x, enemy.y - 28, `-${actualDamage}`, "#ffdc63");
   spawnImpact(enemy.x, enemy.y, "#ffdc63");
-  if (enemy.hp <= 0) addEnemyLoot(enemy);
+  if (enemy.hp <= 0) {
+    if (enemy.duelBot) finishDuelRound(true);
+    else if (!enemy.friendlySummon) addEnemyLoot(enemy);
+  }
 }
 
 function getEnemyTarget(enemy: EnemyUnit): CombatTarget | undefined {
+  if (enemy.effects["狂舞"] > 0) {
+    const otherEnemy = enemies
+      .filter((candidate) => candidate !== enemy && !candidate.friendlySummon && candidate.hp > 0)
+      .sort((left, right) =>
+        Math.hypot(left.x - enemy.x, left.y - enemy.y) -
+        Math.hypot(right.x - enemy.x, right.y - enemy.y))[0];
+    const target = otherEnemy || enemy;
+    return {
+      id: target.id || `enemy-${enemies.indexOf(target)}`,
+      x: target.x,
+      y: target.y,
+      player: false,
+      unit: target,
+    };
+  }
   const candidates: CombatTarget[] = [];
   if (!enemy.anesthetist || !anesthetizedTargets.has("player")) {
     candidates.push({ id: "player", x: player.x, y: player.y, player: true });
@@ -2686,7 +2904,7 @@ function getEnemyTarget(enemy: EnemyUnit): CombatTarget | undefined {
     if (candidate === enemy || candidate.hp <= 0) return;
     if (enemy.anesthetist) {
       if (candidate.anesthetist || anesthetizedTargets.has(candidate.id || "")) return;
-    } else if (!candidate.anesthetist) {
+    } else if (!candidate.anesthetist && !candidate.friendlySummon) {
       return;
     }
     candidates.push({
@@ -2695,6 +2913,16 @@ function getEnemyTarget(enemy: EnemyUnit): CombatTarget | undefined {
       y: candidate.y,
       player: false,
       unit: candidate,
+    });
+  });
+  pipaMinions.forEach((minion, index) => {
+    if (minion.hp <= 0) return;
+    candidates.push({
+      id: minion.id || `pipa-minion-${index}`,
+      x: minion.x,
+      y: minion.y,
+      player: false,
+      unit: minion,
     });
   });
   if (!candidates.length) return undefined;
@@ -2729,8 +2957,9 @@ function attackEnemyTarget(attacker: EnemyUnit, target: CombatTarget): void {
   }
 }
 
-function hitEnemy(enemy: EnemyUnit, damage: number, effect = "", effectTurns = 0): void {
-  if (enemy.hp <= 0) return;
+function hitEnemy(enemy: EnemyUnit, damage: number, effect = "", effectTurns = 0): number {
+  if (enemy.hp <= 0) return 0;
+  if (schoolClassDuration > 0) damage *= 0.8;
   damage = Math.max(1, Math.round(
     damage * playerState.damageMultiplier * (1 - (enemy.defenseReduction || 0)),
   ));
@@ -2751,6 +2980,7 @@ function hitEnemy(enemy: EnemyUnit, damage: number, effect = "", effectTurns = 0
     else addEnemyLoot(enemy);
   }
   spawnImpact(enemy.x, enemy.y, heroColors.main);
+  return actualDamage;
 }
 
 function healFromDamage(damage: number, x: number, y: number): void {
@@ -2774,6 +3004,7 @@ function applyPlayerDamage(damage: number, attacker?: EnemyUnit): boolean {
     addFloatingText(player.x, player.y - 34, "闪避", "#8c9aff");
     return false;
   }
+  if (schoolClassDuration > 0) damage *= 0.8;
   const thornArmor = (statusEffects["荆棘护甲"] || 0) > 0;
   const thornMultiplier = thornArmor ? playerState.thornDamageMultiplier : 1;
   const reducedDamage = Math.max(1, Math.round(
@@ -2805,7 +3036,7 @@ function applyPlayerDamage(damage: number, attacker?: EnemyUnit): boolean {
 function updateDuelBot(bot: EnemyUnit, dt: number): void {
   if (!duelRoundActive || bot.hp <= 0) return;
   const distance = distanceTo(bot.x, bot.y);
-  const rangeByAccent: Record<string, number> = { tech: 330, blue: 300, green: 150, pink: 95 };
+  const rangeByAccent: Record<string, number> = { tech: 330, blue: 300, green: 150, pipa: 200, pink: 95 };
   const attackRange = rangeByAccent[bot.accent || "pink"] || 95;
   const preferredDistance = attackRange > 150 ? attackRange * 0.7 : attackRange * 0.72;
   if (!bot.effects["眩晕"] && !bot.effects["禁锢"] && distance > 0) {
@@ -3282,6 +3513,59 @@ function castSkill(index: number): void {
     startTabletVolley(skill);
   } else if (skill.action === "tech_afterimage") {
     startAfterimageDash(skill);
+  } else if (skill.action === "pipa_yangchun") {
+    const range = skill.cast_range || 420;
+    const targetCount = skill.target_count || 3;
+    const victims = enemies
+      .filter((enemy) => enemy.hp > 0 && distanceTo(enemy.x, enemy.y) <= range)
+      .sort((left, right) => distanceTo(left.x, left.y) - distanceTo(right.x, right.y))
+      .slice(0, targetCount);
+    const pvpVictims = remotePlayersInRange(range)
+      .sort((left, right) => distanceTo(left.x, left.y) - distanceTo(right.x, right.y))
+      .slice(0, targetCount);
+    const rootDuration = skill.effect_turns;
+    let damageDealt = 0;
+    victims.forEach((enemy) => {
+      addSkillVisual(skill, enemy);
+      damageDealt += hitEnemy(enemy, skill.damage, "禁锢", rootDuration);
+    });
+    queuePvpAttack("skill", pvpVictims, skill.id);
+    const healed = Math.min(playerState.maxHp - playerState.hp, Math.floor(damageDealt * 0.2));
+    if (healed > 0) {
+      playerState.hp += healed;
+      addFloatingText(player.x, player.y - 42, `+${healed}`, "#9cff65");
+      updateHud();
+    }
+    if (!victims.length && !pvpVictims.length) {
+      showToast(`${skill.name}未命中：周围 ${range} 距离内没有敌人。`, "warning");
+    } else {
+      showToast(`${skill.name}命中 ${victims.length + pvpVictims.length} 个敌人，禁锢 ${rootDuration} 秒并回复 ${healed} 点生命。`);
+    }
+  } else if (skill.action === "pipa_shimian") {
+    const spawned = spawnPipaMinions();
+    addSkillVisual(skill);
+    showToast(`${skill.name}召出 ${spawned} 名小兵，开始追击敌人。`);
+  } else if (skill.action === "pipa_kinsnake") {
+    const radius = skill.radius || 360;
+    const victims = enemies
+      .filter((enemy) => enemy.hp > 0 && distanceTo(enemy.x, enemy.y) <= radius)
+      .sort((left, right) => right.hp - left.hp)
+      .slice(0, 3);
+    const pvpVictims = nearbyPvpTargets(player.x, player.y, radius)
+      .sort((left, right) => right.hp - left.hp)
+      .slice(0, 3);
+    const frenzyDuration = (config.duel || config.multiplayer ? 2 : 5) +
+      (skill.frenzy_duration_bonus || 0);
+    victims.forEach((enemy) => {
+      hitEnemy(enemy, skill.damage, "狂舞", frenzyDuration);
+      skillVisuals.push({
+        type: "aura", x: enemy.x, y: enemy.y, targetX: enemy.x, targetY: enemy.y,
+        age: 0, duration: 0.72, color: "#f1b95b",
+      });
+    });
+    queuePvpAttack("skill", pvpVictims, skill.id);
+    addSkillVisual(skill);
+    showToast(`${skill.name}命中 ${victims.length + pvpVictims.length} 个高生命敌人，${frenzyDuration} 秒内陷入狂舞。`);
   } else if (skill.action === "tech_overdrive") {
     const radius = skill.radius || 330;
     const victims = enemies.filter((enemy) => enemy.hp > 0 && distanceTo(enemy.x, enemy.y) <= radius);
@@ -3426,7 +3710,7 @@ function basicAttack(): void {
     showControlBlocked("普通攻击");
     return;
   }
-  const range = config.accent === "tech" ? 330 : config.accent === "blue" ? 300 : config.accent === "green" ? 150 : 95;
+  const range = getPlayerAttackRange();
   const target = nearestEnemy(range);
   const remoteTarget = nearestRemoteAt(player.x, player.y, range);
   if (remoteTarget && (!target || distanceTo(remoteTarget.x, remoteTarget.y) < distanceTo(target.x, target.y))) {
@@ -3442,7 +3726,7 @@ function basicAttack(): void {
     return;
   }
   if (!target) {
-    showToast(`普攻未命中：${config.accent === "tech" ? "将敌人保持在 330" : config.accent === "blue" ? "将敌人保持在 300" : config.accent === "green" ? "将敌人保持在 150" : "靠近敌人至 95"} 距离内再攻击。`, "warning");
+    showToast(`普攻未命中：${config.accent === "tech" ? "将敌人保持在 330" : config.accent === "blue" ? "将敌人保持在 300" : config.accent === "green" ? "将敌人保持在 150" : config.accent === "pipa" ? "将敌人保持在 200" : "靠近敌人至 95"} 距离内再攻击。`, "warning");
     return;
   }
   basicAttackTimer = getBasicAttackCooldown();
@@ -3450,7 +3734,7 @@ function basicAttack(): void {
   const empoweredSkill = config.skills.find((skill) => skill.action === "empower_attack");
   const damage = wasEmpowered
     ? empoweredSkill?.empowered_damage || 34
-    : config.accent === "tech" ? 14 : config.accent === "green" ? 12 : config.accent === "blue" ? 15 : 16;
+    : config.accent === "tech" ? 14 : config.accent === "green" ? 12 : config.accent === "blue" ? 15 : config.accent === "pipa" ? 13 : 16;
   if (config.accent === "green" && !wasEmpowered) {
     skillVisuals.push({
       type: "beam", x: player.x, y: player.y, targetX: target.x, targetY: target.y,
@@ -3496,8 +3780,58 @@ function basicAttack(): void {
         ? `科技男远程普攻命中，造成 ${damage} 点伤害。`
         : config.accent === "blue"
         ? `月光弹命中，造成 ${damage} 点远程伤害。`
-        : `普攻命中，造成 ${damage} 点伤害，回复 5 点能量。`);
+          : config.accent === "pipa"
+            ? `琵琶音刃命中，造成 ${damage} 点伤害。`
+          : `普攻命中，造成 ${damage} 点伤害，回复 5 点能量。`);
   updateHud();
+}
+
+function getPlayerAttackRange(): number {
+  if (config.accent === "pipa") return 200;
+  if (config.accent === "tech") return 330;
+  if (config.accent === "blue") return 300;
+  if (config.accent === "green") return 150;
+  return 95;
+}
+
+function spawnPipaMinions(): number {
+  let spawned = 0;
+  const skill = config.skills.find((item) => item.action === "pipa_shimian");
+  const count = skill?.minion_count || 5;
+  const hp = Math.round(15 * (skill?.minion_hp_multiplier || 1));
+  for (let index = 0; index < count; index += 1) {
+    const angle = Math.PI * 2 * index / count;
+    let x = player.x + Math.cos(angle) * 62;
+    let y = player.y + Math.sin(angle) * 62;
+    if (isEnemyPositionBlocked(x, y, 14)) {
+      x = player.x;
+      y = player.y;
+      for (let attempt = 0; attempt < 8 && isEnemyPositionBlocked(x, y, 14); attempt += 1) {
+        const fallbackAngle = angle + attempt * Math.PI / 4;
+        x = player.x + Math.cos(fallbackAngle) * 78;
+        y = player.y + Math.sin(fallbackAngle) * 78;
+      }
+    }
+    if (isEnemyPositionBlocked(x, y, 14)) continue;
+    pipaMinions.push({
+      id: `pipa-${eventSerial++}`,
+      x,
+      y,
+      hp,
+      maxHp: hp,
+      attackTimer: 0.4 + Math.random() * 0.4,
+      attack: 12,
+      speed: 188,
+      kind: "runner",
+      poisonDamage: 0,
+      poisonTimer: 0,
+      effects: {},
+      experienceAwarded: false,
+      friendlySummon: true,
+    });
+    spawned += 1;
+  }
+  return spawned;
 }
 
 function updateSkillButtons(): void {
@@ -3546,7 +3880,19 @@ function updateCombat(dt: number): void {
     const next = Math.max(0, remaining - dt);
     skillCooldowns.set(id, next);
   });
-  basicAttackTimer = Math.max(0, basicAttackTimer - dt);
+  basicAttackTimer = Math.max(0, basicAttackTimer - dt * (schoolClassDuration > 0 ? 0.5 : 1));
+  if (hasPlayerEffect("狂舞")) {
+    pipaFrenzyAttackTimer = Math.max(
+      0,
+      pipaFrenzyAttackTimer - dt * pipaFrenzyAttackSpeedMultiplier(),
+    );
+    if (pipaFrenzyAttackTimer === 0) {
+      queuePvpSelfAttack();
+      pipaFrenzyAttackTimer = 0.65;
+    }
+  } else {
+    pipaFrenzyAttackTimer = 0;
+  }
   Object.keys(statusEffects).forEach((effect) => {
     statusEffects[effect] = Math.max(0, statusEffects[effect] - dt);
     if (statusEffects[effect] <= 0) {
@@ -3580,7 +3926,8 @@ function updateCombat(dt: number): void {
       enemy.poisonTimer -= dt;
       if (enemy.poisonTimer <= 0) {
         enemy.poisonTimer = 1;
-        const poisonDamage = Math.min(enemy.hp, enemy.poisonDamage);
+        const damage = schoolClassDuration > 0 ? enemy.poisonDamage * 0.8 : enemy.poisonDamage;
+        const poisonDamage = Math.min(enemy.hp, damage);
         enemy.hp = Math.max(0, enemy.hp - poisonDamage);
         healFromDamage(poisonDamage, enemy.x, enemy.y);
         addFloatingText(enemy.x, enemy.y - 30, `-${poisonDamage} 毒`, "#9cff65");
@@ -3592,7 +3939,8 @@ function updateCombat(dt: number): void {
       if (enemy.hp <= 0) return;
     }
     if (enemy.duelBot) {
-      updateDuelBot(enemy, dt);
+      if (enemy.effects["狂舞"] > 0) updateDuelBotFrenzy(enemy, dt);
+      else updateDuelBot(enemy, dt);
       return;
     }
     const target = getEnemyTarget(enemy);
@@ -3600,15 +3948,21 @@ function updateCombat(dt: number): void {
     const distance = Math.hypot(target.x - enemy.x, target.y - enemy.y);
     const attackRange = enemy.anesthetist ? 54 : enemy.kind === "brute" ? 70 : 48;
     if (distance > attackRange && !enemy.effects["禁锢"] && !enemy.effects["眩晕"]) {
-      const speed = enemy.speed * (enemy.effects["强力减速"] ? 0.4 : enemy.effects["减速"] ? 0.45 : 1) * dt;
+      const speed = enemy.speed * (enemy.effects["强力减速"] ? 0.4 : enemy.effects["减速"] ? 0.45 : 1) *
+        (schoolClassDuration > 0 ? 0.4 : 1) * dt;
       moveEnemyToward(enemy, target, speed, dt);
     }
-    enemy.attackTimer = Math.max(0, enemy.attackTimer - dt);
+    const frenzySpeed = enemy.effects["狂舞"] > 0 ? pipaFrenzyAttackSpeedMultiplier() : 1;
+    enemy.attackTimer = Math.max(
+      0,
+      enemy.attackTimer - dt * (schoolClassDuration > 0 ? 0.5 : 1) * frenzySpeed,
+    );
     if (distance < attackRange && enemy.attackTimer === 0 && !enemy.effects["眩晕"]) {
       enemy.attackTimer = enemy.anesthetist ? 1.3 : enemy.kind === "runner" ? 1.05 : 1.35;
       attackEnemyTarget(enemy, target);
     }
   });
+  updatePipaMinions(dt);
   if (skillIsPaused()) return;
   floatingTexts.forEach((item) => {
     item.life -= dt;
@@ -3785,7 +4139,7 @@ async function syncMultiplayer(): Promise<void> {
       player.x = result.self.x;
       player.y = result.self.y;
       Object.keys(statusEffects).forEach((effect) => {
-        if (effect === "眩晕" || effect === "禁锢") delete statusEffects[effect];
+        if (effect === "眩晕" || effect === "禁锢" || effect === "狂舞") delete statusEffects[effect];
       });
       Object.entries(result.self.effects || {}).forEach(([effect, duration]) => {
         statusEffects[effect] = Math.max(statusEffects[effect] || 0, duration);
@@ -3900,7 +4254,8 @@ function drawFrame(timestamp: number): void {
     const movementSpeed =
       player.speed *
       ((statusEffects["加速"] || 0) > 0 ? 1.45 : 1) *
-      ((statusEffects["强力减速"] || 0) > 0 ? 0.4 : (statusEffects["减速"] || 0) > 0 ? 0.55 : 1);
+      ((statusEffects["强力减速"] || 0) > 0 ? 0.4 : (statusEffects["减速"] || 0) > 0 ? 0.55 : 1) *
+      (schoolClassDuration > 0 ? 0.4 : 1);
     if (!playerMovementLocked() && !afterimageDash) movePlayer(dx * movementSpeed * dt, dy * movementSpeed * dt);
     playerState.energy = Math.min(playerState.maxEnergy, playerState.energy + dt * playerState.energyRegen);
     updateCombat(dt);

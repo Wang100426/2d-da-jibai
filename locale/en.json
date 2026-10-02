@@ -16,6 +16,8 @@
     "DUEL": "AI DUEL",
     "DUEL_DESCRIPTION": "Challenge an AI opponent. First to four wins takes the match; choose an upgrade between rounds.",
     "DUEL_TAGLINE": "1v1 arena · 10-second break · First to four",
+    "MODE_PICKER": "CURRENT MODE",
+    "HOME_START_GAME": "START GAME",
     "FOOTER": "2DFight Arena // Powered by boredom",
     "SELECT_SUBTITLE_DUEL": "Choose a fighter to enter the AI duel arena.",
     "SELECT_SUBTITLE_ROGUE": "Review a fighter's abilities and enter the neon ruins.",
@@ -56,11 +58,19 @@
     "MAP_MUSIC": "Cyber Music Hall",
     "MAP_GYM": "Cyber Gymnasium",
     "MAP_AIRPORT": "Cyber Airport",
+    "MAP_SCHOOL": "Cyber School",
+    "MAP_SCHOOL": "Cyber School",
     "MAP_EVENT_CITY": "Traffic surges across the streets. Impacts deal heavy damage and stun.",
     "MAP_EVENT_HOSPITAL": "Fast anesthetists rush in; their first hit injects anesthetic.",
     "MAP_EVENT_MUSIC": "Harps land at random and play for 5 seconds, damaging and slowing by 60%.",
     "MAP_EVENT_GYM": "Musclebound bruisers charge out of buildings and deal massive damage.",
     "MAP_EVENT_AIRPORT": "Aircraft use one of eight random runways; collisions hit hard and knock back.",
+    "MAP_EVENT_SCHOOL": "The office displays the class schedule. Classes last 10 seconds, slowing all units and reducing their attack speed and damage.",
+    "SCHOOL_CLASS_IN": "CLASS IN",
+    "SCHOOL_CLASS_ACTIVE": "IN CLASS",
+    "MAP_EVENT_SCHOOL": "The office displays the class schedule. Classes last 10 seconds, slowing all units and reducing their attack speed and damage.",
+    "SCHOOL_CLASS_IN": "CLASS IN",
+    "SCHOOL_CLASS_ACTIVE": "IN CLASS",
     "MAP_EVENT_DUEL": "One-on-one arena duel. Be the first to win four rounds.",
     "MAP_EVENT_MULTIPLAYER": "Fight enemy waves with LAN allies; player attacks and effects are synchronized.",
     "PAUSE": "Ⅱ PAUSE",
@@ -241,6 +251,34 @@
           "kind": "Skill"
         }
       }
+    },
+    "pipa": {
+      "name": "Pipa Virtuoso",
+      "class_name": "Strings of Control",
+      "tagline": "Spring snow, hidden troops, and a frenzied finale.",
+      "initial": "P",
+      "stats": [
+        "Attack",
+        "Defense",
+        "Mobility"
+      ],
+      "skills": {
+        "pipa-ult": {
+          "name": "Golden Serpent Dance",
+          "description": "Attack the 3 nearby enemies with the most remaining health and send them into a frenzy",
+          "kind": "Ultimate"
+        },
+        "pipa-yangchun": {
+          "name": "Spring Snow",
+          "description": "Hit and root the 3 nearest enemies for 3 seconds, restoring 20% of damage dealt as health",
+          "kind": "Skill"
+        },
+        "pipa-shimian": {
+          "name": "Ambush on All Sides",
+          "description": "Summon 5 minions with 15 HP that autonomously pursue and attack enemies",
+          "kind": "Skill"
+        }
+      }
     }
   },
   "upgrades": {
@@ -292,6 +330,7 @@
   "battle": {
     "messages": {
       "眩晕中无法行动": "Stunned: unable to act",
+      "狂舞中无法行动": "Frenzied: unable to act",
       "禁锢中无法移动": "Rooted: unable to move",
       "探索者已被击败": "Explorer defeated",
       "竞技胜利": "VICTORY",
@@ -365,13 +404,19 @@
       "飞机即将起飞！请避开正在使用的跑道。": "Aircraft taking off! Stay clear of the active runway.",
       "飞机即将降落！请避开正在使用的跑道。": "Aircraft landing! Stay clear of the active runway.",
       "航班时刻表": "FLIGHT SCHEDULE",
+      "上课安排": "CLASS SCHEDULE",
+      "距上课": "CLASS IN",
+      "正在上课": "IN CLASS",
+      "下课了！全场单位恢复正常状态。": "Class is over. All units are back to normal.",
+      "上课时间到了！全场移速降低 60%、攻速和伤害降低 50%/20%，持续 10 秒。": "Class is in session! All units are slowed by 60%, with 50% less attack speed and 20% less damage for 10 seconds.",
       "起飞": "DEPART",
       "降落": "ARRIVE",
       "停机坪": "APRON",
       "正在演奏": "Playing",
       "赛博琴房": "Cyber Music Hall",
       "赛博体育馆": "Cyber Gymnasium",
-      "赛博机场": "Cyber Airport"
+      "赛博机场": "Cyber Airport",
+      "赛博学校": "Cyber School"
     },
     "patterns": [
       [
@@ -705,6 +750,26 @@
       [
         "飞机撞击！受到\\ (\\d+)\\ 点重击并被强力击退。",
         "Aircraft collision! You took $1 heavy damage and were hurled back."
+      ],
+      [
+        "阳春白雪命中 (\\d+) 个敌人，禁锢 (\\d+(?:\\.\\d+)?) 秒并回复 (\\d+) 点生命。",
+        "Spring Snow hit $1 enemies, rooting them for $2 seconds and restoring $3 health."
+      ],
+      [
+        "阳春白雪未命中：周围 (\\d+) 距离内没有敌人。",
+        "Spring Snow missed: no enemies within $1 range."
+      ],
+      [
+        "十面埋伏召出 (\\d+) 名小兵，开始追击敌人。",
+        "Ambush on All Sides summoned $1 minions to pursue enemies."
+      ],
+      [
+        "金蛇狂舞命中 (\\d+) 个高生命敌人，(\\d+) 秒内陷入狂舞。",
+        "Golden Serpent Dance hit $1 high-health enemies, sending them into a $2-second frenzy."
+      ],
+      [
+        "琵琶音刃命中，造成 (\\d+) 点伤害。",
+        "Pipa blade hit for $1 damage."
       ]
     ],
     "phrases": {
@@ -723,6 +788,11 @@
       "冲刺伤害提高": "Dash damage increased",
       "荆棘花园半径": "Briar Garden radius",
       "禁锢时间": "Root duration",
+      "攻击对象": "Targets hit",
+      "小兵生命": "Minion HP",
+      "小兵数量": "Minion count",
+      "狂舞时间": "Frenzy duration",
+      "狂舞目标攻速": "Frenzied target attack speed",
       "回复生命": "restore health",
       "荆棘壁垒持续时间": "Barkskin duration",
       "减伤提升": "Damage reduction increased",
@@ -799,12 +869,23 @@
       "机库 B": "Hangar B",
       "空管塔台": "Air Traffic Control",
       "行李分拣中心": "Baggage Sorting",
-      "机场消防站": "Airport Fire Station"
+      "机场消防站": "Airport Fire Station",
+      "办公室": "Office",
+      "教学楼 A": "School Building A",
+      "教学楼 B": "School Building B",
+      "实验楼": "Science Building",
+      "体育馆": "Gymnasium",
+      "图书馆": "Library",
+      "食堂": "Cafeteria",
+      "社团活动中心": "Student Center",
+      "学生宿舍": "Dormitory",
+      "校园护栏": "Campus Fence"
     },
     "effects": {
       "加速": "Movement speed up",
       "攻速加成": "Attack speed up",
       "攻击力加成": "Attack damage up",
+      "狂舞": "Frenzy",
       "强化普攻": "Next basic attack empowered with knockback",
       "眩晕": "Stun",
       "禁锢": "Root",

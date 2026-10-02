@@ -1,5 +1,25 @@
 # 更新日志 / Updates
 
+## 1.3.0
+
+### 中文
+
+- 新增英雄琵琶女，普攻距离 200。阳春白雪攻击最近的 3 个敌人、禁锢 3 秒，并按实际生命伤害的 20% 回复生命；十面埋伏召唤 5 名生命值 15 的自主小兵；金蛇狂舞攻击周围剩余生命值最高的 3 个敌人并施加狂舞。
+- 加入琵琶女技能升阶强化：阳春白雪 2 阶多攻击 1 个目标、3 阶禁锢延长 1 秒；十面埋伏 2 阶小兵生命提高 50%、3 阶小兵数量增加 2；金蛇狂舞 2 阶狂舞延长 1 秒、3 阶狂舞目标攻速提高 20%（肉鸽同样生效）。
+- 狂舞在肉鸽中持续 5 秒，使敌人失控攻击其他敌人；仅剩一个敌人时会攻击自身。人机与局域网对战中基础持续 2 秒，目标定身并自动普攻自己。
+- 新增赛博学校地图，办公室显示上课倒计时。上课持续 10 秒，全场单位移速降低 60%、攻速降低 50%、造成伤害降低 20%。
+- 重做主页模式入口：右下角并列相扣的直角梯形分别用于选择肉鸽、局域网或人机对抗模式，以及开始游戏；保留赛博营地过场与语言切换，并移除顶部导航栏。
+- 更新应用版本至 1.3.0。
+
+### English
+
+- Added Pipa Virtuoso with 200 basic-attack range. Spring Snow hits the 3 nearest enemies, roots them for 3 seconds, and restores 20% of actual health damage dealt; Ambush on All Sides summons 5 autonomous minions with 15 HP; Golden Serpent Dance strikes the 3 nearby enemies with the most remaining health and applies Frenzy.
+- Added Pipa skill ranks: Spring Snow hits one additional target at Tier 2 and roots for 1 second longer at Tier 3; Ambush minions gain 50% HP at Tier 2 and increases the summon count by 2 at Tier 3; Golden Serpent Dance lasts 1 second longer at Tier 2 and grants frenzied targets 20% attack speed at Tier 3, including in roguelike runs.
+- Frenzy lasts 5 seconds in roguelike runs, causing enemies to attack other enemies or themselves if alone. In AI and LAN PvP it lasts 2 seconds by default, immobilizes its target, and forces a self-directed basic attack.
+- Added Cyber School. The office displays the class countdown. Classes last 10 seconds and slow all units by 60%, reduce attack speed by 50%, and reduce damage dealt by 20%.
+- Reworked the home screen with two interlocking right-angle trapezoids at the lower right: a mode picker for roguelike, LAN, and AI duel, plus a start button. The top navigation is removed; the language toggle and Cyber Camp transition remain.
+- Updated the application version to 1.3.0.
+
 ## 1.2.3
 
 ### 中文

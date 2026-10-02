@@ -14,7 +14,7 @@ ROOMS = {}
 ROOMS_LOCK = threading.RLock()
 ROOM_CAPACITY = 8
 ROOM_PLAYER_TIMEOUT = 30
-MAP_THEMES = ("city", "hospital", "music", "gym", "airport")
+MAP_THEMES = ("city", "hospital", "music", "gym", "airport", "school")
 
 LOCALE_DIRECTORY = Path(__file__).resolve().parent / "locale"
 ASSET_DIRECTORY = Path(__file__).resolve().parent / "assets"
@@ -125,6 +125,20 @@ HEROES = [
             {"id": "tech-afterimage", "name": "残影折返", "description": "留下幻影 · 三次往返瞬移无敌 · 沿途伤害击退", "kind": "小技能", "target": "self", "action": "tech_afterimage", "cost": 35, "cooldown": 12, "damage": 16, "radius": 180, "dash_range": 180, "effect": "", "effect_turns": 0},
         ],
     },
+    {
+        "id": "pipa",
+        "name": "琵琶女",
+        "class_name": "弦音控场师",
+        "tagline": "弦起阳春，埋伏四方，狂舞收场。",
+        "initial": "琵",
+        "accent": "pipa",
+        "stats": {"攻击": 78, "防御": 66, "机动": 72},
+        "skills": [
+            {"id": "pipa-ult", "name": "金蛇狂舞", "description": "重击周围生命值最高的 3 个敌人，并令其狂舞 5 秒", "kind": "大招", "target": "self", "action": "pipa_kinsnake", "cost": 65, "cooldown": 18, "damage": 34, "radius": 360, "effect": "狂舞", "effect_turns": 5},
+            {"id": "pipa-yangchun", "name": "阳春白雪", "description": "攻击最近的 3 个敌人，造成伤害、禁锢 3 秒并按伤害量的 20% 吸血", "kind": "小技能", "target": "self", "action": "pipa_yangchun", "cast_range": 420, "cost": 35, "cooldown": 10, "damage": 28, "radius": 0, "effect": "禁锢", "effect_turns": 3},
+            {"id": "pipa-shimian", "name": "十面埋伏", "description": "召唤 5 名生命值 15 的小兵，自主追击并攻击敌人", "kind": "小技能", "target": "self", "action": "pipa_shimian", "cost": 40, "cooldown": 16, "damage": 0, "radius": 0, "effect": "", "effect_turns": 0},
+        ],
+    },
 ]
 
 
@@ -166,6 +180,8 @@ def public_player(player):
 
 
 def player_limits(hero_id):
+    if hero_id == "pipa":
+        return 200, 13
     if hero_id == "tech":
         return 330, 14
     if hero_id == "luna":
@@ -204,12 +220,17 @@ def apply_player_attack(room, attacker, attack, now):
     }
     attack_kind = attack.get("kind")
     dash_action = attack_kind in ("dash_start", "dash_hit")
-    if active_effect(attacker, "眩晕", now) or (attacker["invulnerable_until"] > now and not dash_action):
+    if (
+        active_effect(attacker, "眩晕", now)
+        or (active_effect(attacker, "狂舞", now) and attack_kind != "basic")
+        or (attacker["invulnerable_until"] > now and not dash_action)
+    ):
         return
 
     hero = next(item for item in HEROES if item["id"] == attacker["hero_id"])
     basic_range, basic_damage = player_limits(attacker["hero_id"])
     skill_id = str(attack.get("skill_id", ""))
+    lifesteal_rate = 0
     if attack_kind == "dash_start":
         skill = next((item for item in hero["skills"] if item["id"] == skill_id), None)
         cast_id = str(attack.get("cast_id", ""))
@@ -252,9 +273,16 @@ def apply_player_attack(room, attacker, attack, now):
             cooldowns[skill_id] = now + skill["cooldown"]
         damage = skill["damage"]
         effect = skill.get("effect", "")
-        effect_duration = skill.get("effect_turns", 0) if skill.get("action") in (
-            "moss_barkskin", "luna_phase", "empower_attack"
-        ) else skill.get("effect_turns", 0) * 2
+        if skill.get("action") == "pipa_yangchun":
+            lifesteal_rate = 0.2
+        if skill.get("action") == "pipa_yangchun":
+            effect_duration = 3
+        elif skill.get("action") == "pipa_kinsnake":
+            effect_duration = 2
+        else:
+            effect_duration = skill.get("effect_turns", 0) if skill.get("action") in (
+                "moss_barkskin", "luna_phase", "empower_attack"
+            ) else skill.get("effect_turns", 0) * 2
         attack_range = skill.get("dash_range", 0) * 2 if is_dash_hit else max(
             basic_range,
             skill.get("cast_range", 0) + skill.get("radius", 0),
@@ -272,7 +300,12 @@ def apply_player_attack(room, attacker, attack, now):
     target_ids = attack.get("target_ids", [])
     if not isinstance(target_ids, list):
         return
-    for target_id in set(str(item) for item in target_ids) - {attacker["player_id"]}:
+    target_ids = set(str(item) for item in target_ids)
+    if active_effect(attacker, "狂舞", now):
+        target_ids.intersection_update({attacker["player_id"]})
+    else:
+        target_ids.discard(attacker["player_id"])
+    for target_id in target_ids:
         target = room["players"].get(target_id)
         if target is None or target["hp"] <= 0:
             continue
@@ -288,7 +321,13 @@ def apply_player_attack(room, attacker, attack, now):
         incoming_damage = max(1, round(damage * damage_multiplier))
         absorbed = min(target.get("shield", 0), incoming_damage)
         target["shield"] = max(0, target.get("shield", 0) - absorbed)
-        target["hp"] = max(0, target["hp"] - incoming_damage + absorbed)
+        health_damage = min(target["hp"], incoming_damage - absorbed)
+        target["hp"] = max(0, target["hp"] - health_damage)
+        if lifesteal_rate:
+            attacker["hp"] = min(
+                attacker["max_hp"],
+                attacker["hp"] + int(health_damage * lifesteal_rate),
+            )
         if effect and effect_duration > 0:
             target["effects"][effect] = max(
                 target["effects"].get(effect, 0), now + effect_duration
@@ -529,7 +568,12 @@ def sync_multiplayer_room(room_id):
         if isinstance(attacks, list):
             for attack in attacks[:16]:
                 apply_player_attack(room, player, attack, now)
-        if player["hp"] > 0 and not active_effect(player, "眩晕", now) and not active_effect(player, "禁锢", now):
+        if (
+            player["hp"] > 0
+            and not active_effect(player, "眩晕", now)
+            and not active_effect(player, "禁锢", now)
+            and not active_effect(player, "狂舞", now)
+        ):
             player["x"] = x
             player["y"] = y
         others = [public_player(other) for other in room["players"].values() if other["player_id"] != player_id]
@@ -551,7 +595,7 @@ def battle():
     player_id = request.args.get("pid", "").strip()
     multiplayer_config = None
     game_mode = "duel" if request.args.get("mode") == "duel" else "rogue"
-    map_theme = "city" if game_mode == "duel" else secrets.choice(MAP_THEMES)
+    map_theme = "city" if game_mode == "duel" else secrets.choice(MAP_THEMES[:-1] if room_id else MAP_THEMES)
     if room_id and player_id:
         with ROOMS_LOCK:
             room, room_player = find_room_player(room_id, player_id)
@@ -579,6 +623,7 @@ def battle():
         "music": ("MAP_MUSIC", "MAP_EVENT_MUSIC"),
         "gym": ("MAP_GYM", "MAP_EVENT_GYM"),
         "airport": ("MAP_AIRPORT", "MAP_EVENT_AIRPORT"),
+        "school": ("MAP_SCHOOL", "MAP_EVENT_SCHOOL"),
     }
     map_name_key, map_event_key = transition_map_keys[map_theme]
     if game_mode == "duel":

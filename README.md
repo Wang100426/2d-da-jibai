@@ -38,7 +38,7 @@ python app.py
 
 也可以运行 `python server_gui.py` 启动带局域网地址显示的服务。局域网玩家连接同一网络后，可在浏览器中打开主机显示的地址。房间状态保存在内存中，服务停止后会清除。
 
-## Windows 桌面版 1.2.3
+## Windows 桌面版 1.3.0
 
 构建 Windows x64 安装程序：
 
@@ -108,7 +108,7 @@ python app.py
 
 Alternatively, run `python server_gui.py` to start the server with a LAN address display. Players must be on the same network to join using the host's address. Room state is kept in memory and is cleared when the server stops.
 
-### Windows desktop release 1.2.3
+### Windows desktop release 1.3.0
 
 Build the Windows x64 installer:
 
