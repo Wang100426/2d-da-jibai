@@ -78,7 +78,7 @@ npm run build
 
 **English** | [中文](#2d大击败--2dfight-arena)
 
-2D Fight Arena is a cyberpunk 2D combat arena built with Flask, HTML, CSS, and TypeScript. Pick a hero, fight through neon ruins, challenge an AI opponent, or battle with friends over a local network. The interface is available in English and Chinese.
+2DFight Arena is a cyberpunk 2D combat arena built with Flask, HTML, CSS, and TypeScript. Pick a hero, fight through neon ruins, challenge an AI opponent, or battle with friends over a local network. The interface is available in English and Chinese.
 
 ### Version 1.3.0 updates
 
