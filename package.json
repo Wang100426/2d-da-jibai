@@ -1,6 +1,6 @@
 {
   "name": "2d-da-jibai",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "2D大击败 - 赛博风肉鸽竞技场",
   "main": "electron/main.cjs",
   "author": "2D大击败",

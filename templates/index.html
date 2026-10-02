@@ -9,18 +9,19 @@
 </head>
 <body class="mode-page">
   <div class="scanlines"></div>
-  <header class="topbar">
-    <a class="brand" href="/">
-      <img class="brand-mark brand-mark-image" src="{{ url_for('favicon', lang=lang) }}" alt="">
-      <span><strong>{{ tr("PRODUCT_NAME") }}</strong><small>{{ tr("CYBER_ARENA") }}</small></span>
-    </a>
-    <nav>
-      <a class="active" href="/">{{ tr("HOME") }}</a>
-      <a href="/select">{{ tr("HEROES") }}</a>
-      <a href="/multiplayer">{{ tr("LAN") }}</a>
-    </nav>
-    <button class="language-toggle" type="button" data-language-toggle>{{ tr("LANG_TOGGLE") }}</button>
-  </header>
+  <button class="language-toggle mode-language-toggle" type="button" data-language-toggle>{{ tr("LANG_TOGGLE") }}</button>
+
+  <section class="camp-transition" id="camp-transition" aria-live="polite" aria-hidden="true" hidden>
+    <img class="camp-transition-art" src="{{ url_for('static', filename='game_loading_1.png') }}" alt="">
+    <div class="camp-transition-shade"></div>
+    <div class="camp-transition-briefing">
+      <p class="camp-transition-kicker">{{ tr("CYBER_ARENA") }}</p>
+      <h1>{{ tr("CYBER_CAMP_CONNECTING") }}</h1>
+      <div class="camp-transition-loader">
+        <dot-motion-loader class="map-loader-animation"></dot-motion-loader>
+      </div>
+    </div>
+  </section>
 
   <main class="mode-main">
     <section class="mode-hero-copy">
@@ -30,17 +31,17 @@
     </section>
 
     <section class="mode-cards">
-      <a class="mode-card" href="/select">
+      <a class="mode-card" href="/select" data-camp-transition>
         <div class="mode-card-icon">{{ tr("ROGUE_ICON") }}</div>
         <h2>{{ tr("ROGUE") }}</h2>
         <p>{{ tr("ROGUE_DESCRIPTION") }}<br><small>{{ tr("ROGUE_TAGLINE") }}</small></p>
       </a>
-      <a class="mode-card" href="/multiplayer">
+      <a class="mode-card" href="/multiplayer" data-camp-transition>
         <div class="mode-card-icon">{{ tr("LAN_ICON") }}</div>
         <h2>{{ tr("LAN") }}</h2>
         <p>{{ tr("LAN_DESCRIPTION") }}<br><small>{{ tr("LAN_TAGLINE") }}</small></p>
       </a>
-      <a class="mode-card" href="/select?mode=duel">
+      <a class="mode-card" href="/select?mode=duel" data-camp-transition>
         <div class="mode-card-icon">{{ tr("DUEL_ICON") }}</div>
         <h2>{{ tr("DUEL") }}</h2>
         <p>{{ tr("DUEL_DESCRIPTION") }}<br><small>{{ tr("DUEL_TAGLINE") }}</small></p>
@@ -49,6 +50,23 @@
   </main>
 
   <footer><span>{{ tr("FOOTER") }}</span><span>{{ tr("SLOGAN") }}</span></footer>
+  <script src="{{ url_for('static', filename='dot-motion-loader.js') }}"></script>
   <script src="{{ url_for('static', filename='language.js') }}"></script>
+  <script>
+    const campTransition = document.querySelector("#camp-transition");
+    let campTransitionStarted = false;
+    document.querySelectorAll("[data-camp-transition]").forEach((link) => {
+      link.addEventListener("click", (event) => {
+        if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        if (campTransitionStarted || !campTransition) return;
+        campTransitionStarted = true;
+        campTransition.hidden = false;
+        campTransition.setAttribute("aria-hidden", "false");
+        campTransition.classList.add("is-visible");
+        window.setTimeout(() => window.location.assign(link.href), 850);
+      });
+    });
+  </script>
 </body>
 </html>

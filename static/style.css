@@ -93,9 +93,10 @@
 }
 
 /* Mode selection page */
-.mode-page{height:100vh;height:100svh;min-height:620px;display:grid;grid-template-rows:64px minmax(220px,.78fr) 34px;overflow:hidden}
-.mode-page .topbar{height:64px;padding-inline:clamp(20px,4vw,64px)}
+.mode-page{height:100vh;height:100svh;min-height:620px;display:grid;grid-template-rows:minmax(0,1fr) 34px;overflow:hidden}
+.mode-language-toggle{position:fixed;z-index:12;top:20px;right:clamp(20px,4vw,64px)}
 .mode-page .mode-main{width:100%;height:100%;min-height:0;padding:40px 7vw;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px}
+.mode-page .mode-main{position:relative;z-index:1}
 .mode-page .mode-hero-copy{text-align:center}
 .mode-page .mode-hero-copy .eyebrow{margin-bottom:10px}
 .mode-page .mode-hero-copy h1{font:900 clamp(68px,9vw,132px)/.85 'Chakra Petch';letter-spacing:-6px;margin:0 0 20px;text-shadow:6px 6px 0 #262640}
@@ -115,6 +116,20 @@
 .language-toggle{flex:none;border:1px solid #343a56;background:#121626;color:var(--cyan);padding:8px 12px;font:11px 'Chakra Petch',sans-serif;letter-spacing:.7px;cursor:pointer}
 .language-toggle:hover{border-color:var(--cyan);background:#192236}
 .topbar-actions{display:flex;align-items:center;gap:16px}
+.camp-transition{position:fixed;z-index:20;inset:0;overflow:hidden;background:#050814;opacity:0;visibility:hidden;pointer-events:none}
+.camp-transition.is-visible{visibility:visible;pointer-events:auto;animation:camp-transition-in .55s ease forwards}
+.camp-transition-art,.camp-transition-shade{position:absolute;inset:0;width:100%;height:100%}
+.camp-transition-art{object-fit:cover;object-position:center;animation:camp-art-in 1.2s ease both}
+.camp-transition-shade{background:linear-gradient(90deg,#050814c9 0%,#05081470 50%,transparent 85%),linear-gradient(0deg,#050814bd 0%,transparent 42%,#0508144d 100%)}
+.camp-transition-briefing{position:absolute;top:clamp(82px,11vh,138px);left:clamp(22px,5vw,86px);width:min(680px,calc(100vw - 44px));padding-left:20px;border-left:2px solid var(--cyan);animation:camp-briefing-in .8s cubic-bezier(.2,.8,.2,1) both}
+.camp-transition-kicker{margin:0 0 12px;color:#69f5ed;font:700 12px 'Chakra Petch';letter-spacing:4px;text-shadow:0 2px 12px #001}
+.camp-transition-briefing h1{margin:0;color:#fff;font-size:clamp(28px,5vw,52px);line-height:1.25;text-shadow:0 3px 18px #000,0 0 24px #49e6e066}
+.camp-transition-loader{margin-top:24px}
+.camp-transition-loader .map-loader-animation{display:block;width:48px;height:48px}
+.camp-transition[hidden]{display:none}
+@keyframes camp-transition-in{to{opacity:1}}
+@keyframes camp-art-in{from{opacity:.45;transform:scale(1.035)}to{opacity:1;transform:scale(1)}}
+@keyframes camp-briefing-in{from{opacity:0;transform:translateY(16px) scale(.98);filter:blur(5px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
 html[lang="en"] body{font-family:'Chakra Petch','Segoe UI',sans-serif}
 html[lang="en"] .mode-page .mode-cards{max-width:1220px}
 html[lang="en"] .mode-card{padding-inline:22px}
@@ -124,6 +139,9 @@ html[lang="en"] .mode-card p{max-width:340px}
 /* Select page */
 .select-page{height:100vh;height:100svh;min-height:620px;display:grid;grid-template-rows:64px minmax(220px,.78fr) 34px;overflow:hidden}
 .select-page .topbar{height:64px;padding-inline:clamp(20px,4vw,64px)}
+.select-back{display:inline-flex;align-items:center;gap:7px;flex:none;color:var(--cyan);font:600 12px 'Chakra Petch';white-space:nowrap}
+.select-back:hover{color:#fff}
+.select-back:first-letter{font-size:20px}
 .select-page .select-main{width:100%;height:100%;min-height:0;padding:14px clamp(24px,6vw,88px);display:flex;flex-direction:column;gap:20px}
 .select-page .select-hero-copy{flex:1;min-width:0}
 .select-page .select-hero-copy .eyebrow{margin-bottom:10px}
@@ -155,10 +173,10 @@ html[lang="en"] .mode-card p{max-width:340px}
 @media(max-width:1000px){.select-page .hero-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:800px){.select-page .hero-grid{grid-template-columns:1fr}}
 @media(max-height:700px) and (min-width:761px){.select-page{height:auto;min-height:620px;overflow-y:auto}.select-page .topbar{height:56px}.select-page .select-main{padding-block:8px}.select-page .hero-portrait{height:70px}.select-page footer{height:28px}}
-@media(max-width:760px){.select-page{height:auto;min-height:100vh;display:block;overflow-x:hidden;overflow-y:auto}.select-page .topbar{height:60px;padding:0 16px}.select-page .topbar nav{display:none}.select-page .select-main{padding:34px 22px 18px;gap:12px}.select-page .select-hero-copy h1{font-size:clamp(52px,15vw,76px)}.select-page .hero-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.select-page .hero-card{min-height:248px}.select-page .hero-portrait{height:88px}.select-page .hero-portrait span{font-size:48px}.select-page footer{height:auto;min-height:38px;padding:10px 16px}}
+@media(max-width:760px){.select-page{height:auto;min-height:100vh;display:block;overflow-x:hidden;overflow-y:auto}.select-page .topbar{height:60px;padding:0 12px;gap:12px}.select-page .topbar nav{display:none}.select-back{font-size:10px}.select-page .brand{gap:7px}.select-page .brand-mark{width:34px;height:34px}.select-page .brand strong{font-size:14px;letter-spacing:1px}.select-page .brand small{font-size:8px}.select-page .language-toggle{padding:7px 9px;font-size:10px}.select-page .select-main{padding:34px 22px 18px;gap:12px}.select-page .select-hero-copy h1{font-size:clamp(52px,15vw,76px)}.select-page .hero-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.select-page .hero-card{min-height:248px}.select-page .hero-portrait{height:88px}.select-page .hero-portrait span{font-size:48px}.select-page footer{height:auto;min-height:38px;padding:10px 16px}}
 @media(max-width:390px){.select-page .hero-card{padding:8px}.select-page .hero-info h3{font-size:14px}.select-page .hero-info small{font-size:8px}}
 
-@media(max-width:700px){.mode-page{height:auto;min-height:100vh;display:block;overflow-x:hidden;overflow-y:auto}.mode-page .topbar{height:60px;padding:0 16px}.mode-page .topbar nav{display:none}.mode-page .mode-main{padding:34px 22px 18px;gap:18px}.mode-page .mode-hero-copy .mode-logo{width:clamp(180px,58vw,250px);margin-bottom:8px}.mode-page .mode-hero-copy h1{font-size:clamp(52px,15vw,76px)}.mode-page .mode-cards{grid-template-columns:1fr}.mode-page footer{height:auto;min-height:38px;padding:10px 16px}}
+@media(max-width:700px){.mode-page{height:auto;min-height:100vh;display:block;overflow-x:hidden;overflow-y:auto}.mode-language-toggle{top:12px;right:12px}.mode-page .mode-main{min-height:calc(100svh - 38px);padding:58px 22px 18px;gap:18px}.mode-page .mode-hero-copy .mode-logo{width:clamp(180px,58vw,250px);margin-bottom:8px}.mode-page .mode-hero-copy h1{font-size:clamp(52px,15vw,76px)}.mode-page .mode-cards{grid-template-columns:1fr}.mode-page footer{height:auto;min-height:38px;padding:10px 16px}.camp-transition-briefing{top:clamp(74px,12vh,112px);left:20px;width:calc(100vw - 40px);padding-left:14px}.camp-transition-briefing h1{font-size:clamp(25px,7vw,38px)}}
 
 /* Hero picker: compact roster on the left, full skill profile on the right. */
 .select-page{height:100vh;height:100svh;min-height:600px;grid-template-rows:64px minmax(0,1fr) 34px;overflow:hidden}
