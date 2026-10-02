@@ -25,7 +25,7 @@
       <div><span>{{ tr("MAP_TRANSITION_HERO") }}</span><b>{{ player.name }}</b><small>{{ player.class_name }}</small></div>
     </div>
     <div class="map-loading" aria-hidden="true">
-      <div class="map-loader"><i></i><i></i><i></i></div>
+      <dot-motion-loader class="map-loader-animation"></dot-motion-loader>
       <span>{{ tr("MAP_LOADING") }}</span>
     </div>
   </section>
@@ -145,6 +145,7 @@
       locale: {{ locale_pack|tojson }}
     };
   </script>
+  <script src="{{ url_for('static', filename='dot-motion-loader.js') }}"></script>
   <script src="{{ url_for('static', filename='app.js') }}"></script>
   <script src="{{ url_for('static', filename='language.js') }}"></script>
 </body>

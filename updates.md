@@ -1,5 +1,17 @@
 # 更新日志 / Updates
 
+## 1.2.2
+
+### 中文
+
+- 优化战场过场动画：采用点阵加载动画，并更新加载动画的呈现方式。
+- 应用版本更新至 1.2.2。
+
+### English
+
+- Optimized the battle transition with an updated animated dot-grid loader.
+- Updated the application version to 1.2.2.
+
 ## 1.2.1
 
 ### 中文
