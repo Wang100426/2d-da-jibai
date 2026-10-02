@@ -1,4 +1,5 @@
 # 2D大击败 / 2DFight Arena
+[![GitHub stars](https://img.shields.io/github/stars/Wang100426/2d-da-jibai?style=flat-square)](https://github.com/Wang100426/2d-da-jibai/stargazers) [![GitHub forks](https://img.shields.io/github/forks/Wang100426/2d-da-jibai?style=flat-square)](https://github.com/Wang100426/2d-da-jibai/network/members) [![GitHub issues](https://img.shields.io/github/issues/Wang100426/2d-da-jibai?style=flat-square)](https://github.com/Wang100426/2d-da-jibai/issues) [![GitHub release](https://img.shields.io/github/v/release/Wang100426/2d-da-jibai?style=flat-square)](https://github.com/Wang100426/2d-da-jibai/releases)
 
 **中文** | [English](#2dfight-arena)
 
@@ -69,6 +70,8 @@ npm run build
 ---
 
 <a id="2dfight-arena"></a>
+
+[![GitHub stars](https://img.shields.io/github/stars/Wang100426/2d-da-jibai?style=flat-square)](https://github.com/Wang100426/2d-da-jibai/stargazers) [![GitHub forks](https://img.shields.io/github/forks/Wang100426/2d-da-jibai?style=flat-square)](https://github.com/Wang100426/2d-da-jibai/network/members) [![GitHub issues](https://img.shields.io/github/issues/Wang100426/2d-da-jibai?style=flat-square)](https://github.com/Wang100426/2d-da-jibai/issues) [![GitHub release](https://img.shields.io/github/v/release/Wang100426/2d-da-jibai?style=flat-square)](https://github.com/Wang100426/2d-da-jibai/releases)
 
 ## 2DFight Arena
 
