@@ -3882,8 +3882,8 @@ function updateSkillButtons(): void {
     if (progress && rankLabel) {
       const required = smallUpgradeRequirement(progress.tier);
       rankLabel.textContent = required
-        ? `${progress.tier}阶 · ${progress.minorUpgrades}/${required}`
-        : "3阶 MAX";
+        ? tx(`${progress.tier}阶 · ${progress.minorUpgrades}/${required}`)
+        : tx("3阶 · 已满");
     }
   });
 }

@@ -1,5 +1,17 @@
 # 更新日志 / Updates
 
+## 1.4.0-preview
+
+### 中文
+
+- 修复战斗技能栏的技能阶级未显示英文翻译的问题。
+- 为各英雄普攻命中提示补充英文翻译。
+
+### English
+
+- Fixed untranslated skill-rank labels in the battle skill bar.
+- Added English translations for basic-attack hit messages across heroes.
+
 ## 1.3.5
 
 ### 中文

@@ -656,6 +656,26 @@
         "Empowered basic attack hit for $1 damage and knocked the enemy back!"
       ],
       [
+        "荆棘挥击造成 (\\d+) 点伤害并短暂缠绕目标。",
+        "Thorn strike deals $1 damage and briefly roots the target."
+      ],
+      [
+        "科技男远程普攻命中，造成 (\\d+) 点伤害。",
+        "Tech Fighter's ranged basic attack hits for $1 damage."
+      ],
+      [
+        "月光弹命中，造成 (\\d+) 点远程伤害。",
+        "Moonlight shot hits for $1 ranged damage."
+      ],
+      [
+        "琵琶音刃命中，造成 (\\d+) 点伤害。",
+        "Pipa's sound blade hits for $1 damage."
+      ],
+      [
+        "普攻命中，造成 (\\d+) 点伤害，回复 5 点能量。",
+        "Basic attack hits for $1 damage and restores 5 energy."
+      ],
+      [
         "普通攻击命中，造成 (\\d+) 点伤害。",
         "Basic attack hit for $1 damage."
       ],
@@ -702,6 +722,10 @@
       [
         "(\\d+)阶 · 小强化 (\\d+)/(\\d+)",
         "RANK $1 · MINOR $2/$3"
+      ],
+      [
+        "(\\d+)阶 · (\\d+)/(\\d+)",
+        "RANK $1 · $2/$3"
       ],
       [
         "([\\d.]+) 次/秒 · 回复 5 能量",
