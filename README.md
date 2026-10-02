@@ -23,6 +23,7 @@
 | `Space` | 普通攻击 |
 | `F` | 拾取附近物资 |
 | `P` / `Esc` | 暂停或继续单机肉鸽战斗 |
+| 触控模式 | 在战斗页右上角开启方向键、技能与普攻触控按钮 |
 
 普通攻击基础攻速为每秒两次,可通过强化提升。英雄拥有不同技能和防御能力;琵琶女可召唤小兵吸引敌人注意力,并使用「金蛇狂舞」使敌人陷入混乱、互相攻击。肉鸽强化还包括攻击、防御、吸血、闪避、移动速度、能量恢复和冷却缩减。击败敌人可获得技能经验,技能通过小强化逐步升阶并解锁新效果。
 
@@ -39,7 +40,7 @@ python app.py
 
 也可以运行 `python server_gui.py` 启动带局域网地址显示的服务。局域网玩家连接同一网络后,可在浏览器中打开主机显示的地址。房间状态保存在内存中,服务停止后会清除。
 
-## Windows 桌面版 1.3.0
+## Windows 桌面版 1.3.5
 
 构建 Windows x64 安装程序:
 
@@ -94,6 +95,7 @@ npm run build
 | `Space` | Basic attack |
 | `F` | Collect nearby supplies |
 | `P` / `Esc` | Pause or resume a solo roguelike run |
+| Touch mode | Enable the movement pad, skills, and basic-attack button from the battle screen |
 
 Basic attacks start at two attacks per second and can be improved with upgrades. Heroes have distinct skills and defenses; Pipa Girl can summon minions to draw enemy attention, then use “Golden Snake Dance” to confuse enemies and make them attack one another. Roguelike upgrades can also improve attack, defense, lifesteal, dodge, movement, energy regeneration, and cooldown reduction. Skill upgrades unlock new effects as skills rank up.
 
@@ -110,7 +112,7 @@ python app.py
 
 Alternatively, run `python server_gui.py` to start the server with a LAN address display. Players must be on the same network to join using the host's address. Room state is kept in memory and is cleared when the server stops.
 
-### Windows desktop release 1.3.0
+### Windows desktop release 1.3.5
 
 Build the Windows x64 installer:
 

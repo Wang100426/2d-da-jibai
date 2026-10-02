@@ -2,6 +2,7 @@ interface SelectionSkill {
   id: string;
   name: string;
   description: string;
+  detail_description?: string;
   kind: string;
   cost: number;
   cooldown: number;
@@ -69,7 +70,7 @@ function renderSkills(hero: SelectionHero): void {
     const name = document.createElement("b");
     name.textContent = skill.name;
     const description = document.createElement("small");
-    description.textContent = skill.description;
+    description.textContent = skill.detail_description || skill.description;
     copy.append(name, description);
     const cooldown = document.createElement("span");
     cooldown.textContent = `${skill.cost} EN / ${skill.cooldown}s`;

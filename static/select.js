@@ -48,7 +48,7 @@ function renderSkills(hero) {
         const name = document.createElement("b");
         name.textContent = skill.name;
         const description = document.createElement("small");
-        description.textContent = skill.description;
+        description.textContent = skill.detail_description || skill.description;
         copy.append(name, description);
         const cooldown = document.createElement("span");
         cooldown.textContent = `${skill.cost} EN / ${skill.cooldown}s`;

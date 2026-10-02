@@ -1,5 +1,21 @@
 # 更新日志 / Updates
 
+## 1.3.5
+
+### 中文
+
+- 战斗页右上角新增触控模式开关，位于语言切换旁边。
+- 开启后显示四向移动按键、三个技能按钮及普攻按钮；再次点击关闭触控操作。
+- 选英雄页左侧英雄列表改为每行两个方形卡片，选中项以高亮边框标记；所有英雄的技能说明补充了施法范围、伤害和效果细节。
+- 更新应用版本至 1.3.5。
+
+### English
+
+- Added a touch-mode toggle to the battle screen beside the language switch.
+- Enabling it reveals four directional movement buttons, all three skill buttons, and a basic-attack button; toggle it again to hide touch controls.
+- Changed the hero roster to two square cards per row with a highlighted selection border, and expanded every hero skill description with range, damage, and effect details.
+- Updated the application version to 1.3.5.
+
 ## 1.3.0
 
 ### 中文

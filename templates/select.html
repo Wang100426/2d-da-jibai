@@ -67,7 +67,7 @@
                 {% for skill in heroes[0].skills %}
                 <article class="detail-skill">
                   <kbd>{{ ["Q", "E", "R"][loop.index0] }}</kbd>
-                  <div><b>{{ skill.name }}</b><small>{{ skill.description }}</small></div>
+                  <div><b>{{ skill.name }}</b><small>{{ skill.detail_description|default(skill.description) }}</small></div>
                   <span>{{ skill.cooldown }}s</span>
                 </article>
                 {% endfor %}

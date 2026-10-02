@@ -123,6 +123,7 @@ const impactParticles = [];
 const tabletProjectiles = [];
 let tabletVolley;
 const skillButtons = [...document.querySelectorAll(".map-skill[data-skill]")];
+const touchModeToggle = requireElement("#touch-mode-toggle");
 const toast = requireElement("#map-toast");
 const pickupPrompt = requireElement("#pickup-prompt");
 const basicAttackButton = requireElement("#basic-attack");
@@ -1367,7 +1368,7 @@ function drawMap() {
         if (!supply.collected)
             drawSupply(supply);
     });
-    enemies.forEach(drawEnemy);
+    enemies.filter((enemy) => !enemy.gymRusher).forEach(drawEnemy);
     pipaMinions.forEach(drawPipaMinion);
     drawFloatingTexts();
     context.strokeStyle = "#49e6e0";
@@ -1523,6 +1524,8 @@ function drawHarpField(harp) {
     context.restore();
 }
 function drawGymRusher(rusher) {
+    if (rusher.hp <= 0)
+        return;
     context.save();
     context.translate(rusher.x, rusher.y);
     context.rotate(Math.atan2(rusher.vy, rusher.vx));
@@ -1543,6 +1546,12 @@ function drawGymRusher(rusher) {
     context.beginPath();
     context.arc(21, -5, 2.5, 0, Math.PI * 2);
     context.fill();
+    context.rotate(-Math.atan2(rusher.vy, rusher.vx));
+    context.fillStyle = "#10131e";
+    context.fillRect(-24, -31, 48, 5);
+    context.fillStyle = "#ff795d";
+    context.fillRect(-24, -31, 48 * Math.max(0, rusher.hp / rusher.maxHp), 5);
+    drawEffectIndicators(0, -49, rusher.effects);
     context.restore();
 }
 function drawAirportPlane(plane) {
@@ -1958,35 +1967,56 @@ function spawnGymRushers() {
         const target = getEventTargets()
             .sort((left, right) => Math.hypot(left.x - x, left.y - y) - Math.hypot(right.x - x, right.y - y))[0];
         const angle = target ? Math.atan2(target.y - y, target.x - x) : Math.random() * Math.PI * 2;
-        const speed = 760 + Math.random() * 180;
-        gymRushers.push({
+        const speed = 250 + Math.random() * 60;
+        const hp = Math.round(150 * (1 + (wave - 1) * 0.16));
+        const rusher = {
+            id: `gym-rusher-${++eventSerial}`,
             x, y,
             vx: Math.cos(angle) * speed,
             vy: Math.sin(angle) * speed,
-            life: 4,
+            life: 8,
             targetId: target?.id,
             hitTargets: new Set(),
-        });
+            hp,
+            maxHp: hp,
+            attackTimer: 0,
+            attack: 0,
+            speed,
+            kind: "brute",
+            poisonDamage: 0,
+            poisonTimer: 0,
+            effects: {},
+            experienceAwarded: false,
+            gymRusher: true,
+        };
+        gymRushers.push(rusher);
+        enemies.push(rusher);
     }
-    showToast(tx("健身房警报！肌肉壮汉冲出建筑，正高速冲向附近单位！"), "warning");
+    showToast(tx("健身房警报！肌肉壮汉冲出建筑，正冲向附近单位；击败可获得技能经验。"), "warning");
 }
 function updateGymRushers(dt) {
     for (let index = gymRushers.length - 1; index >= 0; index -= 1) {
         const rusher = gymRushers[index];
+        if (rusher.hp <= 0) {
+            gymRushers.splice(index, 1);
+            continue;
+        }
         const previousX = rusher.x;
         const previousY = rusher.y;
-        const targets = getEventTargets();
+        const targets = getEventTargets().filter((candidate) => !candidate.unit?.gymRusher);
         const target = targets.find((candidate) => candidate.id === rusher.targetId) ||
             targets.sort((left, right) => Math.hypot(left.x - rusher.x, left.y - rusher.y) - Math.hypot(right.x - rusher.x, right.y - rusher.y))[0];
-        if (target) {
+        if (target && !rusher.effects["眩晕"] && !rusher.effects["禁锢"]) {
             const speed = Math.hypot(rusher.vx, rusher.vy);
             const angle = Math.atan2(target.y - rusher.y, target.x - rusher.x);
             rusher.vx = Math.cos(angle) * speed;
             rusher.vy = Math.sin(angle) * speed;
             rusher.targetId = target.id;
         }
-        rusher.x += rusher.vx * dt;
-        rusher.y += rusher.vy * dt;
+        const slowMultiplier = rusher.effects["强力减速"] ? 0.4 : rusher.effects["减速"] ? 0.45 : 1;
+        const movementMultiplier = rusher.effects["眩晕"] || rusher.effects["禁锢"] ? 0 : slowMultiplier;
+        rusher.x += rusher.vx * dt * movementMultiplier;
+        rusher.y += rusher.vy * dt * movementMultiplier;
         rusher.life -= dt;
         let impacted = false;
         for (const victim of targets) {
@@ -2009,6 +2039,9 @@ function updateGymRushers(dt) {
         if (impacted || rusher.life <= 0 || rusher.x < -100 || rusher.y < -100 ||
             rusher.x > map.width + 100 || rusher.y > map.height + 100) {
             gymRushers.splice(index, 1);
+            const enemyIndex = enemies.indexOf(rusher);
+            if (enemyIndex >= 0)
+                enemies.splice(enemyIndex, 1);
         }
     }
 }
@@ -3443,7 +3476,7 @@ function spawnPipaMinions() {
     let spawned = 0;
     const skill = config.skills.find((item) => item.action === "pipa_shimian");
     const count = skill?.minion_count || 5;
-    const hp = Math.round(15 * (skill?.minion_hp_multiplier || 1));
+    const hp = Math.round(15 * (skill?.minion_hp_multiplier || 1) + skillExperienceLevel * 2 + wave * 2);
     for (let index = 0; index < count; index += 1) {
         const angle = Math.PI * 2 * index / count;
         let x = player.x + Math.cos(angle) * 62;
@@ -3595,6 +3628,8 @@ function updateCombat(dt) {
             if (enemy.hp <= 0)
                 return;
         }
+        if (enemy.gymRusher)
+            return;
         if (enemy.duelBot) {
             if (enemy.effects["狂舞"] > 0)
                 updateDuelBotFrenzy(enemy, dt);
@@ -3835,7 +3870,7 @@ function drawMinimap() {
     supplies.filter((supply) => !supply.collected).forEach((supply) => {
         miniContext.fillRect(supply.x * sx - 1, supply.y * sy - 1, 3, 3);
     });
-    enemies.filter((enemy) => enemy.hp > 0).forEach((enemy) => {
+    enemies.filter((enemy) => enemy.hp > 0 && !enemy.gymRusher).forEach((enemy) => {
         miniContext.fillStyle = enemy.anesthetist ? "#82f2e8" : "#ff637c";
         miniContext.fillRect(enemy.x * sx - (enemy.anesthetist ? 2 : 1), enemy.y * sy - (enemy.anesthetist ? 2 : 1), enemy.anesthetist ? 5 : 3, enemy.anesthetist ? 5 : 3);
     });
@@ -3848,6 +3883,8 @@ function drawMinimap() {
         miniContext.fillRect(harp.x * sx - 2, harp.y * sy - 2, 4, 4);
     });
     gymRushers.forEach((rusher) => {
+        if (rusher.hp <= 0)
+            return;
         miniContext.fillStyle = "#ff795d";
         miniContext.fillRect(rusher.x * sx - 2, rusher.y * sy - 2, 4, 4);
     });
@@ -3977,7 +4014,10 @@ document.addEventListener("keydown", (event) => {
 document.addEventListener("keyup", (event) => {
     keys.delete(normalizeKey(event.key));
 });
-window.addEventListener("blur", () => keys.clear());
+window.addEventListener("blur", () => {
+    keys.clear();
+    touchKeys.clear();
+});
 document.querySelectorAll(".touch-pad button").forEach((button) => {
     const direction = button.dataset.move;
     if (!direction)
@@ -3991,6 +4031,12 @@ document.querySelectorAll(".touch-pad button").forEach((button) => {
     button.addEventListener("pointerup", release);
     button.addEventListener("pointercancel", release);
     button.addEventListener("lostpointercapture", release);
+});
+touchModeToggle.addEventListener("click", () => {
+    const enabled = document.body.classList.toggle("touch-mode-active");
+    touchModeToggle.setAttribute("aria-pressed", String(enabled));
+    if (!enabled)
+        touchKeys.clear();
 });
 skillButtons.forEach((button, index) => {
     button.addEventListener("click", () => castSkill(index));

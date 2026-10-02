@@ -31,6 +31,7 @@
   </section>
   <div class="map-page-actions">
     <span id="map-mode" hidden>{{ tr("BATTLE_TITLE_DUEL" if game_mode == "duel" else "BATTLE_TITLE_ROGUE") }}</span>
+    <button class="touch-mode-toggle" id="touch-mode-toggle" type="button" aria-pressed="false">{{ tr("TOUCH_MODE") }}</button>
     <button class="language-toggle" type="button" data-language-toggle>{{ tr("LANG_TOGGLE") }}</button>
     <a class="exit-link" href="{% if game_mode == 'duel' %}/select?mode=duel{% else %}/select{% endif %}">{{ tr("BACK_SELECT") }} ×</a>
   </div>

@@ -63,7 +63,7 @@
     "MAP_EVENT_CITY": "Traffic surges across the streets. Impacts deal heavy damage and stun.",
     "MAP_EVENT_HOSPITAL": "Fast anesthetists rush in; their first hit injects anesthetic.",
     "MAP_EVENT_MUSIC": "Harps land at random and play for 5 seconds, damaging and slowing by 60%.",
-    "MAP_EVENT_GYM": "Musclebound bruisers charge out of buildings and deal massive damage.",
+    "MAP_EVENT_GYM": "Musclebound bruisers burst from buildings and pursue nearby units. Defeat them for skill XP.",
     "MAP_EVENT_AIRPORT": "Aircraft use one of eight random runways; collisions hit hard and knock back.",
     "MAP_EVENT_SCHOOL": "The office displays the class schedule. Classes last 10 seconds, slowing all units and reducing their attack speed and damage.",
     "SCHOOL_CLASS_IN": "CLASS IN",
@@ -109,6 +109,7 @@
     "EXPLORER": "Explorer",
     "PRODUCT_NAME": "2DFight Arena",
     "LANG_TOGGLE": "中文",
+    "TOUCH_MODE": "Touch",
     "MP_INTRO": "Join friends on the same Wi-Fi or local network in the neon ruins. The room server synchronizes player attacks, damage, health, and crowd control; PvE waves and upgrades are simulated by each client.",
     "HEALTH_SHIELD": "Health + Shield",
     "ENERGY": "Energy",
@@ -154,16 +155,19 @@
         "volt-ult": {
           "name": "Thunder Pursuit",
           "description": "Dash to the nearest enemy · Area stun",
+          "detail_description": "Automatically dash to the nearest enemy within 340 range. Deal 38 damage and stun enemies within 115 of the landing point; the dash travels up to 300.",
           "kind": "Ultimate"
         },
         "volt-chain": {
           "name": "Concussive Fist",
           "description": "Empower your next basic attack · Knockback",
+          "detail_description": "Empower your next basic attack to deal 34 damage and knock back its target. The charge remains until an attack lands.",
           "kind": "Skill"
         },
         "volt-overdrive": {
           "name": "Breakthrough Dash",
           "description": "Dash in your movement direction · Damage along the path",
+          "detail_description": "Dash up to 230 range in your current movement direction, dealing 24 damage to enemies along the path.",
           "kind": "Skill"
         }
       }
@@ -182,16 +186,19 @@
         "moss-ult": {
           "name": "Briar Garden",
           "description": "Root the target area · Root enemies and restore health",
+          "detail_description": "Choose a point up to 430 range away. Enemies within 185 take 32 damage and are rooted; restore 20 health.",
           "kind": "Ultimate"
         },
         "moss-vine": {
           "name": "Barkskin Bastion",
           "description": "Gain damage reduction · Melee attackers take thorn damage",
+          "detail_description": "Gain thorn armor for 6 seconds, reducing incoming damage by 55%. Melee attackers take 12 thorn damage.",
           "kind": "Skill"
         },
         "moss-bark": {
           "name": "Spore Bloom",
           "description": "Burst in the target area · Damage over time",
+          "detail_description": "Choose an area up to 400 range away. Enemies within 130 take 14 damage and are poisoned for 5 seconds, taking 4 base damage per second.",
           "kind": "Skill"
         }
       }
@@ -210,16 +217,19 @@
         "luna-ult": {
           "name": "Crescent Meteor",
           "description": "Choose a distant impact point · Large burst",
+          "detail_description": "Choose an impact point up to 560 range away. Enemies within 150 take 58 damage and are stunned.",
           "kind": "Ultimate"
         },
         "luna-orbit": {
           "name": "Crescent Wave",
           "description": "Fire a moonblade at the nearest enemy · Pierce in a line",
+          "detail_description": "Fire a moonblade at the nearest enemy within 500 range. It pierces enemies in a line up to 480 long, dealing 27 damage and slowing them.",
           "kind": "Skill"
         },
         "luna-phase": {
           "name": "Moonshadow Shift",
           "description": "Blink in your movement direction · Gain 30 shield",
+          "detail_description": "Blink up to 190 range in your current movement direction and gain a 30-point shield for 4 seconds.",
           "kind": "Skill"
         }
       }
@@ -238,16 +248,19 @@
         "tech-ult": {
           "name": "Overclock Assault",
           "description": "Stun enemies in basic attack range · Dash in your movement direction",
+          "detail_description": "Deal 36 damage to and stun enemies within 330 range, then dash up to 300 in your current movement direction.",
           "kind": "Ultimate"
         },
         "tech-tablets": {
           "name": "Five-Screen Convergence",
           "description": "Launch five tablets · Converge and explode at 200 range",
+          "detail_description": "Launch five tablets up to 200 range in your facing direction. They knock back enemies along the way, then explode at the endpoint, dealing 18 damage and slowing enemies within 100.",
           "kind": "Skill"
         },
         "tech-afterimage": {
           "name": "Afterimage Return",
           "description": "Leave an afterimage · Three invulnerable round-trip dashes that damage and knock back",
+          "detail_description": "Leave a 3.2-second afterimage and make 3 round trips in your facing direction (up to 180 per leg). You are immune to damage while dashing; enemies along the path take 16 damage and are knocked back.",
           "kind": "Skill"
         }
       }
@@ -266,16 +279,19 @@
         "pipa-ult": {
           "name": "Golden Serpent Dance",
           "description": "Attack the 3 nearby enemies with the most remaining health and send them into a frenzy",
+          "detail_description": "Attack the 3 nearby enemies with the most remaining health within 360 range, dealing 34 damage and applying a 5-second frenzy. Affected enemies attack foes uncontrollably, or themselves if only one enemy remains. In PvP, frenzy instead roots the target and makes it basic-attack itself for 2 seconds.",
           "kind": "Ultimate"
         },
         "pipa-yangchun": {
           "name": "Spring Snow",
           "description": "Hit and root the 3 nearest enemies for 3 seconds, restoring 20% of damage dealt as health",
+          "detail_description": "Hit the 3 nearest enemies within 420 range for 28 damage each and root them for 3 seconds. Restore health equal to 20% of the total damage dealt.",
           "kind": "Skill"
         },
         "pipa-shimian": {
           "name": "Ambush on All Sides",
           "description": "Summon 5 minions with 15 HP that autonomously pursue and attack enemies",
+          "detail_description": "Summon 5 autonomous minions that pursue and attack enemies. Each has 15 base HP, plus 2 per Pipa's skill level and 2 per current wave.",
           "kind": "Skill"
         }
       }
@@ -400,7 +416,7 @@
       "琴弦共鸣！竖琴已落地，演奏 5 秒并伤害、减速附近单位。": "Harp resonance! Harps play for 5 seconds, damaging and slowing nearby units.",
       "音乐警报！竖琴即将坠落，请及时离开音场。": "Music warning! Harps are about to land; leave the sound field.",
       "健身房警报！建筑里有肌肉壮汉正在集结。": "Gym warning! Musclebound bruisers are gathering inside the buildings.",
-      "健身房警报！肌肉壮汉冲出建筑，正高速冲向附近单位！": "Gym breach! Musclebound bruisers are charging at nearby units!",
+      "健身房警报！肌肉壮汉冲出建筑，正冲向附近单位；击败可获得技能经验。": "Gym breach! Musclebound bruisers are pursuing nearby units. Defeat them for skill XP!",
       "飞机即将起飞！请避开正在使用的跑道。": "Aircraft taking off! Stay clear of the active runway.",
       "飞机即将降落！请避开正在使用的跑道。": "Aircraft landing! Stay clear of the active runway.",
       "航班时刻表": "FLIGHT SCHEDULE",

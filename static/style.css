@@ -172,7 +172,7 @@ html[lang="en"] .mode-card p{max-width:340px}
 .select-back:first-letter{font-size:20px}
 .select-language-toggle{position:fixed;z-index:12;top:14px;right:clamp(20px,4vw,64px)}
 .select-page .select-main{width:100%;height:100%;min-height:0;padding:68px clamp(24px,6vw,88px) 14px;display:flex;flex-direction:column;gap:20px}
-.select-page .select-hero-copy{flex:1;min-width:0}
+.select-page .select-hero-copy{flex:none;min-width:0}
 .select-page .select-hero-copy .eyebrow{margin-bottom:10px}
 .select-page .select-hero-copy h1{font:900 clamp(48px,6vw,78px)/.85 'Chakra Petch';letter-spacing:-3px;margin:0 0 20px;text-shadow:6px 6px 0 #262640}
 .select-page .select-hero-copy h1 span{display:block;color:var(--pink);text-shadow:5px 5px 0 #461d48}
@@ -215,28 +215,30 @@ html[lang="en"] .mode-card p{max-width:340px}
 .select-page .select-hero-copy h1{font-size:clamp(28px,3vw,40px);letter-spacing:-1px;margin:0;text-shadow:3px 3px #262640}
 .select-page .select-hero-copy h1 span{display:inline;color:var(--pink);font:600 14px 'Chakra Petch';vertical-align:middle;text-shadow:none;margin-left:8px}
 .select-page .select-hero-copy>p{margin:0 0 3px;color:#aab0c3;font-size:11px}
-.selection-layout{flex:1;min-height:0;display:grid;grid-template-columns:minmax(230px,.38fr) minmax(0,1fr);gap:16px}
-.hero-roster{min-height:0;display:grid;grid-template-rows:repeat(5,minmax(0,1fr));gap:9px}
-.roster-choice{width:100%;min-height:0;display:flex;align-items:center;gap:14px;padding:12px 16px;text-align:left;background:linear-gradient(110deg,#111522,#0c0f19);border:1px solid #292e44;color:var(--text);font:inherit;cursor:pointer;transition:transform .16s,border-color .16s,background .16s;clip-path:polygon(0 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%)}
-.roster-choice:hover{transform:translateX(3px);border-color:#68718c}
-.roster-choice.selected{background:linear-gradient(110deg,#1a2633,#111522);border-color:var(--cyan);box-shadow:inset 3px 0 var(--cyan),0 0 20px #49e6e018}
-.roster-avatar{width:48px;height:48px;flex:none;display:grid;place-items:center;background:linear-gradient(145deg,#702d55,#24192c);color:#ffd3e8;font-size:25px;font-weight:900;clip-path:polygon(50% 0,100% 22%,90% 100%,10% 100%,0 22%)}
+.selection-layout{flex:1;min-height:0;display:grid;grid-template-columns:minmax(300px,.42fr) minmax(0,1fr);gap:16px}
+.hero-roster{min-height:0;display:grid;align-content:start;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:auto;gap:9px}
+.roster-choice{width:100%;min-width:0;min-height:0;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:10px;text-align:center;background:linear-gradient(145deg,#111522,#0c0f19);border:1px solid #292e44;color:var(--text);font:inherit;cursor:pointer;transition:border-color .16s,background .16s,box-shadow .16s}
+.roster-choice:hover{border-color:#68718c;background:linear-gradient(145deg,#171d2c,#10131f)}
+.roster-choice.selected{background:linear-gradient(145deg,#1a2633,#111522);border:2px solid var(--cyan);box-shadow:0 0 20px #49e6e033}
+.roster-avatar{width:clamp(42px,5vw,64px);height:clamp(42px,5vw,64px);flex:none;display:grid;place-items:center;background:linear-gradient(145deg,#702d55,#24192c);color:#ffd3e8;font-size:clamp(22px,2.7vw,34px);font-weight:900;clip-path:polygon(50% 0,100% 22%,90% 100%,10% 100%,0 22%)}
 .roster-choice.green .roster-avatar{background:linear-gradient(145deg,#718a3d,#263b2d);color:#e9ffb7}
 .roster-choice.blue .roster-avatar{background:linear-gradient(145deg,#606fc1,#252f59);color:#e0e4ff}
 .roster-choice.tech .roster-avatar{background:linear-gradient(145deg,#32828a,#16373e);color:#d4fffb}
 .roster-choice.tech{background:linear-gradient(110deg,#121d38,#0b1120);border-color:#263c68}
-.roster-choice.tech:hover,.roster-choice.tech.selected{background:linear-gradient(110deg,#1b3260,#101a33);border-color:#438dff}
-.roster-choice.tech.selected{box-shadow:inset 3px 0 #438dff,0 0 20px #438dff22}
+.roster-choice.tech:hover,.roster-choice.tech.selected{background:linear-gradient(145deg,#1b3260,#101a33);border-color:#438dff}
+.roster-choice.tech.selected{box-shadow:0 0 20px #438dff44}
 .roster-choice.tech .roster-avatar{background:linear-gradient(145deg,#438dff,#172d67);color:#e1eeff}
 .roster-choice.pipa{background:linear-gradient(110deg,#211c16,#11131c);border-color:#59462a}
-.roster-choice.pipa:hover,.roster-choice.pipa.selected{background:linear-gradient(110deg,#372a17,#19171b);border-color:#f1b95b}
+.roster-choice.pipa:hover,.roster-choice.pipa.selected{background:linear-gradient(145deg,#372a17,#19171b);border-color:#f1b95b}
 .roster-choice.pipa .roster-avatar{background:linear-gradient(145deg,#f1b95b,#64401f);color:#fff0b8}
-.roster-identity{min-width:0;flex:1}
+.roster-identity{min-width:0;max-width:100%}
 .roster-identity small,.roster-identity b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .roster-identity small{margin-bottom:4px;color:var(--muted);font-size:10px}
 .roster-identity b{font-size:15px}
-.roster-arrow{color:#657087;font:24px 'Chakra Petch';transition:color .16s,transform .16s}
-.roster-choice.selected .roster-arrow{color:var(--cyan);transform:translateX(3px)}
+.roster-arrow{display:none}
+.roster-choice.selected .roster-identity b{color:var(--cyan)}
+.roster-choice.tech.selected .roster-identity b{color:#8cbaff}
+.roster-choice.pipa.selected .roster-identity b{color:#f1b95b}
 .roster-choice:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
 .hero-detail{min-width:0;min-height:0;display:flex;flex-direction:column;padding:14px 20px 16px;background:radial-gradient(ellipse at 25% 5%,#1a2437,#10131f 55%);border:1px solid #333a53;position:relative;overflow:hidden}
 .detail-topline{height:22px;flex:none;display:flex;align-items:center;color:#7f88a1;font:10px 'Chakra Petch';letter-spacing:1.5px}
@@ -271,13 +273,13 @@ html[lang="en"] .mode-card p{max-width:340px}
 .skills-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .skills-heading h3{margin:0;font-size:13px}
 .skills-heading>span{color:#78839b;font:10px 'Chakra Petch';letter-spacing:1px}
-.detail-skill-list{display:grid;grid-template-rows:repeat(3,minmax(0,1fr));gap:6px;min-height:0}
-.detail-skill{min-width:0;display:flex;align-items:center;gap:10px;padding:7px 10px;background:#0c101b;border:1px solid #282e43}
+.detail-skill-list{display:grid;grid-auto-rows:min-content;gap:6px;min-height:0;overflow-y:auto}
+.detail-skill{min-width:0;display:flex;align-items:flex-start;gap:10px;padding:7px 10px;background:#0c101b;border:1px solid #282e43}
 .detail-skill kbd{width:25px;height:25px;flex:none;display:grid;place-items:center;background:#17202d;border:1px solid #49e6e077;color:var(--cyan);font:11px 'Chakra Petch'}
 .detail-skill>div{min-width:0;flex:1}
-.detail-skill>div b,.detail-skill>div small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.detail-skill>div b,.detail-skill>div small{display:block}
 .detail-skill>div b{font-size:10px}
-.detail-skill>div small{margin-top:2px;color:#8c94a9;font-size:9px}
+.detail-skill>div small{margin-top:3px;color:#a0a8bb;font-size:10px;line-height:1.5;overflow-wrap:anywhere}
 .detail-skill>span{flex:none;color:#ff8abb;font:10px 'Chakra Petch'}
 .detail-footer{flex:none;display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid #30364a}
 .detail-footer>span b,.detail-footer>span small{display:block}
@@ -328,11 +330,11 @@ html[lang="en"] .mode-card p{max-width:340px}
   .select-page .select-hero-copy{align-items:flex-start}
   .select-page .select-hero-copy>p{max-width:44%;text-align:right;line-height:1.5}
   .selection-layout{display:flex;flex-direction:column;min-height:0}
-  .hero-roster{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:none;gap:7px}
-  .roster-choice{min-height:66px;padding:8px;gap:8px}
-  .roster-avatar{width:38px;height:38px;font-size:20px}
-  .roster-identity small{font-size:8px}
-  .roster-identity b{font-size:11px}
+  .hero-roster{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:none;grid-auto-rows:auto;gap:7px}
+  .roster-choice{padding:10px;gap:8px}
+  .roster-avatar{width:clamp(38px,12vw,54px);height:clamp(38px,12vw,54px);font-size:clamp(20px,6vw,28px)}
+  .roster-identity small{font-size:9px}
+  .roster-identity b{font-size:12px}
   .hero-detail{min-height:440px;padding:12px}
   .detail-main{grid-template-columns:minmax(105px,.36fr) minmax(0,1fr);gap:12px}
   .detail-portrait>span{font-size:clamp(72px,22vw,130px)}
