@@ -5,14 +5,14 @@
 ### 中文
 
 - 移除主页顶部导航栏，并保留独立的语言切换按钮。
-- 在英雄选择页左上角添加返回首页按钮。
+- 移除英雄选择页与战斗页的顶部导航栏；选人页保留返回首页和语言切换，战斗页保留返回选人和语言切换。
 - 点击主页模式后新增“正在连接至赛博营地……”过渡页，沿用战场概览图、点阵加载动画及淡入效果。
 - 更新应用版本至 1.2.3。
 
 ### English
 
 - Removed the home page top navigation bar while retaining a standalone language toggle.
-- Added a back-to-home button to the upper-left corner of hero selection.
+- Removed the navigation bars from hero selection and battle, keeping the back/language controls available on each page.
 - Added a “Connecting to the Cyber Camp...” transition after selecting a mode, using the arena overview art, dot-grid loader, and fade-in effect.
 - Updated the application version to 1.2.3.
 

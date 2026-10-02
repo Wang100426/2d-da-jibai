@@ -29,11 +29,11 @@
       <span>{{ tr("MAP_LOADING") }}</span>
     </div>
   </section>
-  <header class="map-topbar">
-    <a class="brand" href="/"><img class="brand-mark brand-mark-image" src="{{ url_for('favicon', lang=lang) }}" alt=""><span><strong>{{ tr("PRODUCT_NAME") }}</strong><small>{{ tr("AI_DUEL" if game_mode == "duel" else "ROGUELIKE_RUN") }}</small></span></a>
-    <div class="map-location"><span class="status-dot"></span> {{ tr("ARENA") }} <b>·</b> <span id="map-mode">{{ tr("BATTLE_TITLE_DUEL" if game_mode == "duel" else "BATTLE_TITLE_ROGUE") }}</span></div>
-    <div class="topbar-actions"><button class="language-toggle" type="button" data-language-toggle>{{ tr("LANG_TOGGLE") }}</button><a class="exit-link" href="{% if game_mode == 'duel' %}/select?mode=duel{% else %}/select{% endif %}">{{ tr("BACK_SELECT") }} ×</a></div>
-  </header>
+  <div class="map-page-actions">
+    <span id="map-mode" hidden>{{ tr("BATTLE_TITLE_DUEL" if game_mode == "duel" else "BATTLE_TITLE_ROGUE") }}</span>
+    <button class="language-toggle" type="button" data-language-toggle>{{ tr("LANG_TOGGLE") }}</button>
+    <a class="exit-link" href="{% if game_mode == 'duel' %}/select?mode=duel{% else %}/select{% endif %}">{{ tr("BACK_SELECT") }} ×</a>
+  </div>
   <aside class="map-hero-card">
     <div class="map-portrait {{ player.accent }}">{{ player.initial }}</div>
     <div><small>{{ player.class_name }}</small><b>{{ player.name }}</b><span>{{ tr("DUELIST" if game_mode == "duel" else "EXPLORER") }} · <span id="run-level">Lv.01</span></span></div>

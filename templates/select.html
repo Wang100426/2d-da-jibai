@@ -9,19 +9,8 @@
 </head>
 <body class="select-page">
   <div class="scanlines"></div>
-  <header class="topbar">
-    <a class="select-back" href="/" aria-label="{{ tr('BACK_HOME') }}">← <span>{{ tr("BACK_HOME") }}</span></a>
-    <a class="brand" href="/">
-      <img class="brand-mark brand-mark-image" src="{{ url_for('favicon', lang=lang) }}" alt="">
-      <span><strong>{{ tr("PRODUCT_NAME") }}</strong><small>{{ tr("CYBER_ARENA") }}</small></span>
-    </a>
-    <nav>
-      <a href="/">{{ tr("HOME") }}</a>
-      <a class="active" href="/select">{{ tr("HEROES") }}</a>
-      <a href="/multiplayer">{{ tr("LAN") }}</a>
-    </nav>
-    <button class="language-toggle" type="button" data-language-toggle>{{ tr("LANG_TOGGLE") }}</button>
-  </header>
+  <a class="select-back" href="/" aria-label="{{ tr('BACK_HOME') }}">← <span>{{ tr("BACK_HOME") }}</span></a>
+  <button class="language-toggle select-language-toggle" type="button" data-language-toggle>{{ tr("LANG_TOGGLE") }}</button>
 
   <main class="select-main">
     <section class="select-hero-copy">

@@ -25,9 +25,9 @@ body.map-page{height:100dvh;overflow:hidden;background:#101722}
 @keyframes transition-card-in{from{opacity:0;transform:translateY(16px) scale(.98);filter:blur(5px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
 @keyframes transition-art-in{from{opacity:.45;transform:scale(1.035)}to{opacity:1;transform:scale(1)}}
 @keyframes transition-pulse{to{opacity:.45;transform:scale(.82)}}
-.map-topbar{height:68px;position:fixed;z-index:3;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:0 28px;background:linear-gradient(180deg,#090a13f2,#090a13b8);border-bottom:1px solid #49e6e044}
-.map-location{font:12px 'Chakra Petch';letter-spacing:1px;color:#d5d8eb}
-.map-location b{color:#687087;margin:0 8px}
+.map-page-actions{position:fixed;z-index:4;top:14px;right:22px;display:flex;align-items:center;gap:14px}
+.map-page-actions .exit-link{padding:8px 10px;background:#0c111ddd;border:1px solid #3a4659;color:#d5d8eb}
+.map-page-actions .exit-link:hover{border-color:#49e6e0;color:#49e6e0}
 .map-hero-card{position:fixed;z-index:2;top:88px;left:22px;display:flex;align-items:center;gap:12px;min-width:225px;padding:11px 15px;background:#0c111ddd;border:1px solid #3a4659;box-shadow:0 8px 25px #0007}
 .map-portrait{width:42px;height:42px;display:grid;place-items:center;background:#512345;color:#ffd3e8;font-size:24px;font-weight:900;clip-path:polygon(50% 0,100% 20%,90% 100%,10% 100%,0 20%)}
 .map-portrait.green{background:#344d2d;color:#e9ffb7}.map-portrait.blue{background:#303d78;color:#e0e4ff}
@@ -83,7 +83,7 @@ body.map-page{height:100dvh;overflow:hidden;background:#101722}
 .touch-pad{display:none}
 @media(max-width:700px){
   .map-transition-art{object-position:58% center}.map-transition-shade{background:linear-gradient(90deg,#0508149e,#0508142b 100%),linear-gradient(0deg,#050814d9 0%,transparent 72%)}.map-transition-briefing{top:clamp(74px,12vh,112px);left:20px;width:calc(100vw - 40px);padding-left:14px}.map-transition-briefing h1{font-size:clamp(31px,9vw,48px)}.map-transition-briefing>span{max-width:330px;font-size:11px}.map-transition-hero{left:16px;bottom:20px;min-width:0;padding:10px 13px;gap:10px}.map-transition-hero .map-portrait{width:44px;height:48px;font-size:21px}.map-transition-hero b{font-size:15px}.map-transition-hero small{font-size:10px}.map-transition-countdown{margin-top:15px;font-size:9px}.map-loading{right:10px;bottom:12px;gap:7px;padding:6px 7px;font-size:8px;letter-spacing:2px}.map-loader-animation{width:38px;height:38px}
-  .map-topbar{height:58px;padding:0 14px}.map-topbar .brand-mark{width:32px;height:32px}.map-location{display:none}.map-hero-card{top:70px;left:12px;min-width:0;padding:8px 10px}.map-tip{top:auto;right:12px;bottom:190px;max-width:190px;padding:9px;font-size:10px}.map-tip span{font-size:10px}
+  .map-page-actions{top:10px;right:10px;gap:6px}.map-page-actions .language-toggle,.map-page-actions .exit-link{padding:6px 8px;font-size:9px}.map-hero-card{top:70px;left:12px;min-width:0;padding:8px 10px}.map-tip{top:auto;right:12px;bottom:190px;max-width:190px;padding:9px;font-size:10px}.map-tip span{font-size:10px}
   .map-vitals{top:132px;left:12px;width:160px;padding:9px 10px}.wave-status{top:68px;min-width:150px;padding:7px 10px}.wave-status b{font-size:11px}.duel-opponent{top:132px;right:12px;width:145px;padding:8px}.map-toast{top:112px;width:max-content;max-width:calc(100vw - 24px);font-size:11px}.map-controls{display:none}
   .pause-toggle{top:128px;right:12px;padding:7px 10px}
   .map-skillbar{left:auto;right:10px;bottom:12px;transform:none;flex-direction:column;gap:5px}  .map-skill{min-width:132px;padding:8px 8px 7px 35px}.map-skill kbd{left:7px;top:10px;width:21px;height:21px}.map-skill b{font-size:11px}.map-skill small{font-size:9px;margin-top:3px}.map-skill .skill-rank{font-size:8px;margin-top:3px}.map-skill .skill-cooldown{top:8px;right:7px}

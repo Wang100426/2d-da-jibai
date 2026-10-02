@@ -137,12 +137,12 @@ html[lang="en"] .mode-card h2{font-size:21px}
 html[lang="en"] .mode-card p{max-width:340px}
 
 /* Select page */
-.select-page{height:100vh;height:100svh;min-height:620px;display:grid;grid-template-rows:64px minmax(220px,.78fr) 34px;overflow:hidden}
-.select-page .topbar{height:64px;padding-inline:clamp(20px,4vw,64px)}
-.select-back{display:inline-flex;align-items:center;gap:7px;flex:none;color:var(--cyan);font:600 12px 'Chakra Petch';white-space:nowrap}
+.select-page{height:100vh;height:100svh;min-height:620px;display:grid;grid-template-rows:minmax(0,1fr) 34px;overflow:hidden}
+.select-back{position:fixed;z-index:12;top:18px;left:clamp(20px,4vw,64px);display:inline-flex;align-items:center;gap:7px;color:var(--cyan);font:600 12px 'Chakra Petch';white-space:nowrap}
 .select-back:hover{color:#fff}
 .select-back:first-letter{font-size:20px}
-.select-page .select-main{width:100%;height:100%;min-height:0;padding:14px clamp(24px,6vw,88px);display:flex;flex-direction:column;gap:20px}
+.select-language-toggle{position:fixed;z-index:12;top:14px;right:clamp(20px,4vw,64px)}
+.select-page .select-main{width:100%;height:100%;min-height:0;padding:68px clamp(24px,6vw,88px) 14px;display:flex;flex-direction:column;gap:20px}
 .select-page .select-hero-copy{flex:1;min-width:0}
 .select-page .select-hero-copy .eyebrow{margin-bottom:10px}
 .select-page .select-hero-copy h1{font:900 clamp(48px,6vw,78px)/.85 'Chakra Petch';letter-spacing:-3px;margin:0 0 20px;text-shadow:6px 6px 0 #262640}
@@ -179,8 +179,8 @@ html[lang="en"] .mode-card p{max-width:340px}
 @media(max-width:700px){.mode-page{height:auto;min-height:100vh;display:block;overflow-x:hidden;overflow-y:auto}.mode-language-toggle{top:12px;right:12px}.mode-page .mode-main{min-height:calc(100svh - 38px);padding:58px 22px 18px;gap:18px}.mode-page .mode-hero-copy .mode-logo{width:clamp(180px,58vw,250px);margin-bottom:8px}.mode-page .mode-hero-copy h1{font-size:clamp(52px,15vw,76px)}.mode-page .mode-cards{grid-template-columns:1fr}.mode-page footer{height:auto;min-height:38px;padding:10px 16px}.camp-transition-briefing{top:clamp(74px,12vh,112px);left:20px;width:calc(100vw - 40px);padding-left:14px}.camp-transition-briefing h1{font-size:clamp(25px,7vw,38px)}}
 
 /* Hero picker: compact roster on the left, full skill profile on the right. */
-.select-page{height:100vh;height:100svh;min-height:600px;grid-template-rows:64px minmax(0,1fr) 34px;overflow:hidden}
-.select-page .select-main{height:100%;width:100%;min-height:0;padding:20px clamp(24px,6vw,88px);display:flex;flex-direction:column;gap:16px}
+.select-page{height:100vh;height:100svh;min-height:600px;grid-template-rows:minmax(0,1fr) 34px;overflow:hidden}
+.select-page .select-main{height:100%;width:100%;min-height:0;padding:68px clamp(24px,6vw,88px) 20px;display:flex;flex-direction:column;gap:16px}
 .select-page .select-hero-copy{flex:none;display:flex;align-items:end;justify-content:space-between;gap:20px}
 .select-page .select-hero-copy .eyebrow{margin:0 0 8px;font-size:10px}
 .select-page .select-hero-copy h1{font-size:clamp(28px,3vw,40px);letter-spacing:-1px;margin:0;text-shadow:3px 3px #262640}
@@ -256,7 +256,7 @@ html[lang="en"] .mode-card p{max-width:340px}
 
 @media(max-height:650px) and (min-width:761px){
   .select-page{min-height:0}
-  .select-page .select-main{padding-block:10px;gap:8px}
+  .select-page .select-main{padding:60px clamp(24px,6vw,88px) 10px;gap:8px}
   .hero-detail{padding-block:8px}
   .detail-main{gap:16px;padding:4px 0}
   .detail-copy>p:not(.eyebrow){margin-block:3px 6px}
@@ -265,9 +265,9 @@ html[lang="en"] .mode-card p{max-width:340px}
 }
 @media(max-width:760px){
   .select-page{height:auto;min-height:100vh;min-height:100svh;display:block;overflow-x:hidden;overflow-y:auto}
-  .select-page .topbar{height:60px;padding:0 16px}
-  .select-page .topbar nav{display:none}
-  .select-page .select-main{height:auto;padding:20px 14px 14px;gap:12px}
+  .select-back{top:12px;left:14px;font-size:10px}
+  .select-language-toggle{top:10px;right:14px;padding:7px 9px;font-size:10px}
+  .select-page .select-main{height:auto;padding:60px 14px 14px;gap:12px}
   .select-page .select-hero-copy{align-items:flex-start}
   .select-page .select-hero-copy>p{max-width:44%;text-align:right;line-height:1.5}
   .selection-layout{display:flex;flex-direction:column;min-height:0}
