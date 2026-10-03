@@ -112,11 +112,11 @@ npm run build
 
 第六位英雄，紫色电音主题，远程型。
 
-| 技能 | 效果 | 2 阶 | 3 阶 |
-| --- | --- | --- | --- |
-| 音浪冲击 | 朝移动方向射出音浪，命中造成伤害并击退；撞到建筑原地爆炸造成范围伤害 | 飞行更远（420 → 550） | 穿过建筑，击中 2 个敌人后自爆 |
-| 低音震荡 | 强化下次普攻，伤害 +50% 并附加 3 秒狂舞（**不计入被动层数**） | 伤害变为 200% | 计入被动层数；若此击叠满 3 层则立即消耗，狂舞延长至 9 秒 |
-| 碟片风暴 | 向最近的敌人连续投出 10 枚追踪唱片，每枚造成伤害与小击退 | 唱片数量 +4 | 唱片伤害 +50% |
+| 按键 | 技能 | 效果 | 2 阶 | 3 阶 |
+| --- | --- | --- | --- | --- |
+| Q | 碟片风暴 | 向最近的敌人连续投出 10 枚追踪唱片，每枚造成伤害与小击退 | 唱片数量 +4 | 唱片伤害 +50% |
+| E | 音浪冲击 | 朝移动方向射出音浪，命中造成伤害并击退；撞到建筑原地爆炸造成范围伤害 | 飞行更远（420 → 550） | 穿过建筑，击中 2 个敌人后自爆 |
+| R | 低音震荡 | 强化下次普攻，伤害 +50% 并附加 3 秒狂舞（**不计入被动层数**） | 伤害变为 200% | 计入被动层数；若此击叠满 3 层则立即消耗，狂舞延长至 9 秒 |
 
 「同一次施法对同一敌人只记 1 层被动」由 `resonanceCasts` 集合保证——
 碟片风暴一次扔 10 枚，但每张碟片共用同一个 `castId`，所以对单个敌人只 +1 层。
@@ -317,11 +317,11 @@ Stat names are snake_case; the mapping to `playerState` fields is declared expli
 
 The sixth hero, a ranged purple-audio fighter.
 
-| Skill | Effect | Tier 2 | Tier 3 |
-| --- | --- | --- | --- |
-| Sound Wave | Fires a wave along your movement direction, dealing damage and heavy knockback; it explodes on buildings for area damage | Travels further (420 → 550) | Phases through buildings and self-destructs after hitting 2 enemies |
-| Bass Boost | Empowers your next basic attack for +50% damage plus 3s frenzy (**does not count as a skill hit**) | Damage becomes 200% | Counts as a skill hit; if it completes 3 stacks the stacks are consumed instantly and frenzy lasts 9s |
-| Disc Storm | Hurls 10 homing records at nearby enemies, each dealing damage with light knockback | +4 records | Record damage +50% |
+| Key | Skill | Effect | Tier 2 | Tier 3 |
+| --- | --- | --- | --- | --- |
+| Q | Disc Storm | Hurls 10 homing records at nearby enemies, each dealing damage with light knockback | +4 records | Record damage +50% |
+| E | Sound Wave | Fires a wave along your movement direction, dealing damage and heavy knockback; it explodes on buildings for area damage | Travels further (420 → 550) | Phases through buildings and self-destructs after hitting 2 enemies |
+| R | Bass Boost | Empowers your next basic attack for +50% damage plus 3s frenzy (**does not count as a skill hit**) | Damage becomes 200% | Counts as a skill hit; if it completes 3 stacks the stacks are consumed instantly and frenzy lasts 9s |
 
 "Each cast counts only 1 stack per enemy" is enforced by the `resonanceCasts` set: Disc Storm throws
 10 records but all of them share one `castId`, so a single enemy only gains 1 stack. It takes

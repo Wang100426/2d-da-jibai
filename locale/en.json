@@ -329,6 +329,12 @@
       },
       "skills": {
         "volt2-ult": {
+          "name": "Disc Storm",
+          "kind": "Ultimate",
+          "description": "Hurl 10 homing records at nearby enemies",
+          "detail_description": "Hurl 10 homing records at the nearest enemies, each dealing 16 damage with a light knockback. Each cast counts only 1 stack per enemy."
+        },
+        "volt2-wave": {
           "name": "Sound Wave",
           "kind": "Ability",
           "description": "Fire a wave along your movement direction · damage and knockback",
@@ -339,12 +345,6 @@
           "kind": "Ability",
           "description": "Empower your next basic attack · +50% damage and frenzy",
           "detail_description": "Empower your next basic attack to deal +50% damage and apply 3s frenzy; the frenzy does not count as a skill hit for your passive."
-        },
-        "volt2-disc": {
-          "name": "Disc Storm",
-          "kind": "Ultimate",
-          "description": "Hurl 10 homing records at nearby enemies",
-          "detail_description": "Hurl 10 homing records at the nearest enemies, each dealing 16 damage with a light knockback. Each cast counts only 1 stack per enemy."
         }
       }
     }
