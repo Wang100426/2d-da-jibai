@@ -25,6 +25,15 @@ const config = getMapConfig();
 const locale = config.locale;
 const english = locale.code === "en";
 const tx = (source) => localizeBattleText(source);
+/**
+ * 参数化文案。key 指向 battle.templates，参数按 {name} 占位符替换。
+ * 旧的片段替换（phrases/messages）无法处理带数字的整句，会产出
+ * “受到damage降低”这类中英混排，因此战斗提示一律走模板。
+ */
+function t(key, params = {}) {
+    const template = locale.battle.templates[key] || locale.battle.messages[key] || key;
+    return template.replace(/\{(\w+)\}/g, (match, name) => name in params ? String(params[name]) : match);
+}
 function localizeBattleText(value) {
     let text = value;
     if (english) {
@@ -40,13 +49,24 @@ function localizeBattleText(value) {
     }
     return text;
 }
+const colors = {};
+config.roster.forEach((hero) => { colors[hero.accent] = hero.palette; });
+const rosterById = new Map(config.roster.map((hero) => [hero.id, hero]));
+const heroCombat = rosterById.get(config.heroId)?.combat || config.roster[0].combat;
+const heroColors = rosterById.get(config.heroId)?.palette || colors[config.accent] || colors.pink;
+function rosterPalette(heroId) {
+    return rosterById.get(heroId)?.palette || heroColors;
+}
+function rosterCombat(heroId) {
+    return rosterById.get(heroId)?.combat || heroCombat;
+}
 const mapTheme = config.mapTheme;
 const map = { width: config.duel ? 1400 : 3200, height: config.duel ? 900 : 2400 };
 const player = {
     x: config.multiplayer?.x ?? (config.duel ? 430 : mapTheme === "airport" ? 1840 : 1600),
     y: config.multiplayer?.y ?? (config.duel ? 450 : mapTheme === "airport" ? 1300 : 1200),
     radius: 19,
-    speed: 235,
+    speed: heroCombat.speed,
 };
 const camera = { x: 0, y: 0 };
 const facing = { x: 1, y: 0 };
@@ -65,8 +85,63 @@ const playerState = {
     dodgeChance: 0,
     thornDamageMultiplier: 0.45,
     thornReturnDamage: 12,
+    /** 被动累计的普攻范围加成（luna 每次击杀 +5，无上限）。 */
+    passiveRangeBonus: 0,
+    /** 预留：被动提供的伤害加成。 */
+    damageBonus: 0,
 };
+const heroPassive = rosterById.get(config.heroId)?.passive || {
+    id: "none",
+    name: "",
+    description: "",
+};
+/** 被动的逐级触发计数。 */
+const passiveState = {
+    kills: 0,
+    frenzyKills: 0,
+    minionKills: 0,
+    /** 达到被动阈值时授予的强化窗口，下一次对应技能会获得额外效果。 */
+    burstReady: false,
+    /** 弦音不绝：十面埋伏每次额外召唤的小兵数量，可叠加。 */
+    minionBonus: 0,
+};
+function passiveUncapped(stat) {
+    return (heroPassive.uncapped || []).includes(stat);
+}
+// 苔藓守卫的初始吸血等开局即生效的被动数值
+Object.entries(heroPassive.init || {}).forEach(([stat, amount]) => {
+    addPassiveStat(stat, amount);
+});
+/**
+ * 被动配置里的属性名 → playerState 字段名。
+ * 配置用 snake_case（与 app.py 的 HEROES 保持一致），运行时字段是 camelCase，
+ * 这里显式映射，避免两边命名漂移导致加成写到不存在的字段上。
+ */
+const PASSIVE_STAT_FIELDS = {
+    attack_speed: "attackSpeed",
+    lifesteal: "lifesteal",
+    basic_range: "basicRange",
+    damage: "damageBonus",
+    dodge: "dodgeChance",
+};
+function addPassiveStat(stat, amount) {
+    if (stat === "basic_range") {
+        playerState.passiveRangeBonus += amount;
+        return;
+    }
+    const field = PASSIVE_STAT_FIELDS[stat];
+    if (!field)
+        return;
+    const mutable = playerState;
+    mutable[field] = (mutable[field] || 0) + amount;
+}
 let empoweredAttack = false;
+/** 电音人强化普攻：本次普攻的技能实例编号，用于被动层数去重。 */
+let empoweredCastId = 0;
+/** 该次强化普攻是否计入被动层数（3 阶开启）。 */
+let empoweredCountsAsSkill = false;
+/** 该次强化普攻附加的狂舞时长。 */
+let empoweredFrenzyTurns = 0;
 let wave = 0;
 let waveState = "starting";
 let enemiesToSpawn = 0;
@@ -103,6 +178,11 @@ let duelBreakRemaining = 0;
 let duelUpgradePicked = false;
 let duelUpgradeChoicesCurrent = [];
 let basicAttackTimer = 0;
+/** 触控/鼠标按住普攻键时为 true，与按住空格等价。 */
+let basicAttackHeld = false;
+/** 挥空后的短暂等待，避免连续普攻时每帧重复弹出「未命中」。 */
+let swingWaitTimer = 0;
+const BASIC_SWING_RETRY_DELAY = 0.35;
 const keys = new Set();
 const touchKeys = new Set();
 const skillCooldowns = new Map();
@@ -122,6 +202,14 @@ const skillVisuals = [];
 const impactParticles = [];
 const tabletProjectiles = [];
 let tabletVolley;
+/** 超频协议为本次平板齐射提供的额外击退距离。 */
+let tabletExtraKnockback = 0;
+/** 音浪冲击的飞行体队列。 */
+const soundWaves = [];
+/** 碟片风暴的追踪唱片队列。 */
+const homingDiscs = [];
+/** 碟片风暴的发射节流状态。 */
+let discVolley;
 const skillButtons = [...document.querySelectorAll(".map-skill[data-skill]")];
 const touchModeToggle = requireElement("#touch-mode-toggle");
 const toast = requireElement("#map-toast");
@@ -190,14 +278,6 @@ let lastSync = 0;
 let attackSequence = 0;
 const pendingPvpAttacks = [];
 const remotePlayers = new Map();
-const colors = {
-    pink: { main: "#ff4fa3", light: "#ffd3e8", dark: "#812354" },
-    green: { main: "#b7ef55", light: "#e9ffb7", dark: "#426b2e" },
-    blue: { main: "#8c9aff", light: "#e0e4ff", dark: "#414f9e" },
-    tech: { main: "#438dff", light: "#e1eeff", dark: "#183c88" },
-    pipa: { main: "#f1b95b", light: "#fff0b8", dark: "#80552a" },
-};
-const heroColors = colors[config.accent] || colors.pink;
 function hasPlayerEffect(effect) {
     return (statusEffects[effect] || 0) > 0;
 }
@@ -207,16 +287,17 @@ function playerMovementLocked() {
 function playerActionsLocked() {
     return hasPlayerEffect("眩晕") || hasPlayerEffect("狂舞");
 }
-function pipaFrenzyAttackSpeedMultiplier() {
-    const ultimate = config.skills.find((skill) => skill.action === "pipa_kinsnake");
-    return 1 + (ultimate?.frenzy_attack_speed_bonus || 0);
+function frenzyAttackSpeedMultiplier() {
+    const bonus = config.skills.reduce((total, skill) => total + (skill.frenzy_attack_speed_bonus || 0), 0);
+    return 1 + bonus;
 }
 function updateDuelBotFrenzy(bot, dt) {
-    bot.attackTimer = Math.max(0, bot.attackTimer - dt * pipaFrenzyAttackSpeedMultiplier());
+    bot.attackTimer = Math.max(0, bot.attackTimer - dt * frenzyAttackSpeedMultiplier());
     if (bot.attackTimer > 0)
         return;
     bot.attackTimer = 0.65;
-    damageEnemyByNpc(bot, bot.attack);
+    // 狂舞状态下失控的 AI 会互相残杀，计入琵琶女的「狂舞击杀」
+    damageEnemyByNpc(bot, bot.attack, "frenzy");
 }
 function updatePipaMinions(dt) {
     for (let index = pipaMinions.length - 1; index >= 0; index -= 1) {
@@ -246,7 +327,8 @@ function updatePipaMinions(dt) {
         }
         else if (minion.attackTimer === 0) {
             minion.attackTimer = 1.1;
-            damageEnemyByNpc(target, minion.attack);
+            // source 标记用于琵琶女被动的「小兵击杀」计数
+            damageEnemyByNpc(target, minion.attack, "minion");
         }
     }
 }
@@ -263,7 +345,7 @@ function showControlBlocked(action) {
     const reason = hasPlayerEffect("眩晕")
         ? tx("眩晕中无法行动")
         : hasPlayerEffect("狂舞") ? tx("狂舞中无法行动") : tx("禁锢中无法移动");
-    showToast(tx(`${action}失败：${reason}。`), "warning");
+    showToast(tx(t("combat.action_blocked", { action, reason })), "warning");
 }
 const cityObstacles = [
     { x: 360, y: 300, w: 360, h: 230, type: "building", name: "废弃商场" },
@@ -420,8 +502,8 @@ const upgradePool = [
         id: "attack-speed",
         name: locale.upgrades["attack-speed"].name,
         description: locale.upgrades["attack-speed"].description,
-        available: () => playerState.attackSpeed < 3.5,
-        apply: () => { playerState.attackSpeed = Math.min(3.5, playerState.attackSpeed + 0.25); },
+        available: () => playerState.attackSpeed < ATTACK_SPEED_BASE_CAP,
+        apply: () => { playerState.attackSpeed = Math.min(ATTACK_SPEED_BASE_CAP, playerState.attackSpeed + 0.25); },
     },
     {
         id: "armor",
@@ -440,8 +522,8 @@ const upgradePool = [
         id: "lifesteal",
         name: locale.upgrades.lifesteal.name,
         description: locale.upgrades.lifesteal.description,
-        available: () => playerState.lifesteal < 0.6,
-        apply: () => { playerState.lifesteal = Math.min(0.6, playerState.lifesteal + 0.1); },
+        available: () => playerState.lifesteal < getLifestealCap(),
+        apply: () => { playerState.lifesteal = Math.min(getLifestealCap(), playerState.lifesteal + 0.1); },
     },
     {
         id: "dodge",
@@ -507,8 +589,8 @@ function updateWaveHud() {
     if (waveState === "active") {
         const alive = enemies.filter((enemy) => enemy.hp > 0).length;
         const subtitle = enemiesToSpawn > 0
-            ? tx(`场上 ${alive} · 正在接近 ${enemiesToSpawn}`)
-            : tx(`剩余敌人 ${alive}`);
+            ? tx(t("wave.on_field", { alive, incoming: enemiesToSpawn }))
+            : tx(t("wave.remaining", { alive }));
         if (waveSubtitle.textContent !== subtitle)
             waveSubtitle.textContent = localizeBattleText(subtitle);
     }
@@ -524,7 +606,7 @@ function updateDuelHud() {
         waveTitle.textContent = title;
     const subtitle = duelRoundActive
         ? tx("先赢下 4 分获得胜利")
-        : tx(`下一回合 ${Math.max(0, Math.ceil(duelBreakRemaining))} 秒后开始`);
+        : tx(t("duel.next_round_in", { seconds: Math.max(0, Math.ceil(duelBreakRemaining)) }));
     if (waveSubtitle.textContent !== subtitle)
         waveSubtitle.textContent = localizeBattleText(subtitle);
     const bot = enemies.find((enemy) => enemy.duelBot);
@@ -546,17 +628,8 @@ function isSpawnPositionClear(x, y) {
         y > item.y - 40 && y < item.y + item.h + 40);
 }
 function createDuelBot() {
-    const availableHeroes = ["volt", "moss", "luna", "tech", "pipa"].filter((id) => id !== getHeroId());
-    const botHero = availableHeroes[Math.floor(Math.random() * availableHeroes.length)] || "volt";
-    const profiles = {
-        volt: { accent: "pink", defense: 58 },
-        moss: { accent: "green", defense: 94 },
-        luna: { accent: "blue", defense: 48 },
-        tech: { accent: "tech", defense: 58 },
-        pipa: { accent: "pipa", defense: 66 },
-    };
-    const profile = profiles[botHero] || profiles.volt;
-    const localizedBot = locale.heroes[botHero] || locale.heroes.volt;
+    const candidates = config.roster.filter((hero) => hero.id !== config.heroId);
+    const bot = candidates[Math.floor(Math.random() * candidates.length)] || config.roster[0];
     const maxHp = 125 + (duelRound - 1) * 18;
     return {
         x: map.width / 2 + 220,
@@ -572,16 +645,13 @@ function createDuelBot() {
         effects: {},
         experienceAwarded: true,
         duelBot: true,
-        accent: profile.accent,
-        initial: localizedBot.initial,
-        name: localizedBot.name,
+        heroId: bot.id,
+        accent: bot.accent,
+        initial: bot.initial,
+        name: bot.name,
         skillTimer: 2.5,
-        defenseReduction: Math.min(0.38, profile.defense / 250 + (duelRound - 1) * 0.015),
+        defenseReduction: Math.min(0.38, bot.defense / 250 + (duelRound - 1) * 0.015),
     };
-}
-function getHeroId() {
-    const heroByAccent = { pink: "volt", green: "moss", blue: "luna", tech: "tech", pipa: "pipa" };
-    return heroByAccent[config.accent] || "volt";
 }
 function startDuelRound() {
     enemies.splice(0, enemies.length, createDuelBot());
@@ -732,7 +802,7 @@ function startWave() {
     enemiesToSpawn = Math.min(4 + wave * 2, 18);
     spawnTimer = 0.3;
     updateWaveHud();
-    showToast(tx(`第 ${wave} 波来袭！准备迎战。`), "warning");
+    showToast(tx(t("wave.incoming", { wave })), "warning");
 }
 function showWaveUpgrade() {
     waveState = "upgrade";
@@ -758,7 +828,7 @@ function showWaveUpgrade() {
             playerState.energy = Math.min(playerState.maxEnergy, playerState.energy + 25);
             upgradeOverlay.hidden = true;
             updateHud();
-            showToast(tx(`获得强化：${choice.name}。下一波即将开始。`));
+            showToast(tx(t("upgrade.wave_chosen", { name: choice.name })));
             waveState = "starting";
             breakTimer = 2;
             updateWaveHud();
@@ -840,7 +910,7 @@ function finishDuelRound(playerWon) {
         if (title)
             title.textContent = won ? tx("竞技胜利") : tx("挑战失败");
         if (description)
-            description.textContent = tx(`最终比分 ${duelPlayerScore} : ${duelBotScore}。${won ? "你击败了 AI 对手！" : "AI 对手赢下了本场比赛。"}`);
+            description.textContent = t(won ? "duel.final_win" : "duel.final_loss", { score: duelPlayerScore, opponent: duelBotScore });
         retryRunButton.textContent = tx("再战一局");
         runOverOverlay.hidden = false;
         return;
@@ -853,7 +923,7 @@ function showDuelUpgrade() {
     }
     duelBreakRemaining = 10;
     duelUpgradePicked = false;
-    duelUpgradeTitle.textContent = tx(`第 ${duelRound} 回合结束 · 选择强化`);
+    duelUpgradeTitle.textContent = tx(t("duel.round_over", { round: duelRound }));
     duelUpgradeSubtitle.textContent = tx("选择一项强化，十秒后自动开始下一回合。");
     duelUpgradeChoicesCurrent = upgradePool
         .filter((choice) => choice.id !== "coolant" && (!choice.available || choice.available()))
@@ -874,7 +944,7 @@ function showDuelUpgrade() {
                 return;
             choice.apply();
             duelUpgradePicked = true;
-            duelUpgradeSubtitle.textContent = tx(`已获得强化：${choice.name}。等待下一回合开始。`);
+            duelUpgradeSubtitle.textContent = tx(t("duel.upgrade_chosen", { name: choice.name }));
             duelUpgradeChoices.querySelectorAll("button").forEach((item) => {
                 item.disabled = true;
             });
@@ -917,7 +987,12 @@ function updateHud() {
         lastHudEnergy = energy;
     }
     lootCountLabel.textContent = `${lootCollected}`;
-    combatTraitsLabel.textContent = localizeBattleText(`攻速 ${playerState.attackSpeed.toFixed(1)}/秒 · 防御 ${Math.round(playerState.damageReduction * 100)}% · 吸血 ${Math.round(playerState.lifesteal * 100)}% · 闪避 ${Math.round(playerState.dodgeChance * 100)}%`);
+    combatTraitsLabel.textContent = t("hud.traits", {
+        speed: playerState.attackSpeed.toFixed(1),
+        defense: Math.round(playerState.damageReduction * 100),
+        lifesteal: Math.round(playerState.lifesteal * 100),
+        dodge: Math.round(playerState.dodgeChance * 100),
+    });
     skillExperienceBar.style.width = `${skillExperience / skillExperienceThreshold * 100}%`;
     skillExperienceLabel.textContent = `Lv.${skillExperienceLevel} · ${skillExperience} / ${skillExperienceThreshold}`;
     skillButtons.forEach((button, index) => {
@@ -928,8 +1003,8 @@ function updateHud() {
             return;
         const required = progress.tier === 1 ? 3 : progress.tier === 2 ? 4 : 0;
         rankLabel.textContent = required
-            ? tx(`${progress.tier}阶 · 小强化 ${progress.minorUpgrades}/${required}`)
-            : tx("3阶 · 已满");
+            ? tx(t("skill.rank_progress", { tier: progress.tier, current: progress.minorUpgrades, required }))
+            : t("skill.rank_full");
     });
     const basicCooldown = basicAttackButton.querySelector(".skill-cooldown");
     if (basicCooldown) {
@@ -938,14 +1013,22 @@ function updateHud() {
     const basicDescription = basicAttackButton.querySelector("small");
     if (basicDescription) {
         const rate = getEffectiveAttackSpeed();
-        const label = tx(`${rate.toFixed(1)} 次/秒${config.duel ? "" : " · 回复 5 能量"}`);
+        const label = tx(config.duel ? t("basic.rate_duel", { rate: rate.toFixed(1) }) : t("basic.rate_rogue", { rate: rate.toFixed(1) }));
         if (basicDescription.textContent !== label)
             basicDescription.textContent = label;
     }
 }
+const ATTACK_SPEED_BASE_CAP = 3.5;
+const LIFESTEAL_BASE_CAP = 0.6;
+function getLifestealCap() {
+    return passiveUncapped("lifesteal") ? Infinity : LIFESTEAL_BASE_CAP;
+}
+function getAttackSpeedCap() {
+    return passiveUncapped("attack_speed") ? Infinity : ATTACK_SPEED_BASE_CAP;
+}
 function getEffectiveAttackSpeed() {
     const haste = (statusEffects["加速"] || 0) > 0 || (statusEffects["攻速加成"] || 0) > 0;
-    return Math.min(3.5, playerState.attackSpeed * (haste ? 1.3 : 1)) *
+    return Math.min(getAttackSpeedCap(), playerState.attackSpeed * (haste ? 1.3 : 1)) *
         (schoolClassDuration > 0 ? 0.5 : 1);
 }
 function getBasicAttackCooldown() {
@@ -975,7 +1058,7 @@ function togglePause() {
 }
 function grantSkillExperience(amount, x, y) {
     skillExperience += amount;
-    addFloatingText(x, y - 42, `+${amount} 技能经验`, "#ffe45c");
+    addFloatingText(x, y - 42, t("float.skill_exp", { amount }), "#ffe45c");
     while (skillExperience >= skillExperienceThreshold) {
         skillExperience -= skillExperienceThreshold;
         skillExperienceLevel += 1;
@@ -1004,24 +1087,33 @@ function describeSmallSkillUpgrade(skill, progress) {
     return "技能冷却 -0.4 秒";
 }
 function describeSkillTierEffect(skill, tier) {
-    const effects = {
-        "volt-ult": ["范围眩晕半径 +40", "眩晕时间 +1 秒"],
-        "volt-chain": ["强化普攻额外伤害 +12", "强化普攻可波及周围敌人"],
-        "volt-overdrive": ["冲刺距离 +45", "冲刺伤害提高 30%"],
-        "moss-ult": ["荆棘花园半径 +40", "禁锢时间 +1 秒，回复生命 +15"],
-        "moss-vine": ["荆棘壁垒持续时间 +2 秒", "减伤提升，荆棘反伤提高至 20"],
-        "moss-bark": ["中毒每秒伤害 +4", "中毒持续时间 +2 秒"],
-        "luna-ult": ["陨星爆炸半径 +40", "眩晕时间 +1 秒"],
-        "luna-orbit": ["月刃伤害 +10", "月刃飞行距离 +120"],
-        "luna-phase": ["获得护盾 +25", "护盾持续时间 +2 秒"],
-        "tech-ult": ["范围眩晕半径 +40", "眩晕时间 +1 秒"],
-        "tech-tablets": ["平板合击爆炸半径 +35", "减速持续时间 +2 秒"],
-        "tech-afterimage": ["残影冲刺伤害提高 30%", "额外增加一次往返冲刺"],
-        "pipa-yangchun": ["攻击对象 +1", "禁锢时间 +1 秒"],
-        "pipa-shimian": ["小兵生命 +50%", "小兵数量 +2"],
-        "pipa-ult": ["狂舞时间 +1 秒", "狂舞目标攻速 +20%"],
-    };
-    return effects[skill.id]?.[tier - 2] || "解锁新的技能效果";
+    return skill.tier_effects?.[String(tier)]?.label || "解锁新的技能效果";
+}
+function applyTierPatch(patch, read, write) {
+    if (!patch)
+        return;
+    Object.entries(patch).forEach(([key, operation]) => {
+        const current = read(key) ?? operation.base ?? 0;
+        if (operation.set !== undefined) {
+            write(key, operation.set);
+            return;
+        }
+        if (operation.scale !== undefined) {
+            const scaled = current * operation.scale;
+            write(key, operation.round === false ? Math.round(scaled * 100) / 100 : Math.round(scaled));
+            return;
+        }
+        if (operation.add !== undefined)
+            write(key, current + operation.add);
+    });
+}
+function applySkillTierEffect(skill, tier) {
+    const tierEffect = skill.tier_effects?.[String(tier)];
+    const mutableSkill = skill;
+    const mutablePlayer = playerState;
+    applyTierPatch(tierEffect?.patch, (key) => typeof mutableSkill[key] === "number" ? mutableSkill[key] : undefined, (key, value) => { mutableSkill[key] = value; });
+    applyTierPatch(tierEffect?.player_patch, (key) => typeof mutablePlayer[key] === "number" ? mutablePlayer[key] : undefined, (key, value) => { mutablePlayer[key] = value; });
+    return tierEffect?.label || "技能效果强化";
 }
 function applySmallSkillUpgrade(skill, progress) {
     const stage = progress.minorUpgrades % 3;
@@ -1049,118 +1141,11 @@ function applySmallSkillUpgrade(skill, progress) {
     skill.cooldown = Math.max(2, skill.cooldown - 0.4);
     return "技能冷却 -0.4 秒";
 }
-function applySkillTierEffect(skill, tier) {
-    switch (skill.id) {
-        case "volt-ult":
-        case "tech-ult":
-            if (tier === 2) {
-                skill.radius = (skill.radius || 0) + 40;
-                return "范围眩晕半径 +40";
-            }
-            skill.effect_turns += 0.5;
-            return "眩晕时间 +1 秒";
-        case "volt-chain":
-            if (tier === 2) {
-                skill.empowered_damage = (skill.empowered_damage || 34) + 12;
-                return "强化普攻额外伤害 +12";
-            }
-            skill.empowered_splash_radius = 90;
-            return "强化普攻可波及周围敌人";
-        case "volt-overdrive":
-            if (tier === 2) {
-                skill.dash_range = (skill.dash_range || 0) + 45;
-                return "冲刺距离 +45";
-            }
-            skill.damage = Math.round(skill.damage * 1.3);
-            return "冲刺伤害提高 30%";
-        case "moss-ult":
-            if (tier === 2) {
-                skill.radius = (skill.radius || 0) + 40;
-                return "荆棘花园半径 +40";
-            }
-            skill.effect_turns += 0.5;
-            skill.heal_bonus = (skill.heal_bonus || 0) + 15;
-            return "禁锢时间 +1 秒，回复生命 +15";
-        case "moss-vine":
-            if (tier === 2) {
-                skill.effect_turns += 2;
-                return "荆棘壁垒持续时间 +2 秒";
-            }
-            playerState.thornDamageMultiplier = 0.3;
-            playerState.thornReturnDamage = 20;
-            return "减伤提升，荆棘反伤提高至 20";
-        case "moss-bark":
-            if (tier === 2) {
-                skill.poison_damage_bonus = (skill.poison_damage_bonus || 0) + 4;
-                return "中毒每秒伤害 +4";
-            }
-            skill.effect_turns += 2;
-            return "中毒持续时间 +2 秒";
-        case "luna-ult":
-            if (tier === 2) {
-                skill.radius = (skill.radius || 0) + 40;
-                return "陨星爆炸半径 +40";
-            }
-            skill.effect_turns += 0.5;
-            return "眩晕时间 +1 秒";
-        case "luna-orbit":
-            if (tier === 2) {
-                skill.damage += 10;
-                return "月刃伤害 +10";
-            }
-            skill.dash_range = (skill.dash_range || 0) + 120;
-            return "月刃飞行距离 +120";
-        case "luna-phase":
-            if (tier === 2) {
-                skill.shield = (skill.shield || 30) + 25;
-                return "获得护盾 +25";
-            }
-            skill.effect_turns += 2;
-            return "护盾持续时间 +2 秒";
-        case "tech-tablets":
-            if (tier === 2) {
-                skill.radius = (skill.radius || 0) + 35;
-                return "平板合击爆炸半径 +35";
-            }
-            skill.effect_turns += 1;
-            return "减速持续时间 +2 秒";
-        case "tech-afterimage":
-            if (tier === 2) {
-                skill.damage = Math.round(skill.damage * 1.3);
-                return "残影冲刺伤害提高 30%";
-            }
-            skill.extra_round_trips = (skill.extra_round_trips || 0) + 1;
-            return "额外增加一次往返冲刺";
-        case "pipa-yangchun":
-            if (tier === 2) {
-                skill.target_count = (skill.target_count || 3) + 1;
-                return "攻击对象 +1";
-            }
-            skill.effect_turns += 1;
-            return "禁锢时间 +1 秒";
-        case "pipa-shimian":
-            if (tier === 2) {
-                skill.minion_hp_multiplier = (skill.minion_hp_multiplier || 1) * 1.5;
-                return "小兵生命 +50%";
-            }
-            skill.minion_count = (skill.minion_count || 5) + 2;
-            return "小兵数量 +2";
-        case "pipa-ult":
-            if (tier === 2) {
-                skill.frenzy_duration_bonus = (skill.frenzy_duration_bonus || 0) + 1;
-                return "狂舞时间 +1 秒";
-            }
-            skill.frenzy_attack_speed_bonus = (skill.frenzy_attack_speed_bonus || 0) + 0.2;
-            return "狂舞目标攻速 +20%";
-        default:
-            return "技能效果强化";
-    }
-}
 function showSkillUpgrade() {
     keys.clear();
     touchKeys.clear();
-    skillUpgradeTitle.textContent = tx(`选择技能强化 · 第 ${skillExperienceLevel} 级`);
-    skillUpgradeSubtitle.textContent = tx(`击败敌人获得技能经验，当前还有 ${pendingSkillChoices} 次强化待选择。`);
+    skillUpgradeTitle.textContent = tx(t("skill.upgrade_title", { level: skillExperienceLevel }));
+    skillUpgradeSubtitle.textContent = tx(t("skill.upgrade_help", { count: pendingSkillChoices }));
     skillUpgradeChoices.replaceChildren();
     config.skills.forEach((skill) => {
         const progress = skillProgress.get(skill.id);
@@ -1171,7 +1156,7 @@ function showSkillUpgrade() {
         button.type = "button";
         button.className = "upgrade-choice skill-upgrade-choice";
         const title = document.createElement("b");
-        title.textContent = `${skill.name} · ${progress.tier} 阶`;
+        title.textContent = `${skill.name} · ${progress.tier}`;
         const description = document.createElement("span");
         description.textContent = localizeBattleText(requirement
             ? progress.minorUpgrades + 1 >= requirement
@@ -1199,7 +1184,7 @@ function showSkillUpgrade() {
             }
             else {
                 skillUpgradeOverlay.hidden = true;
-                showToast(tx(`技能强化完成：${message}`));
+                showToast(tx(t("skill.upgrade_done", { message })));
             }
         });
         skillUpgradeChoices.append(button);
@@ -1688,7 +1673,7 @@ function drawEnemy(enemy) {
     if (enemy.hp <= 0)
         return;
     if (enemy.duelBot) {
-        const color = colors[enemy.accent || "pink"] || colors.pink;
+        const color = rosterPalette(enemy.heroId || "volt");
         context.save();
         context.translate(enemy.x, enemy.y);
         context.shadowColor = color.main;
@@ -1849,7 +1834,7 @@ function spawnHospitalDoctors() {
             lifeTimer: 26,
         });
     }
-    showToast(tx(`麻醉医生突入！${count} 名高速单位已出现，击败可获得大量技能经验。`), "warning");
+    showToast(tx(t("event.anesthetist_arrives", { count })), "warning");
 }
 function spawnTrafficConvoy() {
     const selectedRoads = roads.slice().sort(() => Math.random() - 0.5).slice(0, 3 + Math.floor(Math.random() * 3));
@@ -1881,7 +1866,7 @@ function spawnHarpFields() {
         }
         harpFields.push({ x, y, age: 0, tickTimer: 0 });
     }
-    showToast(tx("琴弦共鸣！竖琴已落地，演奏 5 秒并伤害、减速附近单位。"), "warning");
+    showToast(t("event.harp_landed"), "warning");
 }
 function getEventTargets() {
     const targets = [{ id: "player", x: player.x, y: player.y, player: true }];
@@ -2029,9 +2014,9 @@ function updateGymRushers(dt) {
             const damage = 112 + Math.min(58, wave * 6);
             if (applyEventDamage(victim, damage)) {
                 applyKnockback(victim, rusher.vx, rusher.vy, 150);
-                addFloatingText(victim.x, victim.y - 48, tx(`肌肉冲撞 -${damage}`), "#ff795d");
+                addFloatingText(victim.x, victim.y - 48, t("event.gym_rusher_damage", { damage }), "#ff795d");
                 spawnImpact(victim.x, victim.y, "#ff795d");
-                showToast(tx(`肌肉壮汉迎面撞击！造成 ${damage} 点巨额伤害。`), "warning");
+                showToast(tx(t("event.gym_rusher_hit", { damage })), "warning");
             }
             impacted = true;
             break;
@@ -2114,7 +2099,7 @@ function updateSchoolClass(dt) {
     schoolClassTimer = Math.max(0, schoolClassTimer - dt);
     if (schoolClassTimer === 0) {
         schoolClassDuration = 10;
-        showToast(tx("上课时间到了！全场移速降低 60%、攻速和伤害降低 50%/20%，持续 10 秒。"), "warning");
+        showToast(t("event.class_start"), "warning");
     }
 }
 function updateAirportFlights(dt) {
@@ -2144,9 +2129,9 @@ function updateAirportFlights(dt) {
             const damage = 96 + Math.min(54, wave * 5);
             if (applyEventDamage(target, damage)) {
                 applyKnockback(target, plane.startX - plane.endX, plane.startY - plane.endY, 230);
-                addFloatingText(target.x, target.y - 50, tx(`飞机撞击 -${damage}`), "#ffe68a");
+                addFloatingText(target.x, target.y - 50, t("event.plane_damage", { damage }), "#ffe68a");
                 spawnImpact(target.x, target.y, "#ffe68a");
-                showToast(tx(`飞机撞击！受到 ${damage} 点重击并被强力击退。`), "warning");
+                showToast(tx(t("event.plane_hit", { damage })), "warning");
             }
             break;
         }
@@ -2203,8 +2188,8 @@ function updateRandomMapEvents(dt) {
             const damage = 72 + Math.min(42, wave * 4);
             if (applyPlayerDamage(damage)) {
                 statusEffects["眩晕"] = Math.max(statusEffects["眩晕"] || 0, 2.4);
-                addFloatingText(player.x, player.y - 52, tx("车祸眩晕 2.4 秒"), "#ffdc63");
-                showToast(tx(`车辆撞中你！受到 ${damage} 点重击并眩晕 2.4 秒。`), "warning");
+                addFloatingText(player.x, player.y - 52, t("event.car_stun_label"), "#ffdc63");
+                showToast(tx(t("event.car_hit", { damage })), "warning");
             }
             hit = true;
         }
@@ -2219,7 +2204,7 @@ function updateRandomMapEvents(dt) {
                     const damage = 105 + Math.min(65, wave * 6);
                     damageEnemyByNpc(enemy, damage);
                     enemy.effects["眩晕"] = Math.max(enemy.effects["眩晕"] || 0, 2.4);
-                    addFloatingText(enemy.x, enemy.y - 36, tx("车辆撞击 · 眩晕 2.4 秒"), "#ffdc63");
+                    addFloatingText(enemy.x, enemy.y - 36, t("event.car_stun"), "#ffdc63");
                     hit = true;
                     break;
                 }
@@ -2340,7 +2325,42 @@ function drawSkillVisuals() {
             context.lineTo(visual.targetX, visual.targetY);
             context.stroke();
         }
-        if (visual.type !== "aura" && visual.type !== "impact") {
+        else if (visual.type === "wave") {
+            // 音浪：一圈扩散的声波环
+            const radius = (visual.radius || 100) * 0.42 * (0.55 + progress * 0.45);
+            context.shadowColor = visual.color;
+            context.shadowBlur = 20;
+            context.strokeStyle = visual.color;
+            context.lineWidth = 7 * (1 - progress);
+            context.beginPath();
+            context.arc(visual.x, visual.y, radius, 0, Math.PI * 2);
+            context.stroke();
+            context.strokeStyle = "#ffffff";
+            context.lineWidth = 2 * (1 - progress);
+            context.beginPath();
+            context.arc(visual.x, visual.y, radius * 0.72, 0, Math.PI * 2);
+            context.stroke();
+        }
+        else if (visual.type === "disc") {
+            // 追踪唱片：旋转的圆盘
+            const size = (visual.radius || 24) * (1 - progress * 0.3);
+            context.translate(visual.x, visual.y);
+            context.rotate(progress * Math.PI * 3);
+            context.shadowColor = visual.color;
+            context.shadowBlur = 16;
+            context.fillStyle = "#1b0f22";
+            context.strokeStyle = visual.color;
+            context.lineWidth = 2.4;
+            context.beginPath();
+            context.arc(0, 0, size, 0, Math.PI * 2);
+            context.fill();
+            context.stroke();
+            context.fillStyle = visual.color;
+            context.beginPath();
+            context.arc(0, 0, size * 0.34, 0, Math.PI * 2);
+            context.fill();
+        }
+        if (visual.type !== "aura" && visual.type !== "impact" && visual.type !== "disc") {
             const radius = visual.type === "lightning" ? 20 + progress * 46 : 12 + progress * 36;
             context.strokeStyle = visual.color;
             context.lineWidth = Math.max(1, 5 * (1 - progress));
@@ -2541,15 +2561,111 @@ function movePlayerToward(targetX, targetY, distance) {
     }
     return Math.hypot(player.x - startX, player.y - startY);
 }
-function addEnemyLoot(enemy) {
+/**
+ * 记录一次击杀并推进被动。
+ * @param viaFrenzy 该击杀是否由「狂舞」状态下失控的敌人完成
+ * @param viaMinion 该击杀是否由琵琶女的小兵完成
+ */
+function registerKill(viaFrenzy, viaMinion) {
+    passiveState.kills += 1;
+    if (viaFrenzy)
+        passiveState.frenzyKills += 1;
+    if (viaMinion)
+        passiveState.minionKills += 1;
+    Object.entries(heroPassive.on_kill || {}).forEach(([stat, amount]) => {
+        addPassiveStat(stat, amount);
+    });
+    // 达到阈值时授予一次强化窗口（luna 额外陨石 / tech 三技能强化）
+    if (heroPassive.every_kills && passiveState.kills % heroPassive.every_kills === 0) {
+        if (heroPassive.every_kills_effect) {
+            passiveState.burstReady = true;
+            showToast(t("passive.burst_ready", { effect: t(`passive.effect.${heroPassive.every_kills_effect}`) }));
+        }
+    }
+    // 弦音不绝：狂舞击杀或小兵击杀累计到阈值 → 之后每次十面埋伏多召唤 1 名小兵（可叠加层数）
+    if (heroPassive.threshold_effect !== "extra_minion")
+        return;
+    const frenzyGoal = heroPassive.frenzy_kills || 0;
+    const minionGoal = heroPassive.minion_kills || 0;
+    const frenzyReady = frenzyGoal > 0 && viaFrenzy && passiveState.frenzyKills % frenzyGoal === 0;
+    const minionReady = minionGoal > 0 && viaMinion && passiveState.minionKills % minionGoal === 0;
+    if (!frenzyReady && !minionReady)
+        return;
+    passiveState.minionBonus += heroPassive.minion_bonus || 1;
+    showToast(t("passive.pipa_minion_bonus", { count: passiveState.minionBonus }));
+}
+/**
+ * 共鸣层数：敌人被电音人的技能命中时叠层，叠满后被施加狂舞。
+ * @param castId 本次技能实例的编号。同一次施法对同一敌人只计 1 层，
+ *               这样碟片风暴的 10 枚唱片不会把层数瞬间叠满。
+ * @returns 是否刚刚叠满并触发了效果
+ */
+function addResonanceStack(enemy, castId, frenzyTurns) {
+    const required = heroPassive.stack_required || 0;
+    if (required <= 0 || heroPassive.stack_effect !== "frenzy")
+        return false;
+    const casts = enemy.resonanceCasts || (enemy.resonanceCasts = new Set());
+    if (casts.has(castId))
+        return false;
+    casts.add(castId);
+    enemy.resonanceStacks = (enemy.resonanceStacks || 0) + 1;
+    if (enemy.resonanceStacks < required)
+        return false;
+    enemy.resonanceStacks = 0;
+    const turns = frenzyTurns || heroPassive.stack_frenzy_turns || 3;
+    enemy.effects["狂舞"] = Math.max(enemy.effects["狂舞"] || 0, turns);
+    addFloatingText(enemy.x, enemy.y - 56, t("float.resonance_max", { turns }), "#ff5cf0");
+    return true;
+}
+/** 对处于狂舞状态的敌人增伤。 */
+function frenzyDamageScale(enemy) {
+    if ((enemy.effects["狂舞"] || 0) <= 0)
+        return 1;
+    return heroPassive.frenzy_damage_scale || 1;
+}
+/**
+ * 仅当强化窗口属于指定效果时才消耗它，避免用错技能时白白浪费。
+ */
+function consumeBurst(effect) {
+    if (!passiveState.burstReady || heroPassive.every_kills_effect !== effect)
+        return false;
+    passiveState.burstReady = false;
+    return true;
+}
+/**
+ * 月相扩张：额外陨石落在「不是最近、但仍在施法范围内」的敌人身上。
+ * 若范围内只剩最近那一个敌人，则落在次近目标；没有第二目标时不额外投放。
+ */
+function dropExtraMeteor(skill, radius, primary) {
+    const castRange = skill.cast_range || 560;
+    const candidates = enemies
+        .filter((enemy) => enemy.hp > 0 && distanceTo(enemy.x, enemy.y) <= castRange)
+        .sort((left, right) => distanceTo(left.x, left.y) - distanceTo(right.x, right.y));
+    const secondary = candidates.find((enemy) => enemy !== primary);
+    if (!secondary) {
+        showToast(t("passive.meteor_no_target"), "warning");
+        return;
+    }
+    const victims = enemies.filter((enemy) => enemy.hp > 0 && Math.hypot(enemy.x - secondary.x, enemy.y - secondary.y) <= radius);
+    victims.forEach((enemy) => hitEnemy(enemy, skill.damage, skill.effect, skill.effect_turns * 2));
+    queuePvpAttack("skill", nearbyPvpTargets(secondary.x, secondary.y, radius), skill.id);
+    skillVisuals.push({
+        type: "aura", x: secondary.x, y: secondary.y, targetX: secondary.x, targetY: secondary.y,
+        age: 0, duration: 0.85, color: "#bda5ff",
+    });
+    addFloatingText(secondary.x, secondary.y - 52, t("float.meteor_extra"), "#bda5ff");
+    showToast(t("passive.extra_meteor", { hits: victims.length }));
+}
+function addEnemyLoot(enemy, source = "player") {
     if (enemy.experienceAwarded)
         return;
     enemy.experienceAwarded = true;
     supplies.push({ x: enemy.x, y: enemy.y, type: "energy", collected: false });
     const experience = enemy.anesthetist ? 160 : enemy.kind === "brute" ? 30 : enemy.kind === "runner" ? 18 : 10;
+    registerKill(source === "frenzy" || (enemy.effects["狂舞"] || 0) > 0, source === "minion");
     grantSkillExperience(experience, enemy.x, enemy.y);
 }
-function damageEnemyByNpc(enemy, damage) {
+function damageEnemyByNpc(enemy, damage, source = "npc") {
     if (enemy.hp <= 0)
         return;
     if (schoolClassDuration > 0)
@@ -2561,8 +2677,9 @@ function damageEnemyByNpc(enemy, damage) {
     if (enemy.hp <= 0) {
         if (enemy.duelBot)
             finishDuelRound(true);
-        else if (!enemy.friendlySummon)
-            addEnemyLoot(enemy);
+        else if (!enemy.friendlySummon) {
+            addEnemyLoot(enemy, source === "minion" ? "minion" : source === "frenzy" ? "frenzy" : "player");
+        }
     }
 }
 function getEnemyTarget(enemy) {
@@ -2630,8 +2747,8 @@ function attackEnemyTarget(attacker, target) {
         if (landed && attacker.anesthetist && !anesthetizedTargets.has(target.id)) {
             anesthetizedTargets.add(target.id);
             statusEffects["眩晕"] = Math.max(statusEffects["眩晕"] || 0, 2);
-            addFloatingText(player.x, player.y - 54, tx("麻药注射 · 眩晕 2 秒"), "#f5f7ff");
-            showToast(tx("麻醉医生给你注射麻药：眩晕 2 秒！之后医生不会再追击你。"), "warning");
+            addFloatingText(player.x, player.y - 54, t("event.injection_stun"), "#f5f7ff");
+            showToast(t("event.injected"), "warning");
         }
         return;
     }
@@ -2642,7 +2759,7 @@ function attackEnemyTarget(attacker, target) {
     if (attacker.anesthetist && !anesthetizedTargets.has(target.id)) {
         anesthetizedTargets.add(target.id);
         victim.effects["眩晕"] = Math.max(victim.effects["眩晕"] || 0, 2);
-        addFloatingText(victim.x, victim.y - 42, tx("麻药注射 · 眩晕 2 秒"), "#f5f7ff");
+        addFloatingText(victim.x, victim.y - 42, t("event.injection_stun"), "#f5f7ff");
     }
 }
 function hitEnemy(enemy, damage, effect = "", effectTurns = 0) {
@@ -2650,7 +2767,8 @@ function hitEnemy(enemy, damage, effect = "", effectTurns = 0) {
         return 0;
     if (schoolClassDuration > 0)
         damage *= 0.8;
-    damage = Math.max(1, Math.round(damage * playerState.damageMultiplier * (1 - (enemy.defenseReduction || 0))));
+    damage = Math.max(1, Math.round(damage * playerState.damageMultiplier * frenzyDamageScale(enemy)
+        * (1 - (enemy.defenseReduction || 0))));
     const actualDamage = Math.min(enemy.hp, damage);
     enemy.hp = Math.max(0, enemy.hp - actualDamage);
     healFromDamage(actualDamage, enemy.x, enemy.y);
@@ -2679,16 +2797,16 @@ function healFromDamage(damage, x, y) {
     if (restored <= 0)
         return;
     playerState.hp += restored;
-    addFloatingText(x, y - 46, `+${restored} 吸血`, "#9cff65");
+    addFloatingText(x, y - 46, t("float.heal", { amount: restored }), "#9cff65");
     updateHud();
 }
 function applyPlayerDamage(damage, attacker) {
     if (afterimageDash) {
-        addFloatingText(player.x, player.y - 34, "无敌闪避", "#49e6e0");
+        addFloatingText(player.x, player.y - 34, t("float.invulnerable_dodge"), "#49e6e0");
         return false;
     }
     if (Math.random() < playerState.dodgeChance) {
-        addFloatingText(player.x, player.y - 34, "闪避", "#8c9aff");
+        addFloatingText(player.x, player.y - 34, t("float.dodge"), "#8c9aff");
         return false;
     }
     if (schoolClassDuration > 0)
@@ -2701,7 +2819,7 @@ function applyPlayerDamage(damage, attacker) {
     const healthDamage = reducedDamage - absorbed;
     playerState.hp = Math.max(0, playerState.hp - healthDamage);
     if (absorbed > 0)
-        addFloatingText(player.x, player.y - 28, `-${absorbed} 护盾`, "#ffffff");
+        addFloatingText(player.x, player.y - 28, t("float.shield_absorb", { amount: absorbed }), "#ffffff");
     if (healthDamage > 0)
         addFloatingText(player.x, player.y - 28, `-${healthDamage}`, "#ff668d");
     if (thornArmor && attacker) {
@@ -2713,17 +2831,25 @@ function applyPlayerDamage(damage, attacker) {
         finishRun();
     }
     else {
-        showToast(`防御减伤 ${Math.round(playerState.damageReduction * 100)}%：受到 ${healthDamage} 点生命伤害${absorbed > 0 ? `，护盾吸收 ${absorbed}` : ""}。`, "warning");
+        showToast(t("combat.player_damaged", {
+            reduction: Math.round(playerState.damageReduction * 100),
+            damage: healthDamage,
+            absorbed,
+        }), "warning");
     }
     updateHud();
     return true;
 }
+function botCombatBeam(bot) {
+    const beam = rosterCombat(bot.heroId || "volt").basic_beam;
+    return beam || { color: heroColors.main, duration: 0.22 };
+}
 function updateDuelBot(bot, dt) {
     if (!duelRoundActive || bot.hp <= 0)
         return;
+    const botCombat = rosterCombat(bot.heroId || "volt");
     const distance = distanceTo(bot.x, bot.y);
-    const rangeByAccent = { tech: 330, blue: 300, green: 150, pipa: 200, pink: 95 };
-    const attackRange = rangeByAccent[bot.accent || "pink"] || 95;
+    const attackRange = botCombat.basic_range;
     const preferredDistance = attackRange > 150 ? attackRange * 0.7 : attackRange * 0.72;
     if (!bot.effects["眩晕"] && !bot.effects["禁锢"] && distance > 0) {
         let direction = 0;
@@ -2742,7 +2868,7 @@ function updateDuelBot(bot, dt) {
         bot.attackTimer = 1 / Math.min(2, 1.35 + duelRound * 0.08);
         skillVisuals.push({
             type: "beam", x: bot.x, y: bot.y, targetX: player.x, targetY: player.y,
-            age: 0, duration: 0.22, color: (colors[bot.accent || "pink"] || colors.pink).main,
+            age: 0, duration: 0.22, color: botCombatBeam(bot).color,
         });
         applyPlayerDamage(bot.attack, bot);
         if (playerState.hp <= 0 || !duelRoundActive)
@@ -2756,15 +2882,15 @@ function updateDuelBot(bot, dt) {
         return;
     }
     bot.skillTimer = 6 + Math.random() * 2;
-    const accent = bot.accent || "pink";
-    const effect = accent === "tech" || accent === "pink" ? "眩晕" : accent === "green" ? "禁锢" : "减速";
-    const effectDuration = effect === "减速" ? 1.8 : effect === "禁锢" ? 1.2 : 0.8;
-    const damage = Math.round(bot.attack * (accent === "green" ? 1.8 : 2.2));
+    const effect = botCombat.bot_skill_effect;
+    const effectDuration = botCombat.bot_skill_effect_turns;
+    const damage = Math.round(bot.attack * botCombat.bot_skill_damage_scale);
+    const botColor = rosterPalette(bot.heroId || "volt");
     skillVisuals.push({
         type: "impact", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
-        age: 0, duration: 0.45, color: (colors[accent] || colors.pink).main, radius: 85,
+        age: 0, duration: 0.45, color: botColor.main, radius: 85,
     });
-    addFloatingText(player.x, player.y - 45, `${bot.name} 技能`, (colors[accent] || colors.pink).main);
+    addFloatingText(player.x, player.y - 45, `${bot.name} 技能`, botColor.main);
     statusEffects[effect] = Math.max(statusEffects[effect] || 0, effectDuration);
     applyPlayerDamage(damage, bot);
 }
@@ -2850,13 +2976,13 @@ function collectSupply() {
     if (nearestSupply.type === "health") {
         const restored = Math.min(30, playerState.maxHp - playerState.hp);
         playerState.hp += restored;
-        addFloatingText(nearestSupply.x, nearestSupply.y - 18, restored ? `+${restored} HP` : "生命已满", "#ff668d");
+        addFloatingText(nearestSupply.x, nearestSupply.y - 18, restored ? `+${restored} HP` : t("float.hp_full"), "#ff668d");
         showToast(restored ? `收集成功：恢复 ${restored} 点生命。` : "收集成功：生命值已满。");
     }
     else {
         const restored = Math.min(35, playerState.maxEnergy - playerState.energy);
         playerState.energy += restored;
-        addFloatingText(nearestSupply.x, nearestSupply.y - 18, restored ? `+${restored} 能量` : "能量已满", "#49e6e0");
+        addFloatingText(nearestSupply.x, nearestSupply.y - 18, restored ? t("basic.energy_gain", { amount: restored }) : t("float.energy_full"), "#49e6e0");
         showToast(restored ? `收集成功：恢复 ${restored} 点能量。` : "收集成功：能量已满。");
     }
     nearestSupply = undefined;
@@ -2926,18 +3052,20 @@ function castCrescent(skill, target) {
     const pvpVictims = [...remotePlayers.values()].filter((remote) => remote.hp > 0 && distanceToSegment(remote.x, remote.y, startX, startY, endX, endY) < 42 &&
         (remote.x - startX) * dx + (remote.y - startY) * dy > 0);
     queuePvpAttack("skill", pvpVictims, skill.id);
-    showToast(`弦月穿波贯穿前方 ${range} 距离，命中 ${victims.length} 个敌人。`);
+    showToast(t("skill.luna_crescent", { range, hits: victims.length }));
 }
-function startTabletVolley(skill) {
+function startTabletVolley(skill, extraTablets = 0, extraKnockback = 0) {
     const directionX = facing.x || 1;
     const directionY = facing.y;
-    const perpendicularX = -directionY;
-    const perpendicularY = directionX;
     const distance = skill.dash_range || 200;
     const targetX = Math.max(30, Math.min(map.width - 30, player.x + directionX * distance));
     const targetY = Math.max(30, Math.min(map.height - 30, player.y + directionY * distance));
     tabletProjectiles.length = 0;
-    for (let lane = -2; lane <= 2; lane += 1) {
+    const lanes = [-2, -1, 0, 1, 2];
+    // 超频协议：额外发射的平板走中央航道，击退更强
+    for (let index = 0; index < extraTablets; index += 1)
+        lanes.push(0);
+    lanes.forEach((lane) => {
         tabletProjectiles.push({
             startX: player.x,
             startY: player.y,
@@ -2950,7 +3078,8 @@ function startTabletVolley(skill) {
             duration: 0.75,
             hitEnemies: new Set(),
         });
-    }
+    });
+    tabletExtraKnockback = extraKnockback;
     tabletVolley = {
         x: targetX,
         y: targetY,
@@ -2960,10 +3089,10 @@ function startTabletVolley(skill) {
         effectTurns: skill.effect_turns * 2,
         targetIds: new Set(),
     };
-    addFloatingText(player.x, player.y - 40, "五屏启动", "#49e6e0");
-    showToast(`五台平板出击：击退沿途敌人，并在前方 ${distance} 米汇聚爆炸。`);
+    addFloatingText(player.x, player.y - 40, t("float.tablets_start"), "#49e6e0");
+    showToast(t("skill.tech_tablets_launch", { distance }));
 }
-function startAfterimageDash(skill) {
+function startAfterimageDash(skill, extraTrips = 0) {
     const distance = skill.dash_range || 180;
     const castId = `${config.multiplayer?.player_id || "local"}-dash-${Date.now()}-${attackSequence++}`;
     afterimage = { x: player.x, y: player.y, age: 0, duration: 3.2 };
@@ -2983,11 +3112,200 @@ function startAfterimageDash(skill) {
         hitPlayerIds: new Set(),
         damage: skill.damage,
         completedSegments: 0,
-        totalSegments: 6 + (skill.extra_round_trips || 0) * 2,
+        totalSegments: 6 + ((skill.extra_round_trips || 0) + extraTrips) * 2,
     };
     if (config.multiplayer)
         queuePvpAction("dash_start", [], skill.id, castId);
-    showToast(`残影折返：前后冲刺 ${afterimageDash.totalSegments / 2} 次，路径上的敌人会受到伤害并被击退。`);
+    showToast(t("skill.tech_afterimage_start", { trips: afterimageDash.totalSegments / 2 }));
+}
+// ───────────────────────── 电音人：音浪冲击 / 碟片风暴 ─────────────────────────
+/** 音浪撞到建筑时原地爆炸。pierce 模式（3 阶）下不触发。 */
+function waveHitsObstacle(x, y, radius) {
+    return obstacles.some((obstacle) => {
+        const nearestX = Math.max(obstacle.x, Math.min(x, obstacle.x + obstacle.w));
+        const nearestY = Math.max(obstacle.y, Math.min(y, obstacle.y + obstacle.h));
+        return (x - nearestX) ** 2 + (y - nearestY) ** 2 < radius ** 2;
+    });
+}
+function startSoundWave(skill) {
+    const castId = ++attackSequence;
+    const directionX = facing.x || 1;
+    const directionY = facing.y;
+    soundWaves.push({
+        castId,
+        x: player.x + directionX * 26,
+        y: player.y + directionY * 26,
+        directionX,
+        directionY,
+        travelled: 0,
+        maxDistance: skill.dash_range || 420,
+        speed: 720,
+        radius: skill.radius || 130,
+        damage: skill.damage,
+        pierce: (skill.wave_pierce || 0) > 0,
+        maxTargets: skill.wave_max_targets || 0,
+        hitEnemies: new Set(),
+    });
+    showToast(t("skill.volt2_wave_launch", { distance: Math.round(skill.dash_range || 420) }));
+}
+/** 音浪或唱片命中敌人时的统一处理：伤害 + 击退 + 被动层数。 */
+function waveHitEnemy(wave, enemy, knockback, frenzyTurns) {
+    hitEnemy(enemy, wave.damage);
+    if (knockback > 0)
+        knockbackEnemyInDirection(enemy, knockback, wave.directionX, wave.directionY);
+    addResonanceStack(enemy, wave.castId, frenzyTurns);
+}
+/** 音浪在一点爆炸，对周围造成范围伤害。 */
+function explodeSoundWave(x, y, radius, damage, castId) {
+    enemies
+        .filter((enemy) => enemy.hp > 0 && Math.hypot(enemy.x - x, enemy.y - y) <= radius)
+        .forEach((enemy) => {
+        hitEnemy(enemy, damage);
+        addResonanceStack(enemy, castId);
+    });
+    skillVisuals.push({
+        type: "impact", x, y, targetX: x, targetY: y,
+        age: 0, duration: 0.6, color: "#ff5cf0", radius,
+    });
+    for (let index = 0; index < 22; index += 1) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 80 + Math.random() * 240;
+        impactParticles.push({
+            x, y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            size: 2 + Math.random() * 3,
+            color: "#ffd6fb",
+            life: 0.5,
+            maxLife: 0.5,
+        });
+    }
+}
+function advanceSoundWaves(dt) {
+    for (let index = soundWaves.length - 1; index >= 0; index -= 1) {
+        const wave = soundWaves[index];
+        const step = wave.speed * dt;
+        wave.travelled += step;
+        wave.x += wave.directionX * step;
+        wave.y += wave.directionY * step;
+        skillVisuals.push({
+            type: "wave", x: wave.x, y: wave.y, targetX: wave.x, targetY: wave.y,
+            age: 0, duration: 0.18, color: "#ff5cf0", radius: wave.radius,
+        });
+        let finished = false;
+        // 撞建筑：非穿透模式下自爆
+        if (!wave.pierce && waveHitsObstacle(wave.x, wave.y, 16)) {
+            explodeSoundWave(wave.x, wave.y, wave.radius, wave.damage, wave.castId);
+            addFloatingText(wave.x, wave.y - 40, t("float.wave_impact"), "#ffd6fb");
+            finished = true;
+        }
+        if (!finished) {
+            for (const enemy of enemies) {
+                if (enemy.hp <= 0 || wave.hitEnemies.has(enemy))
+                    continue;
+                if (Math.hypot(enemy.x - wave.x, enemy.y - wave.y) > wave.radius)
+                    continue;
+                wave.hitEnemies.add(enemy);
+                waveHitEnemy(wave, enemy, 130);
+            }
+            // 穿透模式：命中足够多的敌人后自爆
+            if (wave.maxTargets > 0 && wave.hitEnemies.size >= wave.maxTargets) {
+                explodeSoundWave(wave.x, wave.y, wave.radius, wave.damage, wave.castId);
+                finished = true;
+            }
+        }
+        if (!finished && (wave.travelled >= wave.maxDistance || waveHitsObstacle(wave.x, wave.y, 10))) {
+            explodeSoundWave(wave.x, wave.y, wave.radius, wave.damage, wave.castId);
+            finished = true;
+        }
+        if (finished || wave.x < 20 || wave.y < 20 || wave.x > map.width - 20 || wave.y > map.height - 20) {
+            soundWaves.splice(index, 1);
+        }
+    }
+}
+/** 碟片风暴：先记录待发射的唱片，再按间隔逐枚放出。 */
+function startDiscVolley(skill) {
+    discVolley = { skill, castId: ++attackSequence, launched: 0, timer: 0 };
+    showToast(t("skill.volt2_disc_launch", { count: skill.disc_count || 10 }));
+}
+function advanceDiscVolley(dt) {
+    if (!discVolley)
+        return;
+    const volley = discVolley;
+    volley.timer -= dt;
+    const total = volley.skill.disc_count || 10;
+    const interval = volley.skill.disc_interval || 0.09;
+    while (volley.timer <= 0 && volley.launched < total) {
+        launchDisc(volley.skill, volley.castId);
+        volley.launched += 1;
+        volley.timer += interval;
+    }
+    if (volley.launched >= total)
+        discVolley = undefined;
+}
+function launchDisc(skill, castId) {
+    // 每枚唱片各自锁定当前最近的敌人
+    const target = nearestEnemy(skill.radius || 90);
+    const angle = target
+        ? Math.atan2(target.y - player.y, target.x - player.x)
+        : Math.atan2(facing.y, facing.x);
+    const speed = skill.disc_speed || 620;
+    homingDiscs.push({
+        castId,
+        x: player.x + Math.cos(angle) * 24,
+        y: player.y + Math.sin(angle) * 24,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        speed,
+        damage: skill.damage,
+        knockback: skill.disc_knockback || 40,
+        radius: 26,
+        age: 0,
+        life: 1.5,
+        hitEnemies: new Set(),
+        angle,
+    });
+}
+function advanceHomingDiscs(dt) {
+    for (let index = homingDiscs.length - 1; index >= 0; index -= 1) {
+        const disc = homingDiscs[index];
+        disc.age += dt;
+        // 轻度追踪：每帧朝最近敌人修正方向
+        const target = nearestEnemy(220);
+        if (target) {
+            const wanted = Math.atan2(target.y - disc.y, target.x - disc.x);
+            const current = Math.atan2(disc.vy, disc.vx);
+            let delta = wanted - current;
+            while (delta > Math.PI)
+                delta -= Math.PI * 2;
+            while (delta < -Math.PI)
+                delta += Math.PI * 2;
+            const angle = current + Math.max(-0.16, Math.min(0.16, delta));
+            disc.angle = angle;
+            disc.vx = Math.cos(angle) * disc.speed;
+            disc.vy = Math.sin(angle) * disc.speed;
+        }
+        disc.x += disc.vx * dt;
+        disc.y += disc.vy * dt;
+        skillVisuals.push({
+            type: "disc", x: disc.x, y: disc.y, targetX: disc.x, targetY: disc.y,
+            age: 0, duration: 0.2, color: "#ff5cf0", radius: disc.radius,
+        });
+        for (const enemy of enemies) {
+            if (enemy.hp <= 0 || disc.hitEnemies.has(enemy))
+                continue;
+            if (Math.hypot(enemy.x - disc.x, enemy.y - disc.y) > disc.radius)
+                continue;
+            disc.hitEnemies.add(enemy);
+            hitEnemy(enemy, disc.damage);
+            knockbackEnemyInDirection(enemy, disc.knockback, disc.vx / disc.speed, disc.vy / disc.speed);
+            addResonanceStack(enemy, disc.castId);
+        }
+        if (disc.age >= disc.life || disc.hitEnemies.size > 0
+            || disc.x < 20 || disc.y < 20 || disc.x > map.width - 20 || disc.y > map.height - 20) {
+            homingDiscs.splice(index, 1);
+        }
+    }
 }
 function advanceTabletVolley(dt) {
     if (!tabletVolley)
@@ -3011,8 +3329,8 @@ function advanceTabletVolley(dt) {
                 return;
             tablet.hitEnemies.add(enemy);
             hitEnemy(enemy, tabletVolley.damage * 0.35, tabletVolley.effect, tabletVolley.effectTurns);
-            knockbackEnemyInDirection(enemy, 54, tablet.directionX, tablet.directionY);
-            addFloatingText(enemy.x, enemy.y - 40, "击退", "#49e6e0");
+            knockbackEnemyInDirection(enemy, 54 + tabletExtraKnockback, tablet.directionX, tablet.directionY);
+            addFloatingText(enemy.x, enemy.y - 40, t("float.knockback"), "#49e6e0");
         });
         remotePlayers.forEach((remote) => {
             if (remote.hp <= 0 || tabletVolley.targetIds.has(remote.player_id))
@@ -3044,7 +3362,7 @@ function advanceTabletVolley(dt) {
             life, maxLife: life,
         });
     }
-    showToast(`五屏汇聚爆炸：范围内命中 ${victims.length} 个敌人并施加减速。`);
+    showToast(t("skill.tech_tablets_blast", { hits: victims.length }));
     tabletProjectiles.length = 0;
     tabletVolley = undefined;
 }
@@ -3085,7 +3403,7 @@ function advanceAfterimageDash(dt) {
             dash.hitEnemies.add(enemy);
             hitEnemy(enemy, dash.damage);
             knockbackEnemyInDirection(enemy, 72, travelX / travelLength, travelY / travelLength);
-            addFloatingText(enemy.x, enemy.y - 40, "残影击退", "#49e6e0");
+            addFloatingText(enemy.x, enemy.y - 40, t("float.afterimage_knockback"), "#49e6e0");
         });
         remotePlayers.forEach((remote) => {
             if (remote.hp <= 0 || dash.hitPlayerIds.has(remote.player_id))
@@ -3102,7 +3420,7 @@ function advanceAfterimageDash(dt) {
     if (dash.completedSegments >= dash.totalSegments) {
         queuePvpAction("dash_hit", [...dash.hitPlayerIds].map((id) => remotePlayers.get(id)).filter((remote) => !!remote), config.skills.find((skill) => skill.action === "tech_afterimage")?.id, dash.castId);
         afterimageDash = undefined;
-        showToast(`残影折返结束：完成 ${dash.totalSegments / 2} 次往返冲刺。`);
+        showToast(t("skill.tech_afterimage_end", { trips: dash.totalSegments / 2 }));
         return;
     }
     dash.phase = dash.phase === "out" ? "back" : "out";
@@ -3132,11 +3450,11 @@ function castSkill(index) {
     }
     const remaining = skillCooldowns.get(skill.id) || 0;
     if (remaining > 0) {
-        showToast(`${skill.name} 冷却中，还需 ${remaining.toFixed(1)} 秒。`, "warning");
+        showToast(t("skill.cooling", { name: skill.name, seconds: remaining.toFixed(1) }), "warning");
         return;
     }
     if (playerState.energy < skill.cost) {
-        showToast(`能量不足：${skill.name} 需要 ${skill.cost} 点能量。`, "warning");
+        showToast(t("skill.no_energy", { name: skill.name, cost: skill.cost }), "warning");
         return;
     }
     let target;
@@ -3176,13 +3494,34 @@ function castSkill(index) {
     if (skill.action === "moss_barkskin") {
         statusEffects["荆棘护甲"] = skill.effect_turns;
         addSkillVisual(skill);
-        showToast(`树皮壁垒展开：受到伤害降低 ${Math.round((1 - playerState.thornDamageMultiplier) * 100)}%，近战敌人会被荆棘反伤。`);
+        showToast(t("skill.moss_barkskin", { reduction: Math.round((1 - playerState.thornDamageMultiplier) * 100) }));
     }
     else if (skill.action === "tech_tablets") {
-        startTabletVolley(skill);
+        const burst = consumeBurst("tech_overclock_burst");
+        startTabletVolley(skill, burst ? (heroPassive.tech_burst?.extra_tablets || 0) : 0, burst ? 46 : 0);
+        if (burst)
+            showToast(t("passive.tech_tablets"), "success");
     }
     else if (skill.action === "tech_afterimage") {
-        startAfterimageDash(skill);
+        const burst = consumeBurst("tech_overclock_burst");
+        startAfterimageDash(skill, burst ? (heroPassive.tech_burst?.extra_round_trips || 0) : 0);
+        if (burst)
+            showToast(t("passive.tech_afterimage"), "success");
+    }
+    else if (skill.action === "volt2_wave") {
+        startSoundWave(skill);
+    }
+    else if (skill.action === "volt2_empower") {
+        empoweredAttack = true;
+        empoweredCastId = ++attackSequence;
+        empoweredCountsAsSkill = (skill.empower_counts_as_skill || 0) > 0;
+        empoweredFrenzyTurns = skill.empower_frenzy_turns || 3;
+        addSkillVisual(skill);
+        addFloatingText(player.x, player.y - 38, t("float.volt2_charge"), "#ff5cf0");
+        showToast(t("skill.volt2_empower", { name: skill.name }));
+    }
+    else if (skill.action === "volt2_discs") {
+        startDiscVolley(skill);
     }
     else if (skill.action === "pipa_yangchun") {
         const range = skill.cast_range || 420;
@@ -3208,16 +3547,19 @@ function castSkill(index) {
             updateHud();
         }
         if (!victims.length && !pvpVictims.length) {
-            showToast(`${skill.name}未命中：周围 ${range} 距离内没有敌人。`, "warning");
+            showToast(t("skill.pipa_yangchun_miss", { name: skill.name, range }), "warning");
         }
         else {
-            showToast(`${skill.name}命中 ${victims.length + pvpVictims.length} 个敌人，禁锢 ${rootDuration} 秒并回复 ${healed} 点生命。`);
+            showToast(t("skill.pipa_yangchun", { name: skill.name, hits: victims.length + pvpVictims.length, seconds: rootDuration, healed }));
         }
     }
     else if (skill.action === "pipa_shimian") {
-        const spawned = spawnPipaMinions();
+        // 弦音不绝：叠加的额外小兵数与技能升阶后的数量相加
+        const spawned = spawnPipaMinions(passiveState.minionBonus);
         addSkillVisual(skill);
-        showToast(`${skill.name}召出 ${spawned} 名小兵，开始追击敌人。`);
+        showToast(passiveState.minionBonus > 0
+            ? t("skill.pipa_shimian_bonus", { name: skill.name, count: spawned, bonus: passiveState.minionBonus })
+            : t("skill.pipa_shimian", { name: skill.name, count: spawned }));
     }
     else if (skill.action === "pipa_kinsnake") {
         const radius = skill.radius || 360;
@@ -3229,7 +3571,8 @@ function castSkill(index) {
             .sort((left, right) => right.hp - left.hp)
             .slice(0, 3);
         const frenzyDuration = (config.duel || config.multiplayer ? 2 : 5) +
-            (skill.frenzy_duration_bonus || 0);
+            (skill.frenzy_duration_bonus || 0) +
+            (heroPassive.frenzy_duration_bonus || 0);
         victims.forEach((enemy) => {
             hitEnemy(enemy, skill.damage, "狂舞", frenzyDuration);
             skillVisuals.push({
@@ -3239,21 +3582,27 @@ function castSkill(index) {
         });
         queuePvpAttack("skill", pvpVictims, skill.id);
         addSkillVisual(skill);
-        showToast(`${skill.name}命中 ${victims.length + pvpVictims.length} 个高生命敌人，${frenzyDuration} 秒内陷入狂舞。`);
+        showToast(t("skill.pipa_kinsnake", { name: skill.name, hits: victims.length + pvpVictims.length, seconds: frenzyDuration }));
     }
     else if (skill.action === "tech_overdrive") {
         const radius = skill.radius || 330;
         const victims = enemies.filter((enemy) => enemy.hp > 0 && distanceTo(enemy.x, enemy.y) <= radius);
         const startX = player.x;
         const startY = player.y;
-        victims.forEach((enemy) => hitEnemy(enemy, skill.damage, skill.effect, skill.effect_turns * 2));
+        // 超频协议：大招伤害提高
+        const burst = consumeBurst("tech_overclock_burst");
+        const scale = burst ? (heroPassive.tech_burst?.ultimate_damage_scale || 1) : 1;
+        const damage = Math.round(skill.damage * scale);
+        victims.forEach((enemy) => hitEnemy(enemy, damage, skill.effect, skill.effect_turns * 2));
+        if (burst)
+            showToast(t("passive.tech_ultimate"), "success");
         const travelled = movePlayerToward(player.x + facing.x * (skill.dash_range || 300), player.y + facing.y * (skill.dash_range || 300), skill.dash_range || 300);
         queuePvpAttack("skill", nearbyPvpTargets(startX, startY, radius), skill.id);
         skillVisuals.push({
             type: "beam", x: startX, y: startY, targetX: player.x, targetY: player.y,
             age: 0, duration: 0.4, color: "#49e6e0",
         });
-        showToast(`超频突袭：眩晕周围 ${victims.length} 个敌人，并冲刺 ${Math.round(travelled)} 距离。`);
+        showToast(t("skill.tech_overdrive", { hits: victims.length, distance: Math.round(travelled) }));
     }
     else if (skill.action === "luna_phase") {
         const startX = player.x;
@@ -3266,14 +3615,14 @@ function castSkill(index) {
             type: "beam", x: startX, y: startY, targetX: player.x, targetY: player.y,
             age: 0, duration: 0.42, color: "#bda5ff",
         });
-        addFloatingText(player.x, player.y - 38, "月影护盾", "#d9caff");
-        showToast(`月影相移：闪现 ${Math.round(distance)} 距离，并获得 ${playerState.shield} 点护盾，持续 ${shieldDuration} 秒。`);
+        addFloatingText(player.x, player.y - 38, t("float.lunar_shield"), "#d9caff");
+        showToast(t("skill.luna_phase", { distance: Math.round(distance), shield: playerState.shield, seconds: shieldDuration }));
     }
     else if (skill.action === "empower_attack") {
         empoweredAttack = true;
         addSkillVisual(skill);
-        addFloatingText(player.x, player.y - 38, "重拳已蓄势！", "#ffe45c");
-        showToast(`${skill.name} 生效：下次普攻造成额外伤害并击退敌人。`);
+        addFloatingText(player.x, player.y - 38, t("float.empower_ready"), "#ffe45c");
+        showToast(t("skill.empower_attack", { name: skill.name }));
     }
     else if (skill.action === "dash_aoe" && target) {
         const startX = player.x;
@@ -3309,7 +3658,7 @@ function castSkill(index) {
         });
         victims.forEach((enemy) => hitEnemy(enemy, skill.damage, skill.effect, skill.effect_turns * 2));
         queuePvpAttack("skill", nearbyPvpTargets(player.x, player.y, radius), skill.id);
-        showToast(`${skill.name} 突进 ${Math.round(travelled)} 距离，${radius} 范围内命中 ${victims.length} 个敌人，造成伤害并眩晕。`);
+        showToast(t("skill.volt_ult", { name: skill.name, distance: Math.round(travelled), radius, hits: victims.length }));
     }
     else if (skill.action === "moss_rootfield" && target) {
         const radius = skill.radius || 185;
@@ -3323,7 +3672,7 @@ function castSkill(index) {
             type: "aura", x: target.x, y: target.y, targetX: target.x, targetY: target.y,
             age: 0, duration: 0.9, color: "#b7ef55",
         });
-        showToast(`荆棘花园扎根：禁锢 ${victims.length} 个敌人，造成范围伤害并回复 ${heal} 生命。`);
+        showToast(t("skill.moss_rootfield", { hits: victims.length, heal }));
     }
     else if (skill.action === "moss_spore" && target) {
         const radius = skill.radius || 130;
@@ -3335,7 +3684,7 @@ function castSkill(index) {
             type: "aura", x: target.x, y: target.y, targetX: target.x, targetY: target.y,
             age: 0, duration: 0.75, color: "#9cff65",
         });
-        showToast(`孢子绽放：${victims.length} 个敌人中毒，持续受到伤害。`);
+        showToast(t("skill.moss_spore", { hits: victims.length }));
     }
     else if (skill.action === "luna_moonfall" && target) {
         const radius = skill.radius || 150;
@@ -3347,7 +3696,11 @@ function castSkill(index) {
             type: "aura", x: target.x, y: target.y, targetX: target.x, targetY: target.y,
             age: 0, duration: 0.85, color: "#bda5ff",
         });
-        showToast(`新月陨星落地：${victims.length} 个敌人受到 ${skill.damage} 点范围伤害。`);
+        showToast(t("skill.luna_moonfall", { hits: victims.length, damage: skill.damage }));
+        // 月相扩张：消耗一次强化窗口，额外向「不是最近但仍在施法范围内」的敌人降落一颗陨石
+        if (consumeBurst("extra_meteor")) {
+            dropExtraMeteor(skill, radius, target);
+        }
     }
     else if (skill.action === "luna_crescent" && target) {
         castCrescent(skill, target);
@@ -3360,13 +3713,17 @@ function castSkill(index) {
         const duration = Math.max(3, skill.effect_turns * 3);
         statusEffects[skill.effect] = duration;
         addFloatingText(player.x, player.y - 38, `${effectText(skill.effect)}！`, "#8dffac");
-        showToast(`${skill.name} 释放成功：${effectText(skill.effect)} 持续 ${duration} 秒。`);
+        showToast(t("skill.self_buff", { name: skill.name, effect: effectText(skill.effect), seconds: duration }));
     }
     else if (target) {
         addSkillVisual(skill, target);
         hitEnemy(target, skill.damage, skill.effect, skill.effect_turns * 2);
         queuePvpAttack("skill", [nearestRemoteAt(target.x, target.y, skill.cast_range || 340)].filter((remote) => !!remote), skill.id);
-        showToast(`${skill.name} 命中，造成 ${skill.damage} 点伤害${skill.effect ? `并施加${skill.effect}` : ""}。`);
+        showToast(t("skill.generic_hit", {
+            name: skill.name,
+            damage: skill.damage,
+            effect: skill.effect ? effectText(skill.effect) : "",
+        }));
     }
     updateHud();
     updateSkillButtons();
@@ -3374,14 +3731,15 @@ function castSkill(index) {
 function effectText(effect) {
     return locale.battle.effects[effect] || effect;
 }
+/** 返回本次是否真的挥出了一击，供按住连续普攻判断是否需要等待。 */
 function basicAttack() {
     if (runEnded || skillIsPaused())
-        return;
+        return false;
     if (basicAttackTimer > 0)
-        return;
+        return false;
     if (playerActionsLocked()) {
         showControlBlocked("普通攻击");
-        return;
+        return false;
     }
     const range = getPlayerAttackRange();
     const target = nearestEnemy(range);
@@ -3394,46 +3752,43 @@ function basicAttack() {
             age: 0, duration: 0.24, color: heroColors.main,
         });
         playerState.energy = Math.min(playerState.maxEnergy, playerState.energy + 5);
-        showToast(`攻击 ${remoteTarget.name}，服务器将校验距离并同步伤害。`);
+        showToast(t("basic.pvp_strike", { name: remoteTarget.name }));
+        onPlayerBasicAttack();
         updateHud();
-        return;
+        return true;
     }
     if (!target) {
-        showToast(`普攻未命中：${config.accent === "tech" ? "将敌人保持在 330" : config.accent === "blue" ? "将敌人保持在 300" : config.accent === "green" ? "将敌人保持在 150" : config.accent === "pipa" ? "将敌人保持在 200" : "靠近敌人至 95"} 距离内再攻击。`, "warning");
-        return;
+        showToast(t("basic.out_of_range", { range: heroCombat.basic_range }), "warning");
+        return false;
     }
     basicAttackTimer = getBasicAttackCooldown();
     const wasEmpowered = empoweredAttack;
-    const empoweredSkill = config.skills.find((skill) => skill.action === "empower_attack");
-    const damage = wasEmpowered
-        ? empoweredSkill?.empowered_damage || 34
-        : config.accent === "tech" ? 14 : config.accent === "green" ? 12 : config.accent === "blue" ? 15 : config.accent === "pipa" ? 13 : 16;
-    if (config.accent === "green" && !wasEmpowered) {
+    // 霓虹拳王用 empower_attack，电音人用 volt2_empower，两者的强化普攻结算方式不同
+    const empoweredSkill = config.skills.find((skill) => skill.action === "empower_attack" || skill.action === "volt2_empower");
+    const isResonanceEmpower = empoweredSkill?.action === "volt2_empower";
+    const baseEmpoweredDamage = isResonanceEmpower
+        ? heroCombat.basic_damage * (empoweredSkill?.empower_damage_scale || 1.5)
+        : empoweredSkill?.empowered_damage || 34;
+    const damage = wasEmpowered ? Math.round(baseEmpoweredDamage) : heroCombat.basic_damage;
+    if (heroCombat.basic_beam && !wasEmpowered) {
         skillVisuals.push({
             type: "beam", x: player.x, y: player.y, targetX: target.x, targetY: target.y,
-            age: 0, duration: 0.25, color: "#b7ef55",
+            age: 0, duration: heroCombat.basic_beam.duration, color: heroCombat.basic_beam.color,
         });
-        hitEnemy(target, damage, "禁锢", 0.8);
     }
-    else if (config.accent === "tech") {
-        skillVisuals.push({
-            type: "beam", x: player.x, y: player.y, targetX: target.x, targetY: target.y,
-            age: 0, duration: 0.24, color: "#49e6e0",
-        });
-        hitEnemy(target, damage);
-    }
-    else if (config.accent === "blue") {
-        skillVisuals.push({
-            type: "beam", x: player.x, y: player.y, targetX: target.x, targetY: target.y,
-            age: 0, duration: 0.22, color: "#bda5ff",
-        });
-        hitEnemy(target, damage);
-    }
-    else {
-        hitEnemy(target, damage);
+    // 电音人的强化普攻自带狂舞，并且 3 阶起计入被动层数
+    const resonanceFrenzy = wasEmpowered && isResonanceEmpower ? empoweredFrenzyTurns : 0;
+    hitEnemy(target, damage, resonanceFrenzy > 0 ? "狂舞" : wasEmpowered ? "" : heroCombat.basic_effect, resonanceFrenzy > 0 ? resonanceFrenzy : wasEmpowered ? 0 : heroCombat.basic_effect_turns);
+    if (wasEmpowered && isResonanceEmpower) {
+        if (empoweredCountsAsSkill)
+            addResonanceStack(target, empoweredCastId);
+        else
+            target.effects["狂舞"] = Math.max(target.effects["狂舞"] || 0, resonanceFrenzy);
     }
     if (wasEmpowered) {
         empoweredAttack = false;
+        empoweredCountsAsSkill = false;
+        empoweredFrenzyTurns = 0;
         const splashRadius = empoweredSkill?.empowered_splash_radius || 0;
         if (splashRadius > 0) {
             enemies.forEach((enemy) => {
@@ -3444,38 +3799,40 @@ function basicAttack() {
         }
         if (target.hp > 0) {
             knockbackEnemy(target, 115);
-            addFloatingText(target.x, target.y - 48, "击退！", "#ffe45c");
+            addFloatingText(target.x, target.y - 48, t("float.knockback_bang"), "#ffe45c");
         }
     }
     playerState.energy = Math.min(playerState.maxEnergy, playerState.energy + 5);
     showToast(wasEmpowered
-        ? `强化普攻命中，造成 ${damage} 点伤害并击退敌人！`
-        : config.accent === "green"
-            ? `荆棘挥击造成 ${damage} 点伤害并短暂缠绕目标。`
-            : config.accent === "tech"
-                ? `科技男远程普攻命中，造成 ${damage} 点伤害。`
-                : config.accent === "blue"
-                    ? `月光弹命中，造成 ${damage} 点远程伤害。`
-                    : config.accent === "pipa"
-                        ? `琵琶音刃命中，造成 ${damage} 点伤害。`
-                        : `普攻命中，造成 ${damage} 点伤害，回复 5 点能量。`);
+        ? (isResonanceEmpower
+            ? t("skill.volt2_empowered_hit", { damage })
+            : t("skill.empowered_hit", { damage }))
+        : heroCombat.basic_hit_message.replace("{damage}", String(damage)));
+    onPlayerBasicAttack();
+    updateHud();
+    return true;
+}
+/** 霓虹拳王被动：每普攻 1 次叠加攻速。 */
+function onPlayerBasicAttack() {
+    const gains = heroPassive.on_basic_attack;
+    if (!gains)
+        return;
+    Object.entries(gains).forEach(([stat, amount]) => addPassiveStat(stat, amount));
     updateHud();
 }
 function getPlayerAttackRange() {
-    if (config.accent === "pipa")
-        return 200;
-    if (config.accent === "tech")
-        return 330;
-    if (config.accent === "blue")
-        return 300;
-    if (config.accent === "green")
-        return 150;
-    return 95;
+    return heroCombat.basic_range + playerState.passiveRangeBonus;
 }
-function spawnPipaMinions() {
+/**
+ * 十面埋伏召唤小兵。
+ * `bonusMinions` 是被动提供的额外数量：它会与技能升阶后的 minion_count 叠加，
+ * 走同一套生成逻辑，因此小兵的攻击、移速、生命与升阶效果保持一致。
+ */
+function spawnPipaMinions(bonusMinions = 0) {
     let spawned = 0;
     const skill = config.skills.find((item) => item.action === "pipa_shimian");
-    const count = skill?.minion_count || 5;
+    const baseCount = skill?.minion_count || 5;
+    const count = baseCount + bonusMinions;
     const hp = Math.round(15 * (skill?.minion_hp_multiplier || 1) + skillExperienceLevel * 2 + wave * 2);
     for (let index = 0; index < count; index += 1) {
         const angle = Math.PI * 2 * index / count;
@@ -3532,7 +3889,7 @@ function updateSkillButtons() {
         if (progress && rankLabel) {
             const required = smallUpgradeRequirement(progress.tier);
             rankLabel.textContent = required
-                ? tx(`${progress.tier}阶 · ${progress.minorUpgrades}/${required}`)
+                ? tx(t("skill.rank_short", { tier: progress.tier, current: progress.minorUpgrades, required }))
                 : tx("3阶 · 已满");
         }
     });
@@ -3551,6 +3908,9 @@ function updateCombat(dt) {
             afterimage = undefined;
     }
     advanceTabletVolley(dt);
+    advanceDiscVolley(dt);
+    advanceSoundWaves(dt);
+    advanceHomingDiscs(dt);
     if (skillIsPaused())
         return;
     if (!playerMovementLocked())
@@ -3567,8 +3927,19 @@ function updateCombat(dt) {
         skillCooldowns.set(id, next);
     });
     basicAttackTimer = Math.max(0, basicAttackTimer - dt * (schoolClassDuration > 0 ? 0.5 : 1));
+    // 按住空格（或触控普攻键）时，冷却一结束就自动续击。
+    // 挥空时 basicAttack 返回 false，此时进入短暂等待，避免每帧弹出「未命中」提示。
+    if (basicAttackTimer === 0 && !swingWaitTimer && (keys.has(" ") || basicAttackHeld)) {
+        if (basicAttack()) {
+            swingWaitTimer = 0;
+        }
+        else {
+            swingWaitTimer = BASIC_SWING_RETRY_DELAY;
+        }
+    }
+    swingWaitTimer = Math.max(0, swingWaitTimer - dt);
     if (hasPlayerEffect("狂舞")) {
-        pipaFrenzyAttackTimer = Math.max(0, pipaFrenzyAttackTimer - dt * pipaFrenzyAttackSpeedMultiplier());
+        pipaFrenzyAttackTimer = Math.max(0, pipaFrenzyAttackTimer - dt * frenzyAttackSpeedMultiplier());
         if (pipaFrenzyAttackTimer === 0) {
             queuePvpSelfAttack();
             pipaFrenzyAttackTimer = 0.65;
@@ -3647,7 +4018,7 @@ function updateCombat(dt) {
                 (schoolClassDuration > 0 ? 0.4 : 1) * dt;
             moveEnemyToward(enemy, target, speed, dt);
         }
-        const frenzySpeed = enemy.effects["狂舞"] > 0 ? pipaFrenzyAttackSpeedMultiplier() : 1;
+        const frenzySpeed = enemy.effects["狂舞"] > 0 ? frenzyAttackSpeedMultiplier() : 1;
         enemy.attackTimer = Math.max(0, enemy.attackTimer - dt * (schoolClassDuration > 0 ? 0.5 : 1) * frenzySpeed);
         if (distance < attackRange && enemy.attackTimer === 0 && !enemy.effects["眩晕"]) {
             enemy.attackTimer = enemy.anesthetist ? 1.3 : enemy.kind === "runner" ? 1.05 : 1.35;
@@ -3724,7 +4095,7 @@ function drawPlayer() {
 }
 function drawRemotePlayers() {
     remotePlayers.forEach((remote) => {
-        const remoteColor = colors[remote.accent] || colors.pink;
+        const remoteColor = rosterPalette(remote.hero_id);
         context.save();
         context.translate(remote.x, remote.y);
         context.fillStyle = "#0009";
@@ -3772,7 +4143,7 @@ function drawRemotePlayers() {
     if (config.multiplayer) {
         peerList.hidden = remotePlayers.size === 0;
         peerList.textContent = remotePlayers.size
-            ? tx(`同局玩家 ${remotePlayers.size} 人：${[...remotePlayers.values()].map((item) => item.name).join("、")}`)
+            ? tx(t("mp.party_roster", { count: remotePlayers.size, names: [...remotePlayers.values()].map((item) => item.name).join(locale.lobby.player_separator) }))
             : tx("等待其他玩家同步位置…");
     }
 }
@@ -3893,7 +4264,7 @@ function drawMinimap() {
         miniContext.fillRect(plane.x * sx - 2, plane.y * sy - 2, 4, 4);
     });
     remotePlayers.forEach((remote) => {
-        miniContext.fillStyle = (colors[remote.accent] || colors.pink).main;
+        miniContext.fillStyle = rosterPalette(remote.hero_id).main;
         miniContext.fillRect(remote.x * sx - 2, remote.y * sy - 2, 5, 5);
     });
     miniContext.fillStyle = heroColors.main;
@@ -3988,6 +4359,7 @@ document.addEventListener("keydown", (event) => {
             event.preventDefault();
         keys.clear();
         touchKeys.clear();
+        basicAttackHeld = false;
         return;
     }
     const key = normalizeKey(event.key);
@@ -4006,6 +4378,8 @@ document.addEventListener("keydown", (event) => {
         return;
     }
     if (key === " ") {
+        // 按住空格连续普攻：keydown 立即打一下，之后由帧循环在冷却结束时续击
+        keys.add(key);
         basicAttack();
         return;
     }
@@ -4017,6 +4391,7 @@ document.addEventListener("keyup", (event) => {
 window.addEventListener("blur", () => {
     keys.clear();
     touchKeys.clear();
+    basicAttackHeld = false;
 });
 document.querySelectorAll(".touch-pad button").forEach((button) => {
     const direction = button.dataset.move;
@@ -4043,6 +4418,16 @@ skillButtons.forEach((button, index) => {
 });
 pickupPrompt.addEventListener("click", collectSupply);
 basicAttackButton.addEventListener("click", basicAttack);
+// 按住普攻键（含触控模式）持续进攻
+basicAttackButton.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    basicAttackButton.setPointerCapture(event.pointerId);
+    basicAttackHeld = true;
+    basicAttack();
+});
+["pointerup", "pointercancel", "lostpointercapture"].forEach((type) => {
+    basicAttackButton.addEventListener(type, () => { basicAttackHeld = false; });
+});
 retryRunButton.addEventListener("click", () => {
     if (config.duel)
         window.location.href = "/select?mode=duel";
@@ -4053,7 +4438,7 @@ pauseToggle?.addEventListener("click", togglePause);
 resumeRunButton?.addEventListener("click", togglePause);
 updateHud();
 if (config.multiplayer) {
-    mapMode.textContent = tx(`局域网房间 ${config.multiplayer.room_id}`);
+    mapMode.textContent = tx(t("mp.room_tag", { room: config.multiplayer.room_id }));
     peerList.hidden = false;
 }
 if (config.duel) {

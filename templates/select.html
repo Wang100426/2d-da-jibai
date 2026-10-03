@@ -29,6 +29,7 @@
           type="button"
           data-hero-id="{{ hero.id }}"
           aria-pressed="{{ 'true' if loop.first else 'false' }}"
+          style="--hero-main:{{ hero.palette.main }};--hero-light:{{ hero.palette.light }};--hero-dark:{{ hero.palette.dark }}"
         >
           <span class="roster-avatar">{{ hero.initial }}</span>
           <span class="roster-identity">
@@ -41,9 +42,10 @@
       </div>
 
       <section class="hero-detail" aria-live="polite">
-        <div class="detail-topline"><span class="status-dot"></span> {{ tr("FIGHTER_PROFILE") }} <b id="detail-index">01 / 05</b></div>
+        <div class="detail-topline"><span class="status-dot"></span> {{ tr("FIGHTER_PROFILE") }} <b id="detail-index">01 / {{ "%02d"|format(heroes|length) }}</b></div>
         <div class="detail-main">
-          <div class="detail-portrait" id="detail-portrait">
+          <div class="detail-portrait {{ heroes[0].accent }}" id="detail-portrait"
+               style="--hero-main:{{ heroes[0].palette.main }};--hero-light:{{ heroes[0].palette.light }};--hero-dark:{{ heroes[0].palette.dark }}">
             <span id="detail-initial">{{ heroes[0].initial }}</span>
             <i class="detail-orbit orbit-one"></i>
             <i class="detail-orbit orbit-two"></i>
@@ -60,6 +62,10 @@
                 <i><em style="width: {{ value }}%"></em></i>
               </div>
               {% endfor %}
+            </div>
+            <div class="detail-passive" id="detail-passive">
+              <div class="skills-heading"><h3>{{ tr("PASSIVE") }}</h3><span>P</span></div>
+              <p><b id="detail-passive-name">{{ heroes[0].passive.name }}</b><small id="detail-passive-desc">{{ heroes[0].passive.description }}</small></p>
             </div>
             <div class="detail-skills">
               <div class="skills-heading"><h3>{{ tr("SKILLS") }}</h3><span>Q / E / R</span></div>

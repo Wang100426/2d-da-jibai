@@ -30,6 +30,7 @@ def get_locale(language):
 
 def localized_heroes(language):
     package = get_locale(language)
+    tier_labels = package.get("tier_labels", {})
     heroes = copy.deepcopy(HEROES)
     for hero in heroes:
         localized = package["heroes"][hero["id"]]
@@ -38,10 +39,18 @@ def localized_heroes(language):
         hero["tagline"] = localized["tagline"]
         hero["initial"] = localized["initial"]
         hero["stats"] = dict(zip(localized["stats"], hero["stats"].values()))
+        hero["passive"] = {
+            "id": hero["passive"]["id"],
+            "name": localized["passive"]["name"],
+            "description": localized["passive"]["description"],
+        }
         for skill in hero["skills"]:
             translation = localized["skills"].get(skill["id"])
             if translation:
                 skill.update(translation)
+            for tier_effect in skill.get("tier_effects", {}).values():
+                if tier_effect["label"] in tier_labels:
+                    tier_effect["label"] = tier_labels[tier_effect["label"]]
     return heroes
 
 
@@ -68,6 +77,9 @@ def favicon():
     return send_file(ASSET_DIRECTORY / icon, mimetype="image/vnd.microsoft.icon", max_age=3600)
 
 
+# 英雄机制的唯一配置源。
+# 新增英雄时只需在 HEROES 里追加一条记录：调色板走 palette，战斗数值走 combat，
+# 技能的 2/3 阶效果走技能自身的 tier_effects。前端不再按 accent 硬编码分支。
 HEROES = [
     {
         "id": "volt",
@@ -76,11 +88,36 @@ HEROES = [
         "tagline": "贴脸、击飞、再追上去打一拳。",
         "initial": "拳",
         "accent": "pink",
+        "palette": {"main": "#ff4fa3", "light": "#ffd3e8", "dark": "#812354"},
         "stats": {"攻击": 92, "防御": 58, "机动": 86},
+        "combat": {
+            "speed": 235,
+            "basic_range": 95,
+            "basic_damage": 16,
+            "basic_effect": "",
+            "basic_effect_turns": 0,
+            "basic_beam": None,
+            "basic_restore_label": "MELEE_RESTORE",
+            "bot_skill_effect": "眩晕",
+            "bot_skill_effect_turns": 0.8,
+            "bot_skill_damage_scale": 2.2,
+            "thorns_damage": 0,
+        },
+        "passive": {
+            "id": "volt_limit_break",
+            "on_basic_attack": {"attack_speed": 0.05},
+            "uncapped": ["attack_speed"],
+        },
         "skills": [
-            {"id": "volt-ult", "name": "雷霆追猎", "description": "突进最近敌人 · 范围眩晕", "kind": "大招", "target": "enemy", "action": "dash_aoe", "cost": 60, "cooldown": 14, "damage": 38, "radius": 115, "dash_range": 300, "effect": "眩晕", "effect_turns": 2},
-            {"id": "volt-chain", "name": "震荡重拳", "description": "强化下次普攻 · 击退", "kind": "小技能", "target": "self", "action": "empower_attack", "cost": 20, "cooldown": 7, "damage": 0, "effect": "强化普攻", "effect_turns": 1},
-            {"id": "volt-overdrive", "name": "破阵冲刺", "description": "朝移动方向冲刺 · 路径伤害", "kind": "小技能", "target": "self", "action": "dash_strike", "cost": 25, "cooldown": 8, "damage": 24, "dash_range": 230, "effect": "", "effect_turns": 0},
+            {"id": "volt-ult", "name": "雷霆追猎", "description": "突进最近敌人 · 范围眩晕", "kind": "大招", "target": "enemy", "action": "dash_aoe", "cost": 60, "cooldown": 14, "damage": 38, "radius": 115, "dash_range": 300, "effect": "眩晕", "effect_turns": 2,
+             "tier_effects": {2: {"label": "范围眩晕半径 +40", "patch": {"radius": {"add": 40}}},
+                              3: {"label": "眩晕时间 +1 秒", "patch": {"effect_turns": {"add": 0.5}}}}},
+            {"id": "volt-chain", "name": "震荡重拳", "description": "强化下次普攻 · 击退", "kind": "小技能", "target": "self", "action": "empower_attack", "cost": 20, "cooldown": 7, "damage": 0, "effect": "强化普攻", "effect_turns": 1,
+             "tier_effects": {2: {"label": "强化普攻额外伤害 +12", "patch": {"empowered_damage": {"add": 12, "base": 34}}},
+                              3: {"label": "强化普攻可波及周围敌人", "patch": {"empowered_splash_radius": {"set": 90}}}}},
+            {"id": "volt-overdrive", "name": "破阵冲刺", "description": "朝移动方向冲刺 · 路径伤害", "kind": "小技能", "target": "self", "action": "dash_strike", "cost": 25, "cooldown": 8, "damage": 24, "dash_range": 230, "effect": "", "effect_turns": 0,
+             "tier_effects": {2: {"label": "冲刺距离 +45", "patch": {"dash_range": {"add": 45}}},
+                              3: {"label": "冲刺伤害提高 30%", "patch": {"damage": {"scale": 1.3}}}}},
         ],
     },
     {
@@ -90,11 +127,37 @@ HEROES = [
         "tagline": "把战场变成自己的花园。",
         "initial": "苔",
         "accent": "green",
+        "palette": {"main": "#b7ef55", "light": "#e9ffb7", "dark": "#426b2e"},
         "stats": {"攻击": 66, "防御": 94, "机动": 42},
+        "combat": {
+            "speed": 235,
+            "basic_range": 150,
+            "basic_damage": 12,
+            "basic_effect": "禁锢",
+            "basic_effect_turns": 0.8,
+            "basic_beam": {"color": "#b7ef55", "duration": 0.25},
+            "basic_restore_label": "VINE_RESTORE",
+            "bot_skill_effect": "禁锢",
+            "bot_skill_effect_turns": 1.2,
+            "bot_skill_damage_scale": 1.8,
+            "thorns_damage": 12,
+        },
+        "passive": {
+            "id": "moss_gift",
+            "init": {"lifesteal": 0.1},
+            "on_kill": {"lifesteal": 0.01},
+            "uncapped": ["lifesteal"],
+        },
         "skills": [
-            {"id": "moss-ult", "name": "荆棘花园", "description": "目标区域扎根 · 群体禁锢并回复生命", "kind": "大招", "target": "enemy", "action": "moss_rootfield", "cast_range": 430, "cost": 60, "cooldown": 16, "damage": 32, "radius": 185, "effect": "禁锢", "effect_turns": 3},
-            {"id": "moss-vine", "name": "树皮壁垒", "description": "获得减伤 · 近战敌人会被荆棘反伤", "kind": "小技能", "target": "self", "action": "moss_barkskin", "cost": 20, "cooldown": 10, "damage": 0, "effect": "荆棘护甲", "effect_turns": 6},
-            {"id": "moss-bark", "name": "孢子绽放", "description": "目标区域爆开 · 持续毒伤", "kind": "小技能", "target": "enemy", "action": "moss_spore", "cast_range": 400, "cost": 30, "cooldown": 9, "damage": 14, "radius": 130, "effect": "中毒", "effect_turns": 5},
+            {"id": "moss-ult", "name": "荆棘花园", "description": "目标区域扎根 · 群体禁锢并回复生命", "kind": "大招", "target": "enemy", "action": "moss_rootfield", "cast_range": 430, "cost": 60, "cooldown": 16, "damage": 32, "radius": 185, "effect": "禁锢", "effect_turns": 3,
+             "tier_effects": {2: {"label": "荆棘花园半径 +40", "patch": {"radius": {"add": 40}}},
+                              3: {"label": "禁锢时间 +1 秒，回复生命 +15", "patch": {"effect_turns": {"add": 0.5}, "heal_bonus": {"add": 15}}}}},
+            {"id": "moss-vine", "name": "树皮壁垒", "description": "获得减伤 · 近战敌人会被荆棘反伤", "kind": "小技能", "target": "self", "action": "moss_barkskin", "cost": 20, "cooldown": 10, "damage": 0, "effect": "荆棘护甲", "effect_turns": 6,
+             "tier_effects": {2: {"label": "荆棘壁垒持续时间 +2 秒", "patch": {"effect_turns": {"add": 2}}},
+                              3: {"label": "减伤提升，荆棘反伤提高至 20", "player_patch": {"thornDamageMultiplier": {"set": 0.3}, "thornReturnDamage": {"set": 20}}}}},
+            {"id": "moss-bark", "name": "孢子绽放", "description": "目标区域爆开 · 持续毒伤", "kind": "小技能", "target": "enemy", "action": "moss_spore", "cast_range": 400, "cost": 30, "cooldown": 9, "damage": 14, "radius": 130, "effect": "中毒", "effect_turns": 5,
+             "tier_effects": {2: {"label": "中毒每秒伤害 +4", "patch": {"poison_damage_bonus": {"add": 4}}},
+                              3: {"label": "中毒持续时间 +2 秒", "patch": {"effect_turns": {"add": 2}}}}},
         ],
     },
     {
@@ -104,11 +167,38 @@ HEROES = [
         "tagline": "在安全距离外，把整片夜空砸下来。",
         "initial": "蚀",
         "accent": "blue",
+        "palette": {"main": "#8c9aff", "light": "#e0e4ff", "dark": "#414f9e"},
         "stats": {"攻击": 88, "防御": 48, "机动": 79},
+        "combat": {
+            "speed": 235,
+            "basic_range": 300,
+            "basic_damage": 15,
+            "basic_effect": "",
+            "basic_effect_turns": 0,
+            "basic_beam": {"color": "#bda5ff", "duration": 0.22},
+            "basic_restore_label": "RANGED_RESTORE",
+            "bot_skill_effect": "减速",
+            "bot_skill_effect_turns": 1.8,
+            "bot_skill_damage_scale": 2.2,
+            "thorns_damage": 0,
+        },
+        "passive": {
+            "id": "luna_expansion",
+            "on_kill": {"basic_range": 5},
+            "uncapped": ["basic_range"],
+            "every_kills": 20,
+            "every_kills_effect": "extra_meteor",
+        },
         "skills": [
-            {"id": "luna-ult", "name": "新月陨星", "description": "远距离指定落点 · 大范围爆发", "kind": "大招", "target": "enemy", "action": "luna_moonfall", "cast_range": 560, "cost": 65, "cooldown": 17, "damage": 58, "radius": 150, "effect": "眩晕", "effect_turns": 1},
-            {"id": "luna-orbit", "name": "弦月穿波", "description": "朝最近敌人射出月刃 · 穿透直线敌人", "kind": "小技能", "target": "enemy", "action": "luna_crescent", "cast_range": 500, "cost": 25, "cooldown": 6, "damage": 27, "dash_range": 480, "effect": "减速", "effect_turns": 3},
-            {"id": "luna-phase", "name": "月影相移", "description": "沿移动方向闪现 · 获得 30 点护盾", "kind": "小技能", "target": "self", "action": "luna_phase", "cost": 25, "cooldown": 9, "damage": 0, "dash_range": 190, "shield": 30, "effect": "月影护盾", "effect_turns": 4},
+            {"id": "luna-ult", "name": "新月陨星", "description": "远距离指定落点 · 大范围爆发", "kind": "大招", "target": "enemy", "action": "luna_moonfall", "cast_range": 560, "cost": 65, "cooldown": 17, "damage": 58, "radius": 150, "effect": "眩晕", "effect_turns": 1,
+             "tier_effects": {2: {"label": "陨星爆炸半径 +40", "patch": {"radius": {"add": 40}}},
+                              3: {"label": "眩晕时间 +1 秒", "patch": {"effect_turns": {"add": 0.5}}}}},
+            {"id": "luna-orbit", "name": "弦月穿波", "description": "朝最近敌人射出月刃 · 穿透直线敌人", "kind": "小技能", "target": "enemy", "action": "luna_crescent", "cast_range": 500, "cost": 25, "cooldown": 6, "damage": 27, "dash_range": 480, "effect": "减速", "effect_turns": 3,
+             "tier_effects": {2: {"label": "月刃伤害 +10", "patch": {"damage": {"add": 10}}},
+                              3: {"label": "月刃飞行距离 +120", "patch": {"dash_range": {"add": 120}}}}},
+            {"id": "luna-phase", "name": "月影相移", "description": "沿移动方向闪现 · 获得 30 点护盾", "kind": "小技能", "target": "self", "action": "luna_phase", "cost": 25, "cooldown": 9, "damage": 0, "dash_range": 190, "shield": 30, "effect": "月影护盾", "effect_turns": 4,
+             "tier_effects": {2: {"label": "获得护盾 +25", "patch": {"shield": {"add": 25, "base": 30}}},
+                              3: {"label": "护盾持续时间 +2 秒", "patch": {"effect_turns": {"add": 2}}}}},
         ],
     },
     {
@@ -118,11 +208,37 @@ HEROES = [
         "tagline": "用平板、残影和三段冲刺接管战场。",
         "initial": "科",
         "accent": "tech",
+        "palette": {"main": "#438dff", "light": "#e1eeff", "dark": "#183c88"},
         "stats": {"攻击": 84, "防御": 58, "机动": 90},
+        "combat": {
+            "speed": 235,
+            "basic_range": 330,
+            "basic_damage": 14,
+            "basic_effect": "",
+            "basic_effect_turns": 0,
+            "basic_beam": {"color": "#49e6e0", "duration": 0.24},
+            "basic_restore_label": "RANGED_RESTORE",
+            "bot_skill_effect": "眩晕",
+            "bot_skill_effect_turns": 0.8,
+            "bot_skill_damage_scale": 2.2,
+            "thorns_damage": 0,
+        },
+        "passive": {
+            "id": "tech_overclock",
+            "every_kills": 20,
+            "every_kills_effect": "tech_overclock_burst",
+            "tech_burst": {"extra_round_trips": 1, "extra_tablets": 1, "ultimate_damage_scale": 1.2},
+        },
         "skills": [
-            {"id": "tech-ult", "name": "超频突袭", "description": "眩晕普攻范围内敌人 · 朝移动方向冲刺", "kind": "大招", "target": "self", "action": "tech_overdrive", "cost": 60, "cooldown": 16, "damage": 36, "radius": 330, "dash_range": 300, "effect": "眩晕", "effect_turns": 2},
-            {"id": "tech-tablets", "name": "五屏合击", "description": "五台平板向前飞行 · 200 米处汇聚爆炸", "kind": "小技能", "target": "self", "action": "tech_tablets", "cost": 30, "cooldown": 10, "damage": 18, "radius": 100, "dash_range": 200, "effect": "减速", "effect_turns": 3},
-            {"id": "tech-afterimage", "name": "残影折返", "description": "留下幻影 · 三次往返瞬移无敌 · 沿途伤害击退", "kind": "小技能", "target": "self", "action": "tech_afterimage", "cost": 35, "cooldown": 12, "damage": 16, "radius": 180, "dash_range": 180, "effect": "", "effect_turns": 0},
+            {"id": "tech-ult", "name": "超频突袭", "description": "眩晕普攻范围内敌人 · 朝移动方向冲刺", "kind": "大招", "target": "self", "action": "tech_overdrive", "cost": 60, "cooldown": 16, "damage": 36, "radius": 330, "dash_range": 300, "effect": "眩晕", "effect_turns": 2,
+             "tier_effects": {2: {"label": "范围眩晕半径 +40", "patch": {"radius": {"add": 40}}},
+                              3: {"label": "眩晕时间 +1 秒", "patch": {"effect_turns": {"add": 0.5}}}}},
+            {"id": "tech-tablets", "name": "五屏合击", "description": "五台平板向前飞行 · 200 米处汇聚爆炸", "kind": "小技能", "target": "self", "action": "tech_tablets", "cost": 30, "cooldown": 10, "damage": 18, "radius": 100, "dash_range": 200, "effect": "减速", "effect_turns": 3,
+             "tier_effects": {2: {"label": "平板合击爆炸半径 +35", "patch": {"radius": {"add": 35}}},
+                              3: {"label": "减速持续时间 +2 秒", "patch": {"effect_turns": {"add": 1}}}}},
+            {"id": "tech-afterimage", "name": "残影折返", "description": "留下幻影 · 三次往返瞬移无敌 · 沿途伤害击退", "kind": "小技能", "target": "self", "action": "tech_afterimage", "cost": 35, "cooldown": 12, "damage": 16, "radius": 180, "dash_range": 180, "effect": "", "effect_turns": 0,
+             "tier_effects": {2: {"label": "残影冲刺伤害提高 30%", "patch": {"damage": {"scale": 1.3}}},
+                              3: {"label": "额外增加一次往返冲刺", "patch": {"extra_round_trips": {"add": 1}}}}},
         ],
     },
     {
@@ -132,14 +248,115 @@ HEROES = [
         "tagline": "弦起阳春，埋伏四方，狂舞收场。",
         "initial": "琵",
         "accent": "pipa",
+        "palette": {"main": "#f1b95b", "light": "#fff0b8", "dark": "#80552a"},
         "stats": {"攻击": 78, "防御": 66, "机动": 72},
+        "combat": {
+            "speed": 235,
+            "basic_range": 200,
+            "basic_damage": 13,
+            "basic_effect": "",
+            "basic_effect_turns": 0,
+            "basic_beam": None,
+            "basic_restore_label": "MELEE_RESTORE",
+            "bot_skill_effect": "减速",
+            "bot_skill_effect_turns": 1.8,
+            "bot_skill_damage_scale": 2.2,
+            "thorns_damage": 0,
+        },
+        "passive": {
+            "id": "pipa_endless",
+            "frenzy_kills": 3,
+            "minion_kills": 10,
+            "threshold_effect": "extra_minion",
+            "minion_bonus": 1,
+            "frenzy_duration_bonus": 1,
+        },
         "skills": [
-            {"id": "pipa-ult", "name": "金蛇狂舞", "description": "重击周围生命值最高的 3 个敌人，并令其狂舞 5 秒", "kind": "大招", "target": "self", "action": "pipa_kinsnake", "cost": 65, "cooldown": 18, "damage": 34, "radius": 360, "effect": "狂舞", "effect_turns": 5},
-            {"id": "pipa-yangchun", "name": "阳春白雪", "description": "攻击最近的 3 个敌人，造成伤害、禁锢 3 秒并按伤害量的 20% 吸血", "kind": "小技能", "target": "self", "action": "pipa_yangchun", "cast_range": 420, "cost": 35, "cooldown": 10, "damage": 28, "radius": 0, "effect": "禁锢", "effect_turns": 3},
-            {"id": "pipa-shimian", "name": "十面埋伏", "description": "召唤 5 名生命值 15 的小兵，自主追击并攻击敌人", "kind": "小技能", "target": "self", "action": "pipa_shimian", "cost": 40, "cooldown": 16, "damage": 0, "radius": 0, "effect": "", "effect_turns": 0},
+            {"id": "pipa-ult", "name": "金蛇狂舞", "description": "重击周围生命值最高的 3 个敌人，并令其狂舞 5 秒", "kind": "大招", "target": "self", "action": "pipa_kinsnake", "cost": 65, "cooldown": 18, "damage": 34, "radius": 360, "effect": "狂舞", "effect_turns": 5,
+             "tier_effects": {2: {"label": "狂舞时间 +1 秒", "patch": {"frenzy_duration_bonus": {"add": 1}}},
+                              3: {"label": "狂舞目标攻速 +20%", "patch": {"frenzy_attack_speed_bonus": {"add": 0.2}}}}},
+            {"id": "pipa-yangchun", "name": "阳春白雪", "description": "攻击最近的 3 个敌人，造成伤害、禁锢 3 秒并按伤害量的 20% 吸血", "kind": "小技能", "target": "self", "action": "pipa_yangchun", "cast_range": 420, "cost": 35, "cooldown": 10, "damage": 28, "radius": 0, "effect": "禁锢", "effect_turns": 3,
+             "tier_effects": {2: {"label": "攻击对象 +1", "patch": {"target_count": {"add": 1, "base": 3}}},
+                              3: {"label": "禁锢时间 +1 秒", "patch": {"effect_turns": {"add": 1}}}}},
+            {"id": "pipa-shimian", "name": "十面埋伏", "description": "召唤 5 名生命值 15 的小兵，自主追击并攻击敌人", "kind": "小技能", "target": "self", "action": "pipa_shimian", "cost": 40, "cooldown": 16, "damage": 0, "radius": 0, "effect": "", "effect_turns": 0,
+             "tier_effects": {2: {"label": "小兵生命 +50%", "patch": {"minion_hp_multiplier": {"scale": 1.5, "base": 1, "round": False}}},
+                              3: {"label": "小兵数量 +2", "patch": {"minion_count": {"add": 2, "base": 5}}}}},
+        ],
+    },
+    {
+        "id": "volt2",
+        "name": "电音人",
+        "class_name": "声浪打击者",
+        "tagline": "把整片战场当成舞池。",
+        "initial": "音",
+        "accent": "volt2",
+        "palette": {"main": "#ff5cf0", "light": "#ffd6fb", "dark": "#7a1f6d"},
+        "stats": {"攻击": 86, "防御": 55, "机动": 85},
+        "combat": {
+            "speed": 245,
+            "basic_range": 300,
+            "basic_damage": 13,
+            "basic_effect": "",
+            "basic_effect_turns": 0,
+            "basic_beam": {"color": "#ff5cf0", "duration": 0.22},
+            "basic_restore_label": "RANGED_RESTORE",
+            "bot_skill_effect": "眩晕",
+            "bot_skill_effect_turns": 0.8,
+            "bot_skill_damage_scale": 2.2,
+            "thorns_damage": 0,
+        },
+        "passive": {
+            "id": "volt2_resonance",
+            "stack_required": 3,
+            "stack_effect": "frenzy",
+            "frenzy_turns": 3,
+            "frenzy_damage_scale": 1.5,
+        },
+        "skills": [
+            {"id": "volt2-ult", "name": "音浪冲击", "description": "朝移动方向射出音浪 · 造成伤害并击退", "kind": "小技能", "target": "self", "action": "volt2_wave", "cost": 35, "cooldown": 11, "damage": 30, "dash_range": 420, "radius": 130, "effect": "", "effect_turns": 0,
+             "tier_effects": {2: {"label": "音浪飞行更远", "patch": {"dash_range": {"add": 130}}},
+                              3: {"label": "音浪忽视建筑 · 击中 2 个敌人后爆炸", "patch": {"wave_pierce": {"set": 1}, "wave_max_targets": {"set": 2}}}}},
+            {"id": "volt2-empower", "name": "低音震荡", "description": "强化下次普攻 · 伤害 +50% 并附加狂舞", "kind": "小技能", "target": "self", "action": "volt2_empower", "cost": 25, "cooldown": 10, "damage": 0, "effect": "强化普攻", "effect_turns": 1,
+             "empowered_damage": 20, "empower_frenzy_turns": 3,
+             "tier_effects": {2: {"label": "强化普攻伤害变为 200%", "patch": {"empower_damage_scale": {"scale": 2, "base": 1.5}}},
+                              3: {"label": "强化普攻计入被动 · 狂舞延长至 9 秒", "patch": {"empower_counts_as_skill": {"set": 1}}}}},
+            {"id": "volt2-disc", "name": "碟片风暴", "description": "向最近的敌人连续投出 10 枚追踪唱片", "kind": "大招", "target": "self", "action": "volt2_discs", "cost": 65, "cooldown": 18, "damage": 16, "radius": 90, "effect": "", "effect_turns": 0,
+             "disc_count": 10, "disc_interval": 0.09, "disc_speed": 620, "disc_knockback": 40,
+             "tier_effects": {2: {"label": "唱片数量 +4", "patch": {"disc_count": {"add": 4, "base": 10}}},
+                              3: {"label": "唱片伤害 +50%", "patch": {"damage": {"scale": 1.5}}}}},
         ],
     },
 ]
+
+
+def hero_by_id(hero_id):
+    return next((item for item in HEROES if item["id"] == hero_id), HEROES[0])
+
+
+def hero_roster(language="zh"):
+    """注入前端的英雄花名册：id、配色、战斗数值与防御，accent 仅作为 CSS 主题键。"""
+    package = get_locale(language)
+    roster = []
+    for hero in HEROES:
+        localized = package["heroes"][hero["id"]]
+        combat = dict(hero["combat"])
+        combat["basic_hit_message"] = package["battle"]["basic_hit"].get(
+            hero["id"], "普攻命中，造成 {damage} 点伤害，回复 5 点能量。"
+        )
+        passive = dict(hero["passive"])
+        passive["name"] = localized["passive"]["name"]
+        passive["description"] = localized["passive"]["description"]
+        roster.append({
+            "id": hero["id"],
+            "accent": hero["accent"],
+            "initial": localized["initial"],
+            "name": localized["name"],
+            "palette": hero["palette"],
+            "defense": hero["stats"]["防御"],
+            "combat": combat,
+            "passive": passive,
+        })
+    return roster
 
 
 @app.get("/")
@@ -154,7 +371,7 @@ def select_hero():
 
 
 def public_player(player):
-    hero = next((item for item in HEROES if item["id"] == player["hero_id"]), HEROES[0])
+    hero = hero_by_id(player["hero_id"])
     effects = {
         name: max(0, round(expires_at - time.time(), 2))
         for name, expires_at in player["effects"].items()
@@ -180,20 +397,12 @@ def public_player(player):
 
 
 def player_limits(hero_id):
-    if hero_id == "pipa":
-        return 200, 13
-    if hero_id == "tech":
-        return 330, 14
-    if hero_id == "luna":
-        return 300, 15
-    if hero_id == "moss":
-        return 150, 12
-    return 95, 16
+    combat = hero_by_id(hero_id)["combat"]
+    return combat["basic_range"], combat["basic_damage"]
 
 
 def hero_damage_reduction(hero_id):
-    hero = next((item for item in HEROES if item["id"] == hero_id), HEROES[0])
-    return min(0.6, hero["stats"]["防御"] / 250)
+    return min(0.6, hero_by_id(hero_id)["stats"]["防御"] / 250)
 
 
 def active_effect(player, name, now):
@@ -227,7 +436,7 @@ def apply_player_attack(room, attacker, attack, now):
     ):
         return
 
-    hero = next(item for item in HEROES if item["id"] == attacker["hero_id"])
+    hero = hero_by_id(attacker["hero_id"])
     basic_range, basic_damage = player_limits(attacker["hero_id"])
     skill_id = str(attack.get("skill_id", ""))
     lifesteal_rate = 0
@@ -252,8 +461,8 @@ def apply_player_attack(room, attacker, attack, now):
         if active_effect(attacker, "强化普攻", now):
             damage = max(damage, 34)
             attacker["effects"].pop("强化普攻", None)
-        effect = "禁锢" if attacker["hero_id"] == "moss" else ""
-        effect_duration = 0.8
+        effect = hero["combat"]["basic_effect"]
+        effect_duration = hero["combat"]["basic_effect_turns"]
         attack_range = basic_range
     elif attack_kind in ("skill", "dash_hit"):
         skill = next((item for item in hero["skills"] if item["id"] == skill_id), None)
@@ -332,8 +541,9 @@ def apply_player_attack(room, attacker, attack, now):
             target["effects"][effect] = max(
                 target["effects"].get(effect, 0), now + effect_duration
             )
-        if target["hero_id"] == "moss" and active_effect(target, "荆棘护甲", now):
-            attacker["hp"] = max(0, attacker["hp"] - 12)
+        thorns = hero_by_id(target["hero_id"])["combat"]["thorns_damage"]
+        if thorns > 0 and active_effect(target, "荆棘护甲", now):
+            attacker["hp"] = max(0, attacker["hp"] - thorns)
 
 
 def room_snapshot(room):
@@ -587,7 +797,7 @@ def sync_multiplayer_room(room_id):
 @app.get("/battle")
 def battle():
     selected_id = request.args.get("hero", "volt")
-    base_player = next((hero for hero in HEROES if hero["id"] == selected_id), HEROES[0])
+    base_player = hero_by_id(selected_id)
     base_defense = base_player["stats"]["防御"]
     player = base_player
     enemy = next(hero for hero in HEROES if hero["id"] != player["id"])
@@ -601,7 +811,7 @@ def battle():
             room, room_player = find_room_player(room_id, player_id)
             if room is None or room_player is None or room["status"] != "playing":
                 return redirect(url_for("multiplayer"))
-            player = next(hero for hero in HEROES if hero["id"] == room_player["hero_id"])
+            player = hero_by_id(room_player["hero_id"])
             base_defense = player["stats"]["防御"]
             game_mode = "rogue"
             multiplayer_config = {
@@ -631,10 +841,12 @@ def battle():
     elif multiplayer_config:
         map_event_key = "MAP_EVENT_MULTIPLAYER"
     locale_ui = get_locale(lang)["ui"]
+    localized = {hero["id"]: hero for hero in localized_heroes(lang)}
     return render_template(
         "battle.html",
-        player=player,
-        enemy=next(hero for hero in localized_heroes(lang) if hero["id"] == enemy["id"]),
+        player=localized[player["id"]],
+        enemy=localized[enemy["id"]],
+        roster=hero_roster(lang),
         multiplayer=multiplayer_config,
         game_mode=game_mode,
         defense=base_defense,

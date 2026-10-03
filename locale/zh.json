@@ -134,7 +134,8 @@
     "ROGUELIKE_RUN": "肉鸽冒险",
     "RUN_PAUSED": "战斗已暂停",
     "ROUND_BREAK_PICK": "回合间歇 · 选择强化",
-    "RUN_ENDED_EYEBROW": "本局结束"
+    "RUN_ENDED_EYEBROW": "本局结束",
+    "PASSIVE": "被动"
   },
   "heroes": {
     "volt": {
@@ -166,6 +167,10 @@
           "detail_description": "朝当前移动方向冲刺最多 230 距离，对冲刺路径上的敌人造成 24 点伤害。",
           "kind": "小技能"
         }
+      },
+      "passive": {
+        "name": "突破极限",
+        "description": "每普攻 1 次，攻速 +0.05 次/秒，不受上限限制。"
       }
     },
     "moss": {
@@ -197,6 +202,10 @@
           "detail_description": "在最远 400 距离处指定半径 130 的区域，造成 14 点伤害并使敌人中毒 5 秒；中毒每秒造成基础 4 点伤害。",
           "kind": "小技能"
         }
+      },
+      "passive": {
+        "name": "苔藓馈赠",
+        "description": "初始吸血 10%，每次击杀 +1% 吸血，不受上限限制。"
       }
     },
     "luna": {
@@ -228,6 +237,10 @@
           "detail_description": "沿当前移动方向闪现最多 190 距离，并获得 30 点护盾，护盾持续 4 秒。",
           "kind": "小技能"
         }
+      },
+      "passive": {
+        "name": "月相扩张",
+        "description": "每次击杀普攻范围 +5；每击杀 20 次，大招额外降落一颗陨石。"
       }
     },
     "tech": {
@@ -259,6 +272,10 @@
           "detail_description": "留下持续 3.2 秒的残影，沿当前朝向进行 3 次往返冲刺（每段最多 180 距离）；冲刺期间免疫伤害，路径上的敌人受到 16 点伤害并被击退。",
           "kind": "小技能"
         }
+      },
+      "passive": {
+        "name": "超频协议",
+        "description": "每击杀 20 次：二技能多 1 次往返、一技能多发射 1 块击退平板、大招伤害 +20%。"
       }
     },
     "pipa": {
@@ -289,6 +306,45 @@
           "description": "召唤 5 名生命值 15 的小兵，自主追击并攻击敌人",
           "detail_description": "召唤 5 名自主行动的小兵追击并攻击敌人。每名小兵基础生命值为 15，另加琵琶女技能等级 ×2 与当前波数 ×2。",
           "kind": "小技能"
+        }
+      },
+      "passive": {
+        "name": "弦音不绝",
+        "description": "狂舞击杀 3 次或小兵击杀 10 次后，十面埋伏每次额外召唤 1 名小兵（可叠加）；大招狂舞时间 +1 秒。"
+      }
+    },
+    "volt2": {
+      "name": "电音人",
+      "class_name": "声浪打击者",
+      "tagline": "把整片战场当成舞池。",
+      "initial": "音",
+      "stats": [
+        "攻击",
+        "防御",
+        "机动"
+      ],
+      "passive": {
+        "name": "共鸣",
+        "description": "被你的技能击中 3 次的敌人陷入 3 秒狂舞（互相攻击）；对狂舞中的敌人伤害 +50%。"
+      },
+      "skills": {
+        "volt2-ult": {
+          "name": "音浪冲击",
+          "kind": "小技能",
+          "description": "朝移动方向射出音浪 · 造成伤害并击退",
+          "detail_description": "朝当前移动方向射出一道飞行 420 距离的音浪，命中敌人造成 30 点伤害并大幅击退；撞到建筑会原地爆炸并造成 130 范围伤害。"
+        },
+        "volt2-empower": {
+          "name": "低音震荡",
+          "kind": "小技能",
+          "description": "强化下次普攻 · 伤害 +50% 并附加狂舞",
+          "detail_description": "强化下一次普攻，使其伤害提高 50% 并附加 3 秒狂舞；狂舞不计入被动层数。"
+        },
+        "volt2-disc": {
+          "name": "碟片风暴",
+          "kind": "大招",
+          "description": "向最近的敌人连续投出 10 枚追踪唱片",
+          "detail_description": "向最近的敌人连续投出 10 枚追踪唱片，每枚造成 16 点伤害与小击退。每次施法对同一敌人只计 1 层被动。"
         }
       }
     }
@@ -428,10 +484,7 @@
       "赛博琴房": "赛博琴房",
       "赛博体育馆": "赛博体育馆",
       "赛博机场": "赛博机场",
-      "赛博学校": "赛博学校",
-      "阳春白雪命中": "阳春白雪命中",
-      "十面埋伏召出": "十面埋伏召出",
-      "金蛇狂舞命中": "金蛇狂舞命中"
+      "赛博学校": "赛博学校"
     },
     "patterns": [],
     "phrases": {
@@ -467,7 +520,12 @@
       "额外增加一次往返冲刺": "额外增加一次往返冲刺",
       "技能效果强化": "技能效果强化",
       "解锁新的技能效果": "解锁新的技能效果",
-      "逐步解锁新的技能效果。": "逐步解锁新的技能效果。"
+      "逐步解锁新的技能效果。": "逐步解锁新的技能效果。",
+      "攻击对象": "攻击对象",
+      "小兵生命": "小兵生命",
+      "小兵数量": "小兵数量",
+      "狂舞时间": "狂舞时间",
+      "狂舞目标攻速": "狂舞目标攻速"
     },
     "obstacles": {
       "路障": "路障",
@@ -551,6 +609,107 @@
       "荆棘护甲": "荆棘护甲",
       "中毒": "中毒",
       "月影护盾": "月影护盾"
+    },
+    "basic_hit": {
+      "volt": "普攻命中，造成 {damage} 点伤害，回复 5 点能量。",
+      "moss": "荆棘挥击造成 {damage} 点伤害并短暂缠绕目标。",
+      "luna": "月光弹命中，造成 {damage} 点远程伤害。",
+      "tech": "科技男远程普攻命中，造成 {damage} 点伤害。",
+      "pipa": "琵琶音刃命中，造成 {damage} 点伤害。",
+      "volt2": "音波命中，造成 {damage} 点伤害，回复 5 点能量。"
+    },
+    "templates": {
+      "skill.cooling": "{name} 冷却中，还需 {seconds} 秒。",
+      "skill.no_energy": "能量不足：{name} 需要 {cost} 点能量。",
+      "skill.generic_hit": "{name} 命中，造成 {damage} 点伤害{effect}。",
+      "skill.self_buff": "{name} 释放成功：{effect} 持续 {seconds} 秒。",
+      "skill.empower_attack": "{name} 生效：下次普攻造成额外伤害并击退敌人。",
+      "skill.volt_ult": "{name} 突进 {distance} 距离，{radius} 范围内命中 {hits} 个敌人，造成伤害并眩晕。",
+      "skill.moss_barkskin": "树皮壁垒展开：受到伤害降低 {reduction}%，近战敌人会被荆棘反伤。",
+      "skill.moss_rootfield": "荆棘花园扎根：禁锢 {hits} 个敌人，造成范围伤害并回复 {heal} 生命。",
+      "skill.moss_spore": "孢子绽放：{hits} 个敌人中毒，持续受到伤害。",
+      "skill.luna_crescent": "弦月穿波贯穿前方 {range} 距离，命中 {hits} 个敌人。",
+      "skill.luna_moonfall": "新月陨星落地：{hits} 个敌人受到 {damage} 点范围伤害。",
+      "skill.luna_phase": "月影相移：闪现 {distance} 距离，并获得 {shield} 点护盾，持续 {seconds} 秒。",
+      "skill.tech_overdrive": "超频突袭：眩晕周围 {hits} 个敌人，并冲刺 {distance} 距离。",
+      "skill.tech_tablets_launch": "五台平板出击：击退沿途敌人，并在前方 {distance} 米汇聚爆炸。",
+      "skill.tech_tablets_blast": "五屏汇聚爆炸：范围内命中 {hits} 个敌人并施加减速。",
+      "skill.tech_afterimage_start": "残影折返：前后冲刺 {trips} 次，路径上的敌人会受到伤害并被击退。",
+      "skill.tech_afterimage_end": "残影折返结束：完成 {trips} 次往返冲刺。",
+      "skill.pipa_kinsnake": "{name}命中 {hits} 个高生命敌人，{seconds} 秒内陷入狂舞。",
+      "skill.pipa_yangchun": "{name}命中 {hits} 个敌人，禁锢 {seconds} 秒并回复 {healed} 点生命。",
+      "skill.pipa_yangchun_miss": "{name}未命中：周围 {range} 距离内没有敌人。",
+      "skill.pipa_shimian": "{name}召出 {count} 名小兵，开始追击敌人。",
+      "basic.out_of_range": "普攻未命中：将敌人保持在 {range} 距离内再攻击。",
+      "basic.pvp_strike": "攻击 {name}，服务器将校验距离并同步伤害。",
+      "basic.rate_duel": "{rate} 次/秒",
+      "basic.rate_rogue": "{rate} 次/秒 · 回复 5 能量",
+      "combat.player_damaged": "防御减伤 {reduction}%：受到 {damage} 点生命伤害，护盾吸收 {absorbed}。",
+      "combat.action_blocked": "{action}失败：{reason}。",
+      "wave.on_field": "场上 {alive} · 正在接近 {incoming}",
+      "wave.remaining": "剩余敌人 {alive}",
+      "wave.incoming": "第 {wave} 波来袭！准备迎战。",
+      "upgrade.wave_chosen": "获得强化：{name}。下一波即将开始。",
+      "duel.next_round_in": "下一回合 {seconds} 秒后开始",
+      "duel.round_over": "第 {round} 回合结束 · 选择强化",
+      "duel.upgrade_chosen": "已获得强化：{name}。等待下一回合开始。",
+      "duel.final_win": "最终比分 {score} : {opponent}。你击败了 AI 对手！",
+      "duel.final_loss": "最终比分 {score} : {opponent}。AI 对手赢下了本场比赛。",
+      "skill.rank_progress": "{tier}阶 · 小强化 {current}/{required}",
+      "skill.rank_short": "{tier}阶 · {current}/{required}",
+      "skill.rank_full": "3阶 · 已满",
+      "skill.upgrade_title": "选择技能强化 · 第 {level} 级",
+      "skill.upgrade_help": "击败敌人获得技能经验，当前还有 {count} 次强化待选择。",
+      "skill.upgrade_done": "技能强化完成：{message}",
+      "event.anesthetist_arrives": "麻醉医生突入！{count} 名高速单位已出现，击败可获得大量技能经验。",
+      "event.injected": "麻醉医生给你注射麻药：眩晕 2 秒！之后医生不会再追击你。",
+      "event.injection_stun": "麻药注射 · 眩晕 2 秒",
+      "event.car_hit": "车辆撞中你！受到 {damage} 点重击并眩晕 2.4 秒。",
+      "event.car_stun": "车辆撞击 · 眩晕 2.4 秒",
+      "event.car_stun_label": "车祸眩晕 2.4 秒",
+      "event.gym_rusher_hit": "肌肉壮汉迎面撞击！造成 {damage} 点巨额伤害。",
+      "event.gym_rusher_damage": "肌肉冲撞 -{damage}",
+      "event.plane_hit": "飞机撞击！受到 {damage} 点重击并被强力击退。",
+      "event.plane_damage": "飞机撞击 -{damage}",
+      "event.harp_landed": "琴弦共鸣！竖琴已落地，演奏 5 秒并伤害、减速附近单位。",
+      "event.class_start": "上课时间到了！全场移速降低 60%、攻速和伤害降低 50%/20%，持续 10 秒。",
+      "mp.party_roster": "同局玩家 {count} 人：{names}",
+      "mp.room_tag": "局域网房间 {room}",
+      "float.invulnerable_dodge": "无敌闪避",
+      "float.dodge": "闪避",
+      "float.hp_full": "生命已满",
+      "float.energy_full": "能量已满",
+      "float.tablets_start": "五屏启动",
+      "float.knockback": "击退",
+      "float.afterimage_knockback": "残影击退",
+      "float.lunar_shield": "月影护盾",
+      "float.empower_ready": "重拳已蓄势！",
+      "float.knockback_bang": "击退！",
+      "float.heal": "+{amount} 吸血",
+      "float.shield_absorb": "-{amount} 护盾",
+      "float.skill_exp": "+{amount} 技能经验",
+      "float.meteor_extra": "额外陨石",
+      "basic.energy_gain": "+{amount} 能量",
+      "skill.empowered_hit": "强化普攻命中，造成 {damage} 点伤害并击退敌人！",
+      "hud.traits": "攻速 {speed}/秒 · 防御 {defense}% · 吸血 {lifesteal}% · 闪避 {dodge}%",
+      "passive.burst_ready": "超频协议就绪：{effect}",
+      "passive.effect.tech_overclock_burst": "下一次技能施放获得强化",
+      "passive.effect.extra_meteor": "下次新星陨星额外降落一颗陨石",
+      "passive.tech_ultimate": "超频突袭伤害提高 20%！",
+      "passive.tech_tablets": "额外发射 1 块击退平板！",
+      "passive.tech_afterimage": "残影折返额外冲刺 1 次往返！",
+      "passive.extra_meteor": "额外陨石命中 {hits} 个敌人。",
+      "passive.meteor_no_target": "范围内没有其他敌人，额外陨星未投放。",
+      "passive.pipa_minion_bonus": "弦音不绝：十面埋伏每次额外召唤 {count} 名小兵。",
+      "skill.pipa_shimian_bonus": "{name}召出 {count} 名小兵（含被动额外 {bonus} 名），开始追击敌人。",
+      "float.resonance_max": "共鸣满层：狂舞 {turns} 秒",
+      "float.wave_impact": "撞击",
+      "float.volt2_charge": "低音蓄能",
+      "skill.volt2_wave_launch": "音浪冲击射出：向前飞行 {distance} 距离，撞到建筑会爆炸。",
+      "skill.volt2_empower": "{name} 生效：下次普攻伤害 +50% 并附加 3 秒狂舞。",
+      "skill.volt2_empowered_hit": "低音震荡命中，造成 {damage} 点伤害并附加狂舞！",
+      "skill.volt2_disc_launch": "碟片风暴启动：连续投出 {count} 枚追踪唱片。",
+      "basic_hit.volt2": "音波命中，造成 {damage} 点伤害，回复 5 点能量。"
     }
   },
   "lobby": {
@@ -591,6 +750,38 @@
     "room_name": "{name} 的房间",
     "player_separator": "、",
     "you": "（你）",
-    "host": " · 房主"
+    "host": " · 房主",
+    "templates": {
+      "mp.party_roster": "同局玩家 {count} 人：{names}",
+      "mp.room_tag": "局域网房间 {room}"
+    }
+  },
+  "tier_labels": {
+    "范围眩晕半径 +40": "范围眩晕半径 +40",
+    "眩晕时间 +1 秒": "眩晕时间 +1 秒",
+    "强化普攻额外伤害 +12": "强化普攻额外伤害 +12",
+    "强化普攻可波及周围敌人": "强化普攻可波及周围敌人",
+    "冲刺距离 +45": "冲刺距离 +45",
+    "冲刺伤害提高 30%": "冲刺伤害提高 30%",
+    "荆棘花园半径 +40": "荆棘花园半径 +40",
+    "禁锢时间 +1 秒，回复生命 +15": "禁锢时间 +1 秒，回复生命 +15",
+    "荆棘壁垒持续时间 +2 秒": "荆棘壁垒持续时间 +2 秒",
+    "减伤提升，荆棘反伤提高至 20": "减伤提升，荆棘反伤提高至 20",
+    "中毒每秒伤害 +4": "中毒每秒伤害 +4",
+    "中毒持续时间 +2 秒": "中毒持续时间 +2 秒",
+    "陨星爆炸半径 +40": "陨星爆炸半径 +40",
+    "月刃伤害 +10": "月刃伤害 +10",
+    "月刃飞行距离 +120": "月刃飞行距离 +120",
+    "获得护盾 +25": "获得护盾 +25",
+    "护盾持续时间 +2 秒": "护盾持续时间 +2 秒",
+    "平板合击爆炸半径 +35": "平板合击爆炸半径 +35",
+    "减速持续时间 +2 秒": "减速持续时间 +2 秒",
+    "残影冲刺伤害提高 30%": "残影冲刺伤害提高 30%",
+    "额外增加一次往返冲刺": "额外增加一次往返冲刺",
+    "攻击对象 +1": "攻击对象 +1",
+    "小兵生命 +50%": "小兵生命 +50%",
+    "小兵数量 +2": "小兵数量 +2",
+    "狂舞时间 +1 秒": "狂舞时间 +1 秒",
+    "狂舞目标攻速 +20%": "狂舞目标攻速 +20%"
   }
 }

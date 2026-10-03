@@ -31,9 +31,10 @@ body.map-page{height:100dvh;overflow:hidden;background:#101722}
 .map-page-actions .exit-link{padding:8px 10px;background:#0c111ddd;border:1px solid #3a4659;color:#d5d8eb}
 .map-page-actions .exit-link:hover{border-color:#49e6e0;color:#49e6e0}
 .map-hero-card{position:fixed;z-index:2;top:88px;left:22px;display:flex;align-items:center;gap:12px;min-width:225px;padding:11px 15px;background:#0c111ddd;border:1px solid #3a4659;box-shadow:0 8px 25px #0007}
-.map-portrait{width:42px;height:42px;display:grid;place-items:center;background:#512345;color:#ffd3e8;font-size:24px;font-weight:900;clip-path:polygon(50% 0,100% 20%,90% 100%,10% 100%,0 20%)}
+.map-portrait{--hero-main:#ff4fa3;--hero-light:#ffd3e8;--hero-dark:#812354;width:42px;height:42px;display:grid;place-items:center;background:var(--hero-dark);color:var(--hero-light);font-size:24px;font-weight:900;clip-path:polygon(50% 0,100% 20%,90% 100%,10% 100%,0 20%)}
 .map-portrait.green{background:#344d2d;color:#e9ffb7}.map-portrait.blue{background:#303d78;color:#e0e4ff}
 .map-portrait.tech{background:#172d67;color:#e1eeff;border:1px solid #438dff}
+.map-portrait.volt2{background:#3d1240;color:#ffd6fb;border:1px solid #ff5cf0}
 .map-hero-card small,.map-hero-card span{display:block;color:#8589a8;font-size:10px}
 .map-hero-card b{display:block;margin:2px 0;font-size:14px}
 .map-tip{position:fixed;z-index:2;top:88px;right:22px;display:flex;flex-direction:column;gap:4px;max-width:300px;padding:12px 16px;background:#0c111ddd;border-right:2px solid #49e6e0}

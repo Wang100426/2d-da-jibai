@@ -1,3 +1,9 @@
+interface HeroPalette {
+  main: string;
+  light: string;
+  dark: string;
+}
+
 interface SelectionSkill {
   id: string;
   name: string;
@@ -15,6 +21,8 @@ interface SelectionHero {
   tagline: string;
   initial: string;
   accent: string;
+  palette: HeroPalette;
+  passive: { name: string; description: string };
   stats: Record<string, number>;
   skills: SelectionSkill[];
 }
@@ -37,6 +45,9 @@ const heroName = requireSelectionElement<HTMLElement>("detail-name");
 const tagline = requireSelectionElement<HTMLElement>("detail-tagline");
 const stats = requireSelectionElement<HTMLDivElement>("detail-stats");
 const skills = requireSelectionElement<HTMLDivElement>("detail-skill-list");
+const passive = requireSelectionElement<HTMLDivElement>("detail-passive");
+const passiveName = requireSelectionElement<HTMLElement>("detail-passive-name");
+const passiveDesc = requireSelectionElement<HTMLElement>("detail-passive-desc");
 const indexLabel = requireSelectionElement<HTMLElement>("detail-index");
 const selectedName = requireSelectionElement<HTMLElement>("selected-name");
 const enterBattle = requireSelectionElement<HTMLAnchorElement>("enter-battle");
@@ -79,6 +90,12 @@ function renderSkills(hero: SelectionHero): void {
   });
 }
 
+function applyPalette(element: HTMLElement, palette: HeroPalette): void {
+  element.style.setProperty("--hero-main", palette.main);
+  element.style.setProperty("--hero-light", palette.light);
+  element.style.setProperty("--hero-dark", palette.dark);
+}
+
 function selectHero(heroId: string): void {
   const index = heroes.findIndex((hero) => hero.id === heroId);
   const hero = heroes[index];
@@ -89,6 +106,10 @@ function selectHero(heroId: string): void {
     choice.setAttribute("aria-pressed", String(selected));
   });
   portrait.className = `detail-portrait ${hero.accent}`;
+  applyPalette(portrait, hero.palette);
+  applyPalette(passive, hero.palette);
+  passiveName.textContent = hero.passive.name;
+  passiveDesc.textContent = hero.passive.description;
   initial.textContent = hero.initial;
   heroClass.textContent = hero.class_name;
   heroName.textContent = hero.name;

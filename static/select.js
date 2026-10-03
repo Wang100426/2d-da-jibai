@@ -17,6 +17,9 @@ const heroName = requireSelectionElement("detail-name");
 const tagline = requireSelectionElement("detail-tagline");
 const stats = requireSelectionElement("detail-stats");
 const skills = requireSelectionElement("detail-skill-list");
+const passive = requireSelectionElement("detail-passive");
+const passiveName = requireSelectionElement("detail-passive-name");
+const passiveDesc = requireSelectionElement("detail-passive-desc");
 const indexLabel = requireSelectionElement("detail-index");
 const selectedName = requireSelectionElement("selected-name");
 const enterBattle = requireSelectionElement("enter-battle");
@@ -56,6 +59,11 @@ function renderSkills(hero) {
         skills.append(row);
     });
 }
+function applyPalette(element, palette) {
+    element.style.setProperty("--hero-main", palette.main);
+    element.style.setProperty("--hero-light", palette.light);
+    element.style.setProperty("--hero-dark", palette.dark);
+}
 function selectHero(heroId) {
     const index = heroes.findIndex((hero) => hero.id === heroId);
     const hero = heroes[index];
@@ -67,6 +75,10 @@ function selectHero(heroId) {
         choice.setAttribute("aria-pressed", String(selected));
     });
     portrait.className = `detail-portrait ${hero.accent}`;
+    applyPalette(portrait, hero.palette);
+    applyPalette(passive, hero.palette);
+    passiveName.textContent = hero.passive.name;
+    passiveDesc.textContent = hero.passive.description;
     initial.textContent = hero.initial;
     heroClass.textContent = hero.class_name;
     heroName.textContent = hero.name;

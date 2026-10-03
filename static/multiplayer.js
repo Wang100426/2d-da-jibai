@@ -135,8 +135,12 @@ function showRoom(room) {
     players.innerHTML = room.players.map((player, index) => {
         const hero = MP_HEROES.find((item) => item.id === player.hero_id);
         const host = player.player_id === room.host_id;
+        const palette = hero?.palette;
+        const paletteStyle = palette
+            ? ` style="--hero-main:${escapeHtml(palette.main)};--hero-light:${escapeHtml(palette.light)};--hero-dark:${escapeHtml(palette.dark)}"`
+            : "";
         return `<div class="waiting-player">
-      <span class="lobby-avatar ${escapeHtml(hero?.accent || player.accent)}">${escapeHtml(hero?.initial || player.initial)}</span>
+      <span class="lobby-avatar ${escapeHtml(hero?.accent || player.accent)}"${paletteStyle}>${escapeHtml(hero?.initial || player.initial)}</span>
       <span><b>${escapeHtml(player.name)}${player.player_id === playerId ? locale.lobby.you : ""}</b><small>${escapeHtml(hero?.name || player.hero_name)}${host ? locale.lobby.host : ""}</small></span>
       <i>PLAYER 0${index + 1}</i>
     </div>`;

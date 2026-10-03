@@ -59,15 +59,11 @@
     "MAP_GYM": "Cyber Gymnasium",
     "MAP_AIRPORT": "Cyber Airport",
     "MAP_SCHOOL": "Cyber School",
-    "MAP_SCHOOL": "Cyber School",
     "MAP_EVENT_CITY": "Traffic surges across the streets. Impacts deal heavy damage and stun.",
     "MAP_EVENT_HOSPITAL": "Fast anesthetists rush in; their first hit injects anesthetic.",
     "MAP_EVENT_MUSIC": "Harps land at random and play for 5 seconds, damaging and slowing by 60%.",
     "MAP_EVENT_GYM": "Musclebound bruisers burst from buildings and pursue nearby units. Defeat them for skill XP.",
     "MAP_EVENT_AIRPORT": "Aircraft use one of eight random runways; collisions hit hard and knock back.",
-    "MAP_EVENT_SCHOOL": "The office displays the class schedule. Classes last 10 seconds, slowing all units and reducing their attack speed and damage.",
-    "SCHOOL_CLASS_IN": "CLASS IN",
-    "SCHOOL_CLASS_ACTIVE": "IN CLASS",
     "MAP_EVENT_SCHOOL": "The office displays the class schedule. Classes last 10 seconds, slowing all units and reducing their attack speed and damage.",
     "SCHOOL_CLASS_IN": "CLASS IN",
     "SCHOOL_CLASS_ACTIVE": "IN CLASS",
@@ -138,7 +134,8 @@
     "ROGUELIKE_RUN": "ROGUELIKE RUN",
     "RUN_PAUSED": "RUN PAUSED",
     "ROUND_BREAK_PICK": "ROUND BREAK · PICK ONE",
-    "RUN_ENDED_EYEBROW": "RUN ENDED"
+    "RUN_ENDED_EYEBROW": "RUN ENDED",
+    "PASSIVE": "PASSIVE"
   },
   "heroes": {
     "volt": {
@@ -170,6 +167,10 @@
           "detail_description": "Dash up to 230 range in your current movement direction, dealing 24 damage to enemies along the path.",
           "kind": "Skill"
         }
+      },
+      "passive": {
+        "name": "Limit Break",
+        "description": "+0.05 attack speed per basic attack, with no cap."
       }
     },
     "moss": {
@@ -201,6 +202,10 @@
           "detail_description": "Choose an area up to 400 range away. Enemies within 130 take 14 damage and are poisoned for 5 seconds, taking 4 base damage per second.",
           "kind": "Skill"
         }
+      },
+      "passive": {
+        "name": "Moss Gift",
+        "description": "Starts with 10% lifesteal, +1% per kill, with no cap."
       }
     },
     "luna": {
@@ -232,6 +237,10 @@
           "detail_description": "Blink up to 190 range in your current movement direction and gain a 30-point shield for 4 seconds.",
           "kind": "Skill"
         }
+      },
+      "passive": {
+        "name": "Lunar Expansion",
+        "description": "+5 basic attack range per kill; every 20 kills your ultimate drops an extra meteor."
       }
     },
     "tech": {
@@ -263,6 +272,10 @@
           "detail_description": "Leave a 3.2-second afterimage and make 3 round trips in your facing direction (up to 180 per leg). You are immune to damage while dashing; enemies along the path take 16 damage and are knocked back.",
           "kind": "Skill"
         }
+      },
+      "passive": {
+        "name": "Overclock Protocol",
+        "description": "Every 20 kills: +1 afterimage round trip, +1 knockback tablet, and +20% ultimate damage."
       }
     },
     "pipa": {
@@ -293,6 +306,45 @@
           "description": "Summon 5 minions with 15 HP that autonomously pursue and attack enemies",
           "detail_description": "Summon 5 autonomous minions that pursue and attack enemies. Each has 15 base HP, plus 2 per Pipa's skill level and 2 per current wave.",
           "kind": "Skill"
+        }
+      },
+      "passive": {
+        "name": "Endless Strings",
+        "description": "After 3 frenzy kills or 10 minion kills, Ten Ambush summons 1 extra minion each time (stacks); frenzy lasts +1s."
+      }
+    },
+    "volt2": {
+      "name": "DJ Volt",
+      "class_name": "Wave Striker",
+      "tagline": "Turns the whole battlefield into a dance floor.",
+      "initial": "V",
+      "stats": [
+        "Attack",
+        "Defense",
+        "Mobility"
+      ],
+      "passive": {
+        "name": "Resonance",
+        "description": "Enemies hit by your skills 3 times enter 3s frenzy (they attack each other); +50% damage to frenzied enemies."
+      },
+      "skills": {
+        "volt2-ult": {
+          "name": "Sound Wave",
+          "kind": "Ability",
+          "description": "Fire a wave along your movement direction · damage and knockback",
+          "detail_description": "Fire a sound wave 420 distance along your movement direction, dealing 30 damage with heavy knockback; it explodes on buildings for 130 area damage."
+        },
+        "volt2-empower": {
+          "name": "Bass Boost",
+          "kind": "Ability",
+          "description": "Empower your next basic attack · +50% damage and frenzy",
+          "detail_description": "Empower your next basic attack to deal +50% damage and apply 3s frenzy; the frenzy does not count as a skill hit for your passive."
+        },
+        "volt2-disc": {
+          "name": "Disc Storm",
+          "kind": "Ultimate",
+          "description": "Hurl 10 homing records at nearby enemies",
+          "detail_description": "Hurl 10 homing records at the nearest enemies, each dealing 16 damage with a light knockback. Each cast counts only 1 stack per enemy."
         }
       }
     }
@@ -934,6 +986,107 @@
       "荆棘护甲": "Thorn armor",
       "中毒": "Poison",
       "月影护盾": "Moon shield"
+    },
+    "basic_hit": {
+      "volt": "Basic hit for {damage} damage, restores 5 energy.",
+      "moss": "Thorn strike deals {damage} damage and briefly roots the target.",
+      "luna": "Moonbolt hits for {damage} ranged damage.",
+      "tech": "Tech ranged hit for {damage} damage.",
+      "pipa": "Pipa sound blade hits for {damage} damage.",
+      "volt2": "Sound hit for {damage} damage, restores 5 energy."
+    },
+    "templates": {
+      "skill.cooling": "{name} is on cooldown for {seconds}s more.",
+      "skill.no_energy": "Not enough energy: {name} needs {cost} energy.",
+      "skill.generic_hit": "{name} hits for {damage} damage{effect}.",
+      "skill.self_buff": "{name} activated: {effect} for {seconds}s.",
+      "skill.empower_attack": "{name} is active: your next basic attack deals bonus damage and knocks back.",
+      "skill.volt_ult": "{name} dashes {distance}, hitting {hits} enemies within {radius} for damage and a stun.",
+      "skill.moss_barkskin": "Bark Skin up: damage taken reduced by {reduction}%, and nearby attackers take thorn damage.",
+      "skill.moss_rootfield": "Thorn Garden roots {hits} enemies, deals area damage and restores {heal} health.",
+      "skill.moss_spore": "Spore Bloom poisons {hits} enemies, dealing damage over time.",
+      "skill.luna_crescent": "Crescent Wave pierces {range} distance, hitting {hits} enemies.",
+      "skill.luna_moonfall": "Crescent Meteor lands: {hits} enemies take {damage} area damage.",
+      "skill.luna_phase": "Lunar Phase blinks {distance} and grants {shield} shield for {seconds}s.",
+      "skill.tech_overdrive": "Overclock Raid stuns {hits} nearby enemies and dashes {distance}.",
+      "skill.tech_tablets_launch": "Five tablets launch, knocking enemies back and converging to explode {distance} ahead.",
+      "skill.tech_tablets_blast": "Converging blast hits {hits} enemies and slows them.",
+      "skill.tech_afterimage_start": "Afterimage: {trips} round trips, damaging and knocking back enemies along the path.",
+      "skill.tech_afterimage_end": "Afterimage finished: {trips} round trips completed.",
+      "skill.pipa_kinsnake": "{name} hits {hits} highest-health enemies, inflicting frenzy for {seconds}s.",
+      "skill.pipa_yangchun": "{name} hits {hits} enemies, rooting them for {seconds}s and restoring {healed} health.",
+      "skill.pipa_yangchun_miss": "{name} found no enemies within {range}.",
+      "skill.pipa_shimian": "{name} summons {count} minions that hunt down enemies.",
+      "basic.out_of_range": "Basic attack missed: get within {range} to attack.",
+      "basic.pvp_strike": "Attacking {name}; the server validates range and syncs damage.",
+      "basic.rate_duel": "{rate}/sec",
+      "basic.rate_rogue": "{rate}/sec · restores 5 energy",
+      "combat.player_damaged": "Damage reduced by {reduction}%: took {damage} health damage, shield absorbed {absorbed}.",
+      "combat.action_blocked": "{action} failed: {reason}.",
+      "wave.on_field": "In field {alive} · approaching {incoming}",
+      "wave.remaining": "Enemies left {alive}",
+      "wave.incoming": "Wave {wave} incoming! Get ready.",
+      "upgrade.wave_chosen": "Upgrade acquired: {name}. Next wave begins shortly.",
+      "duel.next_round_in": "Next round in {seconds}s",
+      "duel.round_over": "Round {round} over · choose an upgrade",
+      "duel.upgrade_chosen": "Upgrade acquired: {name}. Waiting for the next round.",
+      "duel.final_win": "Final score {score} : {opponent}. You defeated the AI opponent!",
+      "duel.final_loss": "Final score {score} : {opponent}. The AI opponent takes the match.",
+      "skill.rank_progress": "Tier {tier} · minor {current}/{required}",
+      "skill.rank_short": "Tier {tier} · {current}/{required}",
+      "skill.rank_full": "Tier 3 · maxed",
+      "skill.upgrade_title": "Choose a skill upgrade · level {level}",
+      "skill.upgrade_help": "Defeat enemies to earn skill experience; {count} upgrade(s) pending.",
+      "skill.upgrade_done": "Skill upgraded: {message}",
+      "event.anesthetist_arrives": "Anesthetist inbound! {count} high-speed units appeared; defeat them for bonus skill experience.",
+      "event.injected": "The anesthetist injects you: stunned for 2s! They will not chase you again.",
+      "event.injection_stun": "Injection · stunned 2s",
+      "event.car_hit": "A vehicle hits you for {damage} damage and a 2.4s stun!",
+      "event.car_stun": "Vehicle impact · stunned 2.4s",
+      "event.car_stun_label": "Crash stun 2.4s",
+      "event.gym_rusher_hit": "A muscle rusher charges you for {damage} heavy damage!",
+      "event.gym_rusher_damage": "Muscle ram -{damage}",
+      "event.plane_hit": "A plane hits you for {damage} damage and a strong knockback!",
+      "event.plane_damage": "Plane impact -{damage}",
+      "event.harp_landed": "String resonance! A harp lands and plays for 5s, damaging and slowing nearby units.",
+      "event.class_start": "Class is in session! All units: movement -60%, attack speed -50%, damage -20%, for 10s.",
+      "mp.party_roster": "Players in room {count}: {names}",
+      "mp.room_tag": "LAN room {room}",
+      "float.invulnerable_dodge": "Invulnerable dodge",
+      "float.dodge": "Dodge",
+      "float.hp_full": "Health full",
+      "float.energy_full": "Energy full",
+      "float.tablets_start": "Tablets online",
+      "float.knockback": "Knockback",
+      "float.afterimage_knockback": "Afterimage knockback",
+      "float.lunar_shield": "Lunar shield",
+      "float.empower_ready": "Punch charged!",
+      "float.knockback_bang": "Knockback!",
+      "float.heal": "+{amount} lifesteal",
+      "float.shield_absorb": "-{amount} shield",
+      "float.skill_exp": "+{amount} skill exp",
+      "float.meteor_extra": "Extra meteor",
+      "basic.energy_gain": "+{amount} energy",
+      "skill.empowered_hit": "Empowered hit for {damage} damage, knocking the enemy back!",
+      "hud.traits": "Speed {speed}/sec · Defense {defense}% · Lifesteal {lifesteal}% · Dodge {dodge}%",
+      "passive.burst_ready": "Overclock Protocol ready: {effect}",
+      "passive.effect.tech_overclock_burst": "your next skill cast is empowered",
+      "passive.effect.extra_meteor": "your next Crescent Meteor drops an extra meteor",
+      "passive.tech_ultimate": "Overclock Raid damage +20%!",
+      "passive.tech_tablets": "One extra knockback tablet launched!",
+      "passive.tech_afterimage": "Afterimage gains an extra round trip!",
+      "passive.extra_meteor": "Extra meteor hits {hits} enemies.",
+      "passive.meteor_no_target": "No other enemy in range; the extra meteor was not dropped.",
+      "passive.pipa_minion_bonus": "Endless Strings: Ten Ambush now summons {count} extra minion(s) each cast.",
+      "skill.pipa_shimian_bonus": "{name} summons {count} minions ({bonus} from passive) and they hunt down enemies.",
+      "float.resonance_max": "Resonance max: frenzy {turns}s",
+      "float.wave_impact": "Impact",
+      "float.volt2_charge": "Bass charged",
+      "skill.volt2_wave_launch": "Sound Wave launched: travels {distance}, explodes on buildings.",
+      "skill.volt2_empower": "{name} active: next basic attack deals +50% damage and applies 3s frenzy.",
+      "skill.volt2_empowered_hit": "Bass Boost hits for {damage} damage and applies frenzy!",
+      "skill.volt2_disc_launch": "Disc Storm: hurling {count} homing records.",
+      "basic_hit.volt2": "Sound hit for {damage} damage, restores 5 energy."
     }
   },
   "lobby": {
@@ -987,6 +1140,44 @@
     "room_name": "{name}'s room",
     "player_separator": ", ",
     "you": " (YOU)",
-    "host": " · HOST"
+    "host": " · HOST",
+    "templates": {
+      "mp.party_roster": "Players in room {count}: {names}",
+      "mp.room_tag": "LAN room {room}"
+    }
+  },
+  "tier_labels": {
+    "范围眩晕半径 +40": "+40 stun radius",
+    "眩晕时间 +1 秒": "+1s stun duration",
+    "强化普攻额外伤害 +12": "+12 empowered attack damage",
+    "强化普攻可波及周围敌人": "Empowered attack splashes nearby enemies",
+    "冲刺距离 +45": "+45 dash distance",
+    "冲刺伤害提高 30%": "Dash damage +30%",
+    "荆棘花园半径 +40": "+40 root field radius",
+    "禁锢时间 +1 秒，回复生命 +15": "+1s root duration, +15 healing",
+    "荆棘壁垒持续时间 +2 秒": "Bark skin lasts +2s",
+    "减伤提升，荆棘反伤提高至 20": "More damage reduction, thorns raised to 20",
+    "中毒每秒伤害 +4": "+4 poison damage per second",
+    "中毒持续时间 +2 秒": "Poison lasts +2s",
+    "陨星爆炸半径 +40": "+40 meteor blast radius",
+    "月刃伤害 +10": "+10 crescent damage",
+    "月刃飞行距离 +120": "+120 crescent travel distance",
+    "获得护盾 +25": "+25 shield",
+    "护盾持续时间 +2 秒": "Shield lasts +2s",
+    "平板合击爆炸半径 +35": "+35 tablet blast radius",
+    "减速持续时间 +2 秒": "Slow lasts +2s",
+    "残影冲刺伤害提高 30%": "Afterimage dash damage +30%",
+    "额外增加一次往返冲刺": "One extra round trip",
+    "攻击对象 +1": "+1 target",
+    "小兵生命 +50%": "Minion health +50%",
+    "小兵数量 +2": "+2 minions",
+    "狂舞时间 +1 秒": "+1s frenzy duration",
+    "狂舞目标攻速 +20%": "Frenzied enemies attack 20% faster",
+    "音浪飞行更远": "Sound wave travels further",
+    "音浪忽视建筑 · 击中 2 个敌人后爆炸": "Wave phases through buildings · explodes after hitting 2 enemies",
+    "强化普攻伤害变为 200%": "Empowered attack damage becomes 200%",
+    "强化普攻计入被动 · 狂舞延长至 9 秒": "Empowered attack counts as a skill hit · frenzy lasts 9s",
+    "唱片数量 +4": "+4 records",
+    "唱片伤害 +50%": "Record damage +50%"
   }
 }

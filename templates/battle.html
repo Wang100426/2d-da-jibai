@@ -21,7 +21,7 @@
       <div class="map-transition-countdown"><i></i><span>{{ tr("MAP_TRANSITION_START") }}</span></div>
     </div>
     <div class="map-transition-hero">
-      <div class="map-portrait {{ player.accent }}">{{ player.initial }}</div>
+      <div class="map-portrait {{ player.accent }}" style="--hero-main:{{ player.palette.main }};--hero-light:{{ player.palette.light }};--hero-dark:{{ player.palette.dark }}">{{ player.initial }}</div>
       <div><span>{{ tr("MAP_TRANSITION_HERO") }}</span><b>{{ player.name }}</b><small>{{ player.class_name }}</small></div>
     </div>
     <div class="map-loading" aria-hidden="true">
@@ -36,7 +36,7 @@
     <a class="exit-link" href="{% if game_mode == 'duel' %}/select?mode=duel{% else %}/select{% endif %}">{{ tr("BACK_SELECT") }} ×</a>
   </div>
   <aside class="map-hero-card">
-    <div class="map-portrait {{ player.accent }}">{{ player.initial }}</div>
+    <div class="map-portrait {{ player.accent }}" style="--hero-main:{{ player.palette.main }};--hero-light:{{ player.palette.light }};--hero-dark:{{ player.palette.dark }}">{{ player.initial }}</div>
     <div><small>{{ player.class_name }}</small><b>{{ player.name }}</b><span>{{ tr("DUELIST" if game_mode == "duel" else "EXPLORER") }} · <span id="run-level">Lv.01</span></span></div>
   </aside>
   <aside class="map-vitals">
@@ -122,7 +122,7 @@
     <button class="map-skill basic-attack" id="basic-attack" type="button">
       <kbd>SPACE</kbd>
       <b>{{ tr("BASIC_ATTACK") }}</b>
-      <small>{% if player.accent == "tech" or player.accent == "blue" %}{{ tr("RANGED_RESTORE") }}{% elif player.accent == "green" %}{{ tr("VINE_RESTORE") }}{% else %}{{ tr("MELEE_RESTORE") }}{% endif %}</small>
+      <small>{{ tr(player.combat.basic_restore_label) }}</small>
       <span class="skill-cooldown"></span>
     </button>
   </section>
@@ -135,9 +135,11 @@
   </div>
   <script>
     window.MAP_CONFIG = {
+      heroId: {{ player.id|tojson }},
       name: {{ player.name|tojson }},
       initial: {{ player.initial|tojson }},
       accent: {{ player.accent|tojson }},
+      roster: {{ roster|tojson }},
       mapTheme: {{ map_theme|tojson }},
       skills: {{ player.skills|tojson }},
       multiplayer: {{ multiplayer|tojson }},
