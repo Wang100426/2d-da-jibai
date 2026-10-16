@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{{ 'en' if lang == 'en' else 'zh-CN' }}">
+<html lang="{{ {'en': 'en', 'ja': 'ja'}.get(lang, 'zh-CN') }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,7 +9,7 @@
 </head>
 <body class="mode-page">
   <div class="scanlines"></div>
-  <button class="language-toggle mode-language-toggle" type="button" data-language-toggle>{{ tr("LANG_TOGGLE") }}</button>
+  <div class="language-switch mode-language-toggle" data-language-switch></div>
 
   <section class="camp-transition" id="camp-transition" aria-live="polite" aria-hidden="true" hidden>
     <img class="camp-transition-art" src="{{ url_for('static', filename='game_loading_1.png') }}" alt="">
@@ -26,7 +26,7 @@
   <main class="mode-main">
     <section class="mode-hero-copy">
       <p class="eyebrow"><span></span> {{ tr("SEASON") }}</p>
-      {% if lang == 'en' %}<img class="mode-logo" src="{{ url_for('favicon', lang=lang) }}" alt="{{ tr('PRODUCT_NAME') }}">{% else %}<img class="mode-logo" src="{{ url_for('static', filename='2d_da_jibai_logo.png') }}" alt="{{ tr('PRODUCT_NAME') }}">{% endif %}
+      {% if lang == 'en' %}<img class="mode-logo" src="{{ url_for('favicon', lang=lang) }}" alt="{{ tr('PRODUCT_NAME') }}">{% elif lang == 'ja' %}<img class="mode-logo" src="{{ url_for('favicon', lang=lang) }}" alt="{{ tr('PRODUCT_NAME') }}">{% else %}<img class="mode-logo" src="{{ url_for('static', filename='2d_da_jibai_logo.png') }}" alt="{{ tr('PRODUCT_NAME') }}">{% endif %}
       <p class="subtitle">{{ tr("HOME_SUBTITLE") }}<br><b>{{ tr("HOME_DESCRIPTION") }}</b></p>
     </section>
 

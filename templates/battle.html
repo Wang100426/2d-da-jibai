@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{{ 'en' if lang == 'en' else 'zh-CN' }}">
+<html lang="{{ {'en': 'en', 'ja': 'ja'}.get(lang, 'zh-CN') }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -32,7 +32,7 @@
   <div class="map-page-actions">
     <span id="map-mode" hidden>{{ tr("BATTLE_TITLE_DUEL" if game_mode == "duel" else "BATTLE_TITLE_ROGUE") }}</span>
     <button class="touch-mode-toggle" id="touch-mode-toggle" type="button" aria-pressed="false">{{ tr("TOUCH_MODE") }}</button>
-    <button class="language-toggle" type="button" data-language-toggle>{{ tr("LANG_TOGGLE") }}</button>
+    <div class="language-switch" data-language-switch></div>
     <a class="exit-link" href="{% if game_mode == 'duel' %}/select?mode=duel{% else %}/select{% endif %}">{{ tr("BACK_SELECT") }} ×</a>
   </div>
   <aside class="map-hero-card">

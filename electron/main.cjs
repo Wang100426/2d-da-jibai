@@ -14,7 +14,9 @@ async function updateWindowIcon(window) {
   );
   const iconName = language === "en"
     ? "2d_da_jibai_ico_en.ico"
-    : "2d_da_jibai_ico.ico";
+    : language === "ja"
+      ? "2d_da_jibai_ico_jp.ico"
+      : "2d_da_jibai_ico.ico";
   const icon = nativeImage.createFromPath(path.join(app.getAppPath(), "assets", iconName));
   if (!window.isDestroyed() && mainWindow === window && !icon.isEmpty()) window.setIcon(icon);
 }

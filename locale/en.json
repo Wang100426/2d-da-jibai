@@ -736,8 +736,12 @@
         "Upgrade acquired: $1"
       ],
       [
-        "防御减伤 (\\d+)%：受到 (\\d+) 点生命伤害(，护盾吸收 (\\d+))?。",
-        "Defense reduced damage by $1%: took $2 health damage$3."
+        "防御减伤 (\\d+)%：受到 (\\d+) 点生命伤害，护盾吸收 (\\d+)。",
+        "Defense reduced damage by $1%: took $2 health damage, shield absorbed $3."
+      ],
+      [
+        "防御减伤 (\\d+)%：受到 (\\d+) 点生命伤害。",
+        "Defense reduced damage by $1%: took $2 health damage."
       ],
       [
         "-(\\d+) 护盾",

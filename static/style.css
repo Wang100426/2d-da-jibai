@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
 
 :root{--bg:#090a13;--panel:#111321;--panel2:#15182a;--text:#f2f3ff;--muted:#8589a8;--pink:#ff4fa3;--cyan:#49e6e0;--lime:#b7ef55;--purple:#8867ff}
 .roster-section .hero-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.tech .hero-portrait{background:linear-gradient(135deg,#17434b,#141b27)}.tech .hero-portrait span{color:#8ffff7;text-shadow:5px 5px #176d78}.tech .hero-info p{color:#49e6e0}.tech .hero-bars i{background:#49e6e0}
@@ -144,6 +144,23 @@
 .mode-card small{color:#8589a8;font-size:11px}
 .language-toggle{flex:none;border:1px solid #343a56;background:#121626;color:var(--cyan);padding:8px 12px;font:11px 'Chakra Petch',sans-serif;letter-spacing:.7px;cursor:pointer}
 .language-toggle:hover{border-color:var(--cyan);background:#192236}
+.language-switch{position:relative;z-index:30;font-family:'Chakra Petch',sans-serif}
+.language-switch-current{display:flex;align-items:center;gap:8px;height:34px;padding:0 12px;border:1px solid #343a56;background:#121626;color:var(--cyan);font:11px 'Chakra Petch',sans-serif;letter-spacing:.7px;cursor:pointer;transition:border-color .15s,background .15s}
+.language-switch-current:hover,.language-switch-current[aria-expanded="true"]{border-color:var(--cyan);background:#192236}
+.language-switch-mark{color:var(--pink);font:700 12px 'Chakra Petch',sans-serif;line-height:1}
+.language-switch-label{color:var(--text)}
+.language-switch-arrow{color:var(--cyan);font-size:12px;line-height:1;transition:transform .18s}
+.language-switch-current[aria-expanded="true"] .language-switch-arrow{transform:rotate(180deg)}
+.language-switch-options{position:absolute;top:calc(100% + 8px);right:0;min-width:168px;padding:6px;background:#0c111cf2;border:1px solid #3a5262;box-shadow:0 18px 42px #000b;backdrop-filter:blur(12px);z-index:40}
+.language-switch-options[hidden]{display:none}
+.language-switch-options button{width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 11px;border:0;border-bottom:1px solid #273040;background:transparent;color:var(--text);text-align:left;cursor:pointer}
+.language-switch-options button:last-child{border-bottom:0}
+.language-switch-options button:hover,.language-switch-options button[aria-selected="true"]{background:#182432}
+.language-switch-options button b{font:600 12px 'Chakra Petch',sans-serif}
+.language-switch-options button small{color:#8c94a9;font:10px 'Chakra Petch',sans-serif}
+.language-switch-options button[aria-selected="true"] b{color:var(--cyan)}
+.mode-language-toggle,.select-language-toggle{position:fixed}
+@media(max-width:760px){.language-switch-current{height:30px;padding:0 9px;font-size:10px}.language-switch-options{min-width:150px}}
 .topbar-actions{display:flex;align-items:center;gap:16px}
 .camp-transition{position:fixed;z-index:20;inset:0;overflow:hidden;background:#050814;opacity:0;visibility:hidden;pointer-events:none}
 .camp-transition.is-visible{visibility:visible;pointer-events:auto;animation:camp-transition-in .55s ease forwards}
@@ -160,6 +177,7 @@
 @keyframes camp-art-in{from{opacity:.45;transform:scale(1.035)}to{opacity:1;transform:scale(1)}}
 @keyframes camp-briefing-in{from{opacity:0;transform:translateY(16px) scale(.98);filter:blur(5px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
 html[lang="en"] body{font-family:'Chakra Petch','Segoe UI',sans-serif}
+html[lang="ja"] body{font-family:'Noto Sans JP','Noto Sans SC','Yu Gothic UI','Meiryo',sans-serif}
 html[lang="en"] .mode-page .mode-cards{max-width:1220px}
 html[lang="en"] .mode-card{padding-inline:22px}
 html[lang="en"] .mode-card h2{font-size:21px}

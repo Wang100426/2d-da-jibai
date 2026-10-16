@@ -1,5 +1,52 @@
 # 更新日志 / Updates
 
+## 1.5.0
+
+### 中文
+
+- 新增日语语言包「2D大撃破」及配套日语图标；右上角语言切换改为下拉菜单，折叠时显示当前语言，展开后可切换中文 / English / 日本語。
+- 修复英文界面下大量战斗提示显示为中英混排的问题（如「受到damage降低」）。战斗文案改用带占位符的模板系统，不再依赖片段替换。
+- 修复片段替换的匹配顺序（长句优先），并补齐「防御减伤 · 护盾吸收」等此前会残留中文的战斗提示。
+- 修复苔藓守卫因被动初始化顺序导致的战斗加载报错（该英雄此前无法正常开局）。
+- 战斗页与选人页的普攻按钮支持按住连续普攻，触控模式的普攻键同样支持长按。
+- 为五位英雄各加入一个被动技能，并在选人页展示：
+  - 霓虹拳王「突破极限」：每普攻 1 次攻速 +0.05 次/秒，对该英雄取消攻速上限。
+  - 苔藓守卫「苔藓馈赠」：初始吸血 10%，每次击杀 +1% 吸血，对该英雄取消吸血上限。
+  - 月蚀术士「月相扩张」：每次击杀普攻范围 +5（无上限）；每击杀 20 次，下一次大招额外向施法范围内非最近的敌人降落一颗陨石。
+  - 科技男「超频协议」：每击杀 20 次层数 +1（永久叠加），二技能每层多 1 次往返、一技能每层多发射 1 块击退平板、大招每层伤害 +20%。
+  - 新增英雄「电音人」（紫色电音主题，远程）：被动「共鸣」——被技能击中 3 次的敌人陷入 3 秒狂舞，对狂舞中的敌人伤害 +50%。三技能为音浪冲击（撞建筑爆炸，3 阶穿建筑并在命中 2 个敌人后自爆）、低音震荡（强化普攻附带狂舞，3 阶计入被动并可延长至 9 秒）、碟片风暴（10 枚追踪唱片，每次施法对同一敌人只记 1 层）。
+  - 琵琶女「弦音不绝」：每通过狂舞击杀 3 次或小兵击杀 10 次后，十面埋伏此后每次施放都多召唤 1 名小兵（可叠加）；大招狂舞时间 +1 秒。
+
+### English
+
+- Added a Japanese language pack ("2D大撃破") with a matching Japanese icon. The top-right language switch is now a dropdown that shows the current language and lets you pick 中文 / English / 日本語.
+- Fixed many battle messages rendering as mixed Chinese/English in the English UI (e.g. "受到damage降低"). Combat text now uses a placeholder template system instead of fragment replacement.
+- Fixed the fragment-replacement match order (longest match first) and finished localizing leftovers such as the damage-reduction / shield-absorbed combat line.
+- Fixed a startup script error on the Moss Guardian caused by passive initialization order that stopped the hero from beginning a run.
+- The basic-attack button on the battle and selection screens can now be held to attack continuously; the touch-mode attack button supports hold as well.
+- Added a passive skill to each of the five heroes, shown on the selection page:
+  - Neon Champion "Limit Break": +0.05 attack speed per basic attack, with no attack-speed cap for this hero.
+  - Moss Guardian "Moss Gift": starts with 10% lifesteal, +1% per kill, with no lifesteal cap for this hero.
+  - Moon-Eclipse Sorcerer "Lunar Expansion": +5 basic attack range per kill (no cap); every 20 kills the next ultimate drops an extra meteor on a non-nearest enemy in cast range.
+  - Tech Man "Overclock Protocol": every 20 kills grants one permanent stack — +1 afterimage round trip, +1 knockback tablet, and +20% ultimate damage per stack.
+  - Added a new hero, DJ Volt (purple audio theme, ranged): passive "Resonance" — enemies hit by your skills 3 times enter 3s frenzy, and you deal +50% damage to frenzied enemies. Sound Wave explodes on buildings (tier 3 phases through and self-destructs after 2 hits), Bass Boost empowers a basic attack with frenzy (tier 3 counts as a skill hit and extends frenzy to 9s), and Disc Storm throws 10 homing records where each cast counts only 1 stack per enemy.
+  - Pipa Girl "Endless Strings": every 3 frenzy kills or 10 minion summons an extra minion; frenzy lasts +1s.
+
+### 日本語
+
+- 日本語パック「2D大撃破」と専用の日本語アイコンを追加しました。右上の言語切り替えはドロップダウンになり、折りたたみ時は現在の言語を表示し、中文 / English / 日本語 から選べます。
+- 英語UIで戦闘メッセージが中国語と混在していた問題（例：「受到damage降低」）を修正しました。戦闘テキストはプレースホルダーのテンプレート方式に変え、断片置換に依存しなくなりました。
+- 断片置換の照合順序（長い一致を優先）を修正し、「ダメージ軽減・シールド吸収」など残っていた未翻訳部分も解消しました。
+- パッシブ初期化の順序が原因で、モスガーディアンの戦闘開始時にスクリプトエラーが発生し開局できなかった問題を修正しました。
+- 戦闘画面とヒーロー選択画面の通常攻撃ボタンを長押しで連続攻撃できるようにしました（タッチモードの攻撃ボタンも長押し対応）。
+- 5人のヒーローそれぞれにパッシブスキルを追加し、選択画面に表示しました：
+  - ネオン拳王「限界突破」：通常攻撃1回ごとに攻撃速度 +0.05、このヒーローは攻撃速度上限なし。
+  - モスガーディアン「モスの恵み」：開始時に吸血10%、撃破ごとに +1%、このヒーローは吸血上限なし。
+  - 月蝕術師「月の膨張」：撃破ごとに通常攻撃射程 +5（上限なし）；20撃破ごとに次のアルティメットが追加で隕石を1つ落とす。
+  - テックファイター「オーバークロックプロトコル」：20撃破ごとに永続スタック +1（二技能の往復 +1、一技能のノックバックタブレット +1、アルティメットダメージ +20%）。
+  - 新ヒーロー「DJヴォルト」（紫のオーディオテーマ、遠距離）：パッシブ「レゾナンス」——スキルが3回命中した敵は3秒間狂乱、狂乱中の敵へのダメージ +50%。三技能はサウンドウェーブ（建物に当たると爆発、ランク3で建物を貫通し敵2体命中後に自爆）、二技能はベースブースト（強化通常攻撃に狂乱を付与、ランク3でパッシブに加算し9秒に延長）、一技能はディスクストーム（追尾レコード10枚、1回の詠唱で敵1体につき1スタック）。
+  - 琵琶の名手「果てなき弦」：狂乱撃破3回または小兵撃破10回ごとに、十面埋伏が毎回追加で小兵1体を召喚（重複可）；狂乱時間 +1秒。
+
 ## 1.4.0
 
 ### 中文
@@ -11,32 +58,6 @@
 
 - Fixed untranslated skill-rank labels in the battle skill bar.
 - Added English translations for basic-attack hit messages across heroes.
-
-## 未发布 / Unreleased
-
-### 中文
-
-- 修复英文界面下大量战斗提示显示为中英混排的问题（如「受到damage降低」）。战斗文案改用带占位符的模板系统，不再依赖片段替换。
-- 战斗页与选人页的普攻按钮改为支持按住连续普攻，触控模式的普攻键同样支持长按。
-- 为五位英雄各加入一个被动技能，并在选人页展示：
-  - 霓虹拳王「突破极限」：每普攻 1 次攻速 +0.05 次/秒，对该英雄取消攻速上限。
-  - 苔藓守卫「苔藓馈赠」：初始吸血 10%，每次击杀 +1% 吸血，对该英雄取消吸血上限。
-  - 月蚀术士「月相扩张」：每次击杀普攻范围 +5（无上限）；每击杀 20 次，下一次大招额外向施法范围内非最近的敌人降落一颗陨石。
-  - 科技男「超频协议」：每击杀 20 次层数 +1（永久叠加），二技能每层多 1 次往返、一技能每层多发射 1 块击退平板、大招每层伤害 +20%。
-  - 新增英雄「电音人」（紫色电音主题，远程）：被动「共鸣」——被技能击中 3 次的敌人陷入 3 秒狂舞，对狂舞中的敌人伤害 +50%。三技能为音浪冲击（撞建筑爆炸，3 阶穿建筑并在命中 2 个敌人后自爆）、低音震荡（强化普攻附带狂舞，3 阶计入被动并可延长至 9 秒）、碟片风暴（10 枚追踪唱片，每次施法对同一敌人只记 1 层）。
-  - 琵琶女「弦音不绝」：每通过狂舞击杀 3 次或小兵击杀 10 次后，十面埋伏此后每次施放都多召唤 1 名小兵（可叠加）；大招狂舞时间 +1 秒。
-
-### English
-
-- Fixed many battle messages rendering as mixed Chinese/English in the English UI (e.g. "受到damage降低"). Combat text now uses a placeholder template system instead of fragment replacement.
-- The basic-attack button on the battle and selection screens can now be held to attack continuously; the touch-mode attack button supports hold as well.
-- Added a passive skill to each of the five heroes, shown on the selection page:
-  - Neon Champion "Limit Break": +0.05 attack speed per basic attack, with no attack-speed cap for this hero.
-  - Moss Guardian "Moss Gift": starts with 10% lifesteal, +1% per kill, with no lifesteal cap for this hero.
-  - Moon-Eclipse Sorcerer "Lunar Expansion": +5 basic attack range per kill (no cap); every 20 kills the next ultimate drops an extra meteor on a non-nearest enemy in cast range.
-  - Tech Man "Overclock Protocol": every 20 kills grants one permanent stack — +1 afterimage round trip, +1 knockback tablet, and +20% ultimate damage per stack.
-  - Added a new hero, DJ Volt (purple audio theme, ranged): passive "Resonance" — enemies hit by your skills 3 times enter 3s frenzy, and you deal +50% damage to frenzied enemies. Sound Wave explodes on buildings (tier 3 phases through and self-destructs after 2 hits), Bass Boost empowers a basic attack with frenzy (tier 3 counts as a skill hit and extends frenzy to 9s), and Disc Storm throws 10 homing records where each cast counts only 1 stack per enemy.
-  - Pipa Girl "Endless Strings": every 3 frenzy kills or 10 minion summons an extra minion; frenzy lasts +1s.
 
 ## 1.3.5
 

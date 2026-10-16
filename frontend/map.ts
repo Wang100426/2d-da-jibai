@@ -460,7 +460,8 @@ const minimap = requireElement<HTMLCanvasElement>("#minimap");
 const miniContext = requireContext(minimap);
 const config = getMapConfig();
 const locale = config.locale;
-const english = locale.code === "en";
+/** 源语言是中文（zh）；en / ja 等目标语言都需要跑 patterns + phrases 片段替换。 */
+const translateByPattern = locale.code !== "zh";
 const tx = (source: string): string => localizeBattleText(source);
 
 /**
@@ -474,17 +475,27 @@ function t(key: string, params: Record<string, string | number> = {}): string {
     name in params ? String(params[name]) : match);
 }
 
+/**
+ * 片段替换必须“长键优先”：服务端 tojson 会按键名排序，若短键先跑，
+ * 会把 “眩晕中无法行动” 提前拆成 “眩晕”+“中无法行动” 而漏译整句。
+ * phrases 与 messages 合并成同一轮，整句优先于片段（否则 “小强化” 会先
+ * 把 “…一项小强化。” 拆散，导致整句规则再也匹配不到）。
+ */
+const byLengthDesc = (a: [string, string], b: [string, string]): number => b[0].length - a[0].length;
+const battleFragmentEntries = (
+  translateByPattern
+    ? [...Object.entries(locale.battle.phrases), ...Object.entries(locale.battle.messages)]
+    : Object.entries(locale.battle.messages)
+).sort(byLengthDesc);
+
 function localizeBattleText(value: string): string {
   let text = value;
-  if (english) {
+  if (translateByPattern) {
     for (const [pattern, replacement] of locale.battle.patterns) {
       text = text.replace(new RegExp(pattern), replacement);
     }
-    for (const [phrase, translation] of Object.entries(locale.battle.phrases)) {
-      text = text.replaceAll(phrase, translation);
-    }
   }
-  for (const [source, translation] of Object.entries(locale.battle.messages)) {
+  for (const [source, translation] of battleFragmentEntries) {
     text = text.replaceAll(source, translation);
   }
   return text;
@@ -562,11 +573,6 @@ function passiveUncapped(stat: string): boolean {
   return (heroPassive.uncapped || []).includes(stat);
 }
 
-// 苔藓守卫的初始吸血等开局即生效的被动数值
-Object.entries(heroPassive.init || {}).forEach(([stat, amount]) => {
-  addPassiveStat(stat, amount);
-});
-
 /**
  * 被动配置里的属性名 → playerState 字段名。
  * 配置用 snake_case（与 app.py 的 HEROES 保持一致），运行时字段是 camelCase，
@@ -590,6 +596,13 @@ function addPassiveStat(stat: string, amount: number): void {
   const mutable = playerState as unknown as Record<string, number>;
   mutable[field] = (mutable[field] || 0) + amount;
 }
+
+// 苔藓守卫的初始吸血等开局即生效的被动数值
+// 必须放在 PASSIVE_STAT_FIELDS / addPassiveStat 之后，否则 const 处于
+// 暂时性死区（TDZ），moss 这类带 init 被动的英雄会在加载时就抛错。
+Object.entries(heroPassive.init || {}).forEach(([stat, amount]) => {
+  addPassiveStat(stat, amount);
+});
 
 let empoweredAttack = false;
 /** 电音人强化普攻：本次普攻的技能实例编号，用于被动层数去重。 */

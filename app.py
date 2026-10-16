@@ -20,7 +20,7 @@ LOCALE_DIRECTORY = Path(__file__).resolve().parent / "locale"
 ASSET_DIRECTORY = Path(__file__).resolve().parent / "assets"
 LOCALE_PACKAGES = {
     language: json.loads((LOCALE_DIRECTORY / f"{language}.json").read_text(encoding="utf-8"))
-    for language in ("zh", "en")
+    for language in ("zh", "en", "ja")
 }
 
 
@@ -73,7 +73,8 @@ def persist_language(response):
 @app.get("/favicon.ico")
 def favicon():
     language = request.args.get("lang", request.cookies.get("lang", "zh"))
-    icon = "2d_da_jibai_ico_en.ico" if language == "en" else "2d_da_jibai_ico.ico"
+    icons = {"en": "2d_da_jibai_ico_en.ico", "ja": "2d_da_jibai_ico_jp.ico"}
+    icon = icons.get(language, "2d_da_jibai_ico.ico")
     return send_file(ASSET_DIRECTORY / icon, mimetype="image/vnd.microsoft.icon", max_age=3600)
 
 

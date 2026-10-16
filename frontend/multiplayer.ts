@@ -62,17 +62,21 @@ declare const MP_HEROES: LobbyHero[];
 declare const MP_LOCALE: MultiplayerLocalePackage;
 
 const locale = MP_LOCALE;
-const english = locale.code === "en";
+const translateByPattern = locale.code !== "zh";
 const tx = (source: string): string => localizeLobbyText(source);
+
+/** 长键优先：tojson 会按键名排序，短键先跑会拆散长句导致漏译。 */
+const lobbyMessageEntries = Object.entries(locale.lobby.messages)
+  .sort((a, b) => b[0].length - a[0].length);
 
 function localizeLobbyText(message: string): string {
   let text = message;
-  if (english) {
+  if (translateByPattern) {
     for (const [pattern, replacement] of locale.lobby.patterns) {
       text = text.replace(new RegExp(pattern), replacement);
     }
   }
-  for (const [source, translation] of Object.entries(locale.lobby.messages)) {
+  for (const [source, translation] of lobbyMessageEntries) {
     text = text.replaceAll(source, translation);
   }
   return text;
