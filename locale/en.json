@@ -275,7 +275,7 @@
       },
       "passive": {
         "name": "Overclock Protocol",
-        "description": "Every 20 kills: +1 afterimage round trip, +1 knockback tablet, and +20% ultimate damage."
+        "description": "Every 20 kills, Overclock Protocol gains 1 permanent stack: +1 afterimage round trip, +1 knockback tablet, and +20% ultimate damage per stack."
       }
     },
     "pipa": {
@@ -1072,9 +1072,6 @@
       "passive.burst_ready": "Overclock Protocol ready: {effect}",
       "passive.effect.tech_overclock_burst": "your next skill cast is empowered",
       "passive.effect.extra_meteor": "your next Crescent Meteor drops an extra meteor",
-      "passive.tech_ultimate": "Overclock Raid damage +20%!",
-      "passive.tech_tablets": "One extra knockback tablet launched!",
-      "passive.tech_afterimage": "Afterimage gains an extra round trip!",
       "passive.extra_meteor": "Extra meteor hits {hits} enemies.",
       "passive.meteor_no_target": "No other enemy in range; the extra meteor was not dropped.",
       "passive.pipa_minion_bonus": "Endless Strings: Ten Ambush now summons {count} extra minion(s) each cast.",
@@ -1086,7 +1083,8 @@
       "skill.volt2_empower": "{name} active: next basic attack deals +50% damage and applies 3s frenzy.",
       "skill.volt2_empowered_hit": "Bass Boost hits for {damage} damage and applies frenzy!",
       "skill.volt2_disc_launch": "Disc Storm: hurling {count} homing records.",
-      "basic_hit.volt2": "Sound hit for {damage} damage, restores 5 energy."
+      "basic_hit.volt2": "Sound hit for {damage} damage, restores 5 energy.",
+      "passive.tech_stack_up": "Overclock Protocol reached {count} stack(s): all three skills permanently empowered!"
     }
   },
   "lobby": {

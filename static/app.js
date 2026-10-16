@@ -104,7 +104,13 @@ const passiveState = {
     burstReady: false,
     /** 弦音不绝：十面埋伏每次额外召唤的小兵数量，可叠加。 */
     minionBonus: 0,
+    /** 超频协议：永久层数，每击杀 20 次 +1，每次施放都生效。 */
+    techBonus: 0,
 };
+/** 超频协议当前层数；非科技男或未配置时为 0。 */
+function techStacks() {
+    return heroPassive.threshold_effect === "tech_stack" ? passiveState.techBonus : 0;
+}
 function passiveUncapped(stat) {
     return (heroPassive.uncapped || []).includes(stat);
 }
@@ -2575,12 +2581,18 @@ function registerKill(viaFrenzy, viaMinion) {
     Object.entries(heroPassive.on_kill || {}).forEach(([stat, amount]) => {
         addPassiveStat(stat, amount);
     });
-    // 达到阈值时授予一次强化窗口（luna 额外陨石 / tech 三技能强化）
+    // 窗口型（luna）：达到阈值授予一次性强化窗口
     if (heroPassive.every_kills && passiveState.kills % heroPassive.every_kills === 0) {
         if (heroPassive.every_kills_effect) {
             passiveState.burstReady = true;
             showToast(t("passive.burst_ready", { effect: t(`passive.effect.${heroPassive.every_kills_effect}`) }));
         }
+    }
+    // 层数型（tech）：达到阈值永久 +1 层，之后每次施放都生效
+    if (heroPassive.threshold_effect === "tech_stack" && heroPassive.every_kills &&
+        passiveState.kills % heroPassive.every_kills === 0) {
+        passiveState.techBonus += 1;
+        showToast(t("passive.tech_stack_up", { count: passiveState.techBonus }), "success");
     }
     // 弦音不绝：狂舞击杀或小兵击杀累计到阈值 → 之后每次十面埋伏多召唤 1 名小兵（可叠加层数）
     if (heroPassive.threshold_effect !== "extra_minion")
@@ -3497,16 +3509,13 @@ function castSkill(index) {
         showToast(t("skill.moss_barkskin", { reduction: Math.round((1 - playerState.thornDamageMultiplier) * 100) }));
     }
     else if (skill.action === "tech_tablets") {
-        const burst = consumeBurst("tech_overclock_burst");
-        startTabletVolley(skill, burst ? (heroPassive.tech_burst?.extra_tablets || 0) : 0, burst ? 46 : 0);
-        if (burst)
-            showToast(t("passive.tech_tablets"), "success");
+        // 超频协议：每层多发射 1 块击退平板
+        const stacks = techStacks();
+        startTabletVolley(skill, (heroPassive.tech_burst?.extra_tablets || 0) * stacks, stacks > 0 ? 46 : 0);
     }
     else if (skill.action === "tech_afterimage") {
-        const burst = consumeBurst("tech_overclock_burst");
-        startAfterimageDash(skill, burst ? (heroPassive.tech_burst?.extra_round_trips || 0) : 0);
-        if (burst)
-            showToast(t("passive.tech_afterimage"), "success");
+        // 超频协议：每层多 1 次往返
+        startAfterimageDash(skill, (heroPassive.tech_burst?.extra_round_trips || 0) * techStacks());
     }
     else if (skill.action === "volt2_wave") {
         startSoundWave(skill);
@@ -3589,13 +3598,11 @@ function castSkill(index) {
         const victims = enemies.filter((enemy) => enemy.hp > 0 && distanceTo(enemy.x, enemy.y) <= radius);
         const startX = player.x;
         const startY = player.y;
-        // 超频协议：大招伤害提高
-        const burst = consumeBurst("tech_overclock_burst");
-        const scale = burst ? (heroPassive.tech_burst?.ultimate_damage_scale || 1) : 1;
+        // 超频协议：每层大招伤害 +20%（1.2 → 1.4 → 1.6…）
+        const stacks = techStacks();
+        const scale = 1 + ((heroPassive.tech_burst?.ultimate_damage_scale || 1) - 1) * stacks;
         const damage = Math.round(skill.damage * scale);
         victims.forEach((enemy) => hitEnemy(enemy, damage, skill.effect, skill.effect_turns * 2));
-        if (burst)
-            showToast(t("passive.tech_ultimate"), "success");
         const travelled = movePlayerToward(player.x + facing.x * (skill.dash_range || 300), player.y + facing.y * (skill.dash_range || 300), skill.dash_range || 300);
         queuePvpAttack("skill", nearbyPvpTargets(startX, startY, radius), skill.id);
         skillVisuals.push({

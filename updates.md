@@ -22,7 +22,7 @@
   - 霓虹拳王「突破极限」：每普攻 1 次攻速 +0.05 次/秒，对该英雄取消攻速上限。
   - 苔藓守卫「苔藓馈赠」：初始吸血 10%，每次击杀 +1% 吸血，对该英雄取消吸血上限。
   - 月蚀术士「月相扩张」：每次击杀普攻范围 +5（无上限）；每击杀 20 次，下一次大招额外向施法范围内非最近的敌人降落一颗陨石。
-  - 科技男「超频协议」：每击杀 20 次获得一次强化窗口，二技能多 1 次往返、一技能多发射 1 块击退平板、大招伤害 +20%。
+  - 科技男「超频协议」：每击杀 20 次层数 +1（永久叠加），二技能每层多 1 次往返、一技能每层多发射 1 块击退平板、大招每层伤害 +20%。
   - 新增英雄「电音人」（紫色电音主题，远程）：被动「共鸣」——被技能击中 3 次的敌人陷入 3 秒狂舞，对狂舞中的敌人伤害 +50%。三技能为音浪冲击（撞建筑爆炸，3 阶穿建筑并在命中 2 个敌人后自爆）、低音震荡（强化普攻附带狂舞，3 阶计入被动并可延长至 9 秒）、碟片风暴（10 枚追踪唱片，每次施法对同一敌人只记 1 层）。
   - 琵琶女「弦音不绝」：每通过狂舞击杀 3 次或小兵击杀 10 次后，十面埋伏此后每次施放都多召唤 1 名小兵（可叠加）；大招狂舞时间 +1 秒。
 
@@ -34,7 +34,7 @@
   - Neon Champion "Limit Break": +0.05 attack speed per basic attack, with no attack-speed cap for this hero.
   - Moss Guardian "Moss Gift": starts with 10% lifesteal, +1% per kill, with no lifesteal cap for this hero.
   - Moon-Eclipse Sorcerer "Lunar Expansion": +5 basic attack range per kill (no cap); every 20 kills the next ultimate drops an extra meteor on a non-nearest enemy in cast range.
-  - Tech Man "Overclock Protocol": every 20 kills grants a buff window giving +1 afterimage round trip, +1 knockback tablet, and +20% ultimate damage.
+  - Tech Man "Overclock Protocol": every 20 kills grants one permanent stack — +1 afterimage round trip, +1 knockback tablet, and +20% ultimate damage per stack.
   - Added a new hero, DJ Volt (purple audio theme, ranged): passive "Resonance" — enemies hit by your skills 3 times enter 3s frenzy, and you deal +50% damage to frenzied enemies. Sound Wave explodes on buildings (tier 3 phases through and self-destructs after 2 hits), Bass Boost empowers a basic attack with frenzy (tier 3 counts as a skill hit and extends frenzy to 9s), and Disc Storm throws 10 homing records where each cast counts only 1 stack per enemy.
   - Pipa Girl "Endless Strings": every 3 frenzy kills or 10 minion summons an extra minion; frenzy lasts +1s.
 

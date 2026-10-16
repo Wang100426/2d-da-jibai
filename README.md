@@ -77,7 +77,7 @@ npm run build
 | 霓虹拳王 | 突破极限 | 每普攻 1 次，攻速 +0.05 次/秒，对该英雄取消攻速上限 |
 | 苔藓守卫 | 苔藓馈赠 | 初始吸血 10%，每次击杀 +1% 吸血，对该英雄取消吸血上限 |
 | 月蚀术士 | 月相扩张 | 每次击杀普攻范围 +5（无上限）；每击杀 20 次，下一次大招额外降落一颗陨石 |
-| 科技男 | 超频协议 | 每击杀 20 次，下一次施放的技能获得强化：二技能多 1 次往返、一技能多发射 1 块击退平板、大招伤害 +20% |
+| 科技男 | 超频协议 | 每击杀 20 次，**层数 +1（永久叠加）**：二技能每层多 1 次往返、一技能每层多发射 1 块击退平板、大招每层伤害 +20% |
 | 琵琶女 | 弦音不绝 | 每通过狂舞击杀 3 次或小兵击杀 10 次后，**十面埋伏此后每次施放都多召唤 1 名小兵**（可叠加层数）；大招狂舞时间 +1 秒 |
 | 电音人 | 共鸣 | 被技能击中 3 次的敌人陷入 3 秒狂舞；对狂舞中的敌人伤害 +50% |
 
@@ -102,9 +102,11 @@ npm run build
 }
 ```
 
-「阈值型」被动（`threshold_effect`）与「窗口型」（`every_kills_effect`）的区别：
-窗口型是**一次性**的，用掉即结束（`consumeBurst`）；阈值型是**永久叠加**的，
-层数记在 `passiveState.minionBonus`，每次技能施放都生效。两者不要混用。
+「窗口型」与「阈值型」的区别：
+- **窗口型**（`every_kills` + `every_kills_effect`）：一次性，用掉即结束（`consumeBurst`），如月蚀术士的额外陨石
+- **阈值型**（`threshold_effect`）：**永久叠加**，每次技能施放都生效，如琵琶女（`minionBonus`）、科技男（`techBonus`，由 `every_kills` 触发）
+
+也就是说 `every_kills` 既可以配窗口型的 `every_kills_effect`，也可以配阈值型的 `threshold_effect: "tech_stack"`，两者互不干扰。
 
 属性名用 snake_case，与 `playerState` 字段的对应关系由前端的 `PASSIVE_STAT_FIELDS` 显式声明。
 
@@ -280,7 +282,7 @@ hero in `app.py`:
 | Neon Champion | Limit Break | +0.05 attack speed per basic attack; this hero has no attack-speed cap |
 | Moss Guardian | Moss Gift | Starts with 10% lifesteal, +1% per kill; this hero has no lifesteal cap |
 | Moon-Eclipse Sorcerer | Lunar Expansion | +5 basic attack range per kill (no cap); every 20 kills your next ultimate drops an extra meteor |
-| Tech Man | Overclock Protocol | Every 20 kills your next skill cast is empowered: +1 afterimage round trip, +1 knockback tablet, and +20% ultimate damage |
+| Tech Man | Overclock Protocol | Every 20 kills grants **one permanent stack**: +1 afterimage round trip, +1 knockback tablet, and +20% ultimate damage per stack |
 | Pipa Girl | Endless Strings | After 3 frenzy kills or 10 minion kills, **Ten Ambush summons one extra minion on every cast from then on** (stacks); frenzy lasts +1s |
 | DJ Volt | Resonance | Enemies hit by your skills 3 times enter 3s frenzy; +50% damage to frenzied enemies |
 
@@ -306,11 +308,15 @@ casting the wrong skill does not waste it, and the buff still applies to the nex
 }
 ```
 
-「阈值型」被动（`threshold_effect`）与「窗口型」（`every_kills_effect`）的区别：
-窗口型是**一次性**的，用掉即结束（`consumeBurst`）；阈值型是**永久叠加**的，
-层数记在 `passiveState.minionBonus`，每次技能施放都生效。两者不要混用。
+"Window" and "threshold" passives differ:
+- **Window** (`every_kills` + `every_kills_effect`): single-use, consumed when spent (`consumeBurst`), e.g. Lunar Expansion's extra meteor
+- **Threshold** (`threshold_effect`): **permanent and stacking**, applies to every cast, e.g. Pipa Girl (`minionBonus`) and Tech Man (`techBonus`, triggered via `every_kills`)
+
+In other words, `every_kills` can drive either a window (`every_kills_effect`) or a threshold
+(`threshold_effect: "tech_stack"`); the two never interfere.
 
 Stat names are snake_case; the mapping to `playerState` fields is declared explicitly in the frontend's
+`PASSIVE_STAT_FIELDS`.
 `PASSIVE_STAT_FIELDS`.
 
 ### DJ Volt

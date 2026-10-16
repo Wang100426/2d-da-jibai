@@ -275,7 +275,7 @@
       },
       "passive": {
         "name": "超频协议",
-        "description": "每击杀 20 次：二技能多 1 次往返、一技能多发射 1 块击退平板、大招伤害 +20%。"
+        "description": "每击杀 20 次，超频协议层数 +1（永久叠加）：二技能每层多 1 次往返、一技能每层多发射 1 块击退平板、大招每层伤害 +20%。"
       }
     },
     "pipa": {
@@ -695,9 +695,6 @@
       "passive.burst_ready": "超频协议就绪：{effect}",
       "passive.effect.tech_overclock_burst": "下一次技能施放获得强化",
       "passive.effect.extra_meteor": "下次新星陨星额外降落一颗陨石",
-      "passive.tech_ultimate": "超频突袭伤害提高 20%！",
-      "passive.tech_tablets": "额外发射 1 块击退平板！",
-      "passive.tech_afterimage": "残影折返额外冲刺 1 次往返！",
       "passive.extra_meteor": "额外陨石命中 {hits} 个敌人。",
       "passive.meteor_no_target": "范围内没有其他敌人，额外陨星未投放。",
       "passive.pipa_minion_bonus": "弦音不绝：十面埋伏每次额外召唤 {count} 名小兵。",
@@ -709,7 +706,8 @@
       "skill.volt2_empower": "{name} 生效：下次普攻伤害 +50% 并附加 3 秒狂舞。",
       "skill.volt2_empowered_hit": "低音震荡命中，造成 {damage} 点伤害并附加狂舞！",
       "skill.volt2_disc_launch": "碟片风暴启动：连续投出 {count} 枚追踪唱片。",
-      "basic_hit.volt2": "音波命中，造成 {damage} 点伤害，回复 5 点能量。"
+      "basic_hit.volt2": "音波命中，造成 {damage} 点伤害，回复 5 点能量。",
+      "passive.tech_stack_up": "超频协议层数提升至 {count}：三技能永久强化！"
     }
   },
   "lobby": {

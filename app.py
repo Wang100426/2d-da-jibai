@@ -226,7 +226,7 @@ HEROES = [
         "passive": {
             "id": "tech_overclock",
             "every_kills": 20,
-            "every_kills_effect": "tech_overclock_burst",
+            "threshold_effect": "tech_stack",
             "tech_burst": {"extra_round_trips": 1, "extra_tablets": 1, "ultimate_damage_scale": 1.2},
         },
         "skills": [
