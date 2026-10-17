@@ -31,27 +31,34 @@
     </section>
 
     <div class="mode-controls">
-      <div class="mode-picker">
-        <button class="mode-picker-current" id="mode-picker-current" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="mode-options">
-          <span class="mode-picker-icon" id="mode-picker-icon">{{ tr("ROGUE_ICON") }}</span>
-          <span class="mode-picker-copy"><small>{{ tr("MODE_PICKER") }}</small><b id="mode-picker-label">{{ tr("ROGUE") }}</b></span>
-          <span class="mode-picker-arrow" aria-hidden="true">⌃</span>
-        </button>
-        <div class="mode-options" id="mode-options" role="listbox" aria-label="{{ tr('MODE_PICKER') }}" hidden>
-          <button type="button" role="option" aria-selected="true" data-mode="rogue" data-mode-label="{{ tr('ROGUE') }}" data-mode-icon="{{ tr('ROGUE_ICON') }}" data-mode-href="/select">
-            <span class="mode-option-icon rogue">{{ tr("ROGUE_ICON") }}</span><span><b>{{ tr("ROGUE") }}</b><small>{{ tr("ROGUE_TAGLINE") }}</small></span>
-          </button>
-          <button type="button" role="option" aria-selected="false" data-mode="lan" data-mode-label="{{ tr('LAN') }}" data-mode-icon="{{ tr('LAN_ICON') }}" data-mode-href="/multiplayer">
-            <span class="mode-option-icon lan">{{ tr("LAN_ICON") }}</span><span><b>{{ tr("LAN") }}</b><small>{{ tr("LAN_TAGLINE") }}</small></span>
-          </button>
-          <button type="button" role="option" aria-selected="false" data-mode="duel" data-mode-label="{{ tr('DUEL') }}" data-mode-icon="{{ tr('DUEL_ICON') }}" data-mode-href="/select?mode=duel">
-            <span class="mode-option-icon duel">{{ tr("DUEL_ICON") }}</span><span><b>{{ tr("DUEL") }}</b><small>{{ tr("DUEL_TAGLINE") }}</small></span>
-          </button>
-        </div>
-      </div>
-      <a class="mode-start" id="mode-start" href="/select" data-camp-transition>
-        <span>{{ tr("HOME_START_GAME") }}</span><b aria-hidden="true">↗</b>
+      <a class="mode-codex" id="mode-codex" href="/codex">
+        <span class="mode-codex-icon" aria-hidden="true">{{ tr("CODEX_ICON") }}</span>
+        <span class="mode-codex-copy"><small>{{ tr("CODEX_KICKER") }}</small><b>{{ tr("CODEX") }}</b></span>
+        <span class="mode-codex-arrow" aria-hidden="true">›</span>
       </a>
+      <div class="mode-row">
+        <div class="mode-picker">
+          <button class="mode-picker-current" id="mode-picker-current" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="mode-options">
+            <span class="mode-picker-icon" id="mode-picker-icon">{{ tr("ROGUE_ICON") }}</span>
+            <span class="mode-picker-copy"><small>{{ tr("MODE_PICKER") }}</small><b id="mode-picker-label">{{ tr("ROGUE") }}</b></span>
+            <span class="mode-picker-arrow" aria-hidden="true">⌃</span>
+          </button>
+          <div class="mode-options" id="mode-options" role="listbox" aria-label="{{ tr('MODE_PICKER') }}" hidden>
+            <button type="button" role="option" aria-selected="true" data-mode="rogue" data-mode-label="{{ tr('ROGUE') }}" data-mode-icon="{{ tr('ROGUE_ICON') }}" data-mode-href="/select">
+              <span class="mode-option-icon rogue">{{ tr("ROGUE_ICON") }}</span><span><b>{{ tr("ROGUE") }}</b><small>{{ tr("ROGUE_TAGLINE") }}</small></span>
+            </button>
+            <button type="button" role="option" aria-selected="false" data-mode="lan" data-mode-label="{{ tr('LAN') }}" data-mode-icon="{{ tr('LAN_ICON') }}" data-mode-href="/multiplayer">
+              <span class="mode-option-icon lan">{{ tr("LAN_ICON") }}</span><span><b>{{ tr("LAN") }}</b><small>{{ tr("LAN_TAGLINE") }}</small></span>
+            </button>
+            <button type="button" role="option" aria-selected="false" data-mode="duel" data-mode-label="{{ tr('DUEL') }}" data-mode-icon="{{ tr('DUEL_ICON') }}" data-mode-href="/select?mode=duel">
+              <span class="mode-option-icon duel">{{ tr("DUEL_ICON") }}</span><span><b>{{ tr("DUEL") }}</b><small>{{ tr("DUEL_TAGLINE") }}</small></span>
+            </button>
+          </div>
+        </div>
+        <a class="mode-start" id="mode-start" href="/select" data-camp-transition>
+          <span>{{ tr("HOME_START_GAME") }}</span><b aria-hidden="true">↗</b>
+        </a>
+      </div>
     </div>
   </main>
 

@@ -1,5 +1,22 @@
 # 更新日志 / Updates
 
+## 1.6.5
+
+### 中文
+
+- 新增「地图图鉴」：主页右下角两颗按钮的上方多了一个同宽同高的入口，点进去可以一次看完全部 7 张赛场——按实机布局绘制的缩略图、地形特点、随机事件，以及建筑 / 路障数量。
+- 选英雄页左侧的英雄列表改为自适应多列 + 滚动的卡片列表（细的暗色滚动条），并修掉窗口变窄时卡片相互重叠的问题。
+
+### English
+
+- Added the Map Codex: a new button sits above the two home-screen controls and opens a page listing all seven arenas at once — a to-scale layout preview, terrain notes, the random event, and building/barrier counts.
+- The hero roster on the select screen is now an adaptive multi-column scrolling list with a slim dark scrollbar, and no longer overlaps itself in narrow windows.
+
+### 日本語
+
+- 「マップ図鑑」を追加：ホーム画面右下のボタンの上に同じ幅・高さの入口ボタンを置き、全7マップを一覧できる。実レイアウトを縮小したサムネイル、地形の特徴、ランダムイベント、建物／バリケード数をまとめて確認できる。
+- ヒーロー選択画面の左側リストを可変多列＋スクロールのカードリスト（細いダークスクロールバー）に変更し、ウィンドウが狭いときにカードが重なる不具合を修正。
+
 ## 1.6.0
 
 ### 中文

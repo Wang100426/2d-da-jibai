@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="{{ {'en': 'en', 'ja': 'ja'}.get(lang, 'zh-CN') }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="{{ url_for('favicon', lang=lang) }}">
+  <title>{{ tr("CODEX_TITLE") }} · {{ tr("PRODUCT_NAME") }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="codex-page">
+  <div class="scanlines"></div>
+  <a class="select-back" href="/" aria-label="{{ tr('BACK_HOME') }}">← <span>{{ tr("BACK_HOME") }}</span></a>
+  <div class="language-switch codex-language-toggle" data-language-switch></div>
+
+  <main class="codex-main">
+    <section class="codex-hero-copy">
+      <div>
+        <p class="eyebrow"><span></span> {{ tr("CODEX_KICKER") }}</p>
+        <h1>{{ tr("CODEX_TITLE") }} <span>/ {{ "%02d"|format(maps|length) }}</span></h1>
+      </div>
+      <p>{{ tr("CODEX_SUBTITLE") }}</p>
+    </section>
+
+    <section class="codex-grid" aria-label="{{ tr('CODEX_TITLE') }}">
+      {% for map in maps %}
+      <article class="codex-card" data-map-id="{{ map.id }}" style="--map-accent:{{ map.preview.palette.accent }}">
+        <div class="codex-preview">
+          <canvas class="codex-canvas" data-codex-canvas="{{ map.id }}" width="640" height="480"
+                  role="img" aria-label="{{ map.name }} · {{ tr('CODEX_TERRAIN') }}"></canvas>
+          <span class="codex-index">{{ "%02d"|format(loop.index) }}</span>
+          <span class="codex-size">{{ map.size[0] }} × {{ map.size[1] }}</span>
+        </div>
+        <div class="codex-copy">
+          <h2>{{ map.name }}</h2>
+          <p class="codex-terrain">{{ map.terrain }}</p>
+          <div class="codex-event">
+            <span>{{ tr("CODEX_RANDOM_EVENT") }}</span>
+            <p>{{ map.event }}</p>
+          </div>
+          <dl class="codex-meta">
+            <div><dt>{{ tr("CODEX_SIZE") }}</dt><dd>{{ map.size[0] }} × {{ map.size[1] }}</dd></div>
+            <div><dt>{{ tr("CODEX_BUILDINGS") }}</dt><dd>{{ map.buildings }}</dd></div>
+            <div><dt>{{ tr("CODEX_BARRIERS") }}</dt><dd>{{ map.barriers }}</dd></div>
+          </dl>
+        </div>
+      </article>
+      {% endfor %}
+    </section>
+  </main>
+
+  <footer><span>{{ tr("FOOTER") }}</span><span>{{ tr("SLOGAN") }}</span></footer>
+  <script>window.MAP_CODEX_PREVIEWS = {{ maps|map(attribute='preview')|list|tojson }};</script>
+  <script src="{{ url_for('static', filename='codex.js') }}"></script>
+  <script src="{{ url_for('static', filename='language.js') }}"></script>
+</body>
+</html>

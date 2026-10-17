@@ -8,6 +8,8 @@ from pathlib import Path
 
 from flask import Flask, jsonify, redirect, render_template, request, send_file, url_for
 
+from map_codex import codex_entries
+
 
 app = Flask(__name__)
 ROOMS = {}
@@ -414,6 +416,28 @@ def home():
 def select_hero():
     game_mode = "duel" if request.args.get("mode") == "duel" else "rogue"
     return render_template("select.html", heroes=localized_heroes(request.args.get("lang", request.cookies.get("lang", "zh"))), game_mode=game_mode)
+
+
+@app.get("/codex")
+def map_codex():
+    """地图图鉴：把地图的地形、随机事件和实机布局摊开给玩家看。"""
+    package = get_locale(request.args.get("lang", request.cookies.get("lang", "zh")))
+    ui = package["ui"]
+    maps = []
+    for entry in codex_entries():
+        maps.append(
+            {
+                "id": entry["id"],
+                "name": ui.get(entry["name_key"], entry["name_key"]),
+                "event": ui.get(entry["event_key"], entry["event_key"]),
+                "terrain": ui.get(entry["terrain_key"], entry["terrain_key"]),
+                "size": entry["size"],
+                "buildings": entry["buildings"],
+                "barriers": entry["barriers"],
+                "preview": entry["preview"],
+            }
+        )
+    return render_template("codex.html", maps=maps)
 
 
 def public_player(player):

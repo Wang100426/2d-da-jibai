@@ -109,7 +109,8 @@
 .mode-page .mode-hero-copy .subtitle{color:#b6b8ce;line-height:1.9;font-size:16px}
 .mode-page .mode-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1120px;width:100%}
 .mode-page .mode-main{padding-bottom:150px}
-.mode-controls{position:absolute;z-index:4;right:clamp(22px,5vw,76px);bottom:24px;width:min(540px,calc(100vw - 40px));display:flex;align-items:end;justify-content:flex-end;gap:0}
+.mode-controls{position:absolute;z-index:4;right:clamp(22px,5vw,76px);bottom:24px;width:min(540px,calc(100vw - 40px));display:flex;flex-direction:column;align-items:stretch;justify-content:flex-end;gap:12px}
+.mode-row{display:flex;align-items:end;justify-content:flex-end;gap:0}
 .mode-picker{position:relative;z-index:1;width:52%}
 .mode-picker-current{width:100%;min-height:78px;display:flex;align-items:center;gap:16px;padding:12px 34px 12px 24px;clip-path:polygon(0 0,100% 0,calc(100% - 22px) 100%,0 100%);border:1px solid #49e6e0;background:linear-gradient(110deg,#111b29f2,#15202df2);color:var(--text);text-align:left;cursor:pointer}
 .mode-picker-current:hover,.mode-picker-current[aria-expanded="true"]{background:linear-gradient(110deg,#18323a,#192738)}
@@ -134,7 +135,16 @@
 .mode-start{position:relative;z-index:2;width:52%;min-height:78px;margin-left:-22px;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 30px 0 42px;clip-path:polygon(22px 0,100% 0,100% 100%,0 100%);background:linear-gradient(110deg,#49e6e0,#a2fff7);color:#081217;font-size:19px;font-weight:900;letter-spacing:2px;box-shadow:0 10px 35px #49e6e033;transition:filter .18s,transform .18s}
 .mode-start:hover{filter:brightness(1.12);transform:translateY(-4px)}
 .mode-start b{font:900 24px 'Chakra Petch'}
-.mode-picker-current:focus-visible,.mode-options button:focus-visible,.mode-start:focus-visible{outline:2px solid var(--pink);outline-offset:4px}
+.mode-picker-current:focus-visible,.mode-options button:focus-visible,.mode-start:focus-visible,.mode-codex:focus-visible{outline:2px solid var(--pink);outline-offset:4px}
+/* 地图图鉴入口：和下面两颗按钮同宽同高，叠在它们正上方 */
+.mode-codex{position:relative;z-index:1;display:flex;align-items:center;gap:16px;min-height:78px;padding:12px 34px 12px 24px;clip-path:polygon(0 0,100% 0,calc(100% - 22px) 100%,0 100%);border:1px solid var(--cyan);background:linear-gradient(110deg,#111b29f2,#15202df2);color:var(--text);cursor:pointer;transition:background .18s,transform .18s}
+.mode-codex:hover{background:linear-gradient(110deg,#18323a,#192738);transform:translateY(-4px)}
+.mode-codex-icon{width:42px;height:42px;display:grid;place-items:center;flex:none;background:var(--cyan);color:#081217;font:900 19px 'Chakra Petch';clip-path:polygon(50% 0,100% 22%,90% 100%,10% 100%,0 22%)}
+.mode-codex-copy{min-width:0;flex:1}
+.mode-codex-copy small,.mode-codex-copy b{display:block}
+.mode-codex-copy small{margin-bottom:5px;color:var(--cyan);font:10px 'Chakra Petch';letter-spacing:1.5px}
+.mode-codex-copy b{overflow:hidden;font-size:18px;letter-spacing:.5px;text-overflow:ellipsis;white-space:nowrap}
+.mode-codex-arrow{color:var(--cyan);font:23px 'Chakra Petch'}
 .mode-page footer{position:relative;z-index:2}
 .mode-card{display:flex;flex-direction:column;align-items:center;padding:40px 30px;background:var(--panel);border:1px solid #2a2e48;border-radius:16px;text-decoration:none;color:var(--text);transition:.25s;gap:14px}
 .mode-card:hover{transform:translateY(-7px);border-color:var(--cyan);box-shadow:0 12px 30px #0008}
@@ -397,4 +407,60 @@ html[lang="en"] .mode-card p{max-width:340px}
   .detail-copy{gap:0}
   .detail-skill-list{grid-template-rows:none}
   .detail-skill{min-height:46px}
+}
+
+/* Map codex page */
+.codex-page{min-height:100vh;min-height:100svh;display:flex;flex-direction:column;background:#090a13 url('/static/home-background.png') center/cover fixed no-repeat}
+.codex-page::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:linear-gradient(180deg,#090a13dd 0%,#090a13b8 40%,#090a13e0 100%)}
+.codex-language-toggle{position:fixed;z-index:12;top:14px;right:clamp(20px,4vw,64px)}
+.codex-main{position:relative;z-index:1;flex:1;width:100%;max-width:1440px;margin:0 auto;padding:78px clamp(20px,5vw,72px) 42px;display:flex;flex-direction:column;gap:20px}
+.codex-hero-copy{display:flex;align-items:end;justify-content:space-between;gap:20px;padding-bottom:15px;border-bottom:1px solid #23263a}
+.codex-hero-copy .eyebrow{margin:0 0 8px;font-size:10px}
+.codex-hero-copy h1{font:900 clamp(28px,3.2vw,42px)/1 'Chakra Petch';letter-spacing:-1px;margin:0;text-shadow:3px 3px #262640}
+.codex-hero-copy h1 span{color:var(--pink);font:600 14px 'Chakra Petch';margin-left:8px;vertical-align:middle;text-shadow:none}
+.codex-hero-copy>p{margin:0 0 3px;max-width:560px;color:#aab0c3;font-size:12px;line-height:1.85}
+.codex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px}
+.codex-card{display:flex;flex-direction:column;background:var(--panel);border:1px solid #2a2e48;border-left:3px solid var(--map-accent);transition:transform .2s,box-shadow .2s,border-color .2s}
+.codex-card:hover{transform:translateY(-4px);border-color:var(--map-accent);box-shadow:0 14px 32px #0008}
+.codex-preview{position:relative;background:#05070d;border-bottom:1px solid #23263a}
+.codex-canvas{display:block;width:100%;aspect-ratio:4 / 3}
+.codex-index{position:absolute;top:10px;left:13px;color:var(--map-accent);font:900 15px 'Chakra Petch';letter-spacing:1px;text-shadow:0 2px 10px #000}
+.codex-size{position:absolute;right:11px;bottom:11px;padding:3px 8px;background:#05070dd9;border:1px solid #2f3a4d;color:#9fb0c6;font:10px 'Chakra Petch';letter-spacing:1px}
+.codex-copy{display:flex;flex:1;flex-direction:column;gap:11px;padding:15px 17px 16px}
+.codex-copy h2{margin:0;font-size:21px}
+.codex-terrain{margin:0;color:#aab0c3;font-size:12px;line-height:1.85}
+.codex-event{display:flex;gap:11px;padding:10px 12px;background:#0e1220;border-left:2px solid var(--map-accent)}
+.codex-event span{flex:none;padding-top:2px;color:var(--map-accent);font:10px 'Chakra Petch';letter-spacing:1.4px}
+.codex-event p{margin:0;color:#d7dcf0;font-size:12px;line-height:1.75}
+.codex-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:auto 0 0;padding-top:12px;border-top:1px solid #23263a}
+.codex-meta>div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.codex-meta dt{color:var(--muted);font:10px 'Chakra Petch';letter-spacing:1px}
+.codex-meta dd{margin:0;color:var(--text);font:600 14px 'Chakra Petch'}
+.codex-page footer{position:relative;z-index:1}
+html[lang="ja"] .codex-hero-copy h1,
+html[lang="ja"] .codex-copy h2{font-family:'Noto Sans JP','Noto Sans SC',sans-serif}
+@media(max-width:760px){
+  .codex-language-toggle{top:10px;right:14px}
+  .codex-main{padding:62px 16px 26px;gap:14px}
+  .codex-hero-copy{display:block}
+  .codex-hero-copy>p{margin-top:10px;font-size:11px}
+  .codex-grid{grid-template-columns:1fr;gap:14px}
+  .codex-copy{padding:13px 14px 14px}
+  .codex-page footer{height:auto;min-height:38px;padding:10px 16px}
+}
+@media(max-height:800px) and (min-width:761px){
+  .mode-codex,.mode-picker-current,.mode-start{min-height:66px}
+  .mode-codex,.mode-picker-current{padding:10px 30px 10px 20px}
+  .mode-codex-copy b,.mode-picker-copy b{font-size:16px}
+  .mode-codex-icon,.mode-picker-icon{width:36px;height:36px;font-size:16px}
+  .mode-start{font-size:17px}
+}
+@media(max-width:700px){
+  .mode-codex,.mode-picker-current,.mode-start{min-height:60px}
+  .mode-codex,.mode-picker-current{gap:12px;padding:9px 26px 9px 16px}
+  .mode-codex-copy b,.mode-picker-copy b{font-size:15px}
+  .mode-codex-copy small,.mode-picker-copy small{margin-bottom:3px;font-size:9px}
+  .mode-codex-icon,.mode-picker-icon{width:32px;height:32px;font-size:14px}
+  .mode-codex-arrow,.mode-picker-arrow{font-size:19px}
+  .mode-start{font-size:15px;padding:0 20px 0 32px}
 }
