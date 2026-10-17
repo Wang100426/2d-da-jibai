@@ -59,6 +59,7 @@
     "MAP_GYM": "Cyber Gymnasium",
     "MAP_AIRPORT": "Cyber Airport",
     "MAP_SCHOOL": "Cyber School",
+    "MAP_STATION": "Neon Station",
     "MAP_EVENT_CITY": "Traffic surges across the streets. Impacts deal heavy damage and stun.",
     "MAP_EVENT_HOSPITAL": "Fast anesthetists rush in; their first hit injects anesthetic.",
     "MAP_EVENT_MUSIC": "Harps land at random and play for 5 seconds, damaging and slowing by 60%.",
@@ -67,6 +68,7 @@
     "MAP_EVENT_SCHOOL": "The office displays the class schedule. Classes last 10 seconds, slowing all units and reducing their attack speed and damage.",
     "SCHOOL_CLASS_IN": "CLASS IN",
     "SCHOOL_CLASS_ACTIVE": "IN CLASS",
+    "MAP_EVENT_STATION": "The waiting hall shows train arrival times: trains pull into a random track and stop for 10 seconds. A moving train knocks you back for heavy damage, and a stopped train blocks movement like a building.",
     "MAP_EVENT_DUEL": "One-on-one arena duel. Be the first to win four rounds.",
     "MAP_EVENT_MULTIPLAYER": "Fight enemy waves with LAN allies; player attacks and effects are synchronized.",
     "PAUSE": "Ⅱ PAUSE",
@@ -347,6 +349,41 @@
           "detail_description": "Empower your next basic attack to deal +50% damage and apply 3s frenzy; the frenzy does not count as a skill hit for your passive."
         }
       }
+    },
+    "sakura": {
+      "name": "Sakura Girl",
+      "class_name": "Firework Arcanist",
+      "tagline": "Rain the festival fireworks down on your enemies.",
+      "initial": "桜",
+      "stats": [
+        "Attack",
+        "Defense",
+        "Mobility"
+      ],
+      "passive": {
+        "name": "Ignite",
+        "description": "Skill hits ignite the target: 5% of your max health per second for 3s. Hitting a burning target again raises the burn damage by 10% (up to 4x) and refreshes the duration."
+      },
+      "skills": {
+        "sakura-festival": {
+          "name": "Summer Festival",
+          "kind": "Ability",
+          "description": "Continuous burn inside basic attack range · pink zone marker",
+          "detail_description": "Open a pink festival zone at your basic attack range (250). Every enemy inside takes a small hit every 0.5s for 3s; these hits also trigger your Ignite passive."
+        },
+        "sakura-storm": {
+          "name": "Sakura Storm",
+          "kind": "Ability",
+          "description": "Raise a storm on the nearest enemy · pulls in, damages and stuns",
+          "detail_description": "Create a Sakura Storm with radius 200 at the nearest enemy within 460, pulling every enemy inside toward the center over 0.5s, then dealing a small hit and a 1s stun."
+        },
+        "sakura-song": {
+          "name": "Sakura Song",
+          "kind": "Ultimate",
+          "description": "Haste · invulnerable · knock enemies flying",
+          "detail_description": "Enter a 3s haste state (+50% movement speed) and take no damage. Enemies you touch are damaged and knocked back, once per enemy."
+        }
+      }
     }
   },
   "upgrades": {
@@ -484,7 +521,20 @@
       "赛博琴房": "Cyber Music Hall",
       "赛博体育馆": "Cyber Gymnasium",
       "赛博机场": "Cyber Airport",
-      "赛博学校": "Cyber School"
+      "赛博学校": "Cyber School",
+      "霓虹火车站": "Neon Train Station",
+      "候车厅": "WAITING HALL",
+      "小卖部": "Newsstand",
+      "检票口": "Ticket Gate",
+      "站台": "PLATFORM",
+      "铁轨": "TRACK",
+      "列车时刻表": "TRAIN SCHEDULE",
+      "下一班列车": "NEXT TRAIN",
+      "等待中": "WAITING",
+      "进站中": "ARRIVING",
+      "停靠中": "BOARDING",
+      "离站中": "DEPARTING",
+      "引燃": "Ignite"
     },
     "patterns": [
       [
@@ -975,7 +1025,10 @@
       "食堂": "Cafeteria",
       "社团活动中心": "Student Center",
       "学生宿舍": "Dormitory",
-      "校园护栏": "Campus Fence"
+      "校园护栏": "Campus Fence",
+      "候车厅": "Waiting Hall",
+      "小卖部": "Newsstand",
+      "检票口": "Ticket Gate"
     },
     "effects": {
       "加速": "Movement speed up",
@@ -989,7 +1042,8 @@
       "强力减速": "Heavy slow",
       "荆棘护甲": "Thorn armor",
       "中毒": "Poison",
-      "月影护盾": "Moon shield"
+      "月影护盾": "Moon shield",
+      "引燃": "Ignite"
     },
     "basic_hit": {
       "volt": "Basic hit for {damage} damage, restores 5 energy.",
@@ -997,7 +1051,8 @@
       "luna": "Moonbolt hits for {damage} ranged damage.",
       "tech": "Tech ranged hit for {damage} damage.",
       "pipa": "Pipa sound blade hits for {damage} damage.",
-      "volt2": "Sound hit for {damage} damage, restores 5 energy."
+      "volt2": "Sound hit for {damage} damage, restores 5 energy.",
+      "sakura": "Firework hit for {damage} damage, igniting the target."
     },
     "templates": {
       "skill.cooling": "{name} is on cooldown for {seconds}s more.",
@@ -1088,7 +1143,15 @@
       "skill.volt2_empowered_hit": "Bass Boost hits for {damage} damage and applies frenzy!",
       "skill.volt2_disc_launch": "Disc Storm: hurling {count} homing records.",
       "basic_hit.volt2": "Sound hit for {damage} damage, restores 5 energy.",
-      "passive.tech_stack_up": "Overclock Protocol reached {count} stack(s): all three skills permanently empowered!"
+      "passive.tech_stack_up": "Overclock Protocol reached {count} stack(s): all three skills permanently empowered!",
+      "skill.sakura_festival": "{name} begins: enemies inside your basic attack range keep burning for {seconds}s.",
+      "skill.sakura_storm": "{name} lands: enemies within {radius} are pulled to the center, damaged and stunned for 1s.",
+      "skill.sakura_song": "{name} plays: +50% movement speed and immunity to damage for {seconds}s; enemies you touch are knocked back.",
+      "event.train_arriving": "Arrival inbound! A train is pulling into track {track}; clear the rails.",
+      "event.train_departing": "The train on track {track} is departing.",
+      "event.train_hit": "A train sends you flying for {damage} heavy damage and a knockback!",
+      "event.train_damage": "Train impact -{damage}",
+      "float.sakura_invincible": "Sakura guard"
     }
   },
   "lobby": {
@@ -1180,6 +1243,12 @@
     "强化普攻伤害变为 200%": "Empowered attack damage becomes 200%",
     "强化普攻计入被动 · 狂舞延长至 9 秒": "Empowered attack counts as a skill hit · frenzy lasts 9s",
     "唱片数量 +4": "+4 records",
-    "唱片伤害 +50%": "Record damage +50%"
+    "唱片伤害 +50%": "Record damage +50%",
+    "夏日祭持续时间 +1 秒": "Summer Festival lasts +1s",
+    "夏日祭伤害频率提升至 0.25 秒": "Summer Festival ticks every 0.25s",
+    "樱花风暴后减速 50% 持续 3 秒": "Sakura Storm slows 50% for 3s after the stun",
+    "樱花风暴吸引时间延长至 1 秒": "Sakura Storm pulls over 1s",
+    "樱花之歌加速时间 +1 秒": "Sakura Song lasts +1s",
+    "樱花之歌触碰敌人时同时施加樱花风暴": "Sakura Song also casts Sakura Storm on touched enemies"
   }
 }

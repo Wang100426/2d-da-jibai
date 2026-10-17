@@ -151,6 +151,15 @@ interface SkillConfig {
   disc_interval?: number;
   disc_speed?: number;
   disc_knockback?: number;
+  /** 樱花少女：夏日祭的持续时长与伤害频率（秒）。 */
+  festival_duration?: number;
+  festival_interval?: number;
+  /** 樱花少女：樱花风暴的聚拢时长与眩晕后的减速时长。 */
+  storm_pull_duration?: number;
+  storm_slow_duration?: number;
+  /** 樱花少女：樱花之歌的持续时长，以及触碰敌人时是否追加樱花风暴。 */
+  song_duration?: number;
+  song_casts_storm?: number;
 }
 
 interface TierPatch {
@@ -190,6 +199,11 @@ interface HeroPassive {
   stack_frenzy_turns?: number;
   /** 对处于指定效果状态的敌人增伤倍率。 */
   frenzy_damage_scale?: number;
+  /** 樱花少女：引燃每秒伤害占自身最大生命的比例、持续时间、单次叠加倍率与上限。 */
+  ignite_dps_ratio?: number;
+  ignite_duration?: number;
+  ignite_bonus_scale?: number;
+  ignite_max_scale?: number;
   tech_burst?: {
     extra_round_trips?: number;
     extra_tablets?: number;
@@ -284,6 +298,9 @@ interface EnemyUnit {
   resonanceStacks?: number;
   /** 电音人大招：为避免同一次施法重复叠层，记录已计入层数的技能实例。 */
   resonanceCasts?: Set<number>;
+  /** 樱花少女被动：引燃的每秒伤害与跳秒计时。 */
+  igniteDamage?: number;
+  igniteTimer?: number;
 }
 
 interface TrafficCar {
@@ -332,15 +349,39 @@ interface AirportPlane {
   hitTargets: Set<string>;
 }
 
+/** 霓虹火车站：一辆列车在铁轨上的停靠状态机。 */
+interface StationTrain {
+  trackIndex: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  phase: "arriving" | "dwelling" | "departing";
+  timer: number;
+  direction: 1 | -1;
+  hitCooldown: number;
+  hitTargets: Set<string>;
+}
+
+/** 霓虹火车站：单条铁轨的排班。 */
+interface StationTrackState {
+  train: StationTrain | null;
+  nextArrival: number;
+  stopX: number;
+}
+
+interface StationBand {
+  y: number;
+  h: number;
+}
+
 interface CombatTarget {
   id: string;
   x: number;
   y: number;
   player: boolean;
   unit?: EnemyUnit;
-}
-
-interface Supply {
+}interface Supply {
   x: number;
   y: number;
   type: "health" | "energy";
@@ -515,7 +556,7 @@ function rosterCombat(heroId: string): HeroCombatProfile {
   return rosterById.get(heroId)?.combat || heroCombat;
 }
 
-type MapTheme = "city" | "hospital" | "music" | "gym" | "airport" | "school";
+type MapTheme = "city" | "hospital" | "music" | "gym" | "airport" | "station" | "school";
 const mapTheme = config.mapTheme;
 const map = { width: config.duel ? 1400 : 3200, height: config.duel ? 900 : 2400 };
 const player = {
@@ -631,6 +672,52 @@ let airportNextFlightTakeoff = true;
 let eventSerial = 0;
 let schoolClassTimer = 32 + Math.random() * 12;
 let schoolClassDuration = 0;
+
+/* ---------- 霓虹火车站：5 条铁轨 / 6 个站台的列车排班 ---------- */
+const stationTrackCount = 5;
+const stationPlatformCount = 6;
+const stationHallHeight = 300;
+const stationPlatformHeight = 250;
+const stationTrackHeight = 95;
+
+function buildStationBands(): { platform: StationBand[]; track: StationBand[] } {
+  const platform: StationBand[] = [];
+  const track: StationBand[] = [];
+  let y = stationHallHeight;
+  for (let index = 0; index < stationPlatformCount; index += 1) {
+    platform.push({ y, h: stationPlatformHeight });
+    y += stationPlatformHeight;
+    if (index < stationTrackCount) {
+      track.push({ y, h: stationTrackHeight });
+      y += stationTrackHeight;
+    }
+  }
+  return { platform, track };
+}
+
+const stationLayout = buildStationBands();
+const stationTracks: StationTrackState[] = Array.from({ length: stationTrackCount }, (_, index) => ({
+  train: null,
+  nextArrival: 6 + Math.random() * 12 + index * 3.5,
+  stopX: 520,
+}));
+
+/* ---------- 樱花少女：夏日祭 / 樱花风暴 / 樱花之歌 ---------- */
+let sakuraCastSerial = 0;
+let sakuraFestival:
+  { remaining: number; tickTimer: number; interval: number; damage: number; castId: number } | undefined;
+const sakuraStorms: {
+  x: number;
+  y: number;
+  radius: number;
+  damage: number;
+  pull: number;
+  elapsed: number;
+  stun: number;
+  slow: number;
+  resolved: boolean;
+}[] = [];
+let sakuraSong: { remaining: number; hits: Set<string>; castsStorm: boolean } | undefined;
 let pipaFrenzyAttackTimer = 0;
 const anesthetizedTargets = new Set<string>();
 let runLevel = 1;
@@ -928,6 +1015,12 @@ const airportObstacles: Obstacle[] = [
   { x: 1750, y: 330, w: 175, h: 130, type: "building", name: "机场消防站" },
 ];
 
+const stationObstacles: Obstacle[] = [
+  { x: 0, y: 0, w: 3200, h: 300, type: "building", name: "候车厅" },
+  { x: 210, y: 2292, w: 340, h: 96, type: "building", name: "小卖部" },
+  { x: 2650, y: 2292, w: 340, h: 96, type: "building", name: "检票口" },
+];
+
 function randomizeObstacleLayout(source: Obstacle[]): Obstacle[] {
   return source.map((item) => {
     const jitter = item.type === "building" ? 76 : 48;
@@ -963,15 +1056,17 @@ const airportRunways: AirportRunway[] = [
 
 const obstacles: Obstacle[] = config.duel
   ? []
-  : randomizeObstacleLayout(
-    mapTheme === "hospital" ? hospitalObstacles
-      : mapTheme === "music" ? musicObstacles
-        : mapTheme === "gym" ? gymObstacles
-          : mapTheme === "airport" ? airportObstacles
-            : mapTheme === "school" ? schoolObstacles
-              : cityObstacles,
-  );
-const roads: Rectangle[] = config.duel || mapTheme === "airport" ? [] : mapTheme === "hospital"
+  : mapTheme === "station"
+    ? stationObstacles
+    : randomizeObstacleLayout(
+      mapTheme === "hospital" ? hospitalObstacles
+        : mapTheme === "music" ? musicObstacles
+          : mapTheme === "gym" ? gymObstacles
+            : mapTheme === "airport" ? airportObstacles
+              : mapTheme === "school" ? schoolObstacles
+                : cityObstacles,
+    );
+const roads: Rectangle[] = config.duel || mapTheme === "airport" || mapTheme === "station" ? [] : mapTheme === "hospital"
   ? [
       { x: 0, y: 660 + Math.random() * 45, w: map.width, h: 150 },
       { x: 0, y: 1430 + Math.random() * 45, w: map.width, h: 155 },
@@ -1711,14 +1806,16 @@ function drawMap(): void {
     : mapTheme === "music" ? "#191426"
       : mapTheme === "gym" ? "#1d171b"
         : mapTheme === "airport" ? "#15202a"
-          : mapTheme === "school" ? "#172321" : "#111827";
+          : mapTheme === "station" ? "#0e1720"
+            : mapTheme === "school" ? "#172321" : "#111827";
   context.fillRect(0, 0, map.width, map.height);
 
   context.strokeStyle = mapTheme === "hospital" ? "#29404a"
     : mapTheme === "music" ? "#37294a"
       : mapTheme === "gym" ? "#443331"
         : mapTheme === "airport" ? "#263c50"
-          : mapTheme === "school" ? "#30463d" : "#20303a";
+          : mapTheme === "station" ? "#1d2f3d"
+            : mapTheme === "school" ? "#30463d" : "#20303a";
   context.lineWidth = 1;
   for (let x = 0; x <= map.width; x += 64) {
     context.beginPath();
@@ -1734,6 +1831,7 @@ function drawMap(): void {
   }
 
   if (mapTheme === "airport") drawAirportRunways();
+  if (mapTheme === "station") drawStationTracks();
 
   if (!config.duel) roads.forEach((road) => {
     context.fillStyle = mapTheme === "hospital" ? "#22333a"
@@ -1797,26 +1895,30 @@ function drawMap(): void {
       : mapTheme === "music" ? "#443653"
         : mapTheme === "gym" ? "#4a3839"
           : mapTheme === "airport" ? "#3a4b5a"
-            : mapTheme === "school" ? "#35463f" : "#252d3c";
+            : mapTheme === "station" ? "#2b3d4d"
+              : mapTheme === "school" ? "#35463f" : "#252d3c";
     context.fill();
     context.strokeStyle = mapTheme === "hospital" ? "#70a2a5"
       : mapTheme === "music" ? "#b47dcb"
         : mapTheme === "gym" ? "#c26d58"
           : mapTheme === "airport" ? "#93adbe"
-            : mapTheme === "school" ? "#a5c27d" : "#465365";
+            : mapTheme === "station" ? "#7fa3bd"
+              : mapTheme === "school" ? "#a5c27d" : "#465365";
     context.lineWidth = 4;
     context.stroke();
     context.fillStyle = mapTheme === "hospital" ? "#45616b"
       : mapTheme === "music" ? "#644b74"
         : mapTheme === "gym" ? "#654745"
           : mapTheme === "airport" ? "#506579"
-            : mapTheme === "school" ? "#4a5b4c" : "#313c4d";
+            : mapTheme === "station" ? "#3d5468"
+              : mapTheme === "school" ? "#4a5b4c" : "#313c4d";
     context.fillRect(obstacle.x + 12, obstacle.y + 12, obstacle.w - 24, 28);
     context.fillStyle = mapTheme === "hospital" ? "#d3eff0"
       : mapTheme === "music" ? "#f0d8ff"
         : mapTheme === "gym" ? "#ffe1cf"
           : mapTheme === "airport" ? "#e0efff"
-            : mapTheme === "school" ? "#e5f1cf" : "#738091";
+            : mapTheme === "station" ? "#dcecf8"
+              : mapTheme === "school" ? "#e5f1cf" : "#738091";
     context.font = "13px sans-serif";
     context.fillText(locale.battle.obstacles[obstacle.name] || obstacle.name, obstacle.x + 22, obstacle.y + 31);
     context.strokeStyle = mapTheme === "hospital"
@@ -1854,6 +1956,14 @@ function drawMap(): void {
 
   if (mapTheme === "airport") drawAirportTerminalSign();
   if (mapTheme === "school") drawSchoolOfficeSign();
+  if (mapTheme === "station") {
+    drawStationBoard();
+    drawStationPlatformSigns();
+    stationTracks.forEach((state) => {
+      if (state.train) drawStationTrain(state.train);
+    });
+  }
+  drawSakuraEffects();
   trafficCars.forEach(drawTrafficCar);
   harpFields.forEach(drawHarpField);
   gymRushers.forEach(drawGymRusher);
@@ -1994,6 +2104,176 @@ function drawSchoolOfficeSign(): void {
     y + 50,
   );
   context.restore();
+}
+
+/** 霓虹火车站：铁轨与站台。 */
+function drawStationTracks(): void {
+  context.save();
+  stationLayout.platform.forEach((band, index) => {
+    context.fillStyle = "#1b2a38";
+    context.fillRect(0, band.y, map.width, band.h);
+    context.strokeStyle = "#2f4658";
+    context.lineWidth = 2;
+    context.strokeRect(0, band.y, map.width, band.h);
+    context.fillStyle = "#d9c257";
+    context.fillRect(0, band.y + band.h - 8, map.width, 4);
+    context.fillStyle = "#42637a";
+    context.font = "bold 26px sans-serif";
+    context.textAlign = "left";
+    context.textBaseline = "middle";
+    context.fillText(`${tx("站台")} ${index + 1}`, 26, band.y + 34);
+  });
+  stationLayout.track.forEach((band) => {
+    context.fillStyle = "#0d151d";
+    context.fillRect(0, band.y, map.width, band.h);
+    context.strokeStyle = "#2a3744";
+    context.lineWidth = 5;
+    for (let x = 0; x < map.width; x += 46) {
+      context.beginPath();
+      context.moveTo(x, band.y + 14);
+      context.lineTo(x, band.y + band.h - 14);
+      context.stroke();
+    }
+    context.strokeStyle = "#46586a";
+    context.lineWidth = 3;
+    [band.y + 16, band.y + band.h - 16].forEach((railY) => {
+      context.beginPath();
+      context.moveTo(0, railY);
+      context.lineTo(map.width, railY);
+      context.stroke();
+    });
+  });
+  context.restore();
+}
+
+function drawStationTrain(train: StationTrain): void {
+  context.save();
+  roundedRect(context, train.x, train.y, train.width, train.height, 14);
+  context.fillStyle = train.phase === "dwelling" ? "#c2456f" : "#8c2f5c";
+  context.fill();
+  context.strokeStyle = "#ffb7d5";
+  context.lineWidth = 4;
+  context.stroke();
+  context.fillStyle = "#ffe3f0";
+  for (let x = train.x + 26; x < train.x + train.width - 56; x += 74) {
+    context.fillRect(x, train.y + 14, 46, Math.max(10, train.height - 42));
+  }
+  context.fillStyle = "#ffe45c";
+  context.fillRect(train.direction > 0 ? train.x + train.width - 30 : train.x, train.y + 10, 30, train.height - 20);
+  context.restore();
+}
+
+/** 霓虹火车站：候车厅的时刻表。 */
+function drawStationBoard(): void {
+  const hall = obstacles.find((obstacle) => obstacle.name === "候车厅");
+  if (!hall) return;
+  const x = hall.x + 46;
+  const y = hall.y + 44;
+  const width = Math.min(820, hall.w - 92);
+  const height = 62 + stationTrackCount * 30;
+  context.save();
+  roundedRect(context, x, y, width, height, 10);
+  context.fillStyle = "#061621";
+  context.fill();
+  context.strokeStyle = "#52ded2";
+  context.lineWidth = 2;
+  context.stroke();
+  context.textAlign = "left";
+  context.textBaseline = "middle";
+  context.fillStyle = "#8ff9e8";
+  context.font = "bold 20px sans-serif";
+  context.fillText(tx("列车时刻表"), x + 22, y + 30);
+  stationTracks.forEach((state, index) => {
+    const rowY = y + 62 + index * 30;
+    const status = stationTrackStatus(state);
+    context.fillStyle = "#cfe9f2";
+    context.font = "14px sans-serif";
+    context.fillText(`${tx("铁轨")} ${index + 1}`, x + 22, rowY);
+    context.fillStyle = status.highlight ? "#ffe45c" : "#7fb7c9";
+    context.fillText(status.label, x + 150, rowY);
+    context.fillStyle = "#8ff9e8";
+    context.fillText(status.time, x + 260, rowY);
+  });
+  context.restore();
+}
+
+/** 霓虹火车站：每个站台提示下一班列车。 */
+function drawStationPlatformSigns(): void {
+  stationLayout.track.forEach((_, index) => {
+    const platform = stationLayout.platform[index];
+    const state = stationTracks[index];
+    if (!platform || !state) return;
+    const x = 46;
+    const y = platform.y + platform.h - 104;
+    context.save();
+    roundedRect(context, x, y, 220, 78, 8);
+    context.fillStyle = "#061621";
+    context.fill();
+    context.strokeStyle = "#52ded2";
+    context.lineWidth = 2;
+    context.stroke();
+    context.textAlign = "left";
+    context.textBaseline = "middle";
+    context.fillStyle = "#8ff9e8";
+    context.font = "bold 13px sans-serif";
+    context.fillText(tx("下一班列车"), x + 12, y + 22);
+    const status = stationTrackStatus(state);
+    context.fillStyle = status.highlight ? "#ffe45c" : "#e6f5ef";
+    context.font = "bold 18px sans-serif";
+    context.fillText(`${status.label} ${status.time}`, x + 12, y + 54);
+    context.restore();
+  });
+}
+
+/** 樱花少女：夏日祭的粉色场域、樱花风暴与樱花之歌的护体光环。 */
+function drawSakuraEffects(): void {
+  const now = performance.now();
+  if (sakuraFestival) {
+    const radius = getPlayerAttackRange() * (0.94 + Math.sin(now / 170) * 0.05);
+    context.save();
+    context.fillStyle = "#ff8fc427";
+    context.strokeStyle = "#ff8fc4";
+    context.lineWidth = 4;
+    context.setLineDash([18, 12]);
+    context.beginPath();
+    context.arc(player.x, player.y, radius, 0, Math.PI * 2);
+    context.fill();
+    context.stroke();
+    context.setLineDash([]);
+    context.restore();
+  }
+  sakuraStorms.forEach((storm) => {
+    const spin = storm.elapsed * 5.5;
+    context.save();
+    context.translate(storm.x, storm.y);
+    context.fillStyle = "#ff8fc422";
+    context.strokeStyle = "#ff8fc4";
+    context.lineWidth = 3;
+    context.beginPath();
+    context.arc(0, 0, storm.radius, 0, Math.PI * 2);
+    context.fill();
+    context.stroke();
+    context.fillStyle = "#ffe3f0";
+    for (let petal = 0; petal < 9; petal += 1) {
+      const angle = spin + petal * (Math.PI * 2 / 9);
+      const radius = storm.radius * (0.8 - 0.14 * ((petal + Math.floor(spin)) % 3));
+      context.beginPath();
+      context.arc(Math.cos(angle) * radius * 0.6, Math.sin(angle) * radius * 0.6, 11, 0, Math.PI * 2);
+      context.fill();
+    }
+    context.restore();
+  });
+  if (sakuraSong) {
+    context.save();
+    context.shadowColor = "#ff8fc4";
+    context.shadowBlur = 24;
+    context.strokeStyle = "#ffd0e6";
+    context.lineWidth = 5;
+    context.beginPath();
+    context.arc(player.x, player.y, player.radius + 16 + Math.sin(now / 90) * 4, 0, Math.PI * 2);
+    context.stroke();
+    context.restore();
+  }
 }
 
 function drawHarpField(harp: HarpField): void {
@@ -2664,10 +2944,154 @@ function updateAirportFlights(dt: number): void {
   }
 }
 
+function circleHitsRect(x: number, y: number, radius: number, rect: Rectangle): boolean {
+  const nearestX = Math.max(rect.x, Math.min(x, rect.x + rect.w));
+  const nearestY = Math.max(rect.y, Math.min(y, rect.y + rect.h));
+  return (x - nearestX) ** 2 + (y - nearestY) ** 2 < radius ** 2;
+}
+
+function stationTrainRect(train: StationTrain): Rectangle {
+  return { x: train.x, y: train.y, w: train.width, h: train.height };
+}
+
+const stationTrainSpeed = 430;
+const stationTrainWidth = 620;
+const stationDwellSeconds = 10;
+
+/** 霓虹火车站：候车厅时刻表与站台提示牌上展示的排班文案。 */
+function stationTrackStatus(state: StationTrackState): { label: string; time: string; highlight: boolean } {
+  const train = state.train;
+  if (!train) return { label: tx("等待中"), time: formatFlightTime(state.nextArrival, true), highlight: false };
+  if (train.phase === "dwelling") {
+    return { label: tx("停靠中"), time: formatFlightTime(train.timer, true), highlight: true };
+  }
+  return { label: tx(train.phase === "arriving" ? "进站中" : "离站中"), time: "--:--", highlight: true };
+}
+
+function spawnStationTrain(state: StationTrackState, trackIndex: number): void {
+  const band = stationLayout.track[trackIndex];
+  const direction: 1 | -1 = Math.random() < 0.5 ? 1 : -1;
+  const minStopX = 140;
+  const maxStopX = Math.max(minStopX + 1, map.width - stationTrainWidth - 140);
+  state.stopX = minStopX + Math.random() * (maxStopX - minStopX);
+  state.train = {
+    trackIndex,
+    x: direction > 0 ? -stationTrainWidth : map.width,
+    y: band.y + 6,
+    width: stationTrainWidth,
+    height: band.h - 12,
+    phase: "arriving",
+    timer: 0,
+    direction,
+    hitCooldown: 0,
+    hitTargets: new Set<string>(),
+  };
+  showToast(tx(t("event.train_arriving", { track: trackIndex + 1 })), "warning");
+}
+
+/** 被进站的列车撞飞：主要沿垂直于轨道（横向列车即为上下）的方向推离车身。 */
+function knockPlayerFromTrain(train: StationTrain): void {
+  const centerY = train.y + train.height / 2;
+  const dy = player.y < centerY ? -1 : 1;
+  const dx = player.x < train.x ? -1 : player.x > train.x + train.width ? 1 : 0;
+  const travel = 240;
+  const steps = 26;
+  for (let step = 1; step <= steps; step += 1) {
+    const nextX = player.x + dx * travel / steps * 0.35;
+    const nextY = player.y + dy * travel / steps;
+    if (collides(nextX, nextY)) break;
+    player.x = nextX;
+    player.y = nextY;
+  }
+}
+
+/** 列车停靠瞬间若正好压住玩家，把玩家推到最近的空位，避免被卡在车身里。 */
+function ejectOverlappingPlayer(): void {
+  const blocking = stationTracks.some((state) => state.train
+    && state.train.phase === "dwelling"
+    && circleHitsRect(player.x, player.y, player.radius, stationTrainRect(state.train)));
+  if (!blocking) return;
+  for (let step = 1; step <= 40; step += 1) {
+    const distance = step * 18;
+    for (let angle = 0; angle < 8; angle += 1) {
+      const theta = angle * Math.PI / 4;
+      const x = player.x + Math.cos(theta) * distance;
+      const y = player.y + Math.sin(theta) * distance;
+      if (!collides(x, y)) {
+        player.x = x;
+        player.y = y;
+        return;
+      }
+    }
+  }
+}
+
+function updateStationTrains(dt: number): void {
+  stationTracks.forEach((state, index) => {
+    const train = state.train;
+    if (!train) {
+      state.nextArrival = Math.max(0, state.nextArrival - dt);
+      if (state.nextArrival === 0) spawnStationTrain(state, index);
+      return;
+    }
+    if (train.phase === "dwelling") {
+      train.timer = Math.max(0, train.timer - dt);
+      if (train.timer === 0) {
+        train.phase = "departing";
+        showToast(tx(t("event.train_departing", { track: index + 1 })));
+      }
+      return; // 停靠期间视作建筑阻挡，不再造成撞击伤害
+    }
+    train.x += train.direction * stationTrainSpeed * dt;
+    if (train.phase === "arriving" && (train.direction > 0 ? train.x >= state.stopX : train.x <= state.stopX)) {
+      train.x = state.stopX;
+      train.phase = "dwelling";
+      train.timer = stationDwellSeconds;
+      ejectOverlappingPlayer();
+      return;
+    }
+    const offscreen = train.direction > 0 ? train.x > map.width + 40 : train.x + train.width < -40;
+    if (offscreen) {
+      state.train = null;
+      state.nextArrival = 14 + Math.random() * 16;
+      return;
+    }
+    // 进站 / 离站期间撞到车身：击退并造成高额伤害
+    train.hitCooldown = Math.max(0, train.hitCooldown - dt);
+    const rect = stationTrainRect(train);
+    if (train.hitCooldown === 0 && circleHitsRect(player.x, player.y, player.radius, rect)) {
+      train.hitCooldown = 1.2;
+      const damage = 70 + Math.min(50, wave * 4);
+      if (applyPlayerDamage(damage)) {
+        knockPlayerFromTrain(train);
+        addFloatingText(player.x, player.y - 54, t("event.train_damage", { damage }), "#ffd166");
+        showToast(tx(t("event.train_hit", { damage })), "warning");
+      }
+    }
+    enemies.forEach((enemy) => {
+      if (enemy.hp <= 0) return;
+      const key = enemy.id || `enemy-${enemies.indexOf(enemy)}`;
+      if (train.hitTargets.has(key)) return;
+      const radius = enemy.kind === "brute" ? 25 : enemy.kind === "doctor" ? 18 : 20;
+      if (!circleHitsRect(enemy.x, enemy.y, radius, rect)) return;
+      train.hitTargets.add(key);
+      const damage = 110 + Math.min(60, wave * 6);
+      damageEnemyByNpc(enemy, damage);
+      enemy.effects["眩晕"] = Math.max(enemy.effects["眩晕"] || 0, 1.2);
+      knockbackEnemyInDirection(enemy, 130, 0, enemy.y < rect.y + rect.h / 2 ? -1 : 1);
+      addFloatingText(enemy.x, enemy.y - 36, t("event.train_damage", { damage }), "#ffd166");
+    });
+  });
+}
+
 function updateRandomMapEvents(dt: number): void {
   if (config.duel || runEnded) return;
   if (mapTheme === "school") {
     updateSchoolClass(dt);
+    return;
+  }
+  if (mapTheme === "station") {
+    updateStationTrains(dt);
     return;
   }
   if (config.multiplayer || waveState !== "active") return;
@@ -2904,6 +3328,25 @@ function drawSkillVisuals(): void {
   });
 }
 
+/**
+ * 静态阻挡的统一判定：建筑（obstacles）加上停靠中的列车。
+ * 非火车站主题时 stationTracks 里没有列车，多出的判定开销可忽略。
+ */
+function blockedByRects(x: number, y: number, radius: number): boolean {
+  if (obstacles.some((item) => {
+    const nearestX = Math.max(item.x, Math.min(x, item.x + item.w));
+    const nearestY = Math.max(item.y, Math.min(y, item.y + item.h));
+    return (x - nearestX) ** 2 + (y - nearestY) ** 2 < radius ** 2;
+  })) return true;
+  return stationTracks.some((state) => {
+    const train = state.train;
+    if (!train || train.phase !== "dwelling") return false;
+    const nearestX = Math.max(train.x, Math.min(x, train.x + train.width));
+    const nearestY = Math.max(train.y, Math.min(y, train.y + train.height));
+    return (x - nearestX) ** 2 + (y - nearestY) ** 2 < radius ** 2;
+  });
+}
+
 function collides(x: number, y: number): boolean {
   if (
     x - player.radius < 0 ||
@@ -2914,11 +3357,7 @@ function collides(x: number, y: number): boolean {
     return true;
   }
   if (config.duel) return false;
-  return obstacles.some((item) => {
-    const nearestX = Math.max(item.x, Math.min(x, item.x + item.w));
-    const nearestY = Math.max(item.y, Math.min(y, item.y + item.h));
-    return (x - nearestX) ** 2 + (y - nearestY) ** 2 < player.radius ** 2;
-  });
+  return blockedByRects(x, y, player.radius);
 }
 
 function movePlayer(dx: number, dy: number): void {
@@ -2933,11 +3372,7 @@ const pathRows = Math.ceil(map.height / pathCellSize);
 
 function isEnemyPositionBlocked(x: number, y: number, radius = 24): boolean {
   if (x < radius || y < radius || x > map.width - radius || y > map.height - radius) return true;
-  return obstacles.some((obstacle) => {
-    const nearestX = Math.max(obstacle.x, Math.min(x, obstacle.x + obstacle.w));
-    const nearestY = Math.max(obstacle.y, Math.min(y, obstacle.y + obstacle.h));
-    return (x - nearestX) ** 2 + (y - nearestY) ** 2 < radius ** 2;
-  });
+  return blockedByRects(x, y, radius);
 }
 
 function findEnemyPath(startX: number, startY: number, targetX: number, targetY: number): MapPoint[] {
@@ -3303,6 +3738,8 @@ function hitEnemy(enemy: EnemyUnit, damage: number, effect = "", effectTurns = 0
       enemy.poisonTimer = 1;
     }
   }
+  // 樱花少女被动：任何技能命中都会引燃目标
+  if (heroPassive.id === "sakura_ignite") igniteSakuraTarget(enemy);
   addFloatingText(enemy.x, enemy.y - 28, `-${actualDamage}`, "#ff668d");
   if (enemy.hp <= 0) {
     if (enemy.duelBot) finishDuelRound(true);
@@ -3327,6 +3764,10 @@ function healFromDamage(damage: number, x: number, y: number): void {
 function applyPlayerDamage(damage: number, attacker?: EnemyUnit): boolean {
   if (afterimageDash) {
     addFloatingText(player.x, player.y - 34, t("float.invulnerable_dodge"), "#49e6e0");
+    return false;
+  }
+  if (sakuraSong && sakuraSong.remaining > 0) {
+    addFloatingText(player.x, player.y - 34, t("float.sakura_invincible"), "#ffb7d5");
     return false;
   }
   if (Math.random() < playerState.dodgeChance) {
@@ -3433,11 +3874,7 @@ function knockbackEnemyInDirection(enemy: EnemyUnit, distance: number, direction
     const nextX = startX + directionX * distance * ratio;
     const nextY = startY + directionY * distance * ratio;
     const blocked = nextX < 17 || nextY < 17 || nextX > map.width - 17 || nextY > map.height - 17 ||
-      !config.duel && obstacles.some((item) => {
-        const nearestX = Math.max(item.x, Math.min(nextX, item.x + item.w));
-        const nearestY = Math.max(item.y, Math.min(nextY, item.y + item.h));
-        return (nextX - nearestX) ** 2 + (nextY - nearestY) ** 2 < 17 ** 2;
-      });
+      !config.duel && blockedByRects(nextX, nextY, 17);
     if (blocked) break;
     enemy.x = nextX;
     enemy.y = nextY;
@@ -3981,6 +4418,142 @@ function advanceAfterimageDash(dt: number): void {
   dash.hitEnemies.clear();
 }
 
+/* ---------- 樱花少女：引燃被动 ---------- */
+/** 技能命中即引燃；灼烧期间再次命中会在上限内叠高每秒伤害并刷新持续时间。 */
+function igniteSakuraTarget(enemy: EnemyUnit): void {
+  const ratio = heroPassive.ignite_dps_ratio || 0.05;
+  const duration = heroPassive.ignite_duration || 3;
+  const scale = heroPassive.ignite_bonus_scale || 1.1;
+  const cap = heroPassive.ignite_max_scale || 4;
+  const base = Math.max(1, playerState.maxHp * ratio);
+  const burning = (enemy.effects["引燃"] || 0) > 0;
+  enemy.igniteDamage = burning
+    ? Math.min(base * cap, (enemy.igniteDamage || base) * scale)
+    : base;
+  if (!burning) enemy.igniteTimer = 1;
+  enemy.effects["引燃"] = Math.max(enemy.effects["引燃"] || 0, duration);
+}
+
+/* ---------- 樱花少女 · 夏日祭：普攻范围持续灼烧 ---------- */
+function castSakuraFestival(skill: SkillConfig): void {
+  const duration = skill.festival_duration || 3;
+  const interval = skill.festival_interval || 0.5;
+  sakuraFestival = {
+    remaining: duration,
+    tickTimer: interval,
+    interval,
+    damage: skill.damage,
+    castId: ++sakuraCastSerial,
+  };
+  addSkillVisual(skill);
+  showToast(t("skill.sakura_festival", { name: skill.name, seconds: duration }));
+}
+
+function advanceSakuraFestival(dt: number): void {
+  const field = sakuraFestival;
+  if (!field) return;
+  field.remaining = Math.max(0, field.remaining - dt);
+  field.tickTimer -= dt;
+  const radius = getPlayerAttackRange();
+  while (field.tickTimer <= 0 && field.remaining > 0) {
+    field.tickTimer += field.interval;
+    enemies.forEach((enemy) => {
+      if (enemy.hp <= 0) return;
+      if (Math.hypot(enemy.x - player.x, enemy.y - player.y) > radius) return;
+      hitEnemy(enemy, field.damage);
+    });
+    spawnImpact(player.x, player.y, "#ff8fc4");
+  }
+  if (field.remaining === 0) sakuraFestival = undefined;
+}
+
+/* ---------- 樱花少女 · 樱花风暴：聚拢、伤害与眩晕 ---------- */
+function spawnSakuraStorm(skill: SkillConfig, x: number, y: number): void {
+  sakuraStorms.push({
+    x,
+    y,
+    radius: skill.radius || 200,
+    damage: skill.damage,
+    pull: skill.storm_pull_duration || 0.5,
+    elapsed: 0,
+    stun: skill.effect_turns || 1,
+    slow: skill.storm_slow_duration || 0,
+    resolved: false,
+  });
+}
+
+function advanceSakuraStorms(dt: number): void {
+  for (let index = sakuraStorms.length - 1; index >= 0; index -= 1) {
+    const storm = sakuraStorms[index];
+    storm.elapsed += dt;
+    if (!storm.resolved && storm.elapsed < storm.pull) {
+      enemies.forEach((enemy) => {
+        if (enemy.hp <= 0) return;
+        const dx = storm.x - enemy.x;
+        const dy = storm.y - enemy.y;
+        const distance = Math.hypot(dx, dy);
+        if (distance === 0 || distance > storm.radius) return;
+        const step = Math.min(distance, 380 * dt);
+        const nextX = enemy.x + dx / distance * step;
+        const nextY = enemy.y + dy / distance * step;
+        if (!isEnemyPositionBlocked(nextX, enemy.y)) enemy.x = nextX;
+        if (!isEnemyPositionBlocked(enemy.x, nextY)) enemy.y = nextY;
+      });
+    }
+    if (!storm.resolved && storm.elapsed >= storm.pull) {
+      storm.resolved = true;
+      spawnImpact(storm.x, storm.y, "#ff8fc4");
+      enemies.forEach((enemy) => {
+        if (enemy.hp <= 0) return;
+        if (Math.hypot(enemy.x - storm.x, enemy.y - storm.y) > storm.radius) return;
+        hitEnemy(enemy, storm.damage, "眩晕", storm.stun);
+        if (storm.slow > 0) {
+          enemy.effects["减速"] = Math.max(enemy.effects["减速"] || 0, storm.slow);
+        }
+      });
+    }
+    if (storm.resolved && storm.elapsed >= storm.pull + 0.5) sakuraStorms.splice(index, 1);
+  }
+}
+
+/* ---------- 樱花少女 · 樱花之歌：加速、无敌与撞击 ---------- */
+function castSakuraSong(skill: SkillConfig): void {
+  const duration = skill.song_duration || 3;
+  sakuraSong = {
+    remaining: duration,
+    hits: new Set<string>(),
+    castsStorm: (skill.song_casts_storm || 0) > 0,
+  };
+  addSkillVisual(skill);
+  showToast(t("skill.sakura_song", { name: skill.name, seconds: duration }));
+}
+
+function advanceSakuraSong(dt: number): void {
+  const song = sakuraSong;
+  if (!song) return;
+  song.remaining = Math.max(0, song.remaining - dt);
+  const songSkill = config.skills.find((item) => item.action === "sakura_song");
+  const stormSkill = config.skills.find((item) => item.action === "sakura_storm");
+  enemies.forEach((enemy) => {
+    if (enemy.hp <= 0) return;
+    const key = enemy.id || `enemy-${enemies.indexOf(enemy)}`;
+    if (song.hits.has(key)) return;
+    if (Math.hypot(enemy.x - player.x, enemy.y - player.y) > player.radius + 30) return;
+    song.hits.add(key);
+    hitEnemy(enemy, songSkill?.damage || 24);
+    knockbackEnemy(enemy, 150);
+    spawnImpact(enemy.x, enemy.y, "#ffe3f0");
+    if (song.castsStorm && stormSkill) spawnSakuraStorm(stormSkill, enemy.x, enemy.y);
+  });
+  if (song.remaining === 0) sakuraSong = undefined;
+}
+
+function advanceSakuraEffects(dt: number): void {
+  advanceSakuraFestival(dt);
+  advanceSakuraStorms(dt);
+  advanceSakuraSong(dt);
+}
+
 function castSkill(index: number): void {
   if (skillIsPaused()) return;
   if (playerActionsLocked()) {
@@ -4254,6 +4827,15 @@ function castSkill(index: number): void {
     castCrescent(skill, target);
   } else if (skill.action === "dash_strike") {
     dashStrike(skill);
+  } else if (skill.action === "sakura_festival") {
+    castSakuraFestival(skill);
+  } else if (skill.action === "sakura_storm" && target) {
+    addSkillVisual(skill, target);
+    spawnSakuraStorm(skill, target.x, target.y);
+    queuePvpAttack("skill", nearbyPvpTargets(target.x, target.y, skill.radius || 200), skill.id);
+    showToast(t("skill.sakura_storm", { name: skill.name, radius: skill.radius || 200 }));
+  } else if (skill.action === "sakura_song") {
+    castSakuraSong(skill);
   } else if (skill.target === "self") {
     addSkillVisual(skill);
     const duration = Math.max(3, skill.effect_turns * 3);
@@ -4504,6 +5086,7 @@ function updateCombat(dt: number): void {
       }
     }
   });
+  advanceSakuraEffects(dt);
   updateRandomMapEvents(dt);
   enemies.forEach((enemy) => {
     if (runEnded || skillIsPaused()) return;
@@ -4512,6 +5095,7 @@ function updateCombat(dt: number): void {
       if (enemy.effects[effect] <= 0) {
         delete enemy.effects[effect];
         if (effect === "中毒") enemy.poisonDamage = 0;
+        if (effect === "引燃") enemy.igniteDamage = 0;
       }
     });
     if (enemy.hp <= 0) return;
@@ -4532,6 +5116,23 @@ function updateCombat(dt: number): void {
         enemy.hp = Math.max(0, enemy.hp - poisonDamage);
         healFromDamage(poisonDamage, enemy.x, enemy.y);
         addFloatingText(enemy.x, enemy.y - 30, `-${poisonDamage} 毒`, "#9cff65");
+        if (enemy.hp <= 0) {
+          if (enemy.duelBot) finishDuelRound(true);
+          else addEnemyLoot(enemy);
+        }
+      }
+      if (enemy.hp <= 0) return;
+    }
+    if ((enemy.igniteDamage || 0) > 0) {
+      enemy.igniteTimer = Math.max(0, (enemy.igniteTimer || 1) - dt);
+      if (enemy.igniteTimer === 0) {
+        enemy.igniteTimer = 1;
+        const burn = schoolClassDuration > 0 ? (enemy.igniteDamage || 0) * 0.8 : (enemy.igniteDamage || 0);
+        const burnDamage = Math.min(enemy.hp, Math.max(1, Math.round(burn)));
+        enemy.hp = Math.max(0, enemy.hp - burnDamage);
+        healFromDamage(burnDamage, enemy.x, enemy.y);
+        addFloatingText(enemy.x, enemy.y - 30, `-${burnDamage} ${tx("引燃")}`, "#ff8fc4");
+        spawnImpact(enemy.x, enemy.y, "#ff8fc4");
         if (enemy.hp <= 0) {
           if (enemy.duelBot) finishDuelRound(true);
           else addEnemyLoot(enemy);
@@ -4780,6 +5381,16 @@ function drawMinimap(): void {
       miniContext.stroke();
     });
   }
+  if (mapTheme === "station") {
+    miniContext.strokeStyle = "#46586a";
+    miniContext.lineWidth = 1;
+    stationLayout.track.forEach((band) => {
+      miniContext.beginPath();
+      miniContext.moveTo(0, (band.y + band.h / 2) * sy);
+      miniContext.lineTo(minimap.width, (band.y + band.h / 2) * sy);
+      miniContext.stroke();
+    });
+  }
   miniContext.fillStyle = "#7d8797";
   obstacles.forEach((item) => miniContext.fillRect(item.x * sx, item.y * sy, item.w * sx, item.h * sy));
   miniContext.fillStyle = "#ffca62";
@@ -4811,6 +5422,16 @@ function drawMinimap(): void {
   airportPlanes.forEach((plane) => {
     miniContext.fillStyle = "#fff1a3";
     miniContext.fillRect(plane.x * sx - 2, plane.y * sy - 2, 4, 4);
+  });
+  stationTracks.forEach((state) => {
+    if (!state.train) return;
+    miniContext.fillStyle = "#ffb7d5";
+    miniContext.fillRect(
+      state.train.x * sx,
+      state.train.y * sy,
+      state.train.width * sx,
+      Math.max(2, state.train.height * sy),
+    );
   });
   remotePlayers.forEach((remote) => {
     miniContext.fillStyle = rosterPalette(remote.hero_id).main;
@@ -4857,6 +5478,7 @@ function drawFrame(timestamp: number): void {
     const movementSpeed =
       player.speed *
       ((statusEffects["加速"] || 0) > 0 ? 1.45 : 1) *
+      (sakuraSong && sakuraSong.remaining > 0 ? 1.5 : 1) *
       ((statusEffects["强力减速"] || 0) > 0 ? 0.4 : (statusEffects["减速"] || 0) > 0 ? 0.55 : 1) *
       (schoolClassDuration > 0 ? 0.4 : 1);
     if (!playerMovementLocked() && !afterimageDash) movePlayer(dx * movementSpeed * dt, dy * movementSpeed * dt);
@@ -4996,7 +5618,8 @@ if (config.duel) {
     mapTheme === "hospital" ? "赛博医院"
       : mapTheme === "music" ? "赛博琴房"
         : mapTheme === "gym" ? "赛博体育馆"
-          : mapTheme === "airport" ? "赛博机场" : "霓虹城区",
+          : mapTheme === "airport" ? "赛博机场"
+            : mapTheme === "station" ? "霓虹火车站" : "霓虹城区",
   );
   showToast(tx("探索提示：靠近闪光物资后按 F 收集；Q / E / R 释放技能。"));
 }

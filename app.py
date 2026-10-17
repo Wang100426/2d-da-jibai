@@ -14,7 +14,8 @@ ROOMS = {}
 ROOMS_LOCK = threading.RLock()
 ROOM_CAPACITY = 8
 ROOM_PLAYER_TIMEOUT = 30
-MAP_THEMES = ("city", "hospital", "music", "gym", "airport", "school")
+# 最后一个主题（school）不参与联机房间随机；新增主题请插在它前面。
+MAP_THEMES = ("city", "hospital", "music", "gym", "airport", "station", "school")
 
 LOCALE_DIRECTORY = Path(__file__).resolve().parent / "locale"
 ASSET_DIRECTORY = Path(__file__).resolve().parent / "assets"
@@ -325,6 +326,50 @@ HEROES = [
              "empowered_damage": 20, "empower_frenzy_turns": 3,
              "tier_effects": {2: {"label": "强化普攻伤害变为 200%", "patch": {"empower_damage_scale": {"scale": 2, "base": 1.5}}},
                               3: {"label": "强化普攻计入被动 · 狂舞延长至 9 秒", "patch": {"empower_counts_as_skill": {"set": 1}}}}},
+        ],
+    },
+    {
+        "id": "sakura",
+        "name": "樱花少女",
+        "class_name": "花火术士",
+        "tagline": "把祭典的烟花，尽数砸在敌人身上。",
+        "initial": "樱",
+        "accent": "sakura",
+        "palette": {"main": "#ff8fc4", "light": "#ffe3f0", "dark": "#8c2f5c"},
+        "stats": {"攻击": 82, "防御": 58, "机动": 84},
+        "combat": {
+            "speed": 235,
+            "basic_range": 250,
+            "basic_damage": 14,
+            "basic_effect": "",
+            "basic_effect_turns": 0,
+            "basic_beam": {"color": "#ff8fc4", "duration": 0.22},
+            "basic_restore_label": "RANGED_RESTORE",
+            "bot_skill_effect": "减速",
+            "bot_skill_effect_turns": 1.8,
+            "bot_skill_damage_scale": 2.2,
+            "thorns_damage": 0,
+        },
+        "passive": {
+            "id": "sakura_ignite",
+            "ignite_dps_ratio": 0.05,
+            "ignite_duration": 3,
+            "ignite_bonus_scale": 1.1,
+            "ignite_max_scale": 4,
+        },
+        "skills": [
+            {"id": "sakura-festival", "name": "夏日祭", "description": "普攻范围内持续灼烧 · 粉色区域提示", "kind": "小技能", "target": "self", "action": "sakura_festival", "cost": 30, "cooldown": 9, "damage": 6, "radius": 0, "effect": "", "effect_turns": 0,
+             "festival_duration": 3, "festival_interval": 0.5,
+             "tier_effects": {2: {"label": "夏日祭持续时间 +1 秒", "patch": {"festival_duration": {"add": 1}}},
+                              3: {"label": "夏日祭伤害频率提升至 0.25 秒", "patch": {"festival_interval": {"set": 0.25}}}}},
+            {"id": "sakura-storm", "name": "樱花风暴", "description": "在最近敌人处掀起风暴 · 聚拢、伤害并眩晕", "kind": "小技能", "target": "enemy", "action": "sakura_storm", "cast_range": 460, "cost": 35, "cooldown": 11, "damage": 12, "radius": 200, "effect": "眩晕", "effect_turns": 1,
+             "storm_pull_duration": 0.5,
+             "tier_effects": {2: {"label": "樱花风暴后减速 50% 持续 3 秒", "patch": {"storm_slow_duration": {"set": 3}}},
+                              3: {"label": "樱花风暴吸引时间延长至 1 秒", "patch": {"storm_pull_duration": {"set": 1}}}}},
+            {"id": "sakura-song", "name": "樱花之歌", "description": "加速·无敌·撞飞敌人", "kind": "大招", "target": "self", "action": "sakura_song", "cost": 60, "cooldown": 16, "damage": 24, "radius": 90, "effect": "", "effect_turns": 0,
+             "song_duration": 3,
+             "tier_effects": {2: {"label": "樱花之歌加速时间 +1 秒", "patch": {"song_duration": {"add": 1}}},
+                              3: {"label": "樱花之歌触碰敌人时同时施加樱花风暴", "patch": {"song_casts_storm": {"set": 1}}}}},
         ],
     },
 ]
@@ -834,6 +879,7 @@ def battle():
         "music": ("MAP_MUSIC", "MAP_EVENT_MUSIC"),
         "gym": ("MAP_GYM", "MAP_EVENT_GYM"),
         "airport": ("MAP_AIRPORT", "MAP_EVENT_AIRPORT"),
+        "station": ("MAP_STATION", "MAP_EVENT_STATION"),
         "school": ("MAP_SCHOOL", "MAP_EVENT_SCHOOL"),
     }
     map_name_key, map_event_key = transition_map_keys[map_theme]

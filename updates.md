@@ -1,5 +1,34 @@
 # 更新日志 / Updates
 
+## 1.6.0
+
+### 中文
+
+- 新增英雄「樱花少女」（粉色花火主题，远程，普攻距离 250）：
+  - 被动「引燃」：技能命中即引燃目标，每秒造成相当于自身最大生命值 5% 的伤害，持续 3 秒；灼烧期间再次被技能命中，灼烧每秒伤害 +10%（最高 4 倍）并刷新持续时间。
+  - Q「夏日祭」：在自身普攻范围内展开粉色祭典区域，范围内敌人每 0.5 秒受到一次小额伤害，持续 3 秒。2 阶持续时间 +1 秒；3 阶伤害频率提升至 0.25 秒。
+  - E「樱花风暴」：在最近敌人处生成半径 200 的樱花风暴，0.5 秒内把范围内敌人卷向中心，随后造成小额伤害并眩晕 1 秒。2 阶眩晕后额外减速 50% 持续 3 秒；3 阶吸引时间延长至 1 秒。
+  - R「樱花之歌」：进入 3 秒的 50% 加速状态，期间免疫伤害，撞到的敌人被击退并受到伤害。2 阶加速时间 +1 秒；3 阶撞到的敌人同时被施加樱花风暴。
+- 新增地图「霓虹火车站」：5 条铁轨、6 个站台，候车厅显示列车到达时间，站台提示下一班列车。列车进站停靠 10 秒，进站或离站期间撞到车身会被击退并受到高额伤害；停靠期间列车视作建筑无法穿过，随后驶离。
+
+### English
+
+- New hero "Sakura Girl" (pink firework theme, ranged, 250 basic attack range):
+  - Passive "Ignite": skill hits ignite the target for 5% of your max health per second for 3s. Hitting a burning target again raises the burn damage by 10% (up to 4x) and refreshes the duration.
+  - Q "Summer Festival": open a pink festival zone at your basic attack range; enemies inside take a small hit every 0.5s for 3s. Tier 2: +1s duration; Tier 3: ticks every 0.25s.
+  - E "Sakura Storm": create a radius-200 storm on the nearest enemy, pulling enemies to the center over 0.5s, then dealing a small hit and a 1s stun. Tier 2: an extra 50% slow for 3s after the stun; Tier 3: pull time becomes 1s.
+  - R "Sakura Song": enter a 3s haste state (+50% movement speed) and take no damage; enemies you touch are damaged and knocked back. Tier 2: +1s duration; Tier 3: touched enemies also get hit by Sakura Storm.
+- New map "Neon Station": five tracks and six platforms. The waiting hall shows train arrival times, and each platform shows the next train. Trains stop for 10 seconds; being struck by a moving train knocks you back for heavy damage, and a stopped train blocks movement like a building before it departs.
+
+### 日本語
+
+- 新ヒーロー「サクラ少女」（ピンクの花火テーマ、遠距離、通常攻撃距離 250）：
+  - パッシブ「着火」：スキル命中で対象を着火し、自身の最大HPの5%を毎秒3秒間与える。燃焼中に再度スキルが命中すると毎秒ダメージ +10%（最大4倍）し、持続時間を更新する。
+  - Q「夏祭り」：自身の通常攻撃範囲にピンクの祭りエリアを展開し、範囲内の敵に0.5秒ごとに小ダメージを3秒間与える。2段階目：持続 +1秒；3段階目：0.25秒ごとに変化。
+  - E「サクラストーム」：最寄りの敵の位置に半径200の嵐を生成し、0.5秒かけて範囲内の敵を中心へ引き寄せ、その後小ダメージと1秒のスタン。2段階目：スタン後に50%スローを3秒追加；3段階目：引き寄せ時間が1秒に。
+  - R「サクラソング」：3秒間の加速状態（移動速度 +50%）に入り無敵になる。触れた敵はダメージとノックバックを受ける。2段階目：持続 +1秒；3段階目：触れた敵にサクラストームも発動。
+- 新マップ「ネオン駅」：線路5本・ホーム6面。待合ホールに列車の到着時刻、各ホームに次の列車を表示する。列車は10秒間停車し、入出線中の車体に衝突すると大ダメージとノックバックを受ける。停車中は建物として通行を阻み、その後発車する。
+
 ## 1.5.0
 
 ### 中文
