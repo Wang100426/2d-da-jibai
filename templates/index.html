@@ -9,7 +9,18 @@
 </head>
 <body class="mode-page">
   <div class="scanlines"></div>
-  <div class="language-switch mode-language-toggle" data-language-switch></div>
+  <div class="mode-top-actions">
+    <a class="coin-pill" href="/shop" title="{{ tr('SHOP') }}">
+      <span class="coin-pill-icon" aria-hidden="true">◈</span>
+      <b data-coin-balance>{{ "∞" if profile.infinite_coins else "{:,}".format(profile.coins) }}</b>
+      <small>{{ tr("SHOP") }}</small>
+    </a>
+    <button class="save-pill" id="save-open" type="button" aria-haspopup="dialog" aria-controls="save-overlay">
+      <span class="save-pill-icon" aria-hidden="true">▤</span>
+      <b>{{ tr("SAVE_MANAGE") }}</b>
+    </button>
+    <div class="language-switch" data-language-switch></div>
+  </div>
 
   <section class="camp-transition" id="camp-transition" aria-live="polite" aria-hidden="true" hidden>
     <img class="camp-transition-art" src="{{ url_for('static', filename='game_loading_1.png') }}" alt="">
@@ -62,9 +73,87 @@
     </div>
   </main>
 
+  <section class="save-overlay" id="save-overlay" hidden>
+    <div class="save-panel" role="dialog" aria-modal="true" aria-labelledby="save-title">
+      <header class="save-head">
+        <div>
+          <p class="eyebrow">{{ tr("SAVE_OVERVIEW") }}</p>
+          <h2 id="save-title">{{ tr("SAVE_MANAGE") }}</h2>
+        </div>
+        <button class="save-close" id="save-close" type="button" aria-label="{{ tr('SAVE_CLOSE') }}">✕</button>
+      </header>
+      <p class="save-subtitle">{{ tr("SAVE_SUBTITLE") }}</p>
+
+      <div class="save-summary">
+        <div class="save-stat">
+          <span>{{ tr("COINS") }}</span>
+          <b data-coin-balance>{{ "∞" if profile.infinite_coins else "{:,}".format(profile.coins) }}</b>
+          <small id="save-coins-note" {% if not profile.infinite_coins %}hidden{% endif %}>{{ tr("SAVE_INFINITE_NOTE") }}</small>
+        </div>
+        <div class="save-stat">
+          <span>{{ tr("SAVE_HEROES") }}</span>
+          <b><i id="save-owned-count">{{ owned_count }}</i> / {{ "%02d"|format(heroes|length) }}</b>
+          <small>{{ tr("SAVE_FREE_HINT") }}</small>
+        </div>
+      </div>
+
+      <div class="save-roster" id="save-roster">
+        {% for hero in heroes %}
+        <span class="save-chip{% if hero.locked %} locked{% endif %}"
+              data-save-hero="{{ hero.id }}" data-price="{{ hero.price }}"
+              style="--hero-main:{{ hero.palette.main }};--hero-light:{{ hero.palette.light }};--hero-dark:{{ hero.palette.dark }}">
+          <i>{{ hero.initial }}</i>
+          <b>{{ hero.name }}</b>
+          <em>{% if hero.locked %}{{ tr("SHOP_LOCKED") }}{% else %}{{ tr("SHOP_OWNED") }}{% endif %}</em>
+        </span>
+        {% endfor %}
+      </div>
+
+      <dl class="save-meta">
+        <div><dt>{{ tr("SAVE_PATH") }}</dt><dd id="save-path">{{ save_path }}</dd></div>
+        <div><dt>{{ tr("SAVE_SETTLED") }}</dt><dd id="save-settled">{{ settled_count }}</dd></div>
+      </dl>
+
+      <div class="save-actions">
+        <button class="save-action" id="save-export" type="button">
+          <b>{{ tr("SAVE_EXPORT") }}</b><small>{{ tr("SAVE_EXPORT_HINT") }}</small>
+        </button>
+        <button class="save-action" id="save-import" type="button">
+          <b>{{ tr("SAVE_IMPORT") }}</b><small>{{ tr("SAVE_IMPORT_HINT") }}</small>
+        </button>
+        <button class="save-action danger" id="save-reset" type="button">
+          <b>{{ tr("SAVE_RESET") }}</b><small data-reset-hint>{{ tr("SAVE_RESET_HINT") }}</small>
+        </button>
+        <input id="save-import-file" type="file" accept="application/json,.json" hidden>
+      </div>
+      <div class="save-toast" id="save-toast" role="status" aria-live="polite"></div>
+    </div>
+  </section>
+
   <footer><span>{{ tr("FOOTER") }}</span><span>{{ tr("SLOGAN") }}</span></footer>
   <script src="{{ url_for('static', filename='dot-motion-loader.js') }}"></script>
   <script src="{{ url_for('static', filename='language.js') }}"></script>
+  <script>
+    window.SAVE_STATE = {
+      coins: {{ profile.coins }},
+      infinite_coins: {{ profile.infinite_coins|tojson }},
+      unlocked_heroes: {{ profile.unlocked_heroes|tojson }},
+      settled_count: {{ settled_count }},
+      save_path: {{ save_path|tojson }}
+    };
+    window.SAVE_STRINGS = {
+      owned: {{ tr("SHOP_OWNED")|tojson }},
+      locked: {{ tr("SHOP_LOCKED")|tojson }},
+      exported: {{ tr("SAVE_EXPORTED")|tojson }},
+      imported: {{ tr("SAVE_IMPORTED")|tojson }},
+      import_failed: {{ tr("SAVE_IMPORT_FAILED")|tojson }},
+      reset_done: {{ tr("SAVE_RESET_DONE")|tojson }},
+      reset_confirm: {{ tr("SAVE_RESET_CONFIRM")|tojson }},
+      failed: {{ tr("SAVE_FAILED")|tojson }},
+      infinite_note: {{ tr("SAVE_INFINITE_NOTE")|tojson }}
+    };
+  </script>
+  <script src="{{ url_for('static', filename='save.js') }}"></script>
   <script>
     const campTransition = document.querySelector("#camp-transition");
     const currentMode = document.querySelector("#mode-picker-current");

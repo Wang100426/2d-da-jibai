@@ -10,7 +10,14 @@
 <body class="select-page">
   <div class="scanlines"></div>
   <a class="select-back" href="/" aria-label="{{ tr('BACK_HOME') }}">← <span>{{ tr("BACK_HOME") }}</span></a>
-  <div class="language-switch select-language-toggle" data-language-switch></div>
+  <div class="select-top-actions">
+    <a class="coin-pill" href="/shop" title="{{ tr('SHOP') }}">
+      <span class="coin-pill-icon" aria-hidden="true">◈</span>
+      <b data-coin-balance>{{ "∞" if profile.infinite_coins else "{:,}".format(profile.coins) }}</b>
+      <small>{{ tr("SHOP") }}</small>
+    </a>
+    <div class="language-switch" data-language-switch></div>
+  </div>
 
   <main class="select-main">
     <section class="select-hero-copy">
@@ -24,11 +31,14 @@
     <section class="selection-layout" aria-label="{{ tr('SELECT_HERO') }}">
       <div class="hero-roster" role="list" aria-label="{{ tr('HEROES') }}">
         {% for hero in heroes %}
+        {% set is_default = hero.id == default_hero.id %}
         <button
-          class="roster-choice {{ hero.accent }}{% if loop.first %} selected{% endif %}"
+          class="roster-choice {{ hero.accent }}{% if is_default %} selected{% endif %}{% if hero.locked %} locked{% endif %}"
           type="button"
           data-hero-id="{{ hero.id }}"
-          aria-pressed="{{ 'true' if loop.first else 'false' }}"
+          data-locked="{{ 'true' if hero.locked else 'false' }}"
+          data-price="{{ hero.price }}"
+          aria-pressed="{{ 'true' if is_default else 'false' }}"
           style="--hero-main:{{ hero.palette.main }};--hero-light:{{ hero.palette.light }};--hero-dark:{{ hero.palette.dark }}"
         >
           <span class="roster-avatar">{{ hero.initial }}</span>
@@ -36,6 +46,7 @@
             <small>{{ hero.class_name }}</small>
             <b>{{ hero.name }}</b>
           </span>
+          {% if hero.locked %}<span class="roster-lock" aria-hidden="true">◈ {{ hero.price }}</span>{% endif %}
           <span class="roster-arrow" aria-hidden="true">›</span>
         </button>
         {% endfor %}
@@ -43,20 +54,25 @@
 
       <section class="hero-detail" aria-live="polite">
         <div class="detail-topline"><span class="status-dot"></span> {{ tr("FIGHTER_PROFILE") }} <b id="detail-index">01 / {{ "%02d"|format(heroes|length) }}</b></div>
+        <div class="detail-locked" id="detail-locked" hidden>
+          <span>{{ tr("SHOP_LOCKED") }}</span>
+          <p>{{ tr("SHOP_LOCKED_HINT") }}</p>
+          <b>◈ <i id="detail-locked-price">{{ default_hero.price }}</i></b>
+        </div>
         <div class="detail-main">
-          <div class="detail-portrait {{ heroes[0].accent }}" id="detail-portrait"
-               style="--hero-main:{{ heroes[0].palette.main }};--hero-light:{{ heroes[0].palette.light }};--hero-dark:{{ heroes[0].palette.dark }}">
-            <span id="detail-initial">{{ heroes[0].initial }}</span>
+          <div class="detail-portrait {{ default_hero.accent }}" id="detail-portrait"
+               style="--hero-main:{{ default_hero.palette.main }};--hero-light:{{ default_hero.palette.light }};--hero-dark:{{ default_hero.palette.dark }}">
+            <span id="detail-initial">{{ default_hero.initial }}</span>
             <i class="detail-orbit orbit-one"></i>
             <i class="detail-orbit orbit-two"></i>
             <small>{{ tr("COMBAT_UNIT") }}</small>
           </div>
           <div class="detail-copy">
-            <p class="eyebrow" id="detail-class">{{ heroes[0].class_name }}</p>
-            <h2 id="detail-name">{{ heroes[0].name }}</h2>
-            <p id="detail-tagline">{{ heroes[0].tagline }}</p>
+            <p class="eyebrow" id="detail-class">{{ default_hero.class_name }}</p>
+            <h2 id="detail-name">{{ default_hero.name }}</h2>
+            <p id="detail-tagline">{{ default_hero.tagline }}</p>
             <div class="detail-stats" id="detail-stats">
-              {% for key, value in heroes[0].stats.items() %}
+              {% for key, value in default_hero.stats.items() %}
               <div class="detail-stat">
                 <span>{{ key }}</span><b>{{ value }}</b>
                 <i><em style="width: {{ value }}%"></em></i>
@@ -65,12 +81,12 @@
             </div>
             <div class="detail-passive" id="detail-passive">
               <div class="skills-heading"><h3>{{ tr("PASSIVE") }}</h3><span>P</span></div>
-              <p><b id="detail-passive-name">{{ heroes[0].passive.name }}</b><small id="detail-passive-desc">{{ heroes[0].passive.description }}</small></p>
+              <p><b id="detail-passive-name">{{ default_hero.passive.name }}</b><small id="detail-passive-desc">{{ default_hero.passive.description }}</small></p>
             </div>
             <div class="detail-skills">
               <div class="skills-heading"><h3>{{ tr("SKILLS") }}</h3><span>Q / E / R</span></div>
               <div class="detail-skill-list" id="detail-skill-list">
-                {% for skill in heroes[0].skills %}
+                {% for skill in default_hero.skills %}
                 <article class="detail-skill">
                   <kbd>{{ ["Q", "E", "R"][loop.index0] }}</kbd>
                   <div><b>{{ skill.name }}</b><small>{{ skill.detail_description|default(skill.description) }}</small></div>
@@ -82,8 +98,9 @@
           </div>
         </div>
         <div class="detail-footer">
-          <span><b id="selected-name">{{ heroes[0].name }}</b><small>{{ tr("SELECTED") }}</small></span>
-          <a href="/battle?hero={{ heroes[0].id }}{% if game_mode == 'duel' %}&amp;mode=duel{% endif %}" id="enter-battle" class="enter-trapezoid">{{ tr("ENTER") }} <b>&gt;&gt;</b></a>
+          <span><b id="selected-name">{{ default_hero.name }}</b><small>{{ tr("SELECTED") }}</small></span>
+          <a href="/battle?hero={{ default_hero.id }}{% if game_mode == 'duel' %}&amp;mode=duel{% endif %}" id="enter-battle" class="enter-trapezoid">{{ tr("ENTER") }} <b>&gt;&gt;</b></a>
+          <a href="/shop" id="enter-shop" class="enter-trapezoid shop-trapezoid" hidden>{{ tr("SHOP_GO") }} <b>◈</b></a>
         </div>
       </section>
     </section>

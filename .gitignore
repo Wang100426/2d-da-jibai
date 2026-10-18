@@ -10,3 +10,5 @@ __pycache__/
 *.py[cod]
 desktop-server.spec
 .workbuddy/
+# 玩家存档（含无限金币测试存档）：不进版本库
+save/

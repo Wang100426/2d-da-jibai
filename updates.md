@@ -1,5 +1,43 @@
 # 更新日志 / Updates
 
+## 1.7.0
+
+### 中文
+
+- 新增「金币 + 存档」系统：每局单机肉鸽结束时（阵亡，或中途退出返回选人页）都会结算金币，公式为「到达波次 × 10 + 击杀数 × 1」，单局上限 500；人机对抗与联机不结算金币。存档记录金币与已解锁英雄，开发环境位于 `<仓库>/save/profile.json`（已加入 `.gitignore`），打包后位于 `%LOCALAPPDATA%/2d-da-jibai/save.json`。
+- 新增「英雄商店」：主页与选人页右上角的金币胶囊都能进入。选人页里未解锁的英雄仍可查看详情，但需要先去商店买下（按钮变为「前往商店」）；当前商店可购买新英雄「江湖客」，售价 1000 金币。
+- 新增英雄「江湖客」（金色侠客主题，近战，普攻距离 150）：
+  - 被动「一剑封喉」：敌方生命值每降低 1%，自己每次攻击它都会 +0.6% 概率直接斩杀。
+  - Q「侠客行」：进入无敌状态，每 0.5 秒向半径 300 内最近的敌人位移并攻击一次，最多 5 次；不会连续攻击同一个敌人（除非范围内只剩它一个）。范围内没有敌人时立即停止，剩余冷却按实际位移次数比例结算（一次都没位移则冷却清零）。2 阶：每次位移攻击额外眩晕 0.5 秒；3 阶：位移间隔缩短至 0.25 秒、次数提升到 10 次。
+  - E「剑客之刃」：强化接下来 3 次普攻，伤害 +20%，且每次恢复造成伤害 10% 的生命。2 阶：增伤 20% → 40%；3 阶：吸血 10% → 25%。
+  - R「御剑飞行」：接下来 3 秒移速 +50%、闪避 +50%。2 阶：3 秒 → 5 秒；3 阶：移速 +50% → +100%。
+- 主页右上角新增「存档管理」：查看金币与已解锁英雄、导出 JSON 备份、导入覆盖存档、两步确认后重置存档。（无限金币的测试存档仍靠手写 `infinite_coins: true` 或 `"coins": "infinity"` 维护，界面刻意不提供无限金币开关。）
+- 主页右下角的图鉴按钮改为长方形（不再是直角梯形），并与下方「模式 / 开始」按钮直接贴合，取消两者之间的缝隙。
+
+### English
+
+- New coins + save system: every single-player rogue run now banks coins when it ends — on death, or when you quit back to the select screen. The reward is "waves reached × 10 + kills × 1", capped at 500 per run; duel and LAN matches earn nothing. The save stores your coins and unlocked fighters; in development it lives at `<repo>/save/profile.json` (gitignored), and packaged builds use `%LOCALAPPDATA%/2d-da-jibai/save.json`.
+- New Hero Shop, reachable from the coin pill in the top-right of the home screen and the select screen. Locked fighters on the select screen can still be inspected, but must be bought in the shop first (the enter button becomes "GO TO SHOP"). The shop currently sells the new fighter 江湖客 for 1000 coins.
+- New hero "Knight-Errant" (gold swordsman theme, melee, 150 basic attack range):
+  - Passive "One-Strike Execution": for every 1% of health the target is missing, each of your attacks against it gains +0.6% chance to execute it instantly.
+  - Q "Knight-Errant Song": become invulnerable and dash to the nearest enemy within 300 range every 0.5s, striking up to 5 times. It never hits the same enemy twice in a row unless that enemy is the only one in range. It stops immediately when nothing is in range, and the remaining cooldown is proportional to the dashes actually performed (zero dashes clears the cooldown). Tier 2: each dash strike also stuns for 0.5s; Tier 3: dash interval 0.25s and up to 10 dashes.
+  - E "Swordsman's Edge": empower your next 3 basic attacks with +20% damage and 10% lifesteal. Tier 2: +20% → +40%; Tier 3: lifesteal 10% → 25%.
+  - R "Sword Flight": +50% movement speed and +50% dodge for 3s. Tier 2: 3s → 5s; Tier 3: +50% → +100% speed.
+- New save management panel in the top-right of the home screen: review coins and unlocked fighters, export a JSON backup, import one to overwrite the save, and reset the save behind a two-step confirmation. (The unlimited-coin test save is still maintained by hand with `infinite_coins: true` or `"coins": "infinity"` — there is deliberately no in-game infinite-coin toggle.)
+- The home-screen codex button is now a plain rectangle instead of a right trapezoid, and sits flush against the mode/start row below with no gap.
+
+### 日本語
+
+- 「コイン＋セーブ」システムを追加：シングルプレイのローグ1回が終わるたび（敗北時、または途中でヒーロー選択へ戻った時）にコインを精算します。計算式は「到達ウェーブ × 10 ＋ 撃破数 × 1」で、1回の上限は500。CPU対戦とLAN対戦ではコインは貯まりません。セーブにはコインと解放済みヒーローを記録し、開発時は `<リポジトリ>/save/profile.json`（.gitignore 済み）、パッケージ版は `%LOCALAPPDATA%/2d-da-jibai/save.json` に保存されます。
+- 「ヒーローショップ」を追加：ホーム画面とヒーロー選択画面の右上にあるコイン表示から入れます。未解放ヒーローは選択画面で能力を確認できますが、先に購入が必要です（ボタンが「ショップへ」に変わります）。現在は新ヒーロー「江湖客」を1000コインで販売しています。
+- 新ヒーロー「江湖客」（金色の剣客テーマ、近接、通常攻撃距離150）：
+  - パッシブ「一撃必殺」：相手のHPが1%減っているごとに、こちらの攻撃1回につき即死確率 +0.6%。
+  - Q「侠客行」：無敵になり、0.5秒ごとに半径300内の最も近い敵へ突進して攻撃、最大5回。範囲内に他に敵がいる限り同じ敵を連続で攻撃しません。範囲内に敵がいなければ即座に停止し、残りクールダウンは実際に突進した回数に比例（0回ならクールダウンは0）。2段階目：各突進攻撃に0.5秒のスタン追加；3段階目：間隔0.25秒・最大10回。
+  - E「剣客の刃」：次の通常攻撃3回を強化し、ダメージ +20%・与ダメージの10%を回復。2段階目：+20% → +40%；3段階目：吸血 10% → 25%。
+  - R「御剣飛行」：3秒間、移動速度 +50%・回避 +50%。2段階目：3秒 → 5秒；3段階目：移動速度 +50% → +100%。
+- ホーム画面右上に「セーブ管理」を追加：コインと解放済みヒーローの確認、JSONバックアップの書き出し、読み込みによる上書き、2段階確認つきのセーブリセット。（コイン無制限のテストセーブは `infinite_coins: true` または `"coins": "infinity"` を手書きして維持します。ゲーム内に無限コインのスイッチは意図的に用意していません。）
+- ホーム画面右下の図鑑ボタンを右台形から長方形に変更し、下の「モード／スタート」行と隙間なく接するようにしました。
+
 ## 1.6.5
 
 ### 中文

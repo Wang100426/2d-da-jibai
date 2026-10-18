@@ -154,7 +154,46 @@
     "RUN_PAUSED": "战斗已暂停",
     "ROUND_BREAK_PICK": "回合间歇 · 选择强化",
     "RUN_ENDED_EYEBROW": "本局结束",
-    "PASSIVE": "被动"
+    "PASSIVE": "被动",
+    "SHOP": "商店",
+    "SHOP_TITLE": "英雄商店",
+    "SHOP_KICKER": "英雄铺",
+    "SHOP_SUBTITLE": "每局对战结算的金币都会存进档案。攒够了，就来这里把新英雄带回战场。",
+    "COINS": "金币",
+    "SHOP_OWNED": "已解锁",
+    "SHOP_BUY": "购买",
+    "SHOP_NOT_ENOUGH": "金币不足",
+    "SHOP_PURCHASED": "购买成功",
+    "SHOP_LOCKED": "未解锁",
+    "SHOP_ENTER_SELECT": "去选人",
+    "SHOP_LOCKED_HINT": "该英雄尚未解锁，先在商店买下他。",
+    "SHOP_GO": "前往商店",
+    "SHOP_PROGRESS": "已解锁",
+    "SHOP_PRICE_NOTE": "金币解锁 · 永久拥有",
+    "HERO_FREE": "免费",
+    "SHOP_INFINITE": "金币无限",
+    "SHOP_FAILED": "购买失败，请稍后再试。",
+    "SAVE_MANAGE": "存档管理",
+    "SAVE_SUBTITLE": "查看金币与已解锁英雄，也可以导出备份、导入或重置存档。",
+    "SAVE_OVERVIEW": "存档总览",
+    "SAVE_HEROES": "已解锁英雄",
+    "SAVE_PATH": "存档位置",
+    "SAVE_SETTLED": "已结算对局",
+    "SAVE_FREE_HINT": "免费英雄默认可玩，不计入解锁列表。",
+    "SAVE_EXPORT": "导出存档",
+    "SAVE_EXPORT_HINT": "下载 JSON 备份文件。",
+    "SAVE_IMPORT": "导入存档",
+    "SAVE_IMPORT_HINT": "选择 JSON 文件覆盖当前存档。",
+    "SAVE_RESET": "重置存档",
+    "SAVE_RESET_HINT": "清空金币与已解锁英雄。",
+    "SAVE_RESET_CONFIRM": "再点一次确认",
+    "SAVE_CLOSE": "关闭",
+    "SAVE_EXPORTED": "存档已导出。",
+    "SAVE_IMPORTED": "存档已导入。",
+    "SAVE_IMPORT_FAILED": "导入失败：文件不是合法的存档。",
+    "SAVE_RESET_DONE": "存档已重置。",
+    "SAVE_FAILED": "操作失败，请稍后再试。",
+    "SAVE_INFINITE_NOTE": "无限金币测试存档"
   },
   "heroes": {
     "volt": {
@@ -399,6 +438,41 @@
           "kind": "小技能",
           "description": "强化下次普攻 · 伤害 +50% 并附加狂舞",
           "detail_description": "强化下一次普攻，使其伤害提高 50% 并附加 3 秒狂舞；狂舞不计入被动层数。"
+        }
+      }
+    },
+    "jianghu": {
+      "name": "江湖客",
+      "class_name": "独行剑客",
+      "tagline": "剑起时人已在身后，江湖只留下一个背影。",
+      "initial": "江",
+      "stats": [
+        "攻击",
+        "防御",
+        "机动"
+      ],
+      "passive": {
+        "name": "一剑封喉",
+        "description": "敌方生命值每降低 1%，自己对它的每次攻击都会 +0.6% 概率直接斩杀。"
+      },
+      "skills": {
+        "jianghu-xia-ke-xing": {
+          "name": "侠客行",
+          "kind": "大招",
+          "description": "无敌位移 · 连续攻击最近的敌人",
+          "detail_description": "进入无敌状态，每 0.5 秒向半径 300 内最近的敌人位移并攻击一次，最多 5 次；不会连续攻击同一个敌人（除非范围内只剩它一个）。范围内没有敌人时立即停止，并按未用完的位移次数等比例返还冷却（一次都没位移则冷却清空）。"
+        },
+        "jianghu-blade": {
+          "name": "剑客之刃",
+          "kind": "小技能",
+          "description": "强化接下来 3 次普攻 · 增伤并吸血",
+          "detail_description": "接下来 3 次普攻伤害 +20%，并且每次恢复等同于造成伤害 10% 的生命值。"
+        },
+        "jianghu-flight": {
+          "name": "御剑飞行",
+          "kind": "小技能",
+          "description": "移速与闪避大幅提升",
+          "detail_description": "接下来 3 秒内移速 +50%、闪避 +50%。"
         }
       }
     }
@@ -679,7 +753,8 @@
       "荆棘护甲": "荆棘护甲",
       "中毒": "中毒",
       "月影护盾": "月影护盾",
-      "引燃": "引燃"
+      "引燃": "引燃",
+      "御剑飞行": "御剑飞行"
     },
     "basic_hit": {
       "volt": "普攻命中，造成 {damage} 点伤害，回复 5 点能量。",
@@ -688,7 +763,8 @@
       "tech": "科技男远程普攻命中，造成 {damage} 点伤害。",
       "pipa": "琵琶音刃命中，造成 {damage} 点伤害。",
       "volt2": "音波命中，造成 {damage} 点伤害，回复 5 点能量。",
-      "sakura": "花火命中，造成 {damage} 点伤害，并引燃目标。"
+      "sakura": "花火命中，造成 {damage} 点伤害，并引燃目标。",
+      "jianghu": "剑锋掠过，造成 {damage} 点伤害。"
     },
     "templates": {
       "skill.cooling": "{name} 冷却中，还需 {seconds} 秒。",
@@ -787,7 +863,22 @@
       "event.train_departing": "{track} 号铁轨的列车正在离站。",
       "event.train_hit": "被列车撞飞！受到 {damage} 点重击并被击退。",
       "event.train_damage": "列车撞击 -{damage}",
-      "float.sakura_invincible": "樱花护体"
+      "float.sakura_invincible": "樱花护体",
+      "skill.jianghu_xia_ke_xing": "{name} 发动：无敌位移，最多 {max} 次，间隔 {interval} 秒。",
+      "skill.jianghu_xia_ke_xing_stop": "{name} 结束：共位移 {used}/{max} 次，剩余冷却 {cooldown} 秒。",
+      "skill.jianghu_xia_ke_xing_empty": "{name}：范围内没有敌人，冷却已清空。",
+      "skill.jianghu_blade": "{name} 生效：接下来 {charges} 次普攻伤害 +{percent}%，吸血 {lifesteal}%。",
+      "skill.jianghu_blade_hit": "剑客之刃命中，造成 {damage} 点伤害，回复 {heal} 点生命。",
+      "skill.jianghu_flight": "{name} 释放成功：{seconds} 秒内移速 +{speed}%，闪避 +{dodge}%。",
+      "float.execute": "斩杀！",
+      "float.jianghu_dash": "侠客行",
+      "float.jianghu_blade_ready": "剑客之刃 ×{charges}",
+      "float.jianghu_flight": "御剑飞行",
+      "float.jianghu_empty": "无目标",
+      "reward.run_gain": "本局获得 {coins} 金币（当前 {total}）。",
+      "reward.run_infinite": "本局获得 {coins} 金币（测试存档：金币无限）。",
+      "reward.run_empty": "本局没有获得金币。",
+      "skill.jianghu_busy": "侠客行尚未结束，暂时无法施放其他技能。"
     }
   },
   "lobby": {
@@ -872,6 +963,12 @@
     "樱花风暴后减速 50% 持续 3 秒": "樱花风暴后减速 50% 持续 3 秒",
     "樱花风暴吸引时间延长至 1 秒": "樱花风暴吸引时间延长至 1 秒",
     "樱花之歌加速时间 +1 秒": "樱花之歌加速时间 +1 秒",
-    "樱花之歌触碰敌人时同时施加樱花风暴": "樱花之歌触碰敌人时同时施加樱花风暴"
+    "樱花之歌触碰敌人时同时施加樱花风暴": "樱花之歌触碰敌人时同时施加樱花风暴",
+    "侠客行每次位移攻击额外造成 0.5 秒眩晕": "侠客行每次位移攻击额外造成 0.5 秒眩晕",
+    "位移间隔缩短至 0.25 秒 · 位移次数提升到 10 次": "位移间隔缩短至 0.25 秒 · 位移次数提升到 10 次",
+    "剑客之刃普攻伤害加成 20% → 40%": "剑客之刃普攻伤害加成 20% → 40%",
+    "剑客之刃吸血 10% → 25%": "剑客之刃吸血 10% → 25%",
+    "御剑飞行持续时间 3 秒 → 5 秒": "御剑飞行持续时间 3 秒 → 5 秒",
+    "御剑飞行速度提升 50% → 100%": "御剑飞行速度提升 50% → 100%"
   }
 }

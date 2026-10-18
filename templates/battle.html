@@ -101,6 +101,7 @@
       <p class="eyebrow">{{ tr("RUN_ENDED_EYEBROW") }}</p>
       <h2 id="run-over-title">{{ tr("RUN_ENDED") }}</h2>
       <p id="run-over-description">{{ tr("RUN_OVER") }}<b id="final-wave">1</b>{{ tr("RUN_OVER_AFTER") }}</p>
+      <p class="run-over-coins" id="run-over-coins" hidden></p>
       <div class="run-over-actions">
         <button id="retry-run" class="button button-primary" type="button">{{ tr("RETRY") }}</button>
         <a class="button button-ghost" href="{% if game_mode == 'duel' %}/select?mode=duel{% else %}/select{% endif %}">{{ tr("BACK_SELECT") }}</a>

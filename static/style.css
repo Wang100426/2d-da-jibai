@@ -95,7 +95,14 @@
 /* Mode selection page */
 .mode-page{min-height:100vh;min-height:100svh;display:grid;grid-template-rows:minmax(0,1fr) 34px;overflow-x:hidden;overflow-y:auto;position:relative;background:#090a13 url('/static/home-background.png') center/cover fixed no-repeat}
 .mode-page::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:linear-gradient(180deg,#090a1355 0%,#090a1322 38%,#090a1366 74%,#090a13a6 100%)}
-.mode-language-toggle{position:fixed;z-index:12;top:20px;right:clamp(20px,4vw,64px)}
+.mode-top-actions{position:fixed;z-index:12;top:20px;right:clamp(20px,4vw,64px);display:flex;align-items:center;gap:10px}
+/* 金币胶囊：主界面 / 选人页 / 联机页共用，点击进入商店 */
+.coin-pill{display:flex;align-items:center;gap:7px;height:34px;padding:0 12px;border:1px solid #343a56;background:#121626;color:var(--cyan);font:11px 'Chakra Petch',sans-serif;letter-spacing:.7px;text-decoration:none;transition:border-color .15s,background .15s}
+.coin-pill:hover{border-color:var(--cyan);background:#192236}
+.coin-pill-icon{color:#ffd166;font-size:12px;line-height:1}
+.coin-pill b{color:var(--text);font:600 12px 'Chakra Petch',sans-serif}
+.coin-pill small{color:#8c94a9;font-size:10px}
+.coin-pill.infinite b{color:#ffd166}
 .mode-page .mode-main{width:100%;height:100%;min-height:0;padding:40px 7vw;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px}
 .mode-page .mode-main{position:relative;z-index:1}
 .mode-page .mode-hero-copy{text-align:center}
@@ -109,7 +116,7 @@
 .mode-page .mode-hero-copy .subtitle{color:#b6b8ce;line-height:1.9;font-size:16px}
 .mode-page .mode-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1120px;width:100%}
 .mode-page .mode-main{padding-bottom:150px}
-.mode-controls{position:absolute;z-index:4;right:clamp(22px,5vw,76px);bottom:24px;width:min(540px,calc(100vw - 40px));display:flex;flex-direction:column;align-items:stretch;justify-content:flex-end;gap:12px}
+.mode-controls{position:absolute;z-index:4;right:clamp(22px,5vw,76px);bottom:24px;width:min(540px,calc(100vw - 40px));display:flex;flex-direction:column;align-items:stretch;justify-content:flex-end;gap:0}
 .mode-row{display:flex;align-items:end;justify-content:flex-end;gap:0}
 .mode-picker{position:relative;z-index:1;width:52%}
 .mode-picker-current{width:100%;min-height:78px;display:flex;align-items:center;gap:16px;padding:12px 34px 12px 24px;clip-path:polygon(0 0,100% 0,calc(100% - 22px) 100%,0 100%);border:1px solid #49e6e0;background:linear-gradient(110deg,#111b29f2,#15202df2);color:var(--text);text-align:left;cursor:pointer}
@@ -136,9 +143,9 @@
 .mode-start:hover{filter:brightness(1.12);transform:translateY(-4px)}
 .mode-start b{font:900 24px 'Chakra Petch'}
 .mode-picker-current:focus-visible,.mode-options button:focus-visible,.mode-start:focus-visible,.mode-codex:focus-visible{outline:2px solid var(--pink);outline-offset:4px}
-/* 地图图鉴入口：和下面两颗按钮同宽同高，叠在它们正上方 */
-.mode-codex{position:relative;z-index:1;display:flex;align-items:center;gap:16px;min-height:78px;padding:12px 34px 12px 24px;clip-path:polygon(0 0,100% 0,calc(100% - 22px) 100%,0 100%);border:1px solid var(--cyan);background:linear-gradient(110deg,#111b29f2,#15202df2);color:var(--text);cursor:pointer;transition:background .18s,transform .18s}
-.mode-codex:hover{background:linear-gradient(110deg,#18323a,#192738);transform:translateY(-4px)}
+/* 地图图鉴入口：长方形，紧贴下面的模式 / 开始按钮（无间距） */
+.mode-codex{position:relative;z-index:1;display:flex;align-items:center;gap:16px;min-height:78px;padding:12px 34px 12px 24px;border:1px solid var(--cyan);border-bottom:0;background:linear-gradient(110deg,#111b29f2,#15202df2);color:var(--text);cursor:pointer;transition:background .18s,box-shadow .18s}
+.mode-codex:hover{background:linear-gradient(110deg,#18323a,#192738);box-shadow:0 -6px 22px #49e6e033}
 .mode-codex-icon{width:42px;height:42px;display:grid;place-items:center;flex:none;background:var(--cyan);color:#081217;font:900 19px 'Chakra Petch';clip-path:polygon(50% 0,100% 22%,90% 100%,10% 100%,0 22%)}
 .mode-codex-copy{min-width:0;flex:1}
 .mode-codex-copy small,.mode-codex-copy b{display:block}
@@ -169,7 +176,7 @@
 .language-switch-options button b{font:600 12px 'Chakra Petch',sans-serif}
 .language-switch-options button small{color:#8c94a9;font:10px 'Chakra Petch',sans-serif}
 .language-switch-options button[aria-selected="true"] b{color:var(--cyan)}
-.mode-language-toggle,.select-language-toggle{position:fixed}
+.select-top-actions{position:fixed;z-index:12;top:14px;right:clamp(20px,4vw,64px);display:flex;align-items:center;gap:10px}
 @media(max-width:760px){.language-switch-current{height:30px;padding:0 9px;font-size:10px}.language-switch-options{min-width:150px}}
 .topbar-actions{display:flex;align-items:center;gap:16px}
 .camp-transition{position:fixed;z-index:20;inset:0;overflow:hidden;background:#050814;opacity:0;visibility:hidden;pointer-events:none}
@@ -198,7 +205,6 @@ html[lang="en"] .mode-card p{max-width:340px}
 .select-back{position:fixed;z-index:12;top:18px;left:clamp(20px,4vw,64px);display:inline-flex;align-items:center;gap:7px;color:var(--cyan);font:600 12px 'Chakra Petch';white-space:nowrap}
 .select-back:hover{color:#fff}
 .select-back:first-letter{font-size:20px}
-.select-language-toggle{position:fixed;z-index:12;top:14px;right:clamp(20px,4vw,64px)}
 .select-page .select-main{width:100%;height:100%;min-height:0;padding:68px clamp(24px,6vw,88px) 14px;display:flex;flex-direction:column;gap:20px}
 .select-page .select-hero-copy{flex:none;min-width:0}
 .select-page .select-hero-copy .eyebrow{margin-bottom:10px}
@@ -233,7 +239,7 @@ html[lang="en"] .mode-card p{max-width:340px}
 @media(max-width:760px){.select-page{height:auto;min-height:100vh;display:block;overflow-x:hidden;overflow-y:auto}.select-page .topbar{height:60px;padding:0 12px;gap:12px}.select-page .topbar nav{display:none}.select-back{font-size:10px}.select-page .brand{gap:7px}.select-page .brand-mark{width:34px;height:34px}.select-page .brand strong{font-size:14px;letter-spacing:1px}.select-page .brand small{font-size:8px}.select-page .language-toggle{padding:7px 9px;font-size:10px}.select-page .select-main{padding:34px 22px 18px;gap:12px}.select-page .select-hero-copy h1{font-size:clamp(52px,15vw,76px)}.select-page .hero-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.select-page .hero-card{min-height:248px}.select-page .hero-portrait{height:88px}.select-page .hero-portrait span{font-size:48px}.select-page footer{height:auto;min-height:38px;padding:10px 16px}}
 @media(max-width:390px){.select-page .hero-card{padding:8px}.select-page .hero-info h3{font-size:14px}.select-page .hero-info small{font-size:8px}}
 
-@media(max-width:700px){.mode-page{height:auto;min-height:100vh;display:block;overflow-x:hidden;overflow-y:auto}.mode-language-toggle{top:12px;right:12px}.mode-page .mode-main{min-height:calc(100svh - 38px);padding:58px 22px 18px;gap:18px}.mode-page .mode-hero-copy .mode-logo{width:clamp(180px,58vw,250px);margin-bottom:8px}.mode-page .mode-hero-copy h1{font-size:clamp(52px,15vw,76px)}.mode-page .mode-cards{grid-template-columns:1fr}.mode-page footer{height:auto;min-height:38px;padding:10px 16px}.camp-transition-briefing{top:clamp(74px,12vh,112px);left:20px;width:calc(100vw - 40px);padding-left:14px}.camp-transition-briefing h1{font-size:clamp(25px,7vw,38px)}}
+@media(max-width:700px){.mode-page{height:auto;min-height:100vh;display:block;overflow-x:hidden;overflow-y:auto}.mode-top-actions{top:12px;right:12px;gap:6px}.mode-page .mode-main{min-height:calc(100svh - 38px);padding:58px 22px 18px;gap:18px}.mode-page .mode-hero-copy .mode-logo{width:clamp(180px,58vw,250px);margin-bottom:8px}.mode-page .mode-hero-copy h1{font-size:clamp(52px,15vw,76px)}.mode-page .mode-cards{grid-template-columns:1fr}.mode-page footer{height:auto;min-height:38px;padding:10px 16px}.camp-transition-briefing{top:clamp(74px,12vh,112px);left:20px;width:calc(100vw - 40px);padding-left:14px}.camp-transition-briefing h1{font-size:clamp(25px,7vw,38px)}}
 
 /* Hero picker: compact roster on the left, full skill profile on the right. */
 .select-page{height:100vh;height:100svh;min-height:600px;grid-template-rows:minmax(0,1fr) 34px;overflow:hidden}
@@ -377,7 +383,7 @@ html[lang="en"] .mode-card p{max-width:340px}
 @media(max-width:760px){
   .select-page{height:auto;min-height:100vh;min-height:100svh;display:block;overflow-x:hidden;overflow-y:auto}
   .select-back{top:12px;left:14px;font-size:10px}
-  .select-language-toggle{top:10px;right:14px;padding:7px 9px;font-size:10px}
+  .select-top-actions{top:10px;right:14px;gap:6px}
   .select-page .select-main{height:auto;padding:60px 14px 14px;gap:12px}
   .select-page .select-hero-copy{align-items:flex-start}
   .select-page .select-hero-copy>p{max-width:44%;text-align:right;line-height:1.5}
@@ -463,4 +469,143 @@ html[lang="ja"] .codex-copy h2{font-family:'Noto Sans JP','Noto Sans SC',sans-se
   .mode-codex-icon,.mode-picker-icon{width:32px;height:32px;font-size:14px}
   .mode-codex-arrow,.mode-picker-arrow{font-size:19px}
   .mode-start{font-size:15px;padding:0 20px 0 32px}
+}
+
+/* ---------- 1.7.0：江湖客主题色 ---------- */
+.roster-choice.jianghu{background:linear-gradient(110deg,#2a2312,#14120c);border-color:#7a5a1f}
+.roster-choice.jianghu:hover,.roster-choice.jianghu.selected{background:linear-gradient(145deg,#3d3016,#1d1a10);border-color:#ffd98e}
+.roster-choice.jianghu.selected{box-shadow:0 0 20px #ffd98e55}
+.roster-choice.jianghu .roster-avatar{background:linear-gradient(145deg,#ffd98e,#7a4a12);color:#fff6d8}
+.roster-choice.jianghu.selected .roster-identity b{color:#ffe6ad}
+.detail-portrait.jianghu{background:radial-gradient(ellipse at 50% 42%,#5c421b,#1a150c 70%);border-color:#ffd98e}
+.detail-portrait.jianghu>span{color:#fff6d8;text-shadow:7px 8px #7a4a12,0 0 36px #ffd98eaa}
+
+/* ---------- 1.7.0：未解锁英雄 ---------- */
+.roster-choice{position:relative}
+.roster-choice.locked{filter:saturate(.5)}
+.roster-choice.locked .roster-avatar{opacity:.5}
+.roster-choice.locked .roster-identity b{color:#9aa0b6}
+.roster-lock{position:absolute;top:6px;right:6px;padding:2px 5px;border:1px solid #7a5a1f;background:#171207e6;color:#ffd98e;font:9px 'Chakra Petch',sans-serif;letter-spacing:.4px;line-height:1.2}
+.detail-locked{flex:none;display:flex;align-items:center;gap:10px;margin-top:10px;padding:9px 12px;background:#1a140a;border:1px solid #7a5a1f;border-left:3px solid #ffd98e}
+.detail-locked[hidden]{display:none}
+.detail-locked span{flex:none;color:#ffd98e;font:700 10px 'Chakra Petch',sans-serif;letter-spacing:1.2px}
+.detail-locked p{margin:0;flex:1;color:#d7dcf0;font-size:11px;line-height:1.6}
+.detail-locked b{flex:none;color:#ffd98e;font:700 13px 'Chakra Petch',sans-serif}
+.enter-trapezoid.shop-trapezoid{background:linear-gradient(100deg,#ffd98e,#ffb347);color:#2a1c05}
+.enter-trapezoid[hidden],.shop-buy[hidden],.shop-owned[hidden],.shop-select[hidden],.shop-lock[hidden]{display:none}
+
+/* ---------- 1.7.0：单机肉鸽金币结算 ---------- */
+.run-over-coins{margin:10px 0 0;padding:8px 12px;border:1px solid #7a5a1f;background:#1a140a;color:#ffd98e;font:700 12px 'Chakra Petch',sans-serif;letter-spacing:.5px}
+.run-over-coins[hidden]{display:none}
+
+/* ---------- 1.7.0：英雄商店 ---------- */
+.shop-page{min-height:100vh;min-height:100svh;display:flex;flex-direction:column;background:#090a13 url('/static/home-background.png') center/cover fixed no-repeat}
+.shop-page::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:linear-gradient(180deg,#090a13dd 0%,#090a13b8 40%,#090a13e0 100%)}
+.shop-language-toggle{position:fixed;z-index:12;top:14px;right:clamp(20px,4vw,64px)}
+.shop-main{position:relative;z-index:1;flex:1;width:100%;max-width:1440px;margin:0 auto;padding:78px clamp(20px,5vw,72px) 42px;display:flex;flex-direction:column;gap:20px}
+.shop-hero-copy{display:flex;flex-wrap:wrap;align-items:end;gap:14px 22px;padding-bottom:15px;border-bottom:1px solid #23263a}
+.shop-hero-copy .eyebrow{margin:0 0 8px;font-size:10px}
+.shop-hero-copy h1{font:900 clamp(28px,3.2vw,42px)/1 'Chakra Petch';letter-spacing:-1px;margin:0;text-shadow:3px 3px #262640}
+.shop-intro{margin:0 0 3px;flex:1 1 320px;max-width:620px;color:#aab0c3;font-size:12px;line-height:1.85}
+.shop-wallet{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:2px;padding:9px 14px;border:1px solid #3a5262;background:#0e1220}
+.shop-wallet>span{color:var(--cyan);font:10px 'Chakra Petch',sans-serif;letter-spacing:1.5px}
+.shop-wallet b{color:#ffd166;font:900 24px 'Chakra Petch',sans-serif}
+.shop-wallet small{color:#8c94a9;font:10px 'Chakra Petch',sans-serif}
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px}
+.shop-card{display:grid;grid-template-columns:118px minmax(0,1fr);background:var(--panel);border:1px solid #2a2e48;border-left:3px solid var(--hero-main);transition:transform .2s,box-shadow .2s,border-color .2s}
+.shop-card:hover{transform:translateY(-4px);box-shadow:0 14px 32px #0008}
+.shop-card.locked{border-left-color:#5a5340;filter:saturate(.72)}
+.shop-card.owned{border-left-color:var(--hero-main)}
+.shop-portrait{position:relative;display:grid;place-items:center;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,var(--hero-dark),#0d0b14 72%);border-right:1px solid #23263a}
+.shop-portrait>span{color:var(--hero-light);font:900 54px 'Noto Sans SC';text-shadow:4px 5px var(--hero-dark)}
+.shop-lock{position:absolute;left:0;right:0;bottom:0;padding:4px 0;text-align:center;background:#0a0806e6;color:#ffd98e;font:9px 'Chakra Petch',sans-serif;letter-spacing:1px;font-style:normal}
+.shop-copy{display:flex;flex-direction:column;gap:8px;padding:14px 16px 15px}
+.shop-copy .eyebrow{margin:0;font-size:9px}
+.shop-copy h2{margin:0;font-size:20px;letter-spacing:.5px}
+.shop-tagline{margin:0;color:#aab0c3;font-size:11px;line-height:1.7}
+.shop-stats{display:flex;flex-direction:column;gap:4px;margin:2px 0 0}
+.shop-stats>div{display:grid;grid-template-columns:52px 30px minmax(0,1fr);align-items:center;gap:6px;color:var(--muted);font:10px 'Chakra Petch',sans-serif}
+.shop-stats dt,.shop-stats dd{margin:0}
+.shop-stats dd{color:var(--text)}
+.shop-stats i{display:block;height:4px;background:#1b1f30}
+.shop-stats em{display:block;height:100%;background:var(--hero-main)}
+.shop-actions{display:flex;align-items:center;gap:10px;margin-top:auto;padding-top:10px;border-top:1px solid #23263a}
+.shop-price{flex:none;color:#ffd166;font:700 13px 'Chakra Petch',sans-serif;letter-spacing:.5px}
+.shop-buy{flex:1;min-height:34px;border:1px solid #ffd166;background:#2a2312;color:#ffd166;font:700 12px 'Chakra Petch',sans-serif;letter-spacing:1px;cursor:pointer;transition:background .16s,color .16s}
+.shop-buy:hover:not(:disabled){background:#ffd166;color:#2a1c05}
+.shop-buy:disabled{border-color:#4a4433;background:#161510;color:#6b6553;cursor:not-allowed}
+.shop-owned{flex:1;color:#8dffac;font:700 11px 'Chakra Petch',sans-serif;letter-spacing:1px}
+.shop-select{flex:none;color:var(--cyan);font:700 11px 'Chakra Petch',sans-serif;letter-spacing:1px;text-decoration:none}
+.shop-select:hover{color:#fff}
+.shop-toast{position:fixed;left:50%;bottom:34px;transform:translate(-50%,14px);z-index:60;padding:11px 18px;background:#0c111cef;border:1px solid var(--cyan);color:var(--text);font-size:12px;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s}
+.shop-toast.visible{opacity:1;transform:translate(-50%,0)}
+.shop-toast.warning{border-color:var(--pink);color:#ffd0e6}
+.shop-page footer{position:relative;z-index:1}
+html[lang="ja"] .shop-hero-copy h1,
+html[lang="ja"] .shop-copy h2{font-family:'Noto Sans JP','Noto Sans SC',sans-serif}
+@media(max-width:760px){
+  .shop-language-toggle{top:10px;right:14px}
+  .shop-main{padding:62px 16px 26px;gap:14px}
+  .shop-hero-copy{align-items:flex-start}
+  .shop-wallet{margin-left:0;align-items:flex-start}
+  .shop-grid{grid-template-columns:1fr;gap:14px}
+  .shop-card{grid-template-columns:92px minmax(0,1fr)}
+  .shop-portrait>span{font-size:42px}
+}
+
+/* ---------- 1.7.0：主页存档管理 ---------- */
+.save-pill{display:flex;align-items:center;gap:7px;height:34px;padding:0 12px;border:1px solid #343a56;background:#121626;color:#aab0c3;font:11px 'Chakra Petch',sans-serif;letter-spacing:.7px;cursor:pointer;transition:border-color .15s,background .15s,color .15s}
+.save-pill:hover,.save-pill:focus-visible{border-color:var(--cyan);background:#192236;color:var(--text)}
+.save-pill-icon{color:var(--cyan);font-size:12px;line-height:1}
+.save-pill b{font:600 12px 'Chakra Petch',sans-serif}
+.infinite-coins .coin-pill b{color:#ffd166}
+
+.save-overlay{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:24px;background:#05060bd9;overflow-y:auto}
+.save-overlay[hidden]{display:none}
+.save-panel{position:relative;width:min(680px,100%);display:flex;flex-direction:column;gap:14px;padding:22px 24px 24px;background:linear-gradient(180deg,#121620f2,#0b0d15f7);border:1px solid #2a2e48;border-top:3px solid var(--cyan);box-shadow:0 24px 60px #000a}
+.save-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.save-head .eyebrow{margin:0 0 6px}
+.save-head h2{margin:0;font:900 22px 'Chakra Petch',sans-serif;letter-spacing:-.5px}
+.save-close{flex:none;width:32px;height:32px;border:1px solid #343a56;background:#121626;color:#aab0c3;font-size:13px;cursor:pointer;transition:border-color .15s,color .15s}
+.save-close:hover{border-color:var(--pink);color:#fff}
+.save-subtitle{margin:0;color:#aab0c3;font-size:12px;line-height:1.8}
+.save-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.save-stat{display:flex;flex-direction:column;gap:3px;padding:11px 13px;border:1px solid #23263a;background:#0e1220}
+.save-stat span{color:var(--cyan);font:10px 'Chakra Petch',sans-serif;letter-spacing:1.4px}
+.save-stat b{color:#ffd166;font:900 22px 'Chakra Petch',sans-serif}
+.save-stat b i{font-style:normal;color:var(--text)}
+.save-stat small{color:#8c94a9;font-size:10px;line-height:1.5}
+.save-stat small[hidden]{display:none}
+.save-roster{display:flex;flex-wrap:wrap;gap:7px}
+.save-chip{display:flex;align-items:center;gap:6px;padding:5px 8px 5px 5px;border:1px solid var(--hero-main);background:#0e1220;font-size:11px;color:var(--text)}
+.save-chip i{display:grid;place-items:center;width:22px;height:22px;background:var(--hero-dark);color:var(--hero-light);font:900 12px 'Noto Sans SC',sans-serif;font-style:normal}
+.save-chip b{font-weight:600}
+.save-chip em{color:var(--cyan);font:9px 'Chakra Petch',sans-serif;font-style:normal;letter-spacing:.6px}
+.save-chip.locked{border-color:#2a2e48;color:#6b7188}
+.save-chip.locked i{background:#1b1f30;color:#5c6280}
+.save-chip.locked em{color:#8c94a9}
+.save-meta{display:flex;flex-direction:column;gap:6px;margin:0;padding:11px 13px;border:1px solid #23263a;background:#0e1220}
+.save-meta>div{display:grid;grid-template-columns:88px minmax(0,1fr);gap:10px;align-items:baseline}
+.save-meta dt{color:#8c94a9;font:10px 'Chakra Petch',sans-serif;letter-spacing:1px}
+.save-meta dd{margin:0;color:#aab0c3;font-size:11px;word-break:break-all}
+.save-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.save-action{display:flex;flex-direction:column;gap:4px;padding:12px 14px;text-align:left;border:1px solid #343a56;background:#121626;color:var(--text);cursor:pointer;transition:border-color .15s,background .15s}
+.save-action:hover{border-color:var(--cyan);background:#192236}
+.save-action b{font:700 12px 'Chakra Petch',sans-serif;letter-spacing:.6px}
+.save-action small{color:#8c94a9;font-size:10px;line-height:1.5}
+.save-action.danger{border-color:#5a2436;background:#1a0d14}
+.save-action.danger:hover{border-color:var(--pink)}
+.save-action.danger b{color:#ffb0d5}
+.save-action.danger.confirm{border-color:var(--pink);background:#3a0f1f}
+.save-action.danger.confirm b{color:#fff}
+.save-toast{color:var(--cyan);font-size:11px;opacity:0;transition:opacity .18s}
+.save-toast.visible{opacity:1}
+.save-toast.warning{color:#ffb0d5}
+html[lang="ja"] .save-head h2{font-family:'Noto Sans JP','Noto Sans SC',sans-serif}
+@media(max-width:700px){
+  .save-pill b{display:none}
+  .save-overlay{padding:12px;place-items:start center}
+  .save-panel{padding:18px 16px 20px;gap:12px}
+  .save-actions{grid-template-columns:1fr}
+  .save-meta>div{grid-template-columns:1fr;gap:2px}
 }

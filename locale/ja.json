@@ -154,7 +154,46 @@
     "RUN_PAUSED": "ラン一時停止",
     "ROUND_BREAK_PICK": "ラウンドブレイク · 1つ選択",
     "RUN_ENDED_EYEBROW": "ラン終了",
-    "PASSIVE": "パッシブ"
+    "PASSIVE": "パッシブ",
+    "SHOP": "ショップ",
+    "SHOP_TITLE": "ヒーローショップ",
+    "SHOP_KICKER": "ヒーローショップ",
+    "SHOP_SUBTITLE": "対戦ごとにコインが貯まります。貯まったら新しいヒーローを戦場へ。",
+    "COINS": "コイン",
+    "SHOP_OWNED": "解放済み",
+    "SHOP_BUY": "購入",
+    "SHOP_NOT_ENOUGH": "コインが足りません",
+    "SHOP_PURCHASED": "購入しました",
+    "SHOP_LOCKED": "未解放",
+    "SHOP_ENTER_SELECT": "ヒーロー選択",
+    "SHOP_LOCKED_HINT": "このヒーローは未解放です。先にショップで購入してください。",
+    "SHOP_GO": "ショップへ",
+    "SHOP_PROGRESS": "解放済み",
+    "SHOP_PRICE_NOTE": "コインで解放 · ずっと使えます",
+    "HERO_FREE": "無料",
+    "SHOP_INFINITE": "コイン無制限",
+    "SHOP_FAILED": "購入に失敗しました。もう一度お試しください。",
+    "SAVE_MANAGE": "セーブ管理",
+    "SAVE_SUBTITLE": "コインと解放済みヒーローの確認、バックアップの書き出し・読み込み・リセットができます。",
+    "SAVE_OVERVIEW": "セーブ概要",
+    "SAVE_HEROES": "解放済みヒーロー",
+    "SAVE_PATH": "セーブファイル",
+    "SAVE_SETTLED": "精算済みの対戦",
+    "SAVE_FREE_HINT": "無料ヒーローは常に使用可能で、セーブには記録されません。",
+    "SAVE_EXPORT": "セーブを書き出す",
+    "SAVE_EXPORT_HINT": "JSON バックアップをダウンロード。",
+    "SAVE_IMPORT": "セーブを読み込む",
+    "SAVE_IMPORT_HINT": "JSON ファイルを選んで現在のセーブを上書き。",
+    "SAVE_RESET": "セーブをリセット",
+    "SAVE_RESET_HINT": "コインと解放済みヒーローを消去。",
+    "SAVE_RESET_CONFIRM": "もう一度押して確定",
+    "SAVE_CLOSE": "閉じる",
+    "SAVE_EXPORTED": "セーブを書き出しました。",
+    "SAVE_IMPORTED": "セーブを読み込みました。",
+    "SAVE_IMPORT_FAILED": "読み込み失敗：有効なセーブファイルではありません。",
+    "SAVE_RESET_DONE": "セーブをリセットしました。",
+    "SAVE_FAILED": "操作に失敗しました。もう一度お試しください。",
+    "SAVE_INFINITE_NOTE": "コイン無制限のテストセーブ"
   },
   "heroes": {
     "volt": {
@@ -399,6 +438,41 @@
           "kind": "アルティメット",
           "description": "加速 · 無敵 · 敵を弾き飛ばす",
           "detail_description": "3秒間の加速状態（移動速度 +50%）に入り、あらゆるダメージを無効化する。体当たりした敵はダメージとノックバックを受け、敵1体につき1回だけ判定される。"
+        }
+      }
+    },
+    "jianghu": {
+      "name": "江湖客",
+      "class_name": "孤高の剣客",
+      "tagline": "剣を抜いた時には、もう背後に立っている。",
+      "initial": "江",
+      "stats": [
+        "攻撃",
+        "防御",
+        "機動"
+      ],
+      "passive": {
+        "name": "喉元一閃",
+        "description": "敵の減ったHP 1% ごとに、その敵への攻撃1回の即死確率が +0.6%。"
+      },
+      "skills": {
+        "jianghu-xia-ke-xing": {
+          "name": "侠客行",
+          "kind": "アルティメット",
+          "description": "無敵で連続突進 · 最寄りの敵を攻撃",
+          "detail_description": "無敵状態になり、0.5 秒ごとに射程 300 以内の最寄りの敵へ突進して攻撃、最大 5 回。同じ敵には続けて攻撃しない（範囲内にその敵しかいない場合を除く）。範囲内に敵がいなければ即座に停止し、残った突進回数に応じてクールダウンが比例返却される（一度も突進しなければクールダウンは 0）。"
+        },
+        "jianghu-blade": {
+          "name": "剣客の刃",
+          "kind": "スキル",
+          "description": "次の通常攻撃 3 回を強化 · 増ダメージと吸血",
+          "detail_description": "次の通常攻撃 3 回はダメージ +20%、さらに与えたダメージの 10% を回復する。"
+        },
+        "jianghu-flight": {
+          "name": "御剣飛行",
+          "kind": "スキル",
+          "description": "移動速度と回避が大幅上昇",
+          "detail_description": "3 秒間、移動速度 +50% かつ回避 +50%。"
         }
       }
     }
@@ -1060,7 +1134,8 @@
       "荆棘护甲": "茨の装甲",
       "中毒": "毒",
       "月影护盾": "月影シールド",
-      "引燃": "着火"
+      "引燃": "着火",
+      "御剑飞行": "御剣飛行"
     },
     "basic_hit": {
       "volt": "通常攻撃が命中、{damage} ダメージ、エネルギー5回復。",
@@ -1069,7 +1144,8 @@
       "tech": "テックの遠距離攻撃が命中、{damage} ダメージ。",
       "pipa": "琵琶の音刃が命中、{damage} ダメージ。",
       "volt2": "音波が命中、{damage} ダメージ、エネルギー5回復。",
-      "sakura": "花火が命中、{damage} ダメージを与え対象を着火。"
+      "sakura": "花火が命中、{damage} ダメージを与え対象を着火。",
+      "jianghu": "剣閃が走り、{damage} ダメージ。"
     },
     "templates": {
       "skill.cooling": "{name} はクールダウン中、あと {seconds} 秒。",
@@ -1168,7 +1244,22 @@
       "event.train_departing": "{track} 番線の列車が出発する。",
       "event.train_hit": "列車に弾き飛ばされた！{damage} の大ダメージとノックバック。",
       "event.train_damage": "列車衝突 -{damage}",
-      "float.sakura_invincible": "サクラの加護"
+      "float.sakura_invincible": "サクラの加護",
+      "skill.jianghu_xia_ke_xing": "{name} 発動：無敵で連続突進、最大 {max} 回、間隔 {interval} 秒。",
+      "skill.jianghu_xia_ke_xing_stop": "{name} 終了：突進 {used}/{max} 回、残りクールダウン {cooldown} 秒。",
+      "skill.jianghu_xia_ke_xing_empty": "{name}：範囲内に敵がおらず、クールダウンを消去。",
+      "skill.jianghu_blade": "{name} 発動：次の通常攻撃 {charges} 回のダメージ +{percent}%、吸血 {lifesteal}%。",
+      "skill.jianghu_blade_hit": "剣客の刃が命中、{damage} ダメージ、{heal} 回復。",
+      "skill.jianghu_flight": "{name} 発動：{seconds} 秒間、移動速度 +{speed}%、回避 +{dodge}%。",
+      "float.execute": "斬殺！",
+      "float.jianghu_dash": "侠客行",
+      "float.jianghu_blade_ready": "剣客の刃 ×{charges}",
+      "float.jianghu_flight": "御剣飛行",
+      "float.jianghu_empty": "対象なし",
+      "reward.run_gain": "今回の獲得コイン {coins}（現在 {total}）。",
+      "reward.run_infinite": "今回の獲得コイン {coins}（テストセーブ：コイン無制限）。",
+      "reward.run_empty": "今回コインは獲得できませんでした。",
+      "skill.jianghu_busy": "侠客行が続いているため、他のスキルは使えません。"
     }
   },
   "lobby": {
@@ -1266,6 +1357,12 @@
     "樱花风暴后减速 50% 持续 3 秒": "サクラストーム後に50%スローを3秒",
     "樱花风暴吸引时间延长至 1 秒": "サクラストームの引き寄せが1秒に",
     "樱花之歌加速时间 +1 秒": "サクラソングの持続 +1秒",
-    "樱花之歌触碰敌人时同时施加樱花风暴": "サクラソングで触れた敵にサクラストームも発動"
+    "樱花之歌触碰敌人时同时施加樱花风暴": "サクラソングで触れた敵にサクラストームも発動",
+    "侠客行每次位移攻击额外造成 0.5 秒眩晕": "侠客行の突進攻撃に 0.5 秒スタンを追加",
+    "位移间隔缩短至 0.25 秒 · 位移次数提升到 10 次": "突進間隔 0.25 秒 · 突進回数が最大 10 回に",
+    "剑客之刃普攻伤害加成 20% → 40%": "剣客の刃の通常攻撃ダメージ +20% → +40%",
+    "剑客之刃吸血 10% → 25%": "剣客の刃の吸血 10% → 25%",
+    "御剑飞行持续时间 3 秒 → 5 秒": "御剣飛行の持続 3 秒 → 5 秒",
+    "御剑飞行速度提升 50% → 100%": "御剣飛行の速度上昇 50% → 100%"
   }
 }

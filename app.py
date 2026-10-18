@@ -8,6 +8,7 @@ from pathlib import Path
 
 from flask import Flask, jsonify, redirect, render_template, request, send_file, url_for
 
+import player_save
 from map_codex import codex_entries
 
 
@@ -35,18 +36,20 @@ def localized_heroes(language):
     package = get_locale(language)
     tier_labels = package.get("tier_labels", {})
     heroes = copy.deepcopy(HEROES)
+    unlocked = unlocked_hero_ids()
     for hero in heroes:
+        hero["price"] = hero_price(hero)
+        hero["locked"] = hero["id"] not in unlocked
         localized = package["heroes"][hero["id"]]
         hero["name"] = localized["name"]
         hero["class_name"] = localized["class_name"]
         hero["tagline"] = localized["tagline"]
         hero["initial"] = localized["initial"]
         hero["stats"] = dict(zip(localized["stats"], hero["stats"].values()))
-        hero["passive"] = {
-            "id": hero["passive"]["id"],
-            "name": localized["passive"]["name"],
-            "description": localized["passive"]["description"],
-        }
+        passive = dict(hero["passive"])
+        passive["name"] = localized["passive"]["name"]
+        passive["description"] = localized["passive"]["description"]
+        hero["passive"] = passive
         for skill in hero["skills"]:
             translation = localized["skills"].get(skill["id"])
             if translation:
@@ -374,7 +377,76 @@ HEROES = [
                               3: {"label": "樱花之歌触碰敌人时同时施加樱花风暴", "patch": {"song_casts_storm": {"set": 1}}}}},
         ],
     },
+    {
+        "id": "jianghu",
+        "name": "江湖客",
+        "class_name": "独行剑客",
+        "tagline": "剑起时人已在身后，江湖只留下一个背影。",
+        "initial": "江",
+        "accent": "jianghu",
+        # price > 0 的英雄需要在商店用金币解锁；免费英雄不写 price。
+        "price": 1000,
+        "palette": {"main": "#ffd98e", "light": "#fff6d8", "dark": "#7a4a12"},
+        "stats": {"攻击": 88, "防御": 54, "机动": 90},
+        "combat": {
+            "speed": 245,
+            "basic_range": 150,
+            "basic_damage": 16,
+            "basic_effect": "",
+            "basic_effect_turns": 0,
+            "basic_beam": {"color": "#ffd98e", "duration": 0.18},
+            "basic_restore_label": "MELEE_RESTORE",
+            "bot_skill_effect": "眩晕",
+            "bot_skill_effect_turns": 0.8,
+            "bot_skill_damage_scale": 2.2,
+            "thorns_damage": 0,
+        },
+        "passive": {
+            "id": "jianghu_execute",
+            # 目标每损失 1% 生命，每次攻击 +0.6% 概率直接斩杀。
+            "execute_per_percent": 0.006,
+        },
+        "skills": [
+            {"id": "jianghu-xia-ke-xing", "name": "侠客行", "description": "进入无敌状态 · 连续位移攻击最近的敌人", "kind": "大招", "target": "self", "action": "jianghu_xia_ke_xing", "cost": 60, "cooldown": 16, "damage": 34, "radius": 300, "effect": "", "effect_turns": 0,
+             "dash_interval": 0.5, "dash_max": 5, "dash_distance": 130,
+             "tier_effects": {2: {"label": "侠客行每次位移攻击额外造成 0.5 秒眩晕", "patch": {"dash_stun": {"add": 0.5, "base": 0}}},
+                              3: {"label": "位移间隔缩短至 0.25 秒 · 位移次数提升到 10 次", "patch": {"dash_interval": {"set": 0.25}, "dash_max": {"set": 10}}}}},
+            {"id": "jianghu-blade", "name": "剑客之刃", "description": "强化接下来 3 次普攻 · 伤害提升并吸血", "kind": "小技能", "target": "self", "action": "jianghu_blade", "cost": 25, "cooldown": 9, "damage": 0, "effect": "", "effect_turns": 0,
+             "blade_charges": 3, "blade_damage_scale": 1.2, "blade_lifesteal": 0.1,
+             "tier_effects": {2: {"label": "剑客之刃普攻伤害加成 20% → 40%", "patch": {"blade_damage_scale": {"add": 0.2}}},
+                              3: {"label": "剑客之刃吸血 10% → 25%", "patch": {"blade_lifesteal": {"set": 0.25}}}}},
+            {"id": "jianghu-flight", "name": "御剑飞行", "description": "短时间内速度与闪避大幅提升", "kind": "小技能", "target": "self", "action": "jianghu_flight", "cost": 30, "cooldown": 12, "damage": 0, "effect": "", "effect_turns": 0,
+             "flight_duration": 3, "flight_speed_scale": 1.5, "flight_dodge": 0.5,
+             "tier_effects": {2: {"label": "御剑飞行持续时间 3 秒 → 5 秒", "patch": {"flight_duration": {"set": 5}}},
+                              3: {"label": "御剑飞行速度提升 50% → 100%", "patch": {"flight_speed_scale": {"set": 2}}}}},
+        ],
+    },
 ]
+
+
+def hero_price(hero):
+    """英雄价格：缺失或 0 表示默认解锁。"""
+    try:
+        return max(0, int(hero.get("price", 0)))
+    except (TypeError, ValueError):
+        return 0
+
+
+def unlocked_hero_ids():
+    """免费英雄恒解锁，其余以存档为准（测试存档可直接写入 unlocked_heroes）。"""
+    free = {hero["id"] for hero in HEROES if hero_price(hero) <= 0}
+    return free | set(player_save.load()["unlocked_heroes"])
+
+
+def profile_snapshot():
+    """存档的公开状态：金币、是否无限金币、已解锁英雄。"""
+    profile = player_save.load()
+    return {
+        "coins": profile["coins"],
+        "infinite_coins": profile["infinite_coins"],
+        "unlocked_heroes": sorted(unlocked_hero_ids()),
+    }
+
 
 
 def hero_by_id(hero_id):
@@ -409,13 +481,153 @@ def hero_roster(language="zh"):
 
 @app.get("/")
 def home():
-    return render_template("index.html")
+    """主页：右上角有商店入口与存档管理面板。"""
+    language = request.args.get("lang", request.cookies.get("lang", "zh"))
+    heroes = localized_heroes(language)
+    unlocked = unlocked_hero_ids()
+    return render_template(
+        "index.html",
+        profile=profile_snapshot(),
+        heroes=heroes,
+        owned_count=sum(1 for hero in heroes if hero["id"] in unlocked),
+        save_path=str(player_save.save_path()),
+        settled_count=len(player_save.load()["settled_runs"]),
+    )
 
 
 @app.get("/select")
 def select_hero():
     game_mode = "duel" if request.args.get("mode") == "duel" else "rogue"
-    return render_template("select.html", heroes=localized_heroes(request.args.get("lang", request.cookies.get("lang", "zh"))), game_mode=game_mode)
+    heroes = localized_heroes(request.args.get("lang", request.cookies.get("lang", "zh")))
+    default_hero = next((hero for hero in heroes if not hero["locked"]), heroes[0])
+    return render_template(
+        "select.html",
+        heroes=heroes,
+        default_hero=default_hero,
+        game_mode=game_mode,
+        profile=profile_snapshot(),
+    )
+
+
+@app.get("/shop")
+def shop():
+    """英雄商店：用对局赚到的金币解锁新英雄。"""
+    language = request.args.get("lang", request.cookies.get("lang", "zh"))
+    heroes = localized_heroes(language)
+    heroes.sort(key=lambda hero: (hero["locked"] is False, hero["price"], hero["id"]))
+    snapshot = profile_snapshot()
+    return render_template(
+        "shop.html",
+        heroes=heroes,
+        profile=snapshot,
+        owned_count=sum(1 for hero in heroes if not hero["locked"]),
+    )
+
+
+@app.get("/api/profile")
+def api_profile():
+    return jsonify({"ok": True, **profile_snapshot()})
+
+
+def save_manage_payload():
+    """存档管理面板的数据：总览 + 每个英雄的解锁状态。"""
+    language = request.args.get("lang", request.cookies.get("lang", "zh"))
+    profile = player_save.load()
+    unlocked = unlocked_hero_ids()
+    return {
+        **profile_snapshot(),
+        "settled_count": len(profile["settled_runs"]),
+        "save_path": str(player_save.save_path()),
+        "heroes": [
+            {
+                "id": hero["id"],
+                "name": hero["name"],
+                "initial": hero["initial"],
+                "accent": hero["accent"],
+                "price": hero["price"],
+                "owned": hero["id"] in unlocked,
+            }
+            for hero in localized_heroes(language)
+        ],
+    }
+
+
+@app.get("/api/save")
+def api_save_info():
+    """存档管理面板的初始数据。"""
+    return jsonify({"ok": True, **save_manage_payload()})
+
+
+@app.get("/api/save/export")
+def api_save_export():
+    """导出存档：浏览器直接下载 JSON 备份。"""
+    response = app.response_class(player_save.export_text(), mimetype="application/json")
+    response.headers["Content-Disposition"] = 'attachment; filename="2d-da-jibai-save.json"'
+    return response
+
+
+@app.post("/api/save/import")
+def api_save_import():
+    """导入存档：覆盖当前存档，未知英雄 id 会被忽略。"""
+    body = request.get_json(silent=True)
+    if isinstance(body, dict) and isinstance(body.get("save"), dict):
+        body = body["save"]
+    if body is None:
+        raw = request.get_data(as_text=True).strip()
+        message = "存档文件不是合法的 JSON。" if raw else "没有收到存档内容。"
+        return jsonify({"ok": False, "reason": "invalid", "message": message, **profile_snapshot()}), 400
+    try:
+        player_save.import_data(body, allowed_heroes={hero["id"] for hero in HEROES})
+    except ValueError as error:
+        return jsonify({"ok": False, "reason": "invalid", "message": str(error), **profile_snapshot()}), 400
+    return jsonify({"ok": True, **save_manage_payload()})
+
+
+@app.post("/api/save/reset")
+def api_save_reset():
+    """重置存档：清空金币与已解锁英雄（对局编号账本保留，避免重复发币）。"""
+    player_save.reset()
+    return jsonify({"ok": True, **save_manage_payload()})
+
+
+@app.post("/api/shop/buy")
+def api_shop_buy():
+    body = request.get_json(silent=True) or {}
+    hero_id = str(body.get("hero_id", "")).strip()
+    hero = next((item for item in HEROES if item["id"] == hero_id), None)
+    if hero is None:
+        return jsonify({"ok": False, "reason": "unknown", "message": "没有这个英雄。", **profile_snapshot()}), 400
+    price = hero_price(hero)
+    unlocked = unlocked_hero_ids()
+    if price <= 0 or hero_id in unlocked:
+        return jsonify({"ok": True, "already": True, "bought": hero_id, "price": price, **profile_snapshot()})
+    result = player_save.purchase(hero_id, price)
+    if not result["ok"]:
+        message = "金币不足，先去打几局。" if result["reason"] == "poor" else "无法购买这个英雄。"
+        return jsonify({"ok": False, "reason": result["reason"], "message": message, "bought": hero_id,
+                        "price": price, **profile_snapshot()}), 400
+    return jsonify({"ok": True, "bought": hero_id, "price": price, "reason": "", **profile_snapshot()})
+
+
+@app.post("/api/run/settle")
+def api_run_settle():
+    """结算一局肉鸽：阵亡与中途退出都会调用，同一 run_id 只发一次金币。"""
+    body = request.get_json(silent=True) or {}
+    run_id = str(body.get("run_id", "")).strip()[:64]
+    if not run_id:
+        return jsonify({"ok": False, "message": "缺少对局编号。", **profile_snapshot()}), 400
+    wave = _safe_count(body.get("wave"))
+    kills = _safe_count(body.get("kills"))
+    result = player_save.settle_run(run_id, wave, kills)
+    return jsonify({"ok": True, "wave": wave, "kills": kills, **result})
+
+
+def _safe_count(value, limit=100000):
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        return 0
+    return max(0, min(limit, number))
 
 
 @app.get("/codex")
@@ -653,7 +865,11 @@ def error_response(message, status=400):
 
 @app.get("/multiplayer")
 def multiplayer():
-    return render_template("multiplayer.html", heroes=localized_heroes(request.args.get("lang", request.cookies.get("lang", "zh"))))
+    return render_template(
+        "multiplayer.html",
+        heroes=localized_heroes(request.args.get("lang", request.cookies.get("lang", "zh"))),
+        profile=profile_snapshot(),
+    )
 
 
 @app.get("/api/server-info")
@@ -706,6 +922,8 @@ def create_multiplayer_room():
         return error_response("请先输入昵称。")
     if hero_id not in {hero["id"] for hero in HEROES}:
         return error_response("请选择有效英雄。")
+    if hero_id not in unlocked_hero_ids():
+        return error_response("该英雄尚未解锁，请先到商店购买。")
     with ROOMS_LOCK:
         cleanup_rooms()
         room_id = secrets.token_hex(3).upper()
@@ -745,6 +963,8 @@ def join_multiplayer_room():
         return error_response("请先输入昵称。")
     if hero_id not in {hero["id"] for hero in HEROES}:
         return error_response("请选择有效英雄。")
+    if hero_id not in unlocked_hero_ids():
+        return error_response("该英雄尚未解锁，请先到商店购买。")
     with ROOMS_LOCK:
         cleanup_rooms()
         room = ROOMS.get(room_id)
@@ -867,6 +1087,9 @@ def sync_multiplayer_room(room_id):
 @app.get("/battle")
 def battle():
     selected_id = request.args.get("hero", "volt")
+    if selected_id not in unlocked_hero_ids():
+        # 未解锁的英雄不允许直接开打，先去商店。
+        return redirect(url_for("shop"))
     base_player = hero_by_id(selected_id)
     base_defense = base_player["stats"]["防御"]
     player = base_player

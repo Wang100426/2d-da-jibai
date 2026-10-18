@@ -11,7 +11,7 @@
 <body class="multiplayer-page">
   <header class="topbar">
     <a class="brand" href="/"><img class="brand-mark brand-mark-image" src="{{ url_for('favicon', lang=lang) }}" alt=""><span><strong>{{ tr("PRODUCT_NAME") }}</strong><small>{{ tr("LAN_MULTIPLAYER") }}</small></span></a>
-    <div class="topbar-actions"><div class="language-switch" data-language-switch></div><a class="exit-link" href="/">{{ tr("BACK_HOME") }} ×</a></div>
+    <div class="topbar-actions"><a class="coin-pill" href="/shop" title="{{ tr('SHOP') }}"><span class="coin-pill-icon" aria-hidden="true">◈</span><b data-coin-balance>{{ "∞" if profile.infinite_coins else "{:,}".format(profile.coins) }}</b><small>{{ tr("SHOP") }}</small></a><div class="language-switch" data-language-switch></div><a class="exit-link" href="/">{{ tr("BACK_HOME") }} ×</a></div>
   </header>
   <main class="mp-main">
     <section class="mp-heading">
@@ -27,7 +27,7 @@
         <label class="mp-label" for="hero-select">{{ tr("CHOOSE_HERO") }}</label>
         <select id="hero-select">
           {% for hero in heroes %}
-          <option value="{{ hero.id }}">{{ hero.name }} · {{ hero.class_name }}</option>
+          <option value="{{ hero.id }}" {% if hero.locked %}disabled{% endif %}>{{ hero.name }} · {{ hero.class_name }}{% if hero.locked %} · {{ tr("SHOP_LOCKED") }} ◈ {{ hero.price }}{% endif %}</option>
           {% endfor %}
         </select>
         <button class="mp-primary" id="create-room" type="button">{{ tr("CREATE_ROOM") }}</button>

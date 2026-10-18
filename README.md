@@ -15,6 +15,8 @@
 - **地图图鉴**:主页右下角的入口按钮可打开地图图鉴,一次看完全部 7 张赛场的实机布局缩略图、地形特点、随机事件与建筑 / 路障数量。
 - **人机对抗**:与 AI 一对一较量,先赢得四分获胜。每回合结束后可选择强化,十秒后开始下一回合。
 - **局域网联机**:创建或加入房间,与同一局域网的玩家共同战斗。玩家位置、玩家间攻击伤害、生命、能量和控制效果由 Flask 房间服务同步。
+- **金币与英雄商店**:单机肉鸽每局结束(阵亡,或中途退出返回选人页)都会按「到达波次 × 10 + 击杀数 × 1」结算金币,单局上限 500;人机对抗与联机不结算。金币可在英雄商店解锁新英雄,当前商店可购买「江湖客」(1000 金币)。商店入口在主页与选人页右上角的金币胶囊。
+- **存档管理**:主页右上角的「存档管理」可查看金币与已解锁英雄、导出 JSON 备份、导入覆盖存档,以及两步确认后重置存档。开发环境存档位于 `save/profile.json`(已 `.gitignore`),打包后位于 `%LOCALAPPDATA%/2d-da-jibai/save.json`,也可用环境变量 `DAJIBAI_SAVE` 指定。
 
 ## 操作
 
@@ -42,7 +44,7 @@ python app.py
 
 也可以运行 `python server_gui.py` 启动带局域网地址显示的服务。局域网玩家连接同一网络后,可在浏览器中打开主机显示的地址。房间状态保存在内存中,服务停止后会清除。
 
-## Windows 桌面版 1.6.5
+## Windows 桌面版 1.7.0
 
 构建 Windows x64 安装程序:
 
@@ -56,13 +58,16 @@ npm run dist:win
 ## 开发
 
 - `app.py` 的 `HEROES`:英雄的唯一数据源,包含配色、战斗数值与技能
+- `player_save.py`:存档读写,负责金币、已解锁英雄与单局金币结算
 - `map_codex.py`:地图图鉴的数据源,包含各张地图的布局、配色与障碍物
 - `frontend/map.ts`:地图与战斗逻辑
 - `frontend/select.ts`:英雄选择页面
 - `frontend/multiplayer.ts`:联机大厅
 - `frontend/codex.ts`:地图图鉴页面的缩略图绘制
+- `frontend/shop.ts`:英雄商店页面
+- `frontend/save.ts`:主页右上角的存档管理面板
 - `locale/zh.json`、`locale/en.json`、`locale/ja.json`:中 / 英 / 日三份语言包
-- `static/app.js`、`static/select.js`、`static/multiplayer.js`、`static/codex.js`:由 TypeScript 编译生成,请修改对应的 `frontend/*.ts` 源文件
+- `static/app.js`、`static/select.js`、`static/multiplayer.js`、`static/codex.js`、`static/shop.js`、`static/save.js`:由 TypeScript 编译生成,请修改对应的 `frontend/*.ts` 源文件
 
 ```powershell
 npm run typecheck
@@ -83,6 +88,7 @@ npm run build
 | 科技男 | 超频协议 | 每击杀 20 次，**层数 +1（永久叠加）**：二技能每层多 1 次往返、一技能每层多发射 1 块击退平板、大招每层伤害 +20% |
 | 琵琶女 | 弦音不绝 | 每通过狂舞击杀 3 次或小兵击杀 10 次后，**十面埋伏此后每次施放都多召唤 1 名小兵**（可叠加层数）；大招狂舞时间 +1 秒 |
 | 电音人 | 共鸣 | 被技能击中 3 次的敌人陷入 3 秒狂舞；对狂舞中的敌人伤害 +50% |
+| 江湖客 | 一剑封喉 | 敌方生命值每降低 1%，每次攻击该敌方单位 +0.6% 概率直接斩杀 |
 
 月蚀术士的额外陨石会落在**施法范围内不是最近的那个敌人**身上；若范围内没有第二个目标则不投放。
 科技男的强化是一次性的「窗口」，用错技能不会浪费，下次施放对应技能时仍然生效。
@@ -127,9 +133,22 @@ npm run build
 碟片风暴一次扔 10 枚，但每张碟片共用同一个 `castId`，所以对单个敌人只 +1 层。
 需要 3 次**施法**才能叠满。
 
+### 江湖客
+
+第七位英雄，金色侠客主题，近战型，普攻距离 150，在英雄商店以 1000 金币解锁。
+
+| 按键 | 技能 | 效果 | 2 阶 | 3 阶 |
+| --- | --- | --- | --- | --- |
+| Q | 侠客行 | 进入无敌状态，每 0.5 秒向半径 300 内最近的敌人位移并攻击一次，最多 5 次；不会连续攻击同一个敌人（除非范围内只剩它一个）。范围内没有敌人时立即停止，剩余冷却按实际位移次数等比例结算（一次都没位移则冷却清零） | 每次位移攻击额外眩晕 0.5 秒 | 位移间隔 0.25 秒、最多 10 次 |
+| E | 剑客之刃 | 强化接下来 3 次普攻，伤害 +20%，且每次恢复造成伤害 10% 的生命 | 增伤 20% → 40% | 吸血 10% → 25% |
+| R | 御剑飞行 | 接下来 3 秒移速 +50%、闪避 +50% | 3 秒 → 5 秒 | 移速 +50% → +100% |
+
+被动「一剑封喉」的斩杀概率随目标已损失生命线性提升，判定写在 `map.ts` 的 `hitEnemy()` 里：
+命中时若触发斩杀，伤害直接提升为目标当前生命值，后续的死亡结算与掉落沿用原有流程。
+
 ### 新增英雄
 
-英雄的机制全部集中在 `app.py` 的 `HEROES` 列表,新增一位英雄通常只需要改这一个文件,加上两份语言包。
+英雄的机制全部集中在 `app.py` 的 `HEROES` 列表,新增一位英雄通常只需要改这一个文件,加上三份语言包。
 
 **1. 在 `HEROES` 里追加一条记录**
 
@@ -178,7 +197,7 @@ npm run build
     "player_patch": {"thornDamageMultiplier": {"set": 0.3}, "thornReturnDamage": {"set": 20}}}
 ```
 
-**3. 在两份语言包里补条目**
+**3. 在三份语言包里补条目**
 
 - `heroes.<id>`:`name`、`class_name`、`tagline`、`initial`、`stats`(三项标签的翻译)、`skills.<skill_id>`
   的 `name` / `description` / `detail_description` / `kind`
@@ -222,6 +241,8 @@ npm run build
 - **Map Codex**: the entry button on the home screen opens a codex that shows all seven arenas at once, with a to-scale layout preview, terrain notes, the random event, and building/barrier counts.
 - **AI duel**: Fight one-on-one against an AI opponent. The first fighter to win four rounds takes the match. Choose an upgrade between rounds; the next round starts after ten seconds.
 - **LAN multiplayer**: Create or join a room and play with people on the same local network. The Flask room service synchronizes player positions, PvP damage, health, energy, and crowd-control effects.
+- **Coins and the Hero Shop**: every single-player rogue run banks coins when it ends — on death, or when you quit back to the select screen — using "waves reached × 10 + kills × 1", capped at 500 per run; duel and LAN matches earn nothing. Coins unlock new fighters in the Hero Shop, which currently sells 江湖客 (Knight-Errant) for 1000 coins. The shop entry is the coin pill in the top-right of the home screen and the select screen.
+- **Save management**: the SAVE DATA panel in the top-right of the home screen shows your coins and unlocked fighters, exports a JSON backup, imports one to overwrite the save, and resets the save behind a two-step confirmation. In development the save lives at `save/profile.json` (gitignored); packaged builds use `%LOCALAPPDATA%/2d-da-jibai/save.json`, and `DAJIBAI_SAVE` overrides the path.
 
 ### Controls
 
@@ -249,7 +270,7 @@ python app.py
 
 Alternatively, run `python server_gui.py` to start the server with a LAN address display. Players must be on the same network to join using the host's address. Room state is kept in memory and is cleared when the server stops.
 
-### Windows desktop release 1.6.5
+### Windows desktop release 1.7.0
 
 Build the Windows x64 installer:
 
@@ -263,13 +284,16 @@ The installer is written to `release-installer/`. Build a portable application w
 ### Development
 
 - `app.py` `HEROES`: the single source of truth for heroes, holding palettes, combat stats, and skills
+- `player_save.py`: save-file reads and writes for coins, unlocked heroes, and per-run coin settlement
 - `map_codex.py`: the data source behind the map codex (per-map layout, palette, and obstacles)
 - `frontend/map.ts`: map and combat logic
 - `frontend/select.ts`: hero selection page
 - `frontend/multiplayer.ts`: multiplayer lobby
 - `frontend/codex.ts`: thumbnail rendering for the map codex
+- `frontend/shop.ts`: hero shop page
+- `frontend/save.ts`: the save-management panel in the top-right of the home screen
 - `locale/zh.json`, `locale/en.json`, `locale/ja.json`: Chinese, English, and Japanese language packs
-- `static/app.js`, `static/select.js`, `static/multiplayer.js`, `static/codex.js`: generated TypeScript outputs; edit the corresponding `frontend/*.ts` files instead
+- `static/app.js`, `static/select.js`, `static/multiplayer.js`, `static/codex.js`, `static/shop.js`, `static/save.js`: generated TypeScript outputs; edit the corresponding `frontend/*.ts` files instead
 
 ```powershell
 npm run typecheck
@@ -291,6 +315,7 @@ hero in `app.py`:
 | Tech Man | Overclock Protocol | Every 20 kills grants **one permanent stack**: +1 afterimage round trip, +1 knockback tablet, and +20% ultimate damage per stack |
 | Pipa Girl | Endless Strings | After 3 frenzy kills or 10 minion kills, **Ten Ambush summons one extra minion on every cast from then on** (stacks); frenzy lasts +1s |
 | DJ Volt | Resonance | Enemies hit by your skills 3 times enter 3s frenzy; +50% damage to frenzied enemies |
+| Knight-Errant | One-Strike Execution | For every 1% of health the target is missing, each attack against it gains +0.6% chance to execute it instantly |
 
 Lunar Expansion drops the extra meteor on an enemy **inside cast range that is not the nearest one**; if
 there is no second target in range, no extra meteor is dropped. Overclock Protocol is a single-use window —
@@ -339,9 +364,23 @@ The sixth hero, a ranged purple-audio fighter.
 10 records but all of them share one `castId`, so a single enemy only gains 1 stack. It takes
 **3 casts** to fill the meter.
 
+### Knight-Errant
+
+The seventh hero, a gold swordsman-styled melee fighter with 150 basic attack range, unlocked in the Hero Shop for 1000 coins.
+
+| Key | Skill | Effect | Tier 2 | Tier 3 |
+| --- | --- | --- | --- | --- |
+| Q | Knight-Errant Song | Become invulnerable and dash to the nearest enemy within 300 range every 0.5s, striking up to 5 times; it never hits the same enemy twice in a row unless that enemy is the only one in range. Stops immediately when nothing is in range, and the remaining cooldown is proportional to the dashes performed (zero dashes clears the cooldown) | Each dash strike also stuns for 0.5s | Dash interval 0.25s, up to 10 dashes |
+| E | Swordsman's Edge | Empowers your next 3 basic attacks with +20% damage and 10% lifesteal | +20% → +40% damage | Lifesteal 10% → 25% |
+| R | Sword Flight | +50% movement speed and +50% dodge for 3s | 3s → 5s | +50% → +100% speed |
+
+The One-Strike Execution chance scales linearly with the target's missing health, and is rolled inside
+`hitEnemy()` in `map.ts`: when it triggers, the damage is raised to the target's current health so the
+existing death and loot pipeline handles the kill.
+
 ### Adding a hero
 
-Hero mechanics live entirely in the `HEROES` list in `app.py`, so a new hero usually means editing that one file plus the two language packs.
+Hero mechanics live entirely in the `HEROES` list in `app.py`, so a new hero usually means editing that one file plus the three language packs.
 
 **1. Append an entry to `HEROES`**
 
@@ -390,7 +429,7 @@ rather than the skill, use `player_patch` — for example Moss Guardian's tier 3
     "player_patch": {"thornDamageMultiplier": {"set": 0.3}, "thornReturnDamage": {"set": 20}}}
 ```
 
-**3. Add locale entries to both packs**
+**3. Add locale entries to all three packs**
 
 - `heroes.<id>`: `name`, `class_name`, `tagline`, `initial`, `stats` (the three stat labels), and each
   `skills.<skill_id>` entry with `name` / `description` / `detail_description` / `kind`

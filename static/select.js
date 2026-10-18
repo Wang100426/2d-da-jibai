@@ -23,6 +23,9 @@ const passiveDesc = requireSelectionElement("detail-passive-desc");
 const indexLabel = requireSelectionElement("detail-index");
 const selectedName = requireSelectionElement("selected-name");
 const enterBattle = requireSelectionElement("enter-battle");
+const enterShop = requireSelectionElement("enter-shop");
+const lockedBanner = requireSelectionElement("detail-locked");
+const lockedPrice = requireSelectionElement("detail-locked-price");
 function renderStats(hero) {
     stats.replaceChildren();
     Object.entries(hero.stats).forEach(([label, value]) => {
@@ -86,6 +89,12 @@ function selectHero(heroId) {
     indexLabel.textContent = `${String(index + 1).padStart(2, "0")} / ${String(heroes.length).padStart(2, "0")}`;
     selectedName.textContent = hero.name;
     enterBattle.href = `/battle?hero=${encodeURIComponent(hero.id)}${gameMode === "duel" ? "&mode=duel" : ""}`;
+    // 未解锁的英雄：详情照常能看，但入场按钮换成「前往商店」。
+    const locked = hero.locked === true;
+    lockedBanner.hidden = !locked;
+    lockedPrice.textContent = String(hero.price);
+    enterBattle.hidden = locked;
+    enterShop.hidden = !locked;
     renderStats(hero);
     renderSkills(hero);
 }

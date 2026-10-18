@@ -154,7 +154,46 @@
     "RUN_PAUSED": "RUN PAUSED",
     "ROUND_BREAK_PICK": "ROUND BREAK · PICK ONE",
     "RUN_ENDED_EYEBROW": "RUN ENDED",
-    "PASSIVE": "PASSIVE"
+    "PASSIVE": "PASSIVE",
+    "SHOP": "SHOP",
+    "SHOP_TITLE": "HERO SHOP",
+    "SHOP_KICKER": "ARMORY",
+    "SHOP_SUBTITLE": "Every run banks its coins. Save enough, then bring a new fighter back to the arena.",
+    "COINS": "COINS",
+    "SHOP_OWNED": "OWNED",
+    "SHOP_BUY": "BUY",
+    "SHOP_NOT_ENOUGH": "Not enough coins",
+    "SHOP_PURCHASED": "Purchased",
+    "SHOP_LOCKED": "LOCKED",
+    "SHOP_ENTER_SELECT": "SELECT",
+    "SHOP_LOCKED_HINT": "This fighter is still locked. Buy them in the shop first.",
+    "SHOP_GO": "GO TO SHOP",
+    "SHOP_PROGRESS": "UNLOCKED",
+    "SHOP_PRICE_NOTE": "Unlock with coins · yours forever",
+    "HERO_FREE": "FREE",
+    "SHOP_INFINITE": "Unlimited coins",
+    "SHOP_FAILED": "Purchase failed, please try again.",
+    "SAVE_MANAGE": "SAVE DATA",
+    "SAVE_SUBTITLE": "Check your coins and unlocked fighters, or back up, restore and reset your save.",
+    "SAVE_OVERVIEW": "OVERVIEW",
+    "SAVE_HEROES": "UNLOCKED FIGHTERS",
+    "SAVE_PATH": "SAVE FILE",
+    "SAVE_SETTLED": "SETTLED RUNS",
+    "SAVE_FREE_HINT": "Free fighters are always playable and stay out of the save file.",
+    "SAVE_EXPORT": "EXPORT SAVE",
+    "SAVE_EXPORT_HINT": "Download a JSON backup.",
+    "SAVE_IMPORT": "IMPORT SAVE",
+    "SAVE_IMPORT_HINT": "Pick a JSON file to overwrite the current save.",
+    "SAVE_RESET": "RESET SAVE",
+    "SAVE_RESET_HINT": "Wipe coins and unlocked fighters.",
+    "SAVE_RESET_CONFIRM": "CLICK AGAIN TO CONFIRM",
+    "SAVE_CLOSE": "CLOSE",
+    "SAVE_EXPORTED": "Save exported.",
+    "SAVE_IMPORTED": "Save imported.",
+    "SAVE_IMPORT_FAILED": "Import failed: not a valid save file.",
+    "SAVE_RESET_DONE": "Save reset.",
+    "SAVE_FAILED": "Something went wrong, please try again.",
+    "SAVE_INFINITE_NOTE": "Unlimited-coin test save"
   },
   "heroes": {
     "volt": {
@@ -399,6 +438,41 @@
           "kind": "Ultimate",
           "description": "Haste · invulnerable · knock enemies flying",
           "detail_description": "Enter a 3s haste state (+50% movement speed) and take no damage. Enemies you touch are damaged and knocked back, once per enemy."
+        }
+      }
+    },
+    "jianghu": {
+      "name": "Jianghu Wanderer",
+      "class_name": "Lone Swordsman",
+      "tagline": "By the time the blade sings, he is already behind you.",
+      "initial": "J",
+      "stats": [
+        "Attack",
+        "Defense",
+        "Mobility"
+      ],
+      "passive": {
+        "name": "Throat Slit",
+        "description": "For every 1% of an enemy's missing health, each of his attacks gains +0.6% chance to execute that enemy outright."
+      },
+      "skills": {
+        "jianghu-xia-ke-xing": {
+          "name": "Knight-Errant Song",
+          "kind": "Ultimate",
+          "description": "Invulnerable dash chain · strikes the nearest enemy",
+          "detail_description": "Become invulnerable, then every 0.5s dash to the nearest enemy within 300 and strike them, up to 5 times; he never strikes the same enemy twice in a row unless it is the only one left in range. If nothing is in range he stops at once and refunds the unused dashes to the cooldown proportionally (no dash at all clears the cooldown)."
+        },
+        "jianghu-blade": {
+          "name": "Swordsman's Edge",
+          "kind": "Skill",
+          "description": "Empower your next 3 basic attacks · bonus damage and lifesteal",
+          "detail_description": "Your next 3 basic attacks deal +20% damage and each heals for 10% of the damage dealt."
+        },
+        "jianghu-flight": {
+          "name": "Sword Flight",
+          "kind": "Skill",
+          "description": "Big movement speed and dodge boost",
+          "detail_description": "For the next 3s: +50% movement speed and +50% dodge."
         }
       }
     }
@@ -1060,7 +1134,8 @@
       "荆棘护甲": "Thorn armor",
       "中毒": "Poison",
       "月影护盾": "Moon shield",
-      "引燃": "Ignite"
+      "引燃": "Ignite",
+      "御剑飞行": "Sword Flight"
     },
     "basic_hit": {
       "volt": "Basic hit for {damage} damage, restores 5 energy.",
@@ -1069,7 +1144,8 @@
       "tech": "Tech ranged hit for {damage} damage.",
       "pipa": "Pipa sound blade hits for {damage} damage.",
       "volt2": "Sound hit for {damage} damage, restores 5 energy.",
-      "sakura": "Firework hit for {damage} damage, igniting the target."
+      "sakura": "Firework hit for {damage} damage, igniting the target.",
+      "jianghu": "The blade flashes for {damage} damage."
     },
     "templates": {
       "skill.cooling": "{name} is on cooldown for {seconds}s more.",
@@ -1168,7 +1244,22 @@
       "event.train_departing": "The train on track {track} is departing.",
       "event.train_hit": "A train sends you flying for {damage} heavy damage and a knockback!",
       "event.train_damage": "Train impact -{damage}",
-      "float.sakura_invincible": "Sakura guard"
+      "float.sakura_invincible": "Sakura guard",
+      "skill.jianghu_xia_ke_xing": "{name} begins: invulnerable dash chain, up to {max} dashes {interval}s apart.",
+      "skill.jianghu_xia_ke_xing_stop": "{name} ends: {used} dashes landed, {refund}% cooldown refunded.",
+      "skill.jianghu_xia_ke_xing_empty": "{name}: nothing in range, cooldown cleared.",
+      "skill.jianghu_blade": "{name} is active: your next {charges} basic attacks deal +{percent}% damage and heal for {lifesteal}% of damage dealt.",
+      "skill.jianghu_blade_hit": "Swordsman's Edge hits for {damage} damage and heals {heal}.",
+      "skill.jianghu_flight": "{name} is active: +{speed}% movement speed and +{dodge}% dodge for {seconds}s.",
+      "float.execute": "EXECUTED!",
+      "float.jianghu_dash": "Knight-Errant Song",
+      "float.jianghu_blade_ready": "Swordsman's Edge ×{charges}",
+      "float.jianghu_flight": "Sword Flight",
+      "float.jianghu_empty": "No target",
+      "reward.run_gain": "This run earned {coins} coins (total {total}).",
+      "reward.run_infinite": "This run earned {coins} coins (test save: unlimited coins).",
+      "reward.run_empty": "This run earned no coins.",
+      "skill.jianghu_busy": "Knight-Errant Song is still in motion — other skills are locked."
     }
   },
   "lobby": {
@@ -1266,6 +1357,12 @@
     "樱花风暴后减速 50% 持续 3 秒": "Sakura Storm slows 50% for 3s after the stun",
     "樱花风暴吸引时间延长至 1 秒": "Sakura Storm pulls over 1s",
     "樱花之歌加速时间 +1 秒": "Sakura Song lasts +1s",
-    "樱花之歌触碰敌人时同时施加樱花风暴": "Sakura Song also casts Sakura Storm on touched enemies"
+    "樱花之歌触碰敌人时同时施加樱花风暴": "Sakura Song also casts Sakura Storm on touched enemies",
+    "侠客行每次位移攻击额外造成 0.5 秒眩晕": "Knight-Errant Song dashes also stun for 0.5s",
+    "位移间隔缩短至 0.25 秒 · 位移次数提升到 10 次": "Dash interval down to 0.25s · up to 10 dashes",
+    "剑客之刃普攻伤害加成 20% → 40%": "Swordsman's Edge damage bonus 20% → 40%",
+    "剑客之刃吸血 10% → 25%": "Swordsman's Edge lifesteal 10% → 25%",
+    "御剑飞行持续时间 3 秒 → 5 秒": "Sword Flight duration 3s → 5s",
+    "御剑飞行速度提升 50% → 100%": "Sword Flight speed bonus 50% → 100%"
   }
 }

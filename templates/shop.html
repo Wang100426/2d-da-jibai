@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="{{ {'en': 'en', 'ja': 'ja'}.get(lang, 'zh-CN') }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="{{ url_for('favicon', lang=lang) }}">
+  <title>{{ tr("SHOP_TITLE") }} · {{ tr("PRODUCT_NAME") }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="shop-page">
+  <div class="scanlines"></div>
+  <a class="select-back" href="/" aria-label="{{ tr('BACK_HOME') }}">← <span>{{ tr("BACK_HOME") }}</span></a>
+  <div class="language-switch shop-language-toggle" data-language-switch></div>
+
+  <main class="shop-main">
+    <section class="shop-hero-copy">
+      <div class="shop-heading">
+        <p class="eyebrow"><span></span> {{ tr("SHOP_KICKER") }}</p>
+        <h1>{{ tr("SHOP_TITLE") }}</h1>
+      </div>
+      <p class="shop-intro">{{ tr("SHOP_SUBTITLE") }}</p>
+      <div class="shop-wallet">
+        <span>{{ tr("COINS") }}</span>
+        <b class="shop-coin">◈ <i data-coin-balance>{{ "∞" if profile.infinite_coins else "{:,}".format(profile.coins) }}</i></b>
+        <small>{% if profile.infinite_coins %}{{ tr("SHOP_INFINITE") }}{% else %}{{ tr("SHOP_PROGRESS") }} {{ owned_count }} / {{ "%02d"|format(heroes|length) }}{% endif %}</small>
+      </div>
+    </section>
+
+    <section class="shop-grid" aria-label="{{ tr('SHOP_TITLE') }}">
+      {% for hero in heroes %}
+      <article class="shop-card{% if hero.locked %} locked{% else %} owned{% endif %}"
+               data-shop-card="{{ hero.id }}" data-price="{{ hero.price }}"
+               style="--hero-main:{{ hero.palette.main }};--hero-light:{{ hero.palette.light }};--hero-dark:{{ hero.palette.dark }}">
+        <div class="shop-portrait {{ hero.accent }}">
+          <span>{{ hero.initial }}</span>
+          <i class="shop-lock" data-locked-only {% if not hero.locked %}hidden{% endif %}>{{ tr("SHOP_LOCKED") }}</i>
+        </div>
+        <div class="shop-copy">
+          <p class="eyebrow shop-class">{{ hero.class_name }}</p>
+          <h2>{{ hero.name }}</h2>
+          <p class="shop-tagline">{{ hero.tagline }}</p>
+          <dl class="shop-stats">
+            {% for key, value in hero.stats.items() %}
+            <div><dt>{{ key }}</dt><dd>{{ value }}</dd><i><em style="width: {{ value }}%"></em></i></div>
+            {% endfor %}
+          </dl>
+          <div class="shop-actions">
+            <span class="shop-price" title="{{ tr('SHOP_PRICE_NOTE') }}">{% if hero.price > 0 %}◈ {{ hero.price }}{% else %}{{ tr("HERO_FREE") }}{% endif %}</span>
+            <button class="shop-buy" type="button" data-buy data-locked-only {% if not hero.locked %}hidden{% endif %}>{{ tr("SHOP_BUY") }}</button>
+            <span class="shop-owned" data-owned-only {% if hero.locked %}hidden{% endif %}>{{ tr("SHOP_OWNED") }}</span>
+            <a class="shop-select" href="/select" data-owned-only {% if hero.locked %}hidden{% endif %}>{{ tr("SHOP_ENTER_SELECT") }} ›</a>
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </section>
+  </main>
+
+  <div class="shop-toast" id="shop-toast" role="status" aria-live="polite"></div>
+  <footer><span>{{ tr("FOOTER") }}</span><span>{{ tr("SLOGAN") }}</span></footer>
+  <script>
+    window.SHOP_STATE = {
+      coins: {{ profile.coins }},
+      infinite_coins: {{ profile.infinite_coins|tojson }},
+      unlocked_heroes: {{ profile.unlocked_heroes|tojson }}
+    };
+    window.SHOP_STRINGS = {
+      buy: {{ tr("SHOP_BUY")|tojson }},
+      owned: {{ tr("SHOP_OWNED")|tojson }},
+      locked: {{ tr("SHOP_LOCKED")|tojson }},
+      select: {{ tr("SHOP_ENTER_SELECT")|tojson }},
+      not_enough: {{ tr("SHOP_NOT_ENOUGH")|tojson }},
+      purchased: {{ tr("SHOP_PURCHASED")|tojson }},
+      failed: {{ tr("SHOP_FAILED")|tojson }}
+    };
+  </script>
+  <script src="{{ url_for('static', filename='shop.js') }}"></script>
+  <script src="{{ url_for('static', filename='language.js') }}"></script>
+</body>
+</html>

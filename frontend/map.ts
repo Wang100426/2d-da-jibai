@@ -103,6 +103,26 @@ interface AfterimageDash {
   totalSegments: number;
 }
 
+/** 侠客行：无敌状态下按固定间隔向最近敌人位移并攻击的状态机。 */
+interface JianghuDash {
+  castId: number;
+  skillId: string;
+  skillName: string;
+  /** 位移间隔（秒）。 */
+  interval: number;
+  /** 距下一次位移的计时。 */
+  timer: number;
+  /** 计划位移次数与已完成次数。 */
+  max: number;
+  used: number;
+  radius: number;
+  damage: number;
+  stun: number;
+  /** 施放瞬间的冷却，用于按位移次数比例返还。 */
+  baseCooldown: number;
+  lastTarget?: EnemyUnit;
+}
+
 interface TabletVolley {
   x: number;
   y: number;
@@ -160,6 +180,18 @@ interface SkillConfig {
   /** 樱花少女：樱花之歌的持续时长，以及触碰敌人时是否追加樱花风暴。 */
   song_duration?: number;
   song_casts_storm?: number;
+  /** 江湖客·侠客行：位移间隔（秒）、位移次数、每次位移的额外眩晕。 */
+  dash_interval?: number;
+  dash_max?: number;
+  dash_stun?: number;
+  /** 江湖客·剑客之刃：强化普攻次数、伤害倍率（1.2 = +20%）、吸血比例。 */
+  blade_charges?: number;
+  blade_damage_scale?: number;
+  blade_lifesteal?: number;
+  /** 江湖客·御剑飞行：持续时长、移速倍率（1.5 = +50%）、闪避加成。 */
+  flight_duration?: number;
+  flight_speed_scale?: number;
+  flight_dodge?: number;
 }
 
 interface TierPatch {
@@ -204,6 +236,8 @@ interface HeroPassive {
   ignite_duration?: number;
   ignite_bonus_scale?: number;
   ignite_max_scale?: number;
+  /** 江湖客：目标每损失 1% 生命，自己攻击它时 +N 概率直接斩杀。 */
+  execute_per_percent?: number;
   tech_burst?: {
     extra_round_trips?: number;
     extra_tablets?: number;
@@ -652,6 +686,15 @@ let empoweredCastId = 0;
 let empoweredCountsAsSkill = false;
 /** 该次强化普攻附加的狂舞时长。 */
 let empoweredFrenzyTurns = 0;
+
+/* ---------- 江湖客（jianghu） ---------- */
+/** 剑客之刃：剩余强化普攻次数、伤害倍率、吸血比例。 */
+let bladeCharges = 0;
+let bladeDamageScale = 1.2;
+let bladeLifesteal = 0.1;
+let jianghuDashSerial = 0;
+/** 侠客行：进行中的位移链。 */
+let jianghuDash: JianghuDash | undefined;
 let wave = 0;
 let waveState: "starting" | "active" | "upgrade" = "starting";
 let enemiesToSpawn = 0;
@@ -816,6 +859,7 @@ const resumeRunButton = document.querySelector<HTMLButtonElement>("#resume-run")
 const runLevelLabel = requireElement<HTMLElement>("#run-level");
 const runOverOverlay = requireElement<HTMLElement>("#run-over-overlay");
 const finalWaveLabel = requireElement<HTMLElement>("#final-wave");
+const runOverCoins = document.querySelector<HTMLElement>("#run-over-coins");
 const retryRunButton = requireElement<HTMLButtonElement>("#retry-run");
 const duelUpgradeOverlay = document.querySelector<HTMLElement>("#duel-upgrade-overlay");
 const duelUpgradeTitle = document.querySelector<HTMLElement>("#duel-upgrade-title");
@@ -1469,6 +1513,72 @@ function finishRun(): void {
   finalWaveLabel.textContent = String(wave);
   waveSubtitle.textContent = tx("探索者已被击败");
   runOverOverlay.hidden = false;
+  settleRunCoins();
+}
+
+/* ---------- 1.7.0：单机肉鸽金币结算 ---------- */
+/** 本局编号：阵亡结算与中途退出结算共用，服务端按编号去重，不会二次发币。 */
+const runId = `run-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+/** 本局累计击杀数：金币 = 到达波次 × 10 + 击杀 × 1（上限由服务端限制）。 */
+let runKills = 0;
+let coinsSettled = false;
+
+/** 人机对抗与联机不结算金币。 */
+function coinSettlementEnabled(): boolean {
+  return !config.duel && !config.multiplayer;
+}
+
+function showRunCoins(payload: { gained?: number; coins?: number; infinite_coins?: boolean }): void {
+  if (!runOverCoins) return;
+  const gained = Math.max(0, Math.round(Number(payload.gained) || 0));
+  if (gained <= 0) {
+    runOverCoins.textContent = t("reward.run_empty");
+  } else if (payload.infinite_coins) {
+    runOverCoins.textContent = t("reward.run_infinite", { coins: gained });
+  } else {
+    runOverCoins.textContent = t("reward.run_gain", {
+      coins: gained,
+      total: Math.round(Number(payload.coins) || 0),
+    });
+  }
+  runOverCoins.hidden = false;
+}
+
+/**
+ * 结算本局金币。
+ * @param leaving 页面即将跳转或关闭，用 sendBeacon 保证请求能发出去
+ */
+function settleRunCoins(leaving = false): void {
+  if (!coinSettlementEnabled() || coinsSettled) return;
+  coinsSettled = true;
+  const body = JSON.stringify({ run_id: runId, wave, kills: runKills });
+  if (leaving && typeof navigator.sendBeacon === "function") {
+    try {
+      if (navigator.sendBeacon("/api/run/settle", new Blob([body], { type: "application/json" }))) return;
+    } catch {
+      /* sendBeacon 不可用时退回 fetch */
+    }
+  }
+  void fetch("/api/run/settle", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body,
+    keepalive: true,
+  }).then((response) => response.json()).then((payload) => {
+    if (payload && payload.ok) showRunCoins(payload);
+  }).catch(() => {
+    /* 结算失败不影响本局游戏 */
+  });
+}
+
+/** 中途退出（点返回按钮或关闭页面）也要结算本局金币。 */
+function bindCoinSettlement(): void {
+  if (!coinSettlementEnabled()) return;
+  document.addEventListener("click", (event) => {
+    const target = event.target;
+    if (target instanceof Element && target.closest("a[href]")) settleRunCoins(true);
+  }, true);
+  window.addEventListener("pagehide", () => settleRunCoins(true));
 }
 
 function finishDuelRound(playerWon: boolean): void {
@@ -2271,6 +2381,22 @@ function drawSakuraEffects(): void {
     context.lineWidth = 5;
     context.beginPath();
     context.arc(player.x, player.y, player.radius + 16 + Math.sin(now / 90) * 4, 0, Math.PI * 2);
+    context.stroke();
+    context.restore();
+  }
+  // 御剑飞行：脚下一道剑光
+  if ((statusEffects["御剑飞行"] || 0) > 0) {
+    context.save();
+    context.shadowColor = "#a9e7ff";
+    context.shadowBlur = 18;
+    context.strokeStyle = "#d8f6ff";
+    context.lineWidth = 3;
+    context.beginPath();
+    context.ellipse(
+      player.x, player.y + player.radius + 4,
+      player.radius + 14 + Math.sin(now / 110) * 3, 6,
+      0, 0, Math.PI * 2,
+    );
     context.stroke();
     context.restore();
   }
@@ -3720,6 +3846,18 @@ function attackEnemyTarget(attacker: EnemyUnit, target: CombatTarget): void {
   }
 }
 
+/**
+ * 一剑封喉（江湖客被动）：目标每损失 1% 生命，本次攻击 +0.6% 概率直接斩杀。
+ * 判定放在伤害结算里，斩杀时把伤害补到目标当前生命值，复用统一的死亡结算。
+ */
+function rollExecute(enemy: EnemyUnit): boolean {
+  const perPercent = heroPassive.execute_per_percent || 0;
+  if (perPercent <= 0 || enemy.maxHp <= 0 || enemy.hp <= 0) return false;
+  const missingRatio = Math.max(0, Math.min(1, 1 - enemy.hp / enemy.maxHp));
+  if (missingRatio <= 0) return false;
+  return Math.random() < Math.min(0.95, missingRatio * 100 * perPercent);
+}
+
 function hitEnemy(enemy: EnemyUnit, damage: number, effect = "", effectTurns = 0): number {
   if (enemy.hp <= 0) return 0;
   if (schoolClassDuration > 0) damage *= 0.8;
@@ -3727,6 +3865,8 @@ function hitEnemy(enemy: EnemyUnit, damage: number, effect = "", effectTurns = 0
     damage * playerState.damageMultiplier * frenzyDamageScale(enemy)
       * (1 - (enemy.defenseReduction || 0)),
   ));
+  const executed = rollExecute(enemy);
+  if (executed) damage = Math.max(damage, enemy.hp);
   const actualDamage = Math.min(enemy.hp, damage);
   enemy.hp = Math.max(0, enemy.hp - actualDamage);
   healFromDamage(actualDamage, enemy.x, enemy.y);
@@ -3741,6 +3881,7 @@ function hitEnemy(enemy: EnemyUnit, damage: number, effect = "", effectTurns = 0
   // 樱花少女被动：任何技能命中都会引燃目标
   if (heroPassive.id === "sakura_ignite") igniteSakuraTarget(enemy);
   addFloatingText(enemy.x, enemy.y - 28, `-${actualDamage}`, "#ff668d");
+  if (executed) addFloatingText(enemy.x, enemy.y - 56, t("float.execute"), "#fff2b0");
   if (enemy.hp <= 0) {
     if (enemy.duelBot) finishDuelRound(true);
     else addEnemyLoot(enemy);
@@ -3762,6 +3903,10 @@ function healFromDamage(damage: number, x: number, y: number): void {
 }
 
 function applyPlayerDamage(damage: number, attacker?: EnemyUnit): boolean {
+  if (jianghuDash) {
+    addFloatingText(player.x, player.y - 34, t("float.invulnerable_dodge"), "#ffd98e");
+    return false;
+  }
   if (afterimageDash) {
     addFloatingText(player.x, player.y - 34, t("float.invulnerable_dodge"), "#49e6e0");
     return false;
@@ -3770,7 +3915,11 @@ function applyPlayerDamage(damage: number, attacker?: EnemyUnit): boolean {
     addFloatingText(player.x, player.y - 34, t("float.sakura_invincible"), "#ffb7d5");
     return false;
   }
-  if (Math.random() < playerState.dodgeChance) {
+  // 御剑飞行：额外的闪避加成与被动闪避叠加
+  const flightDodge = (statusEffects["御剑飞行"] || 0) > 0
+    ? (jianghuFlightSkill()?.flight_dodge || 0.5)
+    : 0;
+  if (Math.random() < Math.min(0.95, playerState.dodgeChance + flightDodge)) {
     addFloatingText(player.x, player.y - 34, t("float.dodge"), "#8c9aff");
     return false;
   }
@@ -4554,6 +4703,156 @@ function advanceSakuraEffects(dt: number): void {
   advanceSakuraSong(dt);
 }
 
+/* ---------- 江湖客 · 技能 ---------- */
+function jianghuFlightSkill(): SkillConfig | undefined {
+  return config.skills.find((skill) => skill.action === "jianghu_flight");
+}
+
+/** 御剑飞行期间的移速倍率（未生效时为 1）。 */
+function jianghuFlightSpeedScale(): number {
+  if ((statusEffects["御剑飞行"] || 0) <= 0) return 1;
+  return jianghuFlightSkill()?.flight_speed_scale || 1.5;
+}
+
+/** 定点治疗：剑客之刃的吸血走这里，和被动吸血分开结算。 */
+function healPlayer(amount: number): number {
+  const restored = Math.min(playerState.maxHp - playerState.hp, Math.max(0, Math.floor(amount)));
+  if (restored <= 0) return 0;
+  playerState.hp += restored;
+  addFloatingText(player.x, player.y - 46, t("float.heal", { amount: restored }), "#9cff65");
+  updateHud();
+  return restored;
+}
+
+/** 侠客行选目标：半径内最近的敌人；只要范围内还有别的敌人，就不重复上一次的目标。 */
+function jianghuDashTarget(radius: number, previous?: EnemyUnit): EnemyUnit | undefined {
+  const inRange = enemies
+    .filter((enemy) => enemy.hp > 0 && !enemy.friendlySummon && distanceTo(enemy.x, enemy.y) <= radius)
+    .sort((left, right) => distanceTo(left.x, left.y) - distanceTo(right.x, right.y));
+  if (!inRange.length) return undefined;
+  if (inRange.length === 1) return inRange[0];
+  return inRange.find((enemy) => enemy !== previous) || inRange[0];
+}
+
+/**
+ * 侠客行结束：剩余冷却与实际位移次数成正比（位移几次就吃几成冷却），
+ * 一次都没位移时冷却直接清零。
+ */
+function finishJianghuDash(dash: JianghuDash): void {
+  if (jianghuDash === dash) jianghuDash = undefined;
+  const usedRatio = dash.max > 0 ? Math.min(1, dash.used / dash.max) : 0;
+  const cooldown = Math.max(0, dash.baseCooldown * usedRatio);
+  skillCooldowns.set(dash.skillId, cooldown);
+  if (dash.used === 0) {
+    addFloatingText(player.x, player.y - 40, t("float.jianghu_empty"), "#ff9d7a");
+    showToast(t("skill.jianghu_xia_ke_xing_empty", { name: dash.skillName }), "warning");
+  } else if (dash.used < dash.max) {
+    showToast(t("skill.jianghu_xia_ke_xing_stop", {
+      name: dash.skillName,
+      used: dash.used,
+      max: dash.max,
+      cooldown: Math.round(cooldown * 10) / 10,
+    }));
+  }
+  updateSkillButtons();
+}
+
+/** 侠客行的一次位移：贴到目标身边出手，位移期间处于无敌状态。 */
+function jianghuDashStep(dash: JianghuDash): void {
+  const target = jianghuDashTarget(dash.radius, dash.lastTarget);
+  if (!target) {
+    finishJianghuDash(dash);
+    return;
+  }
+  const startX = player.x;
+  const startY = player.y;
+  const angle = Math.atan2(target.y - player.y, target.x - player.x);
+  const stop = player.radius + 14;
+  facing.x = Math.cos(angle);
+  facing.y = Math.sin(angle);
+  const destinationX = target.x - Math.cos(angle) * stop;
+  const destinationY = target.y - Math.sin(angle) * stop;
+  movePlayerToward(destinationX, destinationY, Math.hypot(destinationX - player.x, destinationY - player.y) + 1);
+  skillVisuals.push({
+    type: "beam", x: startX, y: startY, targetX: player.x, targetY: player.y,
+    age: 0, duration: 0.22, color: "#ffd98e",
+  });
+  addFloatingText(target.x, target.y - 50, t("float.jianghu_dash"), "#ffd98e");
+  hitEnemy(target, dash.damage);
+  if (dash.stun > 0 && target.hp > 0) {
+    target.effects["眩晕"] = Math.max(target.effects["眩晕"] || 0, dash.stun);
+  }
+  queuePvpAttack("skill", nearbyPvpTargets(target.x, target.y, stop + 46), dash.skillId);
+  dash.lastTarget = target;
+  dash.used += 1;
+  if (dash.used >= dash.max) finishJianghuDash(dash);
+}
+
+/** 每帧推进侠客行的位移节奏（由 updateCombat 调用）。 */
+function advanceJianghuDash(dt: number): void {
+  if (!jianghuDash) return;
+  const dash = jianghuDash;
+  dash.timer -= dt;
+  if (dash.timer > 0) return;
+  dash.timer = dash.interval;
+  jianghuDashStep(dash);
+}
+
+/**
+ * 侠客行（Q）：进入无敌状态，按固定间隔向半径内最近的敌人位移并攻击，
+ * 最多 dash_max 次；范围内没有敌人时立即停止并返还剩余冷却。
+ */
+function castXiaKeXing(skill: SkillConfig): void {
+  const max = Math.max(1, Math.round(skill.dash_max || 5));
+  const interval = Math.max(0.1, skill.dash_interval || 0.5);
+  jianghuDash = {
+    castId: ++jianghuDashSerial,
+    skillId: skill.id,
+    skillName: skill.name,
+    interval,
+    timer: 0,
+    max,
+    used: 0,
+    radius: skill.radius || 300,
+    damage: skill.damage,
+    stun: skill.dash_stun || 0,
+    baseCooldown: skillCooldowns.get(skill.id) || calculateSkillCooldown(skill),
+  };
+  addSkillVisual(skill);
+  showToast(t("skill.jianghu_xia_ke_xing", { name: skill.name, max, interval }));
+  addFloatingText(player.x, player.y - 40, t("float.jianghu_dash"), "#ffd98e");
+}
+
+/** 剑客之刃（E）：强化接下来 3 次普攻，增伤并附带吸血。 */
+function castJianghuBlade(skill: SkillConfig): void {
+  bladeCharges = Math.max(1, Math.round(skill.blade_charges || 3));
+  bladeDamageScale = skill.blade_damage_scale || 1.2;
+  bladeLifesteal = skill.blade_lifesteal || 0.1;
+  addSkillVisual(skill);
+  addFloatingText(player.x, player.y - 38, t("float.jianghu_blade_ready", { charges: bladeCharges }), "#ffd98e");
+  showToast(t("skill.jianghu_blade", {
+    name: skill.name,
+    charges: bladeCharges,
+    percent: Math.round((bladeDamageScale - 1) * 100),
+    lifesteal: Math.round(bladeLifesteal * 100),
+  }));
+  updateSkillButtons();
+}
+
+/** 御剑飞行（R）：短时间提升移速与闪避。 */
+function castJianghuFlight(skill: SkillConfig): void {
+  const duration = Math.max(1, skill.flight_duration || 3);
+  statusEffects["御剑飞行"] = duration;
+  addSkillVisual(skill);
+  addFloatingText(player.x, player.y - 38, t("float.jianghu_flight"), "#a9e7ff");
+  showToast(t("skill.jianghu_flight", {
+    name: skill.name,
+    seconds: duration,
+    speed: Math.round(((skill.flight_speed_scale || 1.5) - 1) * 100),
+    dodge: Math.round((skill.flight_dodge || 0.5) * 100),
+  }));
+}
+
 function castSkill(index: number): void {
   if (skillIsPaused()) return;
   if (playerActionsLocked()) {
@@ -4562,6 +4861,10 @@ function castSkill(index: number): void {
   }
   if (afterimageDash) {
     showToast("残影折返尚未结束，暂时无法施放其他技能。", "warning");
+    return;
+  }
+  if (jianghuDash) {
+    showToast(t("skill.jianghu_busy"), "warning");
     return;
   }
   const skill = config.skills[index];
@@ -4836,6 +5139,12 @@ function castSkill(index: number): void {
     showToast(t("skill.sakura_storm", { name: skill.name, radius: skill.radius || 200 }));
   } else if (skill.action === "sakura_song") {
     castSakuraSong(skill);
+  } else if (skill.action === "jianghu_xia_ke_xing") {
+    castXiaKeXing(skill);
+  } else if (skill.action === "jianghu_blade") {
+    castJianghuBlade(skill);
+  } else if (skill.action === "jianghu_flight") {
+    castJianghuFlight(skill);
   } else if (skill.target === "self") {
     addSkillVisual(skill);
     const duration = Math.max(3, skill.effect_turns * 3);
@@ -4897,7 +5206,10 @@ function basicAttack(): boolean {
   const baseEmpoweredDamage = isResonanceEmpower
     ? heroCombat.basic_damage * (empoweredSkill?.empower_damage_scale || 1.5)
     : empoweredSkill?.empowered_damage || 34;
-  const damage = wasEmpowered ? Math.round(baseEmpoweredDamage) : heroCombat.basic_damage;
+  // 剑客之刃：强化期间每次普攻额外增伤，命中后按造成的伤害吸血
+  const bladeStrike = bladeCharges > 0;
+  let damage = wasEmpowered ? Math.round(baseEmpoweredDamage) : heroCombat.basic_damage;
+  if (bladeStrike) damage = Math.round(damage * bladeDamageScale);
   if (heroCombat.basic_beam && !wasEmpowered) {
     skillVisuals.push({
       type: "beam", x: player.x, y: player.y, targetX: target.x, targetY: target.y,
@@ -4906,7 +5218,7 @@ function basicAttack(): boolean {
   }
   // 电音人的强化普攻自带狂舞，并且 3 阶起计入被动层数
   const resonanceFrenzy = wasEmpowered && isResonanceEmpower ? empoweredFrenzyTurns : 0;
-  hitEnemy(
+  const basicDealt = hitEnemy(
     target,
     damage,
     resonanceFrenzy > 0 ? "狂舞" : wasEmpowered ? "" : heroCombat.basic_effect,
@@ -4934,11 +5246,19 @@ function basicAttack(): boolean {
     }
   }
   playerState.energy = Math.min(playerState.maxEnergy, playerState.energy + 5);
-  showToast(wasEmpowered
-    ? (isResonanceEmpower
-      ? t("skill.volt2_empowered_hit", { damage })
-      : t("skill.empowered_hit", { damage }))
-    : heroCombat.basic_hit_message.replace("{damage}", String(damage)));
+  if (bladeStrike) {
+    // 剑客之刃：消耗一层强化，按实际造成的伤害吸血
+    bladeCharges = Math.max(0, bladeCharges - 1);
+    const healed = healPlayer(basicDealt * bladeLifesteal);
+    showToast(t("skill.jianghu_blade_hit", { damage: basicDealt, heal: healed }));
+    updateSkillButtons();
+  } else {
+    showToast(wasEmpowered
+      ? (isResonanceEmpower
+        ? t("skill.volt2_empowered_hit", { damage })
+        : t("skill.empowered_hit", { damage }))
+      : heroCombat.basic_hit_message.replace("{damage}", String(damage)));
+  }
   onPlayerBasicAttack();
   updateHud();
   return true;
@@ -5010,9 +5330,12 @@ function updateSkillButtons(): void {
     if (!skill) return;
     const remaining = skillCooldowns.get(skill.id) || 0;
     const label = button.querySelector<HTMLElement>(".skill-cooldown");
-    const cooldownText = remaining > 0 ? `${remaining.toFixed(1)}s` : "";
+    // 剑客之刃：有强化层数时优先显示剩余次数，而不是冷却
+    const charges = skill.action === "jianghu_blade" ? bladeCharges : 0;
+    const active = remaining > 0 || charges > 0;
+    const cooldownText = charges > 0 ? `×${charges}` : remaining > 0 ? `${remaining.toFixed(1)}s` : "";
     if (label && label.textContent !== cooldownText) label.textContent = cooldownText;
-    if (button.classList.contains("cooling") !== (remaining > 0)) button.classList.toggle("cooling", remaining > 0);
+    if (button.classList.contains("cooling") !== active) button.classList.toggle("cooling", active);
     const lowEnergy = playerState.energy < skill.cost;
     if (button.classList.contains("low-energy") !== lowEnergy) button.classList.toggle("low-energy", lowEnergy);
     const progress = skillProgress.get(skill.id);
@@ -5044,6 +5367,8 @@ function updateCombat(dt: number): void {
   advanceHomingDiscs(dt);
   if (skillIsPaused()) return;
   if (!playerMovementLocked()) advanceAfterimageDash(dt);
+  if (skillIsPaused()) return;
+  if (!playerMovementLocked()) advanceJianghuDash(dt);
   if (skillIsPaused()) return;
   skillVisuals.forEach((visual) => { visual.age += dt; });
   for (let i = skillVisuals.length - 1; i >= 0; i -= 1) {
@@ -5471,7 +5796,7 @@ function drawFrame(timestamp: number): void {
       dx *= Math.SQRT1_2;
       dy *= Math.SQRT1_2;
     }
-    if (!playerMovementLocked() && !afterimageDash && (dx || dy)) {
+    if (!playerMovementLocked() && !afterimageDash && !jianghuDash && (dx || dy)) {
       facing.x = dx;
       facing.y = dy;
     }
@@ -5479,9 +5804,10 @@ function drawFrame(timestamp: number): void {
       player.speed *
       ((statusEffects["加速"] || 0) > 0 ? 1.45 : 1) *
       (sakuraSong && sakuraSong.remaining > 0 ? 1.5 : 1) *
+      jianghuFlightSpeedScale() *
       ((statusEffects["强力减速"] || 0) > 0 ? 0.4 : (statusEffects["减速"] || 0) > 0 ? 0.55 : 1) *
       (schoolClassDuration > 0 ? 0.4 : 1);
-    if (!playerMovementLocked() && !afterimageDash) movePlayer(dx * movementSpeed * dt, dy * movementSpeed * dt);
+    if (!playerMovementLocked() && !afterimageDash && !jianghuDash) movePlayer(dx * movementSpeed * dt, dy * movementSpeed * dt);
     playerState.energy = Math.min(playerState.maxEnergy, playerState.energy + dt * playerState.energyRegen);
     updateCombat(dt);
     if (Math.floor(playerState.energy) !== lastHudEnergy) updateHud();
@@ -5603,6 +5929,7 @@ retryRunButton.addEventListener("click", () => {
 });
 pauseToggle?.addEventListener("click", togglePause);
 resumeRunButton?.addEventListener("click", togglePause);
+bindCoinSettlement();
 
 updateHud();
 if (config.multiplayer) {
