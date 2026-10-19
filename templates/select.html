@@ -110,5 +110,6 @@
   <script>window.HERO_SELECTION = {{ heroes|tojson }}; window.GAME_MODE = {{ game_mode|tojson }};</script>
   <script src="{{ url_for('static', filename='select.js') }}"></script>
   <script src="{{ url_for('static', filename='language.js') }}"></script>
+  <script src="{{ url_for('static', filename='page-transition.js') }}" defer></script>
 </body>
 </html>

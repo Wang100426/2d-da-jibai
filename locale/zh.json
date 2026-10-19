@@ -193,7 +193,8 @@
     "SAVE_IMPORT_FAILED": "导入失败：文件不是合法的存档。",
     "SAVE_RESET_DONE": "存档已重置。",
     "SAVE_FAILED": "操作失败，请稍后再试。",
-    "SAVE_INFINITE_NOTE": "无限金币测试存档"
+    "SAVE_INFINITE_NOTE": "无限金币测试存档",
+    "EXIT_RUN": "退出本局"
   },
   "heroes": {
     "volt": {
@@ -386,6 +387,12 @@
         "description": "技能命中即引燃目标：每秒造成相当于自身最大生命值 5% 的伤害，持续 3 秒；灼烧期间再次被技能命中，灼烧每秒伤害 +10%（最高叠加至 4 倍）并刷新持续时间。"
       },
       "skills": {
+        "sakura-song": {
+          "name": "樱花之歌",
+          "kind": "大招",
+          "description": "加速 · 无敌 · 撞飞敌人",
+          "detail_description": "进入 3 秒的加速状态（移速 +50%），期间免疫一切伤害；被身体撞到的敌人会受到伤害并被击退，每个敌人每次只结算一次。"
+        },
         "sakura-festival": {
           "name": "夏日祭",
           "kind": "小技能",
@@ -397,12 +404,6 @@
           "kind": "小技能",
           "description": "在最近敌人处掀起风暴 · 聚拢、伤害并眩晕",
           "detail_description": "在 460 距离内最近的敌人位置生成半径 200 的樱花风暴，0.5 秒内把范围内的敌人卷向中心，随后造成小额伤害并眩晕 1 秒。"
-        },
-        "sakura-song": {
-          "name": "樱花之歌",
-          "kind": "大招",
-          "description": "加速 · 无敌 · 撞飞敌人",
-          "detail_description": "进入 3 秒的加速状态（移速 +50%），期间免疫一切伤害；被身体撞到的敌人会受到伤害并被击退，每个敌人每次只结算一次。"
         }
       }
     },
@@ -878,7 +879,18 @@
       "reward.run_gain": "本局获得 {coins} 金币（当前 {total}）。",
       "reward.run_infinite": "本局获得 {coins} 金币（测试存档：金币无限）。",
       "reward.run_empty": "本局没有获得金币。",
-      "skill.jianghu_busy": "侠客行尚未结束，暂时无法施放其他技能。"
+      "skill.jianghu_busy": "侠客行尚未结束，暂时无法施放其他技能。",
+      "pause_stats.wave": "到达波次",
+      "pause_stats.kills": "本局击杀",
+      "pause_stats.passive_kills": "被动累计击杀",
+      "pause_stats.damage": "伤害倍率",
+      "pause_stats.attack_speed": "攻速",
+      "pause_stats.defense": "减伤",
+      "pause_stats.lifesteal": "吸血",
+      "pause_stats.dodge": "闪避",
+      "pause_stats.range": "普攻范围",
+      "pause_stats.energy_regen": "能量回复",
+      "pause_stats.supplies": "补给拾取"
     }
   },
   "lobby": {

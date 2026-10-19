@@ -52,5 +52,6 @@
   <script>window.MAP_CODEX_PREVIEWS = {{ maps|map(attribute='preview')|list|tojson }};</script>
   <script src="{{ url_for('static', filename='codex.js') }}"></script>
   <script src="{{ url_for('static', filename='language.js') }}"></script>
+  <script src="{{ url_for('static', filename='page-transition.js') }}" defer></script>
 </body>
 </html>

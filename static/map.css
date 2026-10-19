@@ -59,7 +59,15 @@ body.map-page{height:100dvh;overflow:hidden;background:#101722}
 .pause-toggle{position:fixed;z-index:4;top:178px;right:22px;padding:9px 14px;background:#0c111ddd;border:1px solid #49e6e088;color:#e8f3ff;font:11px 'Chakra Petch';letter-spacing:.5px;cursor:pointer}
 .pause-toggle:hover{border-color:#49e6e0;background:#14202b}
 .pause-overlay{position:fixed;z-index:9;inset:0;display:grid;place-items:center;background:#050710d9;backdrop-filter:blur(6px)}
-.pause-overlay[hidden]{display:none}.pause-panel{text-align:center;border-color:#49e6e088}.pause-panel .button{margin-top:8px;cursor:pointer}
+.pause-overlay[hidden]{display:none}
+.pause-panel{text-align:center;border-color:#49e6e088;max-width:560px;width:min(92vw,560px)}
+.pause-panel .button{margin-top:8px;cursor:pointer}
+.pause-stats{margin:18px 0 4px;padding:14px 16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 22px;text-align:left;background:#0b1220cc;border:1px solid #232f3d}
+.pause-stat{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.pause-stat dt{color:#8fa8bd;font-size:11px;letter-spacing:.5px;white-space:nowrap}
+.pause-stat dd{margin:0;color:#e8f3ff;font:600 13px 'Chakra Petch';white-space:nowrap}
+.pause-actions{display:flex;justify-content:center;gap:10px;margin-top:16px}
+.pause-actions .button{margin-top:0;cursor:pointer}
 .map-toast{position:fixed;z-index:5;top:82px;left:50%;transform:translate(-50%,-12px);opacity:0;pointer-events:none;padding:10px 18px;background:#0b111deF;border:1px solid #49e6e0;color:#f1f5f9;font-size:12px;box-shadow:0 6px 24px #0009;transition:opacity .16s,transform .16s}
 .map-toast.visible{opacity:1;transform:translate(-50%,0)}.map-toast.warning{border-color:#ff668d;color:#ffd7df}
 .pickup-prompt{position:fixed;z-index:3;left:50%;bottom:110px;transform:translateX(-50%);padding:9px 14px;background:#0b111deF;border:1px solid #ffca62;color:#fff4d2;font-size:12px;cursor:pointer}

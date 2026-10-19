@@ -1,5 +1,38 @@
 # 更新日志 / Updates
 
+## 1.7.5
+
+### 中文
+
+- 战斗暂停面板升级：右上角暂停按钮与 ESC 键统一进入暂停面板，面板内新增战况与属性总览（到达波次、本局/被动累计击杀、伤害倍率、攻速、减伤、吸血、闪避、普攻范围、能量回复、补给拾取），并提供「继续游戏」与「退出本局」两个同风格按钮；退出同样结算本局金币。
+- 修正樱花少女的技能按键顺序：现与其他全部英雄一致，Q=大招（樱花之歌）、E=一技能（夏日祭）、R=二技能（樱花风暴）。
+- 全面优化点击与过场动画：
+  - 全站按钮与可点击小件新增按下反馈（轻微缩放），并统一了默认过渡曲线；
+  - 主页、选人、商店、图鉴与联机页新增页面入场过场（淡入 + 上浮）；
+  - 选人页英雄卡、商店商品卡、图鉴地图卡改为逐个瀑布式进入；
+  - 站内跳转新增离场淡出过场（外链、下载、新标签页与系统「减少动态效果」偏好不受影响）。
+
+### English
+
+- Upgraded the battle pause panel: the top-right pause button and the ESC key both open it, and it now shows a run & stats overview (wave, kills this run and passive kills, damage multiplier, attack speed, damage reduction, lifesteal, dodge, attack range, energy regen, supplies) plus two matching buttons — Resume and Exit Run. Exiting still settles this run's coins.
+- Fixed Sakura Girl's skill key order to match every other hero: Q = ultimate (Sakura Song), E = first ability (Summer Festival), R = second ability (Sakura Storm).
+- Polished click & transition animations across the board:
+  - All buttons and clickable pills now have a pressed-state response (subtle scale) with a unified default easing;
+  - The home, select, shop, codex and multiplayer pages gained an entrance transition (fade + rise);
+  - Roster cards, shop cards and codex cards now cascade in one by one;
+  - Internal navigation fades out before leaving (external links, downloads, new tabs and the system "reduce motion" preference are unaffected).
+
+### 日本語
+
+- バトルのポーズパネルを強化：右上のポーズボタンとESCキーのどちらでもパネルを開き、戦況とステータスの概要（到達ウェーブ、今回とパッシブの累計撃破、ダメージ倍率、攻撃速度、被ダメ軽減、吸血、回避、通常攻撃距離、エネルギー回復、補給回収）を表示。同スタイルの「続ける」と「リタイア」の2ボタンを提供します。リタイア時もコインは精算されます。
+- 桜少女のスキルキー配置を修正：他の全ヒーローと同様に、Q=アルティメット（桜の歌）、E=スキル1（夏祭り）、R=スキル2（桜嵐）になりました。
+- クリックと画面遷移アニメーションを全般的に改善：
+  - 全ボタンとクリック可能な要素に押下フィードバック（軽い縮小）と統一されたイージングを追加；
+  - ホーム・選択・ショップ・図鑑・マルチプレイ画面に画面遷移アニメーション（フェード＋スライド）を追加；
+  - 選択画面のヒーローカード、ショップカード、図鑑カードが順番に登場するように変更；
+  - サイト内リンクの移動時にフェードアウトする遷移を追加（外部リンク・ダウンロード・新規タブ・「動きを減らす」設定は影響なし）。
+
+
 ## 1.7.0
 
 ### 中文

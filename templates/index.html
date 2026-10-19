@@ -133,6 +133,7 @@
   <footer><span>{{ tr("FOOTER") }}</span><span>{{ tr("SLOGAN") }}</span></footer>
   <script src="{{ url_for('static', filename='dot-motion-loader.js') }}"></script>
   <script src="{{ url_for('static', filename='language.js') }}"></script>
+  <script src="{{ url_for('static', filename='page-transition.js') }}" defer></script>
   <script>
     window.SAVE_STATE = {
       coins: {{ profile.coins }},

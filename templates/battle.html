@@ -53,8 +53,12 @@
     <div class="upgrade-panel pause-panel">
       <p class="eyebrow">{{ tr("RUN_PAUSED") }}</p>
       <h2>{{ tr("PAUSED") }}</h2>
+      <dl class="pause-stats" id="pause-stats"></dl>
       <p>{{ tr("PAUSED_HELP") }}</p>
-      <button class="button button-primary" id="resume-run" type="button">{{ tr("RESUME") }}</button>
+      <div class="pause-actions">
+        <button class="button button-primary" id="resume-run" type="button">{{ tr("RESUME") }}</button>
+        <a class="button button-ghost" id="exit-run" href="/select">{{ tr("EXIT_RUN") }}</a>
+      </div>
     </div>
   </section>
   {% endif %}
@@ -152,5 +156,6 @@
   <script src="{{ url_for('static', filename='dot-motion-loader.js') }}"></script>
   <script src="{{ url_for('static', filename='app.js') }}"></script>
   <script src="{{ url_for('static', filename='language.js') }}"></script>
+  <script src="{{ url_for('static', filename='page-transition.js') }}" defer></script>
 </body>
 </html>

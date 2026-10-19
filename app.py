@@ -363,6 +363,10 @@ HEROES = [
             "ignite_max_scale": 4,
         },
         "skills": [
+            {"id": "sakura-song", "name": "樱花之歌", "description": "加速·无敌·撞飞敌人", "kind": "大招", "target": "self", "action": "sakura_song", "cost": 60, "cooldown": 16, "damage": 24, "radius": 90, "effect": "", "effect_turns": 0,
+             "song_duration": 3,
+             "tier_effects": {2: {"label": "樱花之歌加速时间 +1 秒", "patch": {"song_duration": {"add": 1}}},
+                              3: {"label": "樱花之歌触碰敌人时同时施加樱花风暴", "patch": {"song_casts_storm": {"set": 1}}}}},
             {"id": "sakura-festival", "name": "夏日祭", "description": "普攻范围内持续灼烧 · 粉色区域提示", "kind": "小技能", "target": "self", "action": "sakura_festival", "cost": 30, "cooldown": 9, "damage": 6, "radius": 0, "effect": "", "effect_turns": 0,
              "festival_duration": 3, "festival_interval": 0.5,
              "tier_effects": {2: {"label": "夏日祭持续时间 +1 秒", "patch": {"festival_duration": {"add": 1}}},
@@ -371,10 +375,6 @@ HEROES = [
              "storm_pull_duration": 0.5,
              "tier_effects": {2: {"label": "樱花风暴后减速 50% 持续 3 秒", "patch": {"storm_slow_duration": {"set": 3}}},
                               3: {"label": "樱花风暴吸引时间延长至 1 秒", "patch": {"storm_pull_duration": {"set": 1}}}}},
-            {"id": "sakura-song", "name": "樱花之歌", "description": "加速·无敌·撞飞敌人", "kind": "大招", "target": "self", "action": "sakura_song", "cost": 60, "cooldown": 16, "damage": 24, "radius": 90, "effect": "", "effect_turns": 0,
-             "song_duration": 3,
-             "tier_effects": {2: {"label": "樱花之歌加速时间 +1 秒", "patch": {"song_duration": {"add": 1}}},
-                              3: {"label": "樱花之歌触碰敌人时同时施加樱花风暴", "patch": {"song_casts_storm": {"set": 1}}}}},
         ],
     },
     {

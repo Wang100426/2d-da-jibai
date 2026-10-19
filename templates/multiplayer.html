@@ -55,5 +55,6 @@
   <script>window.MP_HEROES = {{ heroes|tojson }}; window.MP_LOCALE = {{ locale_pack|tojson }};</script>
   <script src="{{ url_for('static', filename='multiplayer.js') }}"></script>
   <script src="{{ url_for('static', filename='language.js') }}"></script>
+  <script src="{{ url_for('static', filename='page-transition.js') }}" defer></script>
 </body>
 </html>

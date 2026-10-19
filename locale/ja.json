@@ -193,7 +193,8 @@
     "SAVE_IMPORT_FAILED": "読み込み失敗：有効なセーブファイルではありません。",
     "SAVE_RESET_DONE": "セーブをリセットしました。",
     "SAVE_FAILED": "操作に失敗しました。もう一度お試しください。",
-    "SAVE_INFINITE_NOTE": "コイン無制限のテストセーブ"
+    "SAVE_INFINITE_NOTE": "コイン無制限のテストセーブ",
+    "EXIT_RUN": "リタイア"
   },
   "heroes": {
     "volt": {
@@ -421,6 +422,12 @@
         "description": "スキル命中で対象を着火：自身の最大HPの5%を毎秒与え、3秒間持続。燃焼中に再度スキルが命中すると毎秒ダメージ +10%（最大4倍）し、持続時間を更新する。"
       },
       "skills": {
+        "sakura-song": {
+          "name": "サクラソング",
+          "kind": "アルティメット",
+          "description": "加速 · 無敵 · 敵を弾き飛ばす",
+          "detail_description": "3秒間の加速状態（移動速度 +50%）に入り、あらゆるダメージを無効化する。体当たりした敵はダメージとノックバックを受け、敵1体につき1回だけ判定される。"
+        },
         "sakura-festival": {
           "name": "夏祭り",
           "kind": "アビリティ",
@@ -432,12 +439,6 @@
           "kind": "アビリティ",
           "description": "最寄りの敵の位置に嵐を発生 · 引き寄せ、ダメージとスタン",
           "detail_description": "460以内で最も近い敵の位置に半径200のサクラストームを生成し、0.5秒かけて範囲内の敵を中心へ引き寄せ、その後小ダメージと1秒のスタンを与える。"
-        },
-        "sakura-song": {
-          "name": "サクラソング",
-          "kind": "アルティメット",
-          "description": "加速 · 無敵 · 敵を弾き飛ばす",
-          "detail_description": "3秒間の加速状態（移動速度 +50%）に入り、あらゆるダメージを無効化する。体当たりした敵はダメージとノックバックを受け、敵1体につき1回だけ判定される。"
         }
       }
     },
@@ -1259,7 +1260,18 @@
       "reward.run_gain": "今回の獲得コイン {coins}（現在 {total}）。",
       "reward.run_infinite": "今回の獲得コイン {coins}（テストセーブ：コイン無制限）。",
       "reward.run_empty": "今回コインは獲得できませんでした。",
-      "skill.jianghu_busy": "侠客行が続いているため、他のスキルは使えません。"
+      "skill.jianghu_busy": "侠客行が続いているため、他のスキルは使えません。",
+      "pause_stats.wave": "到達ウェーブ",
+      "pause_stats.kills": "撃破数（今回）",
+      "pause_stats.passive_kills": "パッシブ累計撃破",
+      "pause_stats.damage": "ダメージ倍率",
+      "pause_stats.attack_speed": "攻撃速度",
+      "pause_stats.defense": "被ダメージ軽減",
+      "pause_stats.lifesteal": "吸血",
+      "pause_stats.dodge": "回避",
+      "pause_stats.range": "通常攻撃距離",
+      "pause_stats.energy_regen": "エネルギー回復",
+      "pause_stats.supplies": "補給回収"
     }
   },
   "lobby": {

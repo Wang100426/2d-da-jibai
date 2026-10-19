@@ -193,7 +193,8 @@
     "SAVE_IMPORT_FAILED": "Import failed: not a valid save file.",
     "SAVE_RESET_DONE": "Save reset.",
     "SAVE_FAILED": "Something went wrong, please try again.",
-    "SAVE_INFINITE_NOTE": "Unlimited-coin test save"
+    "SAVE_INFINITE_NOTE": "Unlimited-coin test save",
+    "EXIT_RUN": "EXIT RUN"
   },
   "heroes": {
     "volt": {
@@ -421,6 +422,12 @@
         "description": "Skill hits ignite the target: 5% of your max health per second for 3s. Hitting a burning target again raises the burn damage by 10% (up to 4x) and refreshes the duration."
       },
       "skills": {
+        "sakura-song": {
+          "name": "Sakura Song",
+          "kind": "Ultimate",
+          "description": "Haste · invulnerable · knock enemies flying",
+          "detail_description": "Enter a 3s haste state (+50% movement speed) and take no damage. Enemies you touch are damaged and knocked back, once per enemy."
+        },
         "sakura-festival": {
           "name": "Summer Festival",
           "kind": "Ability",
@@ -432,12 +439,6 @@
           "kind": "Ability",
           "description": "Raise a storm on the nearest enemy · pulls in, damages and stuns",
           "detail_description": "Create a Sakura Storm with radius 200 at the nearest enemy within 460, pulling every enemy inside toward the center over 0.5s, then dealing a small hit and a 1s stun."
-        },
-        "sakura-song": {
-          "name": "Sakura Song",
-          "kind": "Ultimate",
-          "description": "Haste · invulnerable · knock enemies flying",
-          "detail_description": "Enter a 3s haste state (+50% movement speed) and take no damage. Enemies you touch are damaged and knocked back, once per enemy."
         }
       }
     },
@@ -1259,7 +1260,18 @@
       "reward.run_gain": "This run earned {coins} coins (total {total}).",
       "reward.run_infinite": "This run earned {coins} coins (test save: unlimited coins).",
       "reward.run_empty": "This run earned no coins.",
-      "skill.jianghu_busy": "Knight-Errant Song is still in motion — other skills are locked."
+      "skill.jianghu_busy": "Knight-Errant Song is still in motion — other skills are locked.",
+      "pause_stats.wave": "Wave",
+      "pause_stats.kills": "Kills (run)",
+      "pause_stats.passive_kills": "Kills (passive)",
+      "pause_stats.damage": "Damage",
+      "pause_stats.attack_speed": "Attack speed",
+      "pause_stats.defense": "Damage reduction",
+      "pause_stats.lifesteal": "Lifesteal",
+      "pause_stats.dodge": "Dodge",
+      "pause_stats.range": "Attack range",
+      "pause_stats.energy_regen": "Energy regen",
+      "pause_stats.supplies": "Supplies"
     }
   },
   "lobby": {

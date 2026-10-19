@@ -855,6 +855,7 @@ const skillUpgradeTitle = requireElement<HTMLElement>("#skill-upgrade-title");
 const skillUpgradeSubtitle = requireElement<HTMLElement>("#skill-upgrade-subtitle");
 const pauseOverlay = document.querySelector<HTMLElement>("#pause-overlay");
 const pauseToggle = document.querySelector<HTMLButtonElement>("#pause-toggle");
+const pauseStats = document.querySelector<HTMLElement>("#pause-stats");
 const resumeRunButton = document.querySelector<HTMLButtonElement>("#resume-run");
 const runLevelLabel = requireElement<HTMLElement>("#run-level");
 const runOverOverlay = requireElement<HTMLElement>("#run-over-overlay");
@@ -1744,10 +1745,41 @@ function togglePause(): void {
     return;
   }
   if (!skillUpgradeOverlay.hidden || !upgradeOverlay.hidden) return;
+  renderPauseStats();
   pauseOverlay.hidden = false;
   pauseToggle?.setAttribute("aria-pressed", "true");
   keys.clear();
   touchKeys.clear();
+}
+
+/** 暂停面板的战况与属性总览（1.7.5）。 */
+function renderPauseStats(): void {
+  if (!pauseStats) return;
+  const rows: Array<[string, string]> = [
+    [t("pause_stats.wave"), String(wave)],
+    [t("pause_stats.kills"), String(runKills)],
+    [t("pause_stats.passive_kills"), String(passiveState.kills)],
+    [t("pause_stats.damage"), `${Math.round(playerState.damageMultiplier * 100)}%`],
+    [t("pause_stats.attack_speed"), `${playerState.attackSpeed.toFixed(1)} /s`],
+    [t("pause_stats.defense"), `${Math.round(playerState.damageReduction * 100)}%`],
+    [t("pause_stats.lifesteal"), `${Math.round(playerState.lifesteal * 100)}%`],
+    [t("pause_stats.dodge"), `${Math.round(playerState.dodgeChance * 100)}%`],
+    [t("pause_stats.range"), String(heroCombat.basic_range + playerState.passiveRangeBonus)],
+    [t("pause_stats.energy_regen"), `${playerState.energyRegen.toFixed(1)} /s`],
+    [t("pause_stats.supplies"), String(lootCollected)],
+  ];
+  pauseStats.replaceChildren(
+    ...rows.map(([label, value]) => {
+      const item = document.createElement("div");
+      item.className = "pause-stat";
+      const dt = document.createElement("dt");
+      dt.textContent = label;
+      const dd = document.createElement("dd");
+      dd.textContent = value;
+      item.append(dt, dd);
+      return item;
+    }),
+  );
 }
 
 function grantSkillExperience(amount: number, x: number, y: number): void {
