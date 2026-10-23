@@ -5080,14 +5080,16 @@ function castSkaterBoomerang(skill: SkillConfig): void {
   const selfSlow = skill.boomerang_self_slow === undefined ? 0.3 : skill.boomerang_self_slow;
   const extraTargets = skill.boomerang_extra_targets || 0;
   const flightTime = range / speed;
-  const victims: EnemyUnit[] = [];
-  const collectVictims = () => {
-    enemies.filter((enemy) =>
-      enemy.hp > 0 &&
-      distanceTo(enemy.x, enemy.y) <= (skill.radius || 70) &&
-      !victims.includes(enemy),
-    ).forEach((enemy) => {
-      victims.push(enemy);
+  const hitRadius = skill.radius || 70;
+  // 去程与回程各自独立判定：站在路径上的敌人来回各吃一次伤害。
+  const outboundVictims: EnemyUnit[] = [];
+  const returnVictims: EnemyUnit[] = [];
+  // 必须用滑板当前坐标判定，不能用 distanceTo()（那是「玩家到敌人」的距离）。
+  const collectVictims = (cx: number, cy: number, bucket: EnemyUnit[]): void => {
+    enemies.forEach((enemy) => {
+      if (enemy.hp <= 0 || bucket.includes(enemy)) return;
+      if (Math.hypot(enemy.x - cx, enemy.y - cy) > hitRadius) return;
+      bucket.push(enemy);
       hitEnemy(enemy, skill.damage, skill.effect, skill.effect_turns);
     });
   };
@@ -5106,7 +5108,7 @@ function castSkaterBoomerang(skill: SkillConfig): void {
     const progress = Math.min(1, elapsed / flightTime);
     const px = startX + dirX * range * progress;
     const py = startY + dirY * range * progress;
-    collectVictims();
+    collectVictims(px, py, outboundVictims);
     skillVisuals.push({
       type: "beam", x: px, y: py, targetX: px + dirX * 20, targetY: py + dirY * 20,
       age: 0, duration: 0.15, color: "#ff8a00",
@@ -5120,7 +5122,7 @@ function castSkaterBoomerang(skill: SkillConfig): void {
         const progressBack = Math.min(1, elapsedBack / flightTime);
         const px2 = startX + dirX * range * (1 - progressBack);
         const py2 = startY + dirY * range * (1 - progressBack);
-        collectVictims();
+        collectVictims(px2, py2, returnVictims);
         skillVisuals.push({
           type: "beam", x: px2, y: py2, targetX: px2 - dirX * 20, targetY: py2 - dirY * 20,
           age: 0, duration: 0.15, color: "#ff8a00",
@@ -5128,6 +5130,8 @@ function castSkaterBoomerang(skill: SkillConfig): void {
         if (progressBack >= 1) {
           clearInterval(flyBack);
           player.speed = originalSpeed;
+          const hitCount = new Set([...outboundVictims, ...returnVictims]).size;
+          showToast(t("skill.skater_boomerang", { hits: hitCount }));
         }
       }, 50);
     }
@@ -5146,7 +5150,6 @@ function castSkaterBoomerang(skill: SkillConfig): void {
         });
       });
   }
-  showToast(t("skill.skater_boomerang", { hits: victims.length }));
 }
 
 /* ---------- 篮球少年（bball）技能 ---------- */
