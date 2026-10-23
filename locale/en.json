@@ -9,14 +9,22 @@
     "HOME_DESCRIPTION": "Survive enemy waves solo, or battle friends together online.",
     "CYBER_CAMP_CONNECTING": "CONNECTING TO THE CYBER CAMP...",
     "ROGUE": "ROGUELIKE",
+    "ROGUE_KICKER": "SOLO RUN",
     "ROGUE_DESCRIPTION": "Explore the neon ruins alone, survive escalating waves, and choose upgrades.",
     "ROGUE_TAGLINE": "Choose a hero · Start the run · Survive the next wave",
     "LAN_DESCRIPTION": "Join a room with friends on the same Wi-Fi and fight together.",
+    "LAN_KICKER": "LAN PARTY",
     "LAN_TAGLINE": "Create a room · Invite friends · Fight together",
     "DUEL": "AI DUEL",
+    "DUEL_KICKER": "AI ARENA",
     "DUEL_DESCRIPTION": "Challenge an AI opponent. First to four wins takes the match; choose an upgrade between rounds.",
     "DUEL_TAGLINE": "1v1 arena · 10-second break · First to four",
     "MODE_PICKER": "CURRENT MODE",
+    "MODE_SELECT_TITLE": "SELECT MODE",
+    "MODE_SELECT_SUBTITLE": "Choose the mode for this run, then return home to start.",
+    "MODE_PROFILE": "MODE PROFILE",
+    "MODE_SELECTED": "MODE SELECTED",
+    "MODE_CONFIRM": "CONFIRM",
     "HOME_START_GAME": "START GAME",
     "FOOTER": "2DFight Arena // Powered by boredom",
     "SELECT_SUBTITLE_DUEL": "Choose a fighter to enter the AI duel arena.",
@@ -173,6 +181,38 @@
     "HERO_FREE": "FREE",
     "SHOP_INFINITE": "Unlimited coins",
     "SHOP_FAILED": "Purchase failed, please try again.",
+    "EQUIPMENT": "EQUIPMENT",
+    "EQUIPMENT_TITLE": "GEAR WORKSHOP",
+    "EQUIPMENT_KICKER": "GEAR UP",
+    "EQUIPMENT_SUBTITLE": "Spend coins to draw gear. Equip it across 5 slots to boost combat stats.",
+    "EQUIPMENT_DRAW": "DRAW GEAR",
+    "EQUIPMENT_DRAW_ONCE": "DRAW x1",
+    "EQUIPMENT_DRAW_PRICE": "{price} coins",
+    "EQUIPMENT_INVENTORY": "INVENTORY",
+    "EQUIPMENT_LOADOUT": "EQUIPPED",
+    "EQUIPMENT_SLOT_WEAPON": "Weapon",
+    "EQUIPMENT_SLOT_HELMET": "Helmet",
+    "EQUIPMENT_SLOT_ARMOR": "Armor",
+    "EQUIPMENT_SLOT_BOOTS": "Boots",
+    "EQUIPMENT_SLOT_ACCESSORY": "Accessory",
+    "EQUIPMENT_QUALITY_COMMON": "Common",
+    "EQUIPMENT_QUALITY_UNCOMMON": "Uncommon",
+    "EQUIPMENT_QUALITY_RARE": "Rare",
+    "EQUIPMENT_QUALITY_EPIC": "Epic",
+    "EQUIPMENT_QUALITY_LEGENDARY": "Legendary",
+    "EQUIPMENT_EQUIP": "EQUIP",
+    "EQUIPMENT_UNEQUIP": "UNEQUIP",
+    "EQUIPMENT_DELETE": "SALVAGE",
+    "EQUIPMENT_EMPTY_SLOT": "Empty slot",
+    "EQUIPMENT_DRAW_SUCCESS": "Draw success: {quality} {slot} +{value} {stat}",
+    "EQUIPMENT_NOT_ENOUGH": "Not enough coins",
+    "BACKPACK_TITLE": "BACKPACK",
+    "BACKPACK_KICKER": "GEAR STOCK",
+    "BACKPACK_SUBTITLE": "View and manage every piece of gear you own.",
+    "NAV_CODEX": "CODEX",
+    "NAV_SHOP": "SHOP",
+    "NAV_EQUIPMENT": "GEAR",
+    "NAV_BACKPACK": "PACK",
     "SAVE_MANAGE": "SAVE DATA",
     "SAVE_SUBTITLE": "Check your coins and unlocked fighters, or back up, restore and reset your save.",
     "SAVE_OVERVIEW": "OVERVIEW",
@@ -474,6 +514,76 @@
           "kind": "Skill",
           "description": "Big movement speed and dodge boost",
           "detail_description": "For the next 3s: +50% movement speed and +50% dodge."
+        }
+      }
+    },
+    "skater": {
+      "name": "Skater Boy",
+      "class_name": "Street Skater",
+      "tagline": "Speed is the weapon. The board is the attitude.",
+      "initial": "S",
+      "stats": [
+        "Attack",
+        "Defense",
+        "Mobility"
+      ],
+      "passive": {
+        "name": "Speed Stack",
+        "description": "Each basic attack permanently grants +0.5% movement speed. Basic attacks deal bonus damage equal to (current speed / base speed - 1) × base damage."
+      },
+      "skills": {
+        "skater-ult": {
+          "name": "Board Boomerang",
+          "kind": "Ultimate",
+          "description": "Boomerang board · pierces buildings and stuns",
+          "detail_description": "Throw your board like a boomerang. It flies 350 distance over 1 second and returns, piercing buildings both ways to damage and stun enemies for 1 second. Your movement speed is reduced by 30% while it is away."
+        },
+        "skater-smash": {
+          "name": "Board Slam",
+          "kind": "Skill",
+          "description": "Slam the board · AoE damage and slow",
+          "detail_description": "Smash the board into the ground, dealing moderate damage to enemies within 200 and slowing them by 20% for 3 seconds."
+        },
+        "skater-flight": {
+          "name": "Airborne Board",
+          "kind": "Skill",
+          "description": "Speed surge · SPACE jumps for an invulnerable slam",
+          "detail_description": "Gain +30% movement speed for 5 seconds; other skills are disabled. Press SPACE during this time to jump into an invulnerable state with an extra +20% speed, then slam the ground after 1 second, dealing light damage and a strong knockback to enemies within 200."
+        }
+      }
+    },
+    "bball": {
+      "name": "Basketball Boy",
+      "class_name": "Court Shooter",
+      "tagline": "As long as the mag's not empty, the fire won't stop.",
+      "initial": "B",
+      "stats": [
+        "Attack",
+        "Defense",
+        "Mobility"
+      ],
+      "passive": {
+        "name": "Mag Shooter",
+        "description": "Basic attacks become basketball shots. Magazine starts at 10 and gains +1 capacity every 5 kills. With ammo, you fire 5 per second; you cannot basic attack while empty."
+      },
+      "skills": {
+        "bball-ult": {
+          "name": "Crossover Drive",
+          "kind": "Ultimate",
+          "description": "Dash through enemies · delayed heavy burst",
+          "detail_description": "Instantly dash through the 5 nearest enemies over 0.5 seconds (invulnerable). After 1 second, deal heavy damage to those enemies."
+        },
+        "bball-layup": {
+          "name": "Layup Dash",
+          "kind": "Skill",
+          "description": "Invulnerable dash · damage and stun at the endpoint",
+          "detail_description": "Dash forward up to 350 distance over 1 second (invulnerable, but blocked by buildings). Deal moderate damage and stun nearby enemies for 1 second at the endpoint."
+        },
+        "bball-shooter": {
+          "name": "Sharpshooter",
+          "kind": "Skill",
+          "description": "Unlimited magazine for several seconds",
+          "detail_description": "Your magazine is treated as unlimited for 3 seconds; keep firing basketballs at 5 per second."
         }
       }
     }
@@ -1146,7 +1256,9 @@
       "pipa": "Pipa sound blade hits for {damage} damage.",
       "volt2": "Sound hit for {damage} damage, restores 5 energy.",
       "sakura": "Firework hit for {damage} damage, igniting the target.",
-      "jianghu": "The blade flashes for {damage} damage."
+      "jianghu": "The blade flashes for {damage} damage.",
+      "skater": "Board strike deals {damage} damage; faster speed means more damage.",
+      "bball": "Basketball hits for {damage} damage."
     },
     "templates": {
       "skill.cooling": "{name} is on cooldown for {seconds}s more.",
@@ -1261,6 +1373,17 @@
       "reward.run_infinite": "This run earned {coins} coins (test save: unlimited coins).",
       "reward.run_empty": "This run earned no coins.",
       "skill.jianghu_busy": "Knight-Errant Song is still in motion — other skills are locked.",
+      "skill.skater_smash": "Board Slam: {hits} enemies take damage and are slowed.",
+      "skill.skater_flight_start": "Airborne Board active: +{speed}% movement speed for {seconds}s; SPACE becomes an invulnerable jump.",
+      "skill.skater_flight_slam": "Board slam: {hits} enemies take damage and are knocked back.",
+      "skill.skater_boomerang": "Board Boomerang away: pierces buildings on the way out and back, hitting {hits} enemies.",
+      "skill.bball_layup": "Layup Dash ends: {hits} enemies take damage and are stunned.",
+      "skill.bball_shooter": "Sharpshooter: unlimited magazine for {seconds}s.",
+      "skill.bball_crossover": "Crossover Drive: dash through {targets} enemies, dealing heavy damage after a delay.",
+      "float.skater_flight": "Airborne Board",
+      "float.skater_slam": "Slam",
+      "float.bball_reload": "Reloading",
+      "float.bball_empty": "Mag Empty",
       "pause_stats.wave": "Wave",
       "pause_stats.kills": "Kills (run)",
       "pause_stats.passive_kills": "Kills (passive)",
@@ -1271,7 +1394,8 @@
       "pause_stats.dodge": "Dodge",
       "pause_stats.range": "Attack range",
       "pause_stats.energy_regen": "Energy regen",
-      "pause_stats.supplies": "Supplies"
+      "pause_stats.supplies": "Supplies",
+      "pause_stats.equipment_attack": "Gear Attack"
     }
   },
   "lobby": {
@@ -1375,6 +1499,18 @@
     "剑客之刃普攻伤害加成 20% → 40%": "Swordsman's Edge damage bonus 20% → 40%",
     "剑客之刃吸血 10% → 25%": "Swordsman's Edge lifesteal 10% → 25%",
     "御剑飞行持续时间 3 秒 → 5 秒": "Sword Flight duration 3s → 5s",
-    "御剑飞行速度提升 50% → 100%": "Sword Flight speed bonus 50% → 100%"
+    "御剑飞行速度提升 50% → 100%": "Sword Flight speed bonus 50% → 100%",
+    "回旋镖飞行距离 350 → 500": "Boomerang range 350 → 500",
+    "期间不减速且向最近 2 个敌人额外发射滑板": "No self-slow and fires extra boards at the 2 nearest enemies",
+    "减速 20% → 30%": "Slow 20% → 30%",
+    "范围 200 → 270": "Range 200 → 270",
+    "持续时间 5 秒 → 7 秒": "Duration 5s → 7s",
+    "砸地后额外眩晕 1 秒": "Slam adds an extra 1s stun",
+    "造成伤害同时眩晕 1 秒": "Damage also stuns for 1s",
+    "穿透目标 5 → 10 个": "Pierce targets 5 → 10",
+    "眩晕 +1 秒": "Stun +1s",
+    "连续进行 2 次冲刺和攻击": "Perform 2 consecutive dashes and attacks",
+    "篮球发射速度 5/秒 → 10/秒": "Basketball fire rate 5/sec → 10/sec",
+    "时长 +2 秒且普攻无视距离（不无视建筑）": "Duration +2s and basic attacks ignore range (not buildings)"
   }
 }

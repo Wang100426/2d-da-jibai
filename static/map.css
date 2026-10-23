@@ -22,7 +22,7 @@ body.map-page{height:100dvh;overflow:hidden;background:#101722}
 .map-loader-animation{display:block;width:48px;height:48px;flex:none}
 @keyframes map-transition-in{from{opacity:0}to{opacity:1}}
 @keyframes map-transition-out{from{opacity:1;visibility:visible}to{opacity:0;visibility:hidden}}
-@keyframes transition-card-in{from{opacity:0;transform:translateY(16px) scale(.98);filter:blur(5px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
+@keyframes transition-card-in{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes transition-art-in{from{opacity:.45;transform:scale(1.035)}to{opacity:1;transform:scale(1)}}
 @keyframes transition-pulse{to{opacity:.45;transform:scale(.82)}}
 .map-page-actions{position:fixed;z-index:4;top:14px;right:22px;display:flex;align-items:center;gap:14px}

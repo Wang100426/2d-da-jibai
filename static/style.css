@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
 
-/* 全局交互反馈默认值（1.7.5）：可被各组件自身的 transition 覆盖 */
-button{transition:transform .12s cubic-bezier(.2,.7,.3,1),background-color .18s ease,color .18s ease,border-color .18s ease,box-shadow .18s ease,opacity .18s ease}
+/* 2.0.0-preview：默认交互反馈避免为阴影创建逐帧过渡。 */
+button{transition:transform .12s cubic-bezier(.2,.7,.3,1),background-color .18s ease,color .18s ease,border-color .18s ease,opacity .18s ease}
 button:active{transform:scale(.955)}
 button:disabled{transform:none}
 .coin-pill:active,.select-back:active,.icon-pill:active,.icon-btn:active,.top-pill:active{transform:scale(.94)}
@@ -20,82 +20,62 @@ button:disabled{transform:none}
 .status-list{min-height:25px;display:flex;justify-content:center;gap:4px;flex-wrap:wrap;margin-top:8px;width:150px}.status-badge{padding:4px 5px;background:#251a3a;border:1px solid #8157a4;color:#e0c5ff;font:9px 'Chakra Petch';white-space:nowrap}.status-badge b{color:var(--pink);margin-left:3px}.enemy .status-badge{border-color:#71833a;background:#253125;color:#d2ef8a}.skill-button{position:relative;min-height:91px}.skill-button:disabled{opacity:.42;cursor:not-allowed;transform:none}.cooldown-label{display:block;color:var(--pink);font:10px 'Chakra Petch';margin-top:5px;min-height:12px}
 .skill-button kbd,.combat-hints kbd{display:inline-block;padding:2px 5px;border:1px solid #555b7c;background:#20243b;color:var(--cyan);font:10px 'Chakra Petch';letter-spacing:1px}.skill-button kbd{position:absolute;top:8px;left:8px}.basic-attack{border-color:#4d5475}.basic-attack span{color:var(--cyan)}.combat-hints{display:flex;justify-content:flex-end;gap:18px;color:var(--muted);font:11px 'Chakra Petch';margin-top:-12px}.combat-hints kbd{margin-right:4px}.ai-label{color:var(--lime)}.ai-label i{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--lime);box-shadow:0 0 8px var(--lime);margin-right:5px}
 
-/* Keep the home dashboard and hero picker visible together on desktop. */
-.home-page{height:100vh;height:100svh;min-height:620px;display:grid;grid-template-rows:64px minmax(220px,.78fr) minmax(330px,1.22fr) 34px;overflow:hidden}
-.home-page .topbar{height:64px;padding-inline:clamp(20px,4vw,64px)}
-.home-page .home-main{width:100%;height:100%;min-height:0;padding:14px clamp(24px,6vw,88px);gap:20px}
-.home-page .hero-copy{flex:1;min-width:0}
-.home-page .hero-copy .eyebrow{margin-bottom:10px}
-.home-page .hero-copy h1{font-size:clamp(48px,6vw,78px);letter-spacing:-3px;margin-bottom:12px}
-.home-page .subtitle{font-size:13px;line-height:1.65;margin:0}
-.home-page .hero-actions{margin-top:16px;gap:10px}
-.home-page .hero-actions .button{padding:10px 16px;font-size:11px}
-.home-page .hero-actions .button-primary span{margin-left:8px}
-.home-page .live-note{margin-top:13px;font-size:10px}
-.home-page .arena-preview{width:43%;height:100%;max-height:245px;flex:none}
-.home-page .arena-platform{inset:42px 25px 22px}
-.home-page .holo-ring{top:15%;height:60%}
-.home-page .fighter{bottom:23%;transform:scale(.72) rotateX(-55deg) rotateZ(-10deg)}
-.home-page .card-left{left:0;top:0}
-.home-page .card-right{right:0;bottom:0}
-.home-page .floating-card{padding:7px 10px}
-.home-page .corner-label{top:0}
-.home-page .roster-section{width:100%;max-width:none;min-height:0;padding:10px clamp(24px,5vw,72px) 12px;display:flex;flex-direction:column}
-.home-page .section-heading{flex:none;margin:0 0 10px;align-items:center}
-.home-page .section-heading .eyebrow{margin-bottom:3px;font-size:9px}
-.home-page .section-heading h2{font-size:20px}
-.home-page .section-heading h2 span{font-size:12px}
-.home-page .section-hint{margin:0;font-size:10px}
-.home-page .section-hint a{color:var(--cyan);white-space:nowrap}
-.home-page .hero-grid{flex:1;min-height:0;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-.home-page .hero-card{min-width:0;padding:10px;display:flex;flex-direction:column}
-.home-page .hero-portrait{height:clamp(68px,12vh,108px);flex:none}
-.home-page .hero-portrait span{font-size:clamp(38px,5vw,58px)}
-.home-page .hero-info{padding:9px 2px 5px}
-.home-page .hero-info p{font-size:9px;margin-bottom:3px}
-.home-page .hero-info h3{font-size:16px;margin-bottom:3px}
-.home-page .hero-info small{display:block;min-height:2.8em;font-size:9px;line-height:1.45}
-.home-page .hero-bars{margin-top:auto;padding:6px 2px}
-.home-page .hero-bars div{margin:4px 0}
-.home-page .hero-bars label{font-size:9px}
-.home-page .hero-bars span{margin-top:3px}
-.home-page .card-link{padding:8px 2px 0;font-size:10px}
-.home-page footer{height:34px;padding:0 clamp(24px,5vw,72px);align-items:center;font-size:9px}
+/* ───── 主页 1.9.0：左侧标题 + 右侧「模式选择+开始游戏」+ 底部导航 ───── */
+.home-page{height:100vh;height:100svh;min-height:620px;display:grid;grid-template-rows:64px minmax(0,1fr) 72px;overflow:hidden;position:relative;background:#090a13 url('/static/home-background.png') center/cover no-repeat}
+.home-page::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:linear-gradient(180deg,#090a1355 0%,#090a1322 38%,#090a1366 74%,#090a13a6 100%)}
+.home-topbar{grid-row:1;height:64px;padding:0 clamp(24px,6vw,88px);display:flex;align-items:center;justify-content:flex-end;gap:10px;position:relative;z-index:10}
+.home-dashboard{grid-row:2;width:100%;height:100%;min-height:0;padding:0 clamp(24px,6vw,88px) 24px;display:grid;grid-template-columns:1fr auto;gap:clamp(24px,4vw,64px);align-items:end;position:relative;z-index:1}
+.home-hero-copy{animation:page-enter .32s cubic-bezier(.2,.7,.3,1) backwards}
+.home-hero-copy .eyebrow{margin-bottom:10px}
+.home-logo{width:clamp(180px,22vw,300px);height:auto;margin-bottom:12px}
+.home-hero-copy .subtitle{color:#b6b8ce;font-size:14px;line-height:1.7;margin:0;max-width:520px}
+.home-actions{display:flex;align-items:end;justify-content:flex-end;gap:0;padding-bottom:12px;animation:page-enter .32s .08s cubic-bezier(.2,.7,.3,1) backwards}
+.home-mode-card{position:relative;z-index:1;width:140px;height:140px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border:1px solid var(--cyan);border-right:0;background:linear-gradient(110deg,#111b29f2,#15202df2);color:var(--text);text-decoration:none;transition:border-color .18s,background .18s,transform .12s}
+.home-mode-card:hover{border-color:#69f5ed;background:linear-gradient(110deg,#18323a,#192738);transform:translateY(-4px)}
+.home-mode-icon{width:48px;height:48px;display:grid;place-items:center;background:var(--pink);color:#090a13;font:900 22px 'Chakra Petch';clip-path:polygon(50% 0,100% 22%,90% 100%,10% 100%,0 22%)}
+.home-mode-copy{text-align:center}
+.home-mode-copy small{display:block;color:var(--cyan);font:10px 'Chakra Petch';letter-spacing:1.5px;margin-bottom:4px}
+.home-mode-copy b{font-size:18px;letter-spacing:.5px}
+.home-mode-arrow{position:absolute;top:12px;right:12px;color:var(--cyan);font:22px 'Chakra Petch'}
+.home-start-button{position:relative;z-index:2;width:clamp(260px,28vw,380px);height:140px;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 38px;background:linear-gradient(110deg,#49e6e0,#a2fff7);color:#081217;font-size:24px;font-weight:900;letter-spacing:2px;box-shadow:0 14px 45px #49e6e033;transition:filter .18s,transform .12s;text-decoration:none}
+.home-start-button:hover{filter:brightness(1.12);transform:translateY(-4px)}
+.home-start-button b{font:900 32px 'Chakra Petch'}
+.home-bottom-bar{grid-row:3;height:72px;padding:0 clamp(24px,6vw,88px);display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#1a1e30;border-top:1px solid #2a2e48;position:relative;z-index:2}
+.home-nav-item{display:flex;align-items:center;justify-content:center;gap:10px;background:#090a13;color:#8c94a9;font:12px 'Chakra Petch';letter-spacing:.8px;transition:background .15s,color .15s;text-decoration:none}
+.home-nav-item:hover{background:#131628;color:var(--text)}
+.home-nav-item span{width:28px;height:28px;display:grid;place-items:center;border:1px solid #2a2e48;color:var(--cyan);font-size:14px}
+.home-nav-item b{font-weight:600}
 
 @media(max-height:700px) and (min-width:761px){
-  .home-page{min-height:0;grid-template-rows:56px minmax(190px,.72fr) minmax(290px,1.28fr) 28px}
-  .home-page .topbar{height:56px}
-  .home-page .brand-mark{width:32px;height:32px}
-  .home-page .home-main{padding-block:8px}
-  .home-page .hero-portrait{height:70px}
-  .home-page footer{height:28px}
+  .home-page{grid-template-rows:56px minmax(0,1fr) 64px}
+  .home-topbar{height:56px}
+  .home-dashboard{padding-bottom:16px}
+  .home-mode-card,.home-start-button{height:120px}
+  .home-start-button{width:240px;font-size:20px;padding:0 28px}
+  .home-mode-card{width:120px}
+  .home-bottom-bar{height:64px}
 }
-@media(max-height:619px) and (min-width:761px){
-  .home-page{height:auto;min-height:620px;overflow-y:auto}
+@media(max-width:900px){
+  .home-dashboard{grid-template-columns:1fr;grid-template-rows:1fr auto;align-items:stretch;padding-bottom:18px}
+  .home-actions{justify-content:center;padding-bottom:0}
+  .home-start-button{max-width:none;width:min(380px,55vw)}
 }
 @media(max-width:760px){
   .home-page{height:auto;min-height:100vh;min-height:100svh;display:block;overflow-x:hidden;overflow-y:auto}
-  .home-page .topbar{height:60px;padding:0 16px}
-  .home-page .topbar nav{display:none}
-  .home-page .player-chip{font-size:10px}
-  .home-page .home-main{height:auto;min-height:0;display:flex;flex-direction:column;align-items:stretch;padding:34px 22px 18px;gap:12px}
-  .home-page .hero-copy h1{font-size:clamp(52px,15vw,76px)}
-  .home-page .arena-preview{width:100%;height:210px;max-height:none;margin:0}
-  .home-page .roster-section{padding:18px 16px 24px}
-  .home-page .section-heading{align-items:flex-start}
-  .home-page .section-hint{max-width:42%;text-align:right;line-height:1.5}
-  .home-page .hero-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-  .home-page .hero-card{min-height:248px}
-  .home-page .hero-portrait{height:88px}
-  .home-page .hero-portrait span{font-size:48px}
-  .home-page footer{height:auto;min-height:38px;padding:10px 16px}
+  .home-topbar{height:56px;padding:0 16px;justify-content:flex-end}
+  .home-dashboard{display:flex;flex-direction:column;padding:78px 18px 18px;gap:16px}
+  .home-hero-copy{text-align:center}
+  .home-logo{margin:0 auto 12px}
+  .home-hero-copy .subtitle{margin:0 auto}
+  .home-actions{flex-direction:column;align-items:stretch;width:100%;max-width:420px;margin:0 auto;gap:12px}
+  .home-mode-card{width:100%;height:auto;min-height:84px;flex-direction:row;justify-content:flex-start;padding:16px 22px;border-right:1px solid var(--cyan)}
+  .home-mode-arrow{position:static;margin-left:auto}
+  .home-start-button{width:100%;height:auto;min-height:84px;font-size:18px}
+  .home-bottom-bar{height:64px;padding:0}
 }
 @media(max-width:390px){
-  .home-page .player-chip{font-size:9px}
-  .home-page .section-heading h2{font-size:18px}
-  .home-page .hero-card{padding:8px}
-   .home-page .hero-info h3{font-size:14px}
-   .home-page .hero-info small{font-size:8px}
+  .home-nav-item b{display:none}
+  .home-mode-copy b{font-size:16px}
 }
 
 /* Mode selection page */
@@ -198,7 +178,7 @@ button:disabled{transform:none}
 .camp-transition[hidden]{display:none}
 @keyframes camp-transition-in{to{opacity:1}}
 @keyframes camp-art-in{from{opacity:.45;transform:scale(1.035)}to{opacity:1;transform:scale(1)}}
-@keyframes camp-briefing-in{from{opacity:0;transform:translateY(16px) scale(.98);filter:blur(5px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
+@keyframes camp-briefing-in{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 html[lang="en"] body{font-family:'Chakra Petch','Segoe UI',sans-serif}
 html[lang="ja"] body{font-family:'Noto Sans JP','Noto Sans SC','Yu Gothic UI','Meiryo',sans-serif}
 html[lang="en"] .mode-page .mode-cards{max-width:1220px}
@@ -285,6 +265,21 @@ html[lang="en"] .mode-card p{max-width:340px}
 .roster-choice.sakura:hover,.roster-choice.sakura.selected{background:linear-gradient(145deg,#3d1a2f,#1d1020);border-color:#ff8fc4}
 .roster-choice.sakura.selected{box-shadow:0 0 20px #ff8fc455}
 .roster-choice.sakura .roster-avatar{background:linear-gradient(145deg,#ff8fc4,#8c2f5c);color:#ffe3f0}
+.roster-choice.rogue{background:linear-gradient(110deg,#2a0f1f,#12101b);border-color:#7a1a52}
+.roster-choice.rogue:hover,.roster-choice.rogue.selected{background:linear-gradient(145deg,#3d152c,#1d1020);border-color:#ff66c4}
+.roster-choice.rogue.selected{box-shadow:0 0 20px #ff66c455}
+.roster-choice.rogue .roster-avatar{background:linear-gradient(145deg,#ff66c4,#7a1a52);color:#ffd6f0}
+.roster-choice.rogue.selected .roster-identity b{color:#ff9fe0}
+.roster-choice.lan{background:linear-gradient(110deg,#0f2a2a,#10121b);border-color:#1a6b68}
+.roster-choice.lan:hover,.roster-choice.lan.selected{background:linear-gradient(145deg,#153d3d,#101d24);border-color:#49e6e0}
+.roster-choice.lan.selected{box-shadow:0 0 20px #49e6e055}
+.roster-choice.lan .roster-avatar{background:linear-gradient(145deg,#49e6e0,#0f5a57);color:#d4fffd}
+.roster-choice.lan.selected .roster-identity b{color:#9ffff9}
+.roster-choice.duel{background:linear-gradient(110deg,#1f2a10,#10140f);border-color:#4a6b20}
+.roster-choice.duel:hover,.roster-choice.duel.selected{background:linear-gradient(145deg,#2c3d15,#11180f);border-color:#b7ef55}
+.roster-choice.duel.selected{box-shadow:0 0 20px #b7ef5555}
+.roster-choice.duel .roster-avatar{background:linear-gradient(145deg,#b7ef55,#3a5a1f);color:#efffd6}
+.roster-choice.duel.selected .roster-identity b{color:#d8ff8a}
 .roster-identity{min-width:0;max-width:100%}
 .roster-identity small,.roster-identity b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .roster-identity small{margin-bottom:3px;color:var(--muted);font-size:9px}
@@ -315,6 +310,12 @@ html[lang="en"] .mode-card p{max-width:340px}
 .detail-portrait.pipa>span{color:#fff0b8;text-shadow:7px 8px #80552a,0 0 36px #f1b95b99}
 .detail-portrait.volt2>span{color:#ffd6fb;text-shadow:7px 8px #7a1f6d,0 0 36px #ff5cf0aa}
 .detail-portrait.sakura>span{color:#ffe3f0;text-shadow:7px 8px #8c2f5c,0 0 36px #ff8fc4aa}
+.detail-portrait.rogue{background:radial-gradient(ellipse at 50% 42%,#7a1a52,#1a1018 70%);border-color:#ff66c4}
+.detail-portrait.rogue>span{color:#ffd6f0;text-shadow:7px 8px #7a1a52,0 0 36px #ff66c4aa}
+.detail-portrait.lan{background:radial-gradient(ellipse at 50% 42%,#0f5a57,#101a20 70%);border-color:#49e6e0}
+.detail-portrait.lan>span{color:#d4fffd;text-shadow:7px 8px #0f5a57,0 0 36px #49e6e0aa}
+.detail-portrait.duel{background:radial-gradient(ellipse at 50% 42%,#3a5a1f,#10140f 70%);border-color:#b7ef55}
+.detail-portrait.duel>span{color:#efffd6;text-shadow:7px 8px #3a5a1f,0 0 36px #b7ef55aa}
 .detail-portrait>small{position:absolute;z-index:1;left:12px;bottom:10px;color:#a9b2c6;font:9px 'Chakra Petch';letter-spacing:1.5px}
 .detail-orbit{position:absolute;width:120%;height:40%;border:1px solid #49e6e055;border-radius:50%;transform:rotate(-28deg)}
 .orbit-two{width:100%;height:62%;border-color:#ff4fa044;transform:rotate(42deg)}
@@ -322,6 +323,9 @@ html[lang="en"] .mode-card p{max-width:340px}
 .detail-copy>.eyebrow{margin:2px 0 4px;color:var(--cyan);font-size:10px}
 .detail-copy h2{margin:0;font-size:clamp(23px,3vw,36px);letter-spacing:1px}
 .detail-copy>p:not(.eyebrow){margin:5px 0 10px;color:#aab0c3;font-size:11px}
+.mode-description{flex:1;min-height:0;color:#c2c6da;font-size:12px;line-height:1.85;overflow-y:auto;padding-right:6px;margin-bottom:12px}
+.mode-features{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.mode-features span{padding:5px 9px;background:linear-gradient(110deg,#141020,#0c101b);border:1px solid #2c3244;color:#aab0c3;font:10px 'Chakra Petch';letter-spacing:.5px}
 .detail-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
 .detail-stat{display:grid;grid-template-columns:1fr auto;gap:3px 6px;color:#939bb0;font-size:9px}
 .detail-stat b{color:#f2f3ff;font:11px 'Chakra Petch'}
@@ -640,3 +644,42 @@ body.leaving *{pointer-events:none}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
 }
+
+/* ───── 装备与背包页面（1.9.0）───── */
+.equipment-page,.backpack-page{min-height:100vh;min-height:100svh;display:grid;grid-template-rows:minmax(0,1fr) 34px;overflow-x:hidden;overflow-y:auto;background:#090a13}
+.equipment-main,.backpack-main{width:100%;min-height:0;padding:78px clamp(24px,6vw,88px) 24px;display:flex;flex-direction:column;gap:22px}
+.equipment-hero-copy,.backpack-hero-copy{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.equipment-heading h1,.backpack-heading h1{font:900 clamp(36px,5vw,56px)/.9 'Chakra Petch';margin:0;letter-spacing:-2px}
+.equipment-intro,.backpack-intro{max-width:460px;color:#b6b8ce;font-size:13px;line-height:1.7;margin:0}
+.equipment-wallet{display:flex;align-items:center;gap:10px;font:12px 'Chakra Petch'}
+.equipment-wallet b{color:var(--cyan);font-size:16px}
+.equipment-draw{display:grid;grid-template-columns:minmax(220px,320px) 1fr;gap:20px;align-items:start}
+.equipment-draw-card{background:var(--panel);border:1px solid #2a2e48;padding:20px;display:flex;flex-direction:column;gap:12px}
+.equipment-draw-card h2{margin:0;font-size:18px}
+.equipment-draw-card p{color:#8c94a9;font-size:12px;margin:0}
+.equipment-draw-button{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:linear-gradient(110deg,var(--cyan),#a2fff7);color:#081217;border:0;font-weight:700;cursor:pointer;transition:filter .18s,transform .12s}
+.equipment-draw-button:hover{filter:brightness(1.12);transform:translateY(-2px)}
+.equipment-draw-button:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.equipment-result-card{background:var(--panel);border:1px solid #2a2e48;padding:20px;display:flex;flex-direction:column;gap:14px;animation:card-in .4s cubic-bezier(.2,.7,.3,1) backwards}
+.equipment-loadout h2,.backpack-grid h2{font-size:18px;margin:0 0 12px}
+.equipment-slots{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
+.equipment-slot-wrapper{background:var(--panel);border:1px solid #2a2e48;padding:14px;display:flex;flex-direction:column;gap:10px}
+.equipment-slot-wrapper h3{margin:0;font:12px 'Chakra Petch';color:#8c94a9;text-transform:uppercase;letter-spacing:1px}
+.equipment-item,.backpack-item{background:#131628;border:1px solid #2a2e48;padding:12px;display:flex;flex-direction:column;gap:4px;position:relative}
+.equipment-item-quality,.backpack-item-quality{font:10px 'Chakra Petch';letter-spacing:.5px}
+.equipment-item-slot,.backpack-item-slot{font-size:15px}
+.equipment-item-stat,.backpack-item-stat{font:11px 'Chakra Petch';color:#b6b8ce}
+.equipment-empty,.backpack-empty{color:#8c94a9;font-size:12px;padding:12px 0}
+.equipment-action,.backpack-action{padding:6px 10px;border:1px solid #3a3e59;background:#1a1e30;color:var(--text);font-size:11px;cursor:pointer;transition:border-color .15s,background .15s}
+.equipment-action:hover,.backpack-action:hover{border-color:var(--cyan)}
+.equipment-action-danger,.backpack-action-danger{border-color:#5a2436;background:#1a0d14;color:#ffb0d5}
+.equipment-action-danger:hover,.backpack-action-danger:hover{border-color:var(--pink)}
+.equipment-slot-actions,.backpack-item-actions{display:flex;gap:8px;margin-top:8px}
+.equipment-toast,.backpack-toast{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);padding:10px 18px;background:#0c111c;border:1px solid var(--cyan);color:var(--text);font-size:12px;opacity:0;transition:opacity .2s;z-index:50}
+.equipment-toast.is-visible,.backpack-toast.is-visible{opacity:1}
+.backpack-filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.backpack-filter{padding:8px 14px;border:1px solid #2a2e48;background:#131628;color:#8c94a9;font-size:12px;cursor:pointer;transition:all .15s}
+.backpack-filter.active{border-color:var(--cyan);color:var(--cyan);background:#1a2530}
+.backpack-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+@media(max-width:900px){.equipment-slots{grid-template-columns:repeat(3,minmax(0,1fr))}.equipment-draw{grid-template-columns:1fr}}
+@media(max-width:600px){.equipment-slots{grid-template-columns:repeat(2,minmax(0,1fr))}.backpack-list{grid-template-columns:repeat(2,1fr)}}

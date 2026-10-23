@@ -1,5 +1,90 @@
 # 更新日志 / Updates
 
+## 2.0.0-preview
+
+### 中文
+
+- 优化战斗动画：地图网格、道路与建筑等静态画面只绘制一次，减少逐帧重绘。
+- 修复粒子、平板投射物和残影的绘制位置与时机，使特效能随战斗帧正确播放。
+- 页面隐藏时暂停渲染循环，返回页面后平滑续播；简化过场模糊动画以降低绘制开销。
+- 将本地未发布的 1.9.0 功能与动画优化合并为 2.0.0-preview。
+
+### English
+
+- Optimized battle rendering by drawing static map geometry once instead of redrawing it every frame.
+- Fixed particle, tablet-projectile, and afterimage rendering so effects animate in the correct place and at the right time.
+- Pause rendering while the page is hidden and resume smoothly when it returns; simplified transition blur effects to reduce paint cost.
+- Combined the pending 1.9.0 work with these animation improvements as 2.0.0-preview.
+
+### 日本語
+
+- 戦闘描画を最適化：マップのグリッド、道路、建物などの静的な背景を一度だけ描画し、毎フレームの再描画を削減。
+- パーティクル、タブレット投射物、残像の描画位置とタイミングを修正し、戦闘中に正しくアニメーション表示。
+- ページが非表示の間は描画ループを停止し、復帰時に滑らかに再開。画面遷移のぼかし効果を簡略化して描画負荷を軽減。
+- 未公開の 1.9.0 機能とアニメーション改善を 2.0.0-preview として統合。
+
+## 1.9.0
+
+### 中文
+
+- 跳过 1.8.0，直接进入 1.9.0。
+- 新增装备系统：
+  - 5 个装备位置：武器、头盔、护甲、靴子、饰品；5 个品质：普通 / 精良 / 稀有 / 史诗 / 传说。
+  - 在「装备」页面花费 100 金币单抽装备；在「背包」页面查看、装备、卸下或分解已有装备。
+  - 装备属性带入战斗：武器加攻击、头盔加防御、护甲加生命上限、靴子加移速、饰品加能量上限。
+  - 测试存档已包含每个位置的 5 种品质装备（共 25 件），并自动装配每槽位金色品质。
+- 主页大改：左侧为方形模式选择入口，右侧靠墙为长方形「开始游戏」按钮，底部新增 4 功能导航栏（商店 / 装备 / 图鉴 / 背包）。模式选择拆分为独立页面 `/mode`。
+- 新增英雄「滑板小子」（街头滑板主题，近战，普攻距离 100，售价 1000 金币）：
+  - 被动「越滑越快」：每次普攻永久 +0.5% 移速；普攻附加（当前移速 / 基础移速 - 1）× 基础伤害的额外伤害。
+  - Q「炫酷滑板」：将滑板当回旋镖投出，穿透建筑，来回均可造成伤害和 1 秒眩晕；期间自身移速降低 30%。2 阶飞行距离 350 → 500；3 阶期间不减速，且向最近 2 个敌人额外发射滑板。
+  - E「坚硬滑板」：猛砸地面，对周围 200 距离内敌人造成伤害并减速 20% 持续 3 秒。2 阶减速 20% → 30%；3 阶范围 200 → 270。
+  - R「滑板能飞」：接下来 5 秒移速 +30%，期间无法使用其他技能；按空格不普攻而是进入无敌状态并额外加速 20%，1 秒后砸向地面，对周围 200 距离敌人造成伤害和强力击退。2 阶持续 5 秒 → 7 秒；3 阶砸地后额外眩晕 1 秒。
+- 新增英雄「篮球少年」（球场射手主题，远程，普攻距离 200，售价 1500 金币）：
+  - 被动「弹夹射手」：普攻改为篮球射击，弹夹初始容量 10，每击杀 5 个敌人容量 +1；有子弹时以 5 个/秒射出，弹夹为空时不能普攻。
+  - Q「快速过人」：0.5 秒内连续穿透最近的 5 个敌人（期间无敌），1 秒后造成大额伤害。2 阶造成伤害同时眩晕 1 秒；3 阶穿透目标 5 → 10 个。
+  - E「三步上篮」：1 秒内向前冲刺最多 350 距离（期间无敌，受建筑阻挡），终点对附近敌人造成伤害并眩晕 1 秒。2 阶眩晕 +1 秒；3 阶连续 2 次冲刺和攻击。
+  - R「投篮高手」：接下来 3 秒内弹夹容量视为无限。2 阶射速 5/秒 → 10/秒；3 阶时长 +2 秒且普攻无视距离（不无视建筑）。
+
+### English
+
+- Skipped 1.8.0 and released as 1.9.0.
+- New Equipment System:
+  - 5 equipment slots: Weapon, Helmet, Armor, Boots, Accessory; 5 qualities: Common / Uncommon / Rare / Epic / Legendary.
+  - Draw equipment for 100 coins on the Equipment page; view, equip, unequip or dismantle owned gear on the Backpack page.
+  - Gear bonuses apply in combat: Weapon adds attack, Helmet adds defense, Armor adds max HP, Boots add movement speed, Accessory adds max energy.
+  - The test save now includes all 25 pieces (5 qualities × 5 slots) and auto-equips legendary gear in every slot.
+- Home screen redesign: the square mode selector sits on the left, the rectangular Start Game button is on the right against the wall, and a new bottom bar provides 4 shortcuts (Shop / Equipment / Codex / Backpack). Mode selection is now a separate page at `/mode`.
+- New hero "Skater Boy" (street skateboard theme, melee, 100 basic attack range, 1000 coins):
+  - Passive "Momentum": each basic attack permanently increases movement speed by 0.5%; basic attacks also deal bonus damage equal to (current speed / base speed - 1) × base damage.
+  - Q "Rad Skateboard": throw your skateboard like a boomerang; it pierces buildings and damages/stuns enemies for 1s on both the outgoing and return paths. Self speed is reduced 30% during the throw. Tier 2: range 350 → 500; Tier 3: no self-slow and fires 2 extra skateboards at the nearest enemies.
+  - E "Hard Skateboard": slam the ground, damaging and slowing nearby enemies by 20% for 3s. Tier 2: slow 20% → 30%; Tier 3: radius 200 → 270.
+  - R "Skate Flight": for 5s gain +30% speed and cannot use other skills; SPACE no longer basic-attacks but makes you invulnerable with an extra +20% speed, then slams the ground after 1s for damage and heavy knockback. Tier 2: duration 5s → 7s; Tier 3: slam also stuns for 1s.
+- New hero "Basketball Boy" (court shooter theme, ranged, 200 basic attack range, 1500 coins):
+  - Passive "Magazine Shooter": basic attacks become basketball shots with a magazine of 10, +1 capacity every 5 kills; fires at 5 shots/s while loaded and cannot attack while empty.
+  - Q "Fast Crossover": dash through the 5 nearest enemies over 0.5s (invulnerable), then deal heavy damage after 1s. Tier 2: also stuns for 1s; Tier 3: targets 5 → 10.
+  - E "Layup": dash forward up to 350 over 1s (invulnerable, blocked by buildings) and damage/stun enemies at the endpoint. Tier 2: stun +1s; Tier 3: 2 consecutive dashes and strikes.
+  - R "Sharpshooter": for 3s your magazine is treated as infinite. Tier 2: fire rate 5/s → 10/s; Tier 3: duration +2s and basic attacks ignore range (but not buildings).
+
+### 日本語
+
+- 1.8.0 をスキップし、1.9.0 としてリリース。
+- 新システム「装備」：
+  - 装備枠は 5 つ：武器 / ヘルム / アーマー / ブーツ / アクセサリー。品質は 5 段階：コモン / アンコモン / レア / エピック / レジェンダリー。
+  - 「装備」画面で 100 コインを消費して装備を 1 回抽選。「バックパック」画面で所持装備の確認、装備、解除、分解が可能。
+  - 装備ボーナスは戦闘に反映：武器は攻撃力、ヘルムは防御力、アーマーは最大HP、ブーツは移動速度、アクセサリーは最大エネルギー。
+  - テストセーブに全 25 種（5 枠 × 5 品質）を追加し、各枠にレジェンダリーを自動装備。
+- ホーム画面を刷新：左に四角いモード選択入口、右壁際に長方形の「ゲーム開始」ボタン、下部に 4 機能ナビバー（ショップ / 装備 / 図鑑 / バックパック）。モード選択は `/mode` の独立ページに分離。
+- 新ヒーロー「スケーターボーイ」（ストリートスケートテーマ、近接、通常攻撃距離 100、1000 コイン）：
+  - パッシブ「モーメンタム」：通常攻撃 1 回ごとに移動速度が永続 +0.5%；通常攻撃に（現在速度 / 基礎速度 - 1）× 基礎ダメージの追加ダメージ。
+  - Q「ラッドスケートボード」：スケートボードをブーメランのように投げ、建物を貫通し、往復でダメージと 1 秒スタン。発動中自身の移動速度 -30%。2 段階目：飛距離 350 → 500；3 段階目：自身の減速なし＋最近の敵 2 体に追加スケートボード。
+  - E「ハードスケートボード」：地面に叩きつけ、周囲の敵にダメージと 20% 減速（3 秒）。2 段階目：減速 20% → 30%；3 段階目：範囲 200 → 270。
+  - R「スケートフライト」：5 秒間移動速度 +30%、他のスキル使用不可。SPACE は通常攻撃ではなく無敵状態＋追加移動速度 +20% でジャンプし、1 秒後に着地して周囲にダメージと強力なノックバック。2 段階目：持続 5 秒 → 7 秒；3 段階目：着地後 1 秒スタン追加。
+- 新ヒーロー「バスケットボーイ」（コートシューターテーマ、遠距離、通常攻撃距離 200、1500 コイン）：
+  - パッシブ「マガジンシューター」：通常攻撃がバスケットボール射撃になり、マガジン 10 発、撃破 5 体ごとに +1 発。残弾がある時は 5 発/秒で射撃、空弾時は攻撃不可。
+  - Q「ファストクロスオーバー」：0.5 秒で最近の敵 5 体を貫通（無敵）、1 秒後に大ダメージ。2 段階目：1 秒スタン追加；3 段階目：対象 5 → 10 体。
+  - E「レイアップ」：1 秒で最大 350 前方にダッシュ（無敵、建物でブロック）、終点で敵にダメージと 1 秒スタン。2 段階目：スタン +1 秒；3 段階目：2 連続ダッシュ＆攻撃。
+  - R「シャープシューター」：3 秒間マガジンが無限扱い。2 段階目：射速 5/秒 → 10/秒；3 段階目：持続 +2 秒、通常攻撃が距離を無視（建物は無視しない）。
+
 ## 1.7.5
 
 ### 中文

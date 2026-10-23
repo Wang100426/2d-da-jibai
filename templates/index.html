@@ -7,9 +7,10 @@
   <title>{{ tr("PRODUCT_NAME") }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body class="mode-page">
+<body class="home-page">
   <div class="scanlines"></div>
-  <div class="mode-top-actions">
+
+  <header class="home-topbar" aria-label="{{ tr('HOME') }}">
     <a class="coin-pill" href="/shop" title="{{ tr('SHOP') }}">
       <span class="coin-pill-icon" aria-hidden="true">◈</span>
       <b data-coin-balance>{{ "∞" if profile.infinite_coins else "{:,}".format(profile.coins) }}</b>
@@ -20,58 +21,49 @@
       <b>{{ tr("SAVE_MANAGE") }}</b>
     </button>
     <div class="language-switch" data-language-switch></div>
-  </div>
+  </header>
 
-  <section class="camp-transition" id="camp-transition" aria-live="polite" aria-hidden="true" hidden>
-    <img class="camp-transition-art" src="{{ url_for('static', filename='game_loading_1.png') }}" alt="">
-    <div class="camp-transition-shade"></div>
-    <div class="camp-transition-briefing">
-      <p class="camp-transition-kicker">{{ tr("CYBER_ARENA") }}</p>
-      <h1>{{ tr("CYBER_CAMP_CONNECTING") }}</h1>
-      <div class="camp-transition-loader">
-        <dot-motion-loader class="map-loader-animation"></dot-motion-loader>
-      </div>
-    </div>
-  </section>
-
-  <main class="mode-main">
-    <section class="mode-hero-copy">
+  <main class="home-dashboard">
+    <section class="home-hero-copy" aria-label="{{ tr('PRODUCT_NAME') }}">
       <p class="eyebrow"><span></span> {{ tr("SEASON") }}</p>
-      {% if lang == 'en' %}<img class="mode-logo" src="{{ url_for('favicon', lang=lang) }}" alt="{{ tr('PRODUCT_NAME') }}">{% elif lang == 'ja' %}<img class="mode-logo" src="{{ url_for('favicon', lang=lang) }}" alt="{{ tr('PRODUCT_NAME') }}">{% else %}<img class="mode-logo" src="{{ url_for('static', filename='2d_da_jibai_logo.png') }}" alt="{{ tr('PRODUCT_NAME') }}">{% endif %}
+      {% if lang == 'en' %}<img class="home-logo" src="{{ url_for('favicon', lang=lang) }}" alt="{{ tr('PRODUCT_NAME') }}">{% elif lang == 'ja' %}<img class="home-logo" src="{{ url_for('favicon', lang=lang) }}" alt="{{ tr('PRODUCT_NAME') }}">{% else %}<img class="home-logo" src="{{ url_for('static', filename='2d_da_jibai_logo.png') }}" alt="{{ tr('PRODUCT_NAME') }}">{% endif %}
       <p class="subtitle">{{ tr("HOME_SUBTITLE") }}<br><b>{{ tr("HOME_DESCRIPTION") }}</b></p>
     </section>
 
-    <div class="mode-controls">
-      <a class="mode-codex" id="mode-codex" href="/codex">
-        <span class="mode-codex-icon" aria-hidden="true">{{ tr("CODEX_ICON") }}</span>
-        <span class="mode-codex-copy"><small>{{ tr("CODEX_KICKER") }}</small><b>{{ tr("CODEX") }}</b></span>
-        <span class="mode-codex-arrow" aria-hidden="true">›</span>
+    <section class="home-actions" aria-label="{{ tr('HOME_ACTIONS') }}">
+      <a class="home-mode-card" href="/mode" data-camp-transition>
+        <span class="home-mode-icon" id="home-mode-icon">{{ tr("ROGUE_ICON") }}</span>
+        <span class="home-mode-copy">
+          <small>{{ tr("MODE_PICKER") }}</small>
+          <b id="home-mode-label">{{ tr("ROGUE") }}</b>
+        </span>
+        <span class="home-mode-arrow" aria-hidden="true">›</span>
       </a>
-      <div class="mode-row">
-        <div class="mode-picker">
-          <button class="mode-picker-current" id="mode-picker-current" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="mode-options">
-            <span class="mode-picker-icon" id="mode-picker-icon">{{ tr("ROGUE_ICON") }}</span>
-            <span class="mode-picker-copy"><small>{{ tr("MODE_PICKER") }}</small><b id="mode-picker-label">{{ tr("ROGUE") }}</b></span>
-            <span class="mode-picker-arrow" aria-hidden="true">⌃</span>
-          </button>
-          <div class="mode-options" id="mode-options" role="listbox" aria-label="{{ tr('MODE_PICKER') }}" hidden>
-            <button type="button" role="option" aria-selected="true" data-mode="rogue" data-mode-label="{{ tr('ROGUE') }}" data-mode-icon="{{ tr('ROGUE_ICON') }}" data-mode-href="/select">
-              <span class="mode-option-icon rogue">{{ tr("ROGUE_ICON") }}</span><span><b>{{ tr("ROGUE") }}</b><small>{{ tr("ROGUE_TAGLINE") }}</small></span>
-            </button>
-            <button type="button" role="option" aria-selected="false" data-mode="lan" data-mode-label="{{ tr('LAN') }}" data-mode-icon="{{ tr('LAN_ICON') }}" data-mode-href="/multiplayer">
-              <span class="mode-option-icon lan">{{ tr("LAN_ICON") }}</span><span><b>{{ tr("LAN") }}</b><small>{{ tr("LAN_TAGLINE") }}</small></span>
-            </button>
-            <button type="button" role="option" aria-selected="false" data-mode="duel" data-mode-label="{{ tr('DUEL') }}" data-mode-icon="{{ tr('DUEL_ICON') }}" data-mode-href="/select?mode=duel">
-              <span class="mode-option-icon duel">{{ tr("DUEL_ICON") }}</span><span><b>{{ tr("DUEL") }}</b><small>{{ tr("DUEL_TAGLINE") }}</small></span>
-            </button>
-          </div>
-        </div>
-        <a class="mode-start" id="mode-start" href="/select" data-camp-transition>
-          <span>{{ tr("HOME_START_GAME") }}</span><b aria-hidden="true">↗</b>
-        </a>
-      </div>
-    </div>
+      <a class="home-start-button" id="home-start" href="/select" data-camp-transition>
+        <span>{{ tr("HOME_START_GAME") }}</span>
+        <b aria-hidden="true">↗</b>
+      </a>
+    </section>
   </main>
+
+  <nav class="home-bottom-bar" aria-label="{{ tr('HOME') }}">
+    <a class="home-nav-item" href="/shop">
+      <span>◈</span>
+      <b>{{ tr("NAV_SHOP") }}</b>
+    </a>
+    <a class="home-nav-item" href="/equipment">
+      <span>⚙</span>
+      <b>{{ tr("NAV_EQUIPMENT") }}</b>
+    </a>
+    <a class="home-nav-item" href="/codex">
+      <span>图</span>
+      <b>{{ tr("NAV_CODEX") }}</b>
+    </a>
+    <a class="home-nav-item" href="/backpack">
+      <span>包</span>
+      <b>{{ tr("NAV_BACKPACK") }}</b>
+    </a>
+  </nav>
 
   <section class="save-overlay" id="save-overlay" hidden>
     <div class="save-panel" role="dialog" aria-modal="true" aria-labelledby="save-title">
@@ -83,7 +75,6 @@
         <button class="save-close" id="save-close" type="button" aria-label="{{ tr('SAVE_CLOSE') }}">✕</button>
       </header>
       <p class="save-subtitle">{{ tr("SAVE_SUBTITLE") }}</p>
-
       <div class="save-summary">
         <div class="save-stat">
           <span>{{ tr("COINS") }}</span>
@@ -96,7 +87,6 @@
           <small>{{ tr("SAVE_FREE_HINT") }}</small>
         </div>
       </div>
-
       <div class="save-roster" id="save-roster">
         {% for hero in heroes %}
         <span class="save-chip{% if hero.locked %} locked{% endif %}"
@@ -108,12 +98,10 @@
         </span>
         {% endfor %}
       </div>
-
       <dl class="save-meta">
         <div><dt>{{ tr("SAVE_PATH") }}</dt><dd id="save-path">{{ save_path }}</dd></div>
         <div><dt>{{ tr("SAVE_SETTLED") }}</dt><dd id="save-settled">{{ settled_count }}</dd></div>
       </dl>
-
       <div class="save-actions">
         <button class="save-action" id="save-export" type="button">
           <b>{{ tr("SAVE_EXPORT") }}</b><small>{{ tr("SAVE_EXPORT_HINT") }}</small>
@@ -130,82 +118,37 @@
     </div>
   </section>
 
-  <footer><span>{{ tr("FOOTER") }}</span><span>{{ tr("SLOGAN") }}</span></footer>
-  <script src="{{ url_for('static', filename='dot-motion-loader.js') }}"></script>
+  <div class="camp-transition" id="camp-transition" hidden>
+    <img class="camp-transition-art" id="camp-transition-art" src="/static/camp-default.jpg" alt="">
+    <div class="camp-transition-shade"></div>
+    <div class="camp-transition-briefing">
+      <p class="camp-transition-kicker" id="camp-transition-kicker">{{ tr("CAMP_KICKER") }}</p>
+      <h1 id="camp-transition-title">{{ tr("CAMP_TITLE") }}</h1>
+      <div class="camp-transition-loader">
+        <span class="map-loader-animation" aria-hidden="true"></span>
+      </div>
+    </div>
+  </div>
+
   <script src="{{ url_for('static', filename='language.js') }}"></script>
+  <script src="{{ url_for('static', filename='save.js') }}" defer></script>
   <script src="{{ url_for('static', filename='page-transition.js') }}" defer></script>
   <script>
-    window.SAVE_STATE = {
-      coins: {{ profile.coins }},
-      infinite_coins: {{ profile.infinite_coins|tojson }},
-      unlocked_heroes: {{ profile.unlocked_heroes|tojson }},
-      settled_count: {{ settled_count }},
-      save_path: {{ save_path|tojson }}
-    };
-    window.SAVE_STRINGS = {
-      owned: {{ tr("SHOP_OWNED")|tojson }},
-      locked: {{ tr("SHOP_LOCKED")|tojson }},
-      exported: {{ tr("SAVE_EXPORTED")|tojson }},
-      imported: {{ tr("SAVE_IMPORTED")|tojson }},
-      import_failed: {{ tr("SAVE_IMPORT_FAILED")|tojson }},
-      reset_done: {{ tr("SAVE_RESET_DONE")|tojson }},
-      reset_confirm: {{ tr("SAVE_RESET_CONFIRM")|tojson }},
-      failed: {{ tr("SAVE_FAILED")|tojson }},
-      infinite_note: {{ tr("SAVE_INFINITE_NOTE")|tojson }}
-    };
-  </script>
-  <script src="{{ url_for('static', filename='save.js') }}"></script>
-  <script>
-    const campTransition = document.querySelector("#camp-transition");
-    const currentMode = document.querySelector("#mode-picker-current");
-    const modeOptions = document.querySelector("#mode-options");
-    const modeLabel = document.querySelector("#mode-picker-label");
-    const modeIcon = document.querySelector("#mode-picker-icon");
-    const startGame = document.querySelector("#mode-start");
-    const options = [...document.querySelectorAll("[data-mode]")];
-    let campTransitionStarted = false;
-    currentMode.addEventListener("click", () => {
-      const expanded = currentMode.getAttribute("aria-expanded") === "true";
-      currentMode.setAttribute("aria-expanded", String(!expanded));
-      modeOptions.hidden = expanded;
-      if (!expanded) options[0].focus();
-    });
-    options.forEach((option) => {
-      option.addEventListener("click", () => {
-        modeLabel.textContent = option.dataset.modeLabel;
-        modeIcon.textContent = option.dataset.modeIcon;
-        startGame.href = option.dataset.modeHref;
-        options.forEach((item) => item.setAttribute("aria-selected", String(item === option)));
-        currentMode.setAttribute("aria-expanded", "false");
-        modeOptions.hidden = true;
-        currentMode.focus();
-      });
-    });
-    document.addEventListener("click", (event) => {
-      if (!event.target.closest(".mode-picker")) {
-        currentMode.setAttribute("aria-expanded", "false");
-        modeOptions.hidden = true;
-      }
-    });
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && !modeOptions.hidden) {
-        currentMode.setAttribute("aria-expanded", "false");
-        modeOptions.hidden = true;
-        currentMode.focus();
-      }
-    });
-    document.querySelectorAll("[data-camp-transition]").forEach((link) => {
-      link.addEventListener("click", (event) => {
-        if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-        event.preventDefault();
-        if (campTransitionStarted || !campTransition) return;
-        campTransitionStarted = true;
-        campTransition.hidden = false;
-        campTransition.setAttribute("aria-hidden", "false");
-        campTransition.classList.add("is-visible");
-        window.setTimeout(() => window.location.assign(link.href), 850);
-      });
-    });
+    (function () {
+      const modeRoutes = {
+        rogue: { label: {{ tr("ROGUE")|tojson }}, href: "/select", icon: {{ tr("ROGUE_ICON")|tojson }} },
+        lan: { label: {{ tr("LAN")|tojson }}, href: "/multiplayer", icon: {{ tr("LAN_ICON")|tojson }} },
+        duel: { label: {{ tr("DUEL")|tojson }}, href: "/select?mode=duel", icon: {{ tr("DUEL_ICON")|tojson }} }
+      };
+      const selected = localStorage.getItem("selectedMode") || "rogue";
+      const info = modeRoutes[selected] || modeRoutes.rogue;
+      const labelEl = document.getElementById("home-mode-label");
+      const iconEl = document.getElementById("home-mode-icon");
+      const startEl = document.getElementById("home-start");
+      if (labelEl) labelEl.textContent = info.label;
+      if (iconEl) iconEl.textContent = info.icon;
+      if (startEl) startEl.href = info.href;
+    })();
   </script>
 </body>
 </html>

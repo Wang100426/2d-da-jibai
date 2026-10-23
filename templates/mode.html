@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="{{ {'en': 'en', 'ja': 'ja'}.get(lang, 'zh-CN') }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="{{ url_for('favicon', lang=lang) }}">
+  <title>{{ tr("MODE_PICKER") }} · {{ tr("PRODUCT_NAME") }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="select-page mode-page">
+  <div class="scanlines"></div>
+  <a class="select-back" href="/" aria-label="{{ tr('BACK_HOME') }}">← <span>{{ tr("BACK_HOME") }}</span></a>
+  <div class="select-top-actions">
+    <a class="coin-pill" href="/shop" title="{{ tr('SHOP') }}">
+      <span class="coin-pill-icon" aria-hidden="true">◈</span>
+      <b data-coin-balance>{{ "∞" if profile.infinite_coins else "{:,}".format(profile.coins) }}</b>
+      <small>{{ tr("SHOP") }}</small>
+    </a>
+    <div class="language-switch" data-language-switch></div>
+  </div>
+
+  <main class="select-main">
+    <section class="select-hero-copy">
+      <div>
+        <p class="eyebrow"><span></span> {{ tr("MODE_PICKER") }}</p>
+        <h1>{{ tr("MODE_SELECT_TITLE") }} <span>/ {{ "%02d"|format(modes|length) }}</span></h1>
+      </div>
+      <p>{{ tr("MODE_SELECT_SUBTITLE") }}</p>
+    </section>
+
+    <section class="selection-layout mode-selection-layout" aria-label="{{ tr('MODE_PICKER') }}">
+      <div class="hero-roster mode-roster" role="list" aria-label="{{ tr('MODE_PICKER') }}">
+        {% for mode in modes %}
+        {% set is_default = mode.id == default_mode.id %}
+        <button
+          class="roster-choice {{ mode.accent }}{% if is_default %} selected{% endif %}"
+          type="button"
+          data-mode-id="{{ mode.id }}"
+          aria-pressed="{{ 'true' if is_default else 'false' }}"
+          style="--hero-main:{{ mode.palette.main }};--hero-light:{{ mode.palette.light }};--hero-dark:{{ mode.palette.dark }}"
+        >
+          <span class="roster-avatar">{{ mode.icon }}</span>
+          <span class="roster-identity">
+            <small>{{ mode.kicker }}</small>
+            <b>{{ mode.name }}</b>
+          </span>
+          <span class="roster-arrow" aria-hidden="true">›</span>
+        </button>
+        {% endfor %}
+      </div>
+
+      <section class="hero-detail mode-detail" aria-live="polite">
+        <div class="detail-topline"><span class="status-dot"></span> {{ tr("MODE_PROFILE") }} <b id="mode-detail-index">01 / {{ "%02d"|format(modes|length) }}</b></div>
+        <div class="detail-main">
+          <div class="detail-portrait {{ default_mode.accent }}" id="mode-detail-portrait"
+               style="--hero-main:{{ default_mode.palette.main }};--hero-light:{{ default_mode.palette.light }};--hero-dark:{{ default_mode.palette.dark }}">
+            <span id="mode-detail-initial">{{ default_mode.icon }}</span>
+            <i class="detail-orbit orbit-one"></i>
+            <i class="detail-orbit orbit-two"></i>
+            <small>{{ tr("MODE_PROFILE") }}</small>
+          </div>
+          <div class="detail-copy">
+            <p class="eyebrow" id="mode-detail-kicker">{{ default_mode.kicker }}</p>
+            <h2 id="mode-detail-name">{{ default_mode.name }}</h2>
+            <p id="mode-detail-tagline">{{ default_mode.tagline }}</p>
+            <div class="mode-description" id="mode-detail-description">
+              {{ default_mode.description }}
+            </div>
+            <div class="mode-features" id="mode-detail-features">
+              {% for point in default_mode.tagline.split(" · ") %}
+              <span>{{ point }}</span>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <div class="detail-footer">
+          <span><b id="mode-selected-name">{{ default_mode.name }}</b><small>{{ tr("MODE_SELECTED") }}</small></span>
+          <button type="button" id="mode-confirm" class="enter-trapezoid">{{ tr("MODE_CONFIRM") }} <b>&gt;&gt;</b></button>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <footer><span>{{ tr("FOOTER") }}</span><span>{{ tr("SLOGAN") }}</span></footer>
+  <script>window.MODE_SELECTION = {{ modes|tojson }};</script>
+  <script src="{{ url_for('static', filename='mode.js') }}"></script>
+  <script src="{{ url_for('static', filename='language.js') }}"></script>
+  <script src="{{ url_for('static', filename='page-transition.js') }}" defer></script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="{{ {'en': 'en', 'ja': 'ja'}.get(lang, 'zh-CN') }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="{{ url_for('favicon', lang=lang) }}">
+  <title>{{ tr("BACKPACK_TITLE") }} · {{ tr("PRODUCT_NAME") }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="backpack-page">
+  <div class="scanlines"></div>
+  <a class="select-back" href="/" aria-label="{{ tr('BACK_HOME') }}">← <span>{{ tr("BACK_HOME") }}</span></a>
+  <div class="select-top-actions">
+    <a class="coin-pill" href="/shop" title="{{ tr('SHOP') }}">
+      <span class="coin-pill-icon" aria-hidden="true">◈</span>
+      <b data-coin-balance>{{ "∞" if profile.infinite_coins else "{:,}".format(profile.coins) }}</b>
+      <small>{{ tr("SHOP") }}</small>
+    </a>
+    <div class="language-switch" data-language-switch></div>
+  </div>
+
+  <main class="backpack-main">
+    <section class="backpack-hero-copy">
+      <div class="backpack-heading">
+        <p class="eyebrow"><span></span> {{ tr("BACKPACK_KICKER") }}</p>
+        <h1>{{ tr("BACKPACK_TITLE") }}</h1>
+      </div>
+      <p class="backpack-intro">{{ tr("BACKPACK_SUBTITLE") }}</p>
+    </section>
+
+    <section class="backpack-grid" aria-label="{{ tr('BACKPACK_TITLE') }}">
+      <div class="backpack-filters" id="backpack-filters"></div>
+      <div class="backpack-list" id="backpack-list"></div>
+    </section>
+  </main>
+
+  <div class="backpack-toast" id="backpack-toast" role="status" aria-live="polite"></div>
+  <footer><span>{{ tr("FOOTER") }}</span><span>{{ tr("SLOGAN") }}</span></footer>
+  <script>
+    window.BACKPACK_STATE = {
+      slots: {{ slots|tojson }},
+      qualities: {{ qualities|tojson }},
+      quality_colors: {{ quality_colors|tojson }},
+      slot_labels: {{ slot_labels|tojson }},
+      quality_labels: {{ quality_labels|tojson }}
+    };
+    window.BACKPACK_STRINGS = {
+      equip: {{ tr("EQUIPMENT_EQUIP")|tojson }},
+      unequip: {{ tr("EQUIPMENT_UNEQUIP")|tojson }},
+      delete: {{ tr("EQUIPMENT_DELETE")|tojson }},
+      empty: {{ tr("EQUIPMENT_EMPTY_SLOT")|tojson }},
+      all: {{ tr("EQUIPMENT_INVENTORY")|tojson }}
+    };
+  </script>
+  <script src="{{ url_for('static', filename='backpack.js') }}"></script>
+  <script src="{{ url_for('static', filename='language.js') }}"></script>
+  <script src="{{ url_for('static', filename='page-transition.js') }}" defer></script>
+</body>
+</html>

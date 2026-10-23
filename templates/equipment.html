@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="{{ {'en': 'en', 'ja': 'ja'}.get(lang, 'zh-CN') }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="{{ url_for('favicon', lang=lang) }}">
+  <title>{{ tr("EQUIPMENT_TITLE") }} · {{ tr("PRODUCT_NAME") }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="equipment-page">
+  <div class="scanlines"></div>
+  <a class="select-back" href="/" aria-label="{{ tr('BACK_HOME') }}">← <span>{{ tr("BACK_HOME") }}</span></a>
+  <div class="select-top-actions">
+    <a class="coin-pill" href="/shop" title="{{ tr('SHOP') }}">
+      <span class="coin-pill-icon" aria-hidden="true">◈</span>
+      <b data-coin-balance>{{ "∞" if profile.infinite_coins else "{:,}".format(profile.coins) }}</b>
+      <small>{{ tr("SHOP") }}</small>
+    </a>
+    <div class="language-switch" data-language-switch></div>
+  </div>
+
+  <main class="equipment-main">
+    <section class="equipment-hero-copy">
+      <div class="equipment-heading">
+        <p class="eyebrow"><span></span> {{ tr("EQUIPMENT_KICKER") }}</p>
+        <h1>{{ tr("EQUIPMENT_TITLE") }}</h1>
+      </div>
+      <p class="equipment-intro">{{ tr("EQUIPMENT_SUBTITLE") }}</p>
+      <div class="equipment-wallet">
+        <span>{{ tr("COINS") }}</span>
+        <b class="equipment-coin">◈ <i data-coin-balance>{{ "∞" if profile.infinite_coins else "{:,}".format(profile.coins) }}</i></b>
+      </div>
+    </section>
+
+    <section class="equipment-draw">
+      <div class="equipment-draw-card">
+        <h2>{{ tr("EQUIPMENT_DRAW") }}</h2>
+        <p>{{ tr("EQUIPMENT_DRAW_PRICE", price=draw_price) }}</p>
+        <button class="equipment-draw-button" id="equipment-draw" type="button">
+          <span>{{ tr("EQUIPMENT_DRAW_ONCE") }}</span>
+          <b>◈ {{ draw_price }}</b>
+        </button>
+      </div>
+      <div class="equipment-result" id="equipment-result" hidden>
+        <div class="equipment-result-card" id="equipment-result-card"></div>
+      </div>
+    </section>
+
+    <section class="equipment-loadout">
+      <h2>{{ tr("EQUIPMENT_LOADOUT") }}</h2>
+      <div class="equipment-slots" id="equipment-slots"></div>
+    </section>
+  </main>
+
+  <div class="equipment-toast" id="equipment-toast" role="status" aria-live="polite"></div>
+  <footer><span>{{ tr("FOOTER") }}</span><span>{{ tr("SLOGAN") }}</span></footer>
+  <script>
+    window.EQUIPMENT_STATE = {
+      coins: {{ profile.coins }},
+      infinite_coins: {{ profile.infinite_coins|tojson }},
+      draw_price: {{ draw_price }},
+      slots: {{ slots|tojson }},
+      qualities: {{ qualities|tojson }},
+      quality_colors: {{ quality_colors|tojson }},
+      slot_labels: {{ slot_labels|tojson }},
+      quality_labels: {{ quality_labels|tojson }}
+    };
+    window.EQUIPMENT_STRINGS = {
+      draw: {{ tr("EQUIPMENT_DRAW")|tojson }},
+      draw_once: {{ tr("EQUIPMENT_DRAW_ONCE")|tojson }},
+      equip: {{ tr("EQUIPMENT_EQUIP")|tojson }},
+      unequip: {{ tr("EQUIPMENT_UNEQUIP")|tojson }},
+      delete: {{ tr("EQUIPMENT_DELETE")|tojson }},
+      empty_slot: {{ tr("EQUIPMENT_EMPTY_SLOT")|tojson }},
+      draw_success: {{ tr("EQUIPMENT_DRAW_SUCCESS")|tojson }},
+      not_enough: {{ tr("EQUIPMENT_NOT_ENOUGH")|tojson }},
+      failed: {{ tr("SHOP_FAILED")|tojson }}
+    };
+  </script>
+  <script src="{{ url_for('static', filename='equipment.js') }}"></script>
+  <script src="{{ url_for('static', filename='language.js') }}"></script>
+  <script src="{{ url_for('static', filename='page-transition.js') }}" defer></script>
+</body>
+</html>

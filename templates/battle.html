@@ -33,7 +33,9 @@
     <span id="map-mode" hidden>{{ tr("BATTLE_TITLE_DUEL" if game_mode == "duel" else "BATTLE_TITLE_ROGUE") }}</span>
     <button class="touch-mode-toggle" id="touch-mode-toggle" type="button" aria-pressed="false">{{ tr("TOUCH_MODE") }}</button>
     <div class="language-switch" data-language-switch></div>
-    <a class="exit-link" href="{% if game_mode == 'duel' %}/select?mode=duel{% else %}/select{% endif %}">{{ tr("BACK_SELECT") }} ×</a>
+    {% if not multiplayer and game_mode != "duel" %}
+    <button class="pause-toggle" id="pause-toggle" type="button" aria-label="{{ tr('PAUSE') }}" aria-pressed="false">{{ tr("PAUSE") }}</button>
+    {% endif %}
   </div>
   <aside class="map-hero-card">
     <div class="map-portrait {{ player.accent }}" style="--hero-main:{{ player.palette.main }};--hero-light:{{ player.palette.light }};--hero-dark:{{ player.palette.dark }}">{{ player.initial }}</div>
@@ -48,7 +50,6 @@
     <div class="combat-traits" id="combat-traits">{{ tr("COMBAT_TRAITS") }}</div>
   </aside>
   {% if not multiplayer and game_mode != "duel" %}
-  <button class="pause-toggle" id="pause-toggle" type="button" aria-label="{{ tr('PAUSE') }}" aria-pressed="false">{{ tr("PAUSE") }}</button>
   <section class="pause-overlay" id="pause-overlay" hidden>
     <div class="upgrade-panel pause-panel">
       <p class="eyebrow">{{ tr("RUN_PAUSED") }}</p>
@@ -150,6 +151,7 @@
       multiplayer: {{ multiplayer|tojson }},
       duel: {{ (game_mode == "duel" and not multiplayer)|tojson }},
       defense: {{ defense|tojson }},
+      equipmentBonuses: {{ equipment_bonuses|tojson }},
       locale: {{ locale_pack|tojson }}
     };
   </script>

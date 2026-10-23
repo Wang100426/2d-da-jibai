@@ -9,14 +9,22 @@
     "HOME_DESCRIPTION": "单机肉鸽，独自迎战敌潮；联机对战，与好友同屏竞技。",
     "CYBER_CAMP_CONNECTING": "正在连接至赛博营地……",
     "ROGUE": "单机肉鸽",
+    "ROGUE_KICKER": "单机挑战",
     "ROGUE_DESCRIPTION": "独自探索霓虹废墟，波次递增，搜集物资，挑选强化。",
     "ROGUE_TAGLINE": "选择英雄 · 开始挑战 · 活过下一波",
     "LAN_DESCRIPTION": "和同一 Wi-Fi 下的朋友进入房间，同步位置，共同迎战敌潮。",
+    "LAN_KICKER": "本地联机",
     "LAN_TAGLINE": "创建房间 · 邀请好友 · 一起战斗",
     "DUEL": "人机对抗",
+    "DUEL_KICKER": "人机竞技",
     "DUEL_DESCRIPTION": "选择英雄挑战 AI 对手，先赢下四分。每回合结束后挑选强化。",
     "DUEL_TAGLINE": "一对一竞技 · 十秒整备 · 决胜四分",
     "MODE_PICKER": "当前模式",
+    "MODE_SELECT_TITLE": "选择模式",
+    "MODE_SELECT_SUBTITLE": "选择本次要挑战的模式，返回主页后即可开始游戏。",
+    "MODE_PROFILE": "模式档案",
+    "MODE_SELECTED": "已选择模式",
+    "MODE_CONFIRM": "选定",
     "HOME_START_GAME": "开始游戏",
     "FOOTER": "2D大击败 // 由无聊驱动",
     "SELECT_SUBTITLE_DUEL": "选择角色，进入人机对抗竞技场。",
@@ -173,6 +181,38 @@
     "HERO_FREE": "免费",
     "SHOP_INFINITE": "金币无限",
     "SHOP_FAILED": "购买失败，请稍后再试。",
+    "EQUIPMENT": "装备",
+    "EQUIPMENT_TITLE": "装备工坊",
+    "EQUIPMENT_KICKER": "装备强化",
+    "EQUIPMENT_SUBTITLE": "花费金币抽取装备，装配到 5 个位置，提升战斗属性。",
+    "EQUIPMENT_DRAW": "抽取装备",
+    "EQUIPMENT_DRAW_ONCE": "单抽",
+    "EQUIPMENT_DRAW_PRICE": "{price} 金币",
+    "EQUIPMENT_INVENTORY": "背包",
+    "EQUIPMENT_LOADOUT": "当前装配",
+    "EQUIPMENT_SLOT_WEAPON": "武器",
+    "EQUIPMENT_SLOT_HELMET": "头盔",
+    "EQUIPMENT_SLOT_ARMOR": "护甲",
+    "EQUIPMENT_SLOT_BOOTS": "靴子",
+    "EQUIPMENT_SLOT_ACCESSORY": "饰品",
+    "EQUIPMENT_QUALITY_COMMON": "普通",
+    "EQUIPMENT_QUALITY_UNCOMMON": "精良",
+    "EQUIPMENT_QUALITY_RARE": "稀有",
+    "EQUIPMENT_QUALITY_EPIC": "史诗",
+    "EQUIPMENT_QUALITY_LEGENDARY": "传说",
+    "EQUIPMENT_EQUIP": "装备",
+    "EQUIPMENT_UNEQUIP": "卸下",
+    "EQUIPMENT_DELETE": "分解",
+    "EQUIPMENT_EMPTY_SLOT": "空槽位",
+    "EQUIPMENT_DRAW_SUCCESS": "抽取成功：{quality} {slot} +{value} {stat}",
+    "EQUIPMENT_NOT_ENOUGH": "金币不足",
+    "BACKPACK_TITLE": "背包",
+    "BACKPACK_KICKER": "装备库存",
+    "BACKPACK_SUBTITLE": "查看和管理你拥有的所有装备。",
+    "NAV_CODEX": "图鉴",
+    "NAV_SHOP": "商店",
+    "NAV_EQUIPMENT": "装备",
+    "NAV_BACKPACK": "背包",
     "SAVE_MANAGE": "存档管理",
     "SAVE_SUBTITLE": "查看金币与已解锁英雄，也可以导出备份、导入或重置存档。",
     "SAVE_OVERVIEW": "存档总览",
@@ -476,6 +516,76 @@
           "detail_description": "接下来 3 秒内移速 +50%、闪避 +50%。"
         }
       }
+    },
+    "skater": {
+      "name": "滑板小子",
+      "class_name": "街头滑手",
+      "tagline": "速度就是武器，滑板就是态度。",
+      "initial": "滑",
+      "stats": [
+        "攻击",
+        "防御",
+        "机动"
+      ],
+      "passive": {
+        "name": "越滑越快",
+        "description": "每次普攻永久 +0.5% 移速；普攻附加等同于（当前移速 / 基础移速 - 1）× 基础伤害 的额外伤害。"
+      },
+      "skills": {
+        "skater-ult": {
+          "name": "炫酷滑板",
+          "kind": "大招",
+          "description": "滑板回旋镖 · 穿透建筑并眩晕",
+          "detail_description": "将滑板当回旋镖投出，1 秒内飞行 350 距离后返回，来回均可穿透建筑并造成伤害和 1 秒眩晕；期间自身移速降低 30%。"
+        },
+        "skater-smash": {
+          "name": "坚硬滑板",
+          "kind": "小技能",
+          "description": "猛砸滑板 · 范围伤害并减速",
+          "detail_description": "将滑板狠狠砸向地面，对周围 200 距离内敌人造成中等伤害并减速 20%，持续 3 秒。"
+        },
+        "skater-flight": {
+          "name": "滑板能飞",
+          "kind": "小技能",
+          "description": "加速滑行 · 空格起跳无敌砸地",
+          "detail_description": "接下来 5 秒内移速 +30%，期间无法使用其他技能；按空格不普攻而是进入无敌状态并额外加速 20%，1 秒后砸向地面，对周围 200 距离敌人造成小量伤害和强力击退。"
+        }
+      }
+    },
+    "bball": {
+      "name": "篮球少年",
+      "class_name": "球场射手",
+      "tagline": "弹夹不空，火力不停。",
+      "initial": "篮",
+      "stats": [
+        "攻击",
+        "防御",
+        "机动"
+      ],
+      "passive": {
+        "name": "弹夹射手",
+        "description": "普攻改为篮球射击，弹夹初始容量 10，每击杀 5 个敌人容量 +1；有子弹时以 5 个/秒射出，弹夹为空时不能普攻。"
+      },
+      "skills": {
+        "bball-ult": {
+          "name": "快速过人",
+          "kind": "大招",
+          "description": "连续穿透敌人 · 延迟爆发大额伤害",
+          "detail_description": "立即在 0.5 秒内连续位移并穿透实时距离最近的 5 个敌人（期间无敌），1 秒后对这些敌人造成大额伤害。"
+        },
+        "bball-layup": {
+          "name": "三步上篮",
+          "kind": "小技能",
+          "description": "冲刺无敌 · 终点造成伤害和眩晕",
+          "detail_description": "立即向前在 1 秒内冲刺最多 350 距离（期间无敌，但受建筑阻挡），到达终点时对附近敌人造成中等伤害和 1 秒眩晕。"
+        },
+        "bball-shooter": {
+          "name": "投篮高手",
+          "kind": "小技能",
+          "description": "接下来数秒内弹夹无限",
+          "detail_description": "接下来 3 秒内弹夹容量视为无限，可以持续以 5 个/秒的速度射出篮球。"
+        }
+      }
     }
   },
   "upgrades": {
@@ -765,7 +875,9 @@
       "pipa": "琵琶音刃命中，造成 {damage} 点伤害。",
       "volt2": "音波命中，造成 {damage} 点伤害，回复 5 点能量。",
       "sakura": "花火命中，造成 {damage} 点伤害，并引燃目标。",
-      "jianghu": "剑锋掠过，造成 {damage} 点伤害。"
+      "jianghu": "剑锋掠过，造成 {damage} 点伤害。",
+      "skater": "滑板直击造成 {damage} 点伤害，速度越快伤害越高。",
+      "bball": "篮球命中，造成 {damage} 点伤害。"
     },
     "templates": {
       "skill.cooling": "{name} 冷却中，还需 {seconds} 秒。",
@@ -880,6 +992,17 @@
       "reward.run_infinite": "本局获得 {coins} 金币（测试存档：金币无限）。",
       "reward.run_empty": "本局没有获得金币。",
       "skill.jianghu_busy": "侠客行尚未结束，暂时无法施放其他技能。",
+      "skill.skater_smash": "坚硬滑板砸地：{hits} 个敌人受到伤害并减速。",
+      "skill.skater_flight_start": "滑板能飞启动：{seconds} 秒内移速 +{speed}%，空格变为无敌起跳。",
+      "skill.skater_flight_slam": "滑板砸地：{hits} 个敌人受到伤害并被击退。",
+      "skill.skater_boomerang": "炫酷滑板飞出：来回穿透建筑，命中 {hits} 个敌人。",
+      "skill.bball_layup": "三步上篮冲刺结束：{hits} 个敌人受到伤害并眩晕。",
+      "skill.bball_shooter": "投篮高手：接下来 {seconds} 秒内弹夹无限。",
+      "skill.bball_crossover": "快速过人：穿透 {targets} 个敌人，延迟后造成高额伤害。",
+      "float.skater_flight": "滑板能飞",
+      "float.skater_slam": "砸地",
+      "float.bball_reload": "装填中",
+      "float.bball_empty": "弹夹已空",
       "pause_stats.wave": "到达波次",
       "pause_stats.kills": "本局击杀",
       "pause_stats.passive_kills": "被动累计击杀",
@@ -890,7 +1013,8 @@
       "pause_stats.dodge": "闪避",
       "pause_stats.range": "普攻范围",
       "pause_stats.energy_regen": "能量回复",
-      "pause_stats.supplies": "补给拾取"
+      "pause_stats.supplies": "补给拾取",
+      "pause_stats.equipment_attack": "装备攻击"
     }
   },
   "lobby": {
@@ -981,6 +1105,18 @@
     "剑客之刃普攻伤害加成 20% → 40%": "剑客之刃普攻伤害加成 20% → 40%",
     "剑客之刃吸血 10% → 25%": "剑客之刃吸血 10% → 25%",
     "御剑飞行持续时间 3 秒 → 5 秒": "御剑飞行持续时间 3 秒 → 5 秒",
-    "御剑飞行速度提升 50% → 100%": "御剑飞行速度提升 50% → 100%"
+    "御剑飞行速度提升 50% → 100%": "御剑飞行速度提升 50% → 100%",
+    "回旋镖飞行距离 350 → 500": "回旋镖飞行距离 350 → 500",
+    "期间不减速且向最近 2 个敌人额外发射滑板": "期间不减速且向最近 2 个敌人额外发射滑板",
+    "减速 20% → 30%": "减速 20% → 30%",
+    "范围 200 → 270": "范围 200 → 270",
+    "持续时间 5 秒 → 7 秒": "持续时间 5 秒 → 7 秒",
+    "砸地后额外眩晕 1 秒": "砸地后额外眩晕 1 秒",
+    "造成伤害同时眩晕 1 秒": "造成伤害同时眩晕 1 秒",
+    "穿透目标 5 → 10 个": "穿透目标 5 → 10 个",
+    "眩晕 +1 秒": "眩晕 +1 秒",
+    "连续进行 2 次冲刺和攻击": "连续进行 2 次冲刺和攻击",
+    "篮球发射速度 5/秒 → 10/秒": "篮球发射速度 5/秒 → 10/秒",
+    "时长 +2 秒且普攻无视距离（不无视建筑）": "时长 +2 秒且普攻无视距离（不无视建筑）"
   }
 }

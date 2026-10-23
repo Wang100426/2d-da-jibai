@@ -9,14 +9,22 @@
     "HOME_DESCRIPTION": "ソロで敵の大群に立ち向かうか、友と共にオンラインで戦うか。",
     "CYBER_CAMP_CONNECTING": "サイバーキャンプに接続中……",
     "ROGUE": "ローグライク",
+    "ROGUE_KICKER": "ソロ挑戦",
     "ROGUE_DESCRIPTION": "ネオンの廃墟を一人で探索し、押し寄せるウェーブを生き延び、強化を選べ。",
     "ROGUE_TAGLINE": "ヒーローを選択 · 挑戦開始 · 次のウェーブを生き延びろ",
     "LAN_DESCRIPTION": "同じWi-Fiの友達とルームに参加し、位置を同期して共に戦う。",
+    "LAN_KICKER": "LANプレイ",
     "LAN_TAGLINE": "ルーム作成 · 友達を招待 · 一緒に戦う",
     "DUEL": "AI対戦",
+    "DUEL_KICKER": "AIアリーナ",
     "DUEL_DESCRIPTION": "AIの相手に挑戦。先に4ポイント先取で勝利。各ラウンド後に強化を選べる。",
     "DUEL_TAGLINE": "1対1アリーナ · 10秒の準備 · 先に4ポイント",
     "MODE_PICKER": "現在のモード",
+    "MODE_SELECT_TITLE": "モード選択",
+    "MODE_SELECT_SUBTITLE": "今回のモードを選び、ホームに戻ってゲームを開始。",
+    "MODE_PROFILE": "モードプロフィール",
+    "MODE_SELECTED": "選択中のモード",
+    "MODE_CONFIRM": "決定",
     "HOME_START_GAME": "ゲーム開始",
     "FOOTER": "2D大撃破 // 退屈が原動力",
     "SELECT_SUBTITLE_DUEL": "ファイターを選び、AI対戦アリーナへ。",
@@ -173,6 +181,38 @@
     "HERO_FREE": "無料",
     "SHOP_INFINITE": "コイン無制限",
     "SHOP_FAILED": "購入に失敗しました。もう一度お試しください。",
+    "EQUIPMENT": "装備",
+    "EQUIPMENT_TITLE": "装備工房",
+    "EQUIPMENT_KICKER": "装備強化",
+    "EQUIPMENT_SUBTITLE": "コインを消費して装備を抽選し、5つのスロットに装備して戦闘能力を高めよう。",
+    "EQUIPMENT_DRAW": "装備を引く",
+    "EQUIPMENT_DRAW_ONCE": "1回引く",
+    "EQUIPMENT_DRAW_PRICE": "{price} コイン",
+    "EQUIPMENT_INVENTORY": "所持品",
+    "EQUIPMENT_LOADOUT": "現在の装備",
+    "EQUIPMENT_SLOT_WEAPON": "武器",
+    "EQUIPMENT_SLOT_HELMET": "ヘルム",
+    "EQUIPMENT_SLOT_ARMOR": "アーマー",
+    "EQUIPMENT_SLOT_BOOTS": "ブーツ",
+    "EQUIPMENT_SLOT_ACCESSORY": "アクセサリー",
+    "EQUIPMENT_QUALITY_COMMON": "コモン",
+    "EQUIPMENT_QUALITY_UNCOMMON": "アンコモン",
+    "EQUIPMENT_QUALITY_RARE": "レア",
+    "EQUIPMENT_QUALITY_EPIC": "エピック",
+    "EQUIPMENT_QUALITY_LEGENDARY": "レジェンダリー",
+    "EQUIPMENT_EQUIP": "装備",
+    "EQUIPMENT_UNEQUIP": "外す",
+    "EQUIPMENT_DELETE": "分解",
+    "EQUIPMENT_EMPTY_SLOT": "空きスロット",
+    "EQUIPMENT_DRAW_SUCCESS": "抽選成功：{quality} {slot} +{value} {stat}",
+    "EQUIPMENT_NOT_ENOUGH": "コインが足りません",
+    "BACKPACK_TITLE": "バックパック",
+    "BACKPACK_KICKER": "装備在庫",
+    "BACKPACK_SUBTITLE": "所有している装備を確認・管理しよう。",
+    "NAV_CODEX": "図鑑",
+    "NAV_SHOP": "ショップ",
+    "NAV_EQUIPMENT": "装備",
+    "NAV_BACKPACK": "バックパック",
     "SAVE_MANAGE": "セーブ管理",
     "SAVE_SUBTITLE": "コインと解放済みヒーローの確認、バックアップの書き出し・読み込み・リセットができます。",
     "SAVE_OVERVIEW": "セーブ概要",
@@ -474,6 +514,76 @@
           "kind": "スキル",
           "description": "移動速度と回避が大幅上昇",
           "detail_description": "3 秒間、移動速度 +50% かつ回避 +50%。"
+        }
+      }
+    },
+    "skater": {
+      "name": "スケーターボーイ",
+      "class_name": "ストリートスケーター",
+      "tagline": "スピードが武器、ボードが態度。",
+      "initial": "滑",
+      "stats": [
+        "攻撃",
+        "防御",
+        "機動"
+      ],
+      "passive": {
+        "name": "加速スライド",
+        "description": "通常攻撃ごとに移動速度が永続で+0.5%。通常攻撃は（現在の移動速度 / 基本移動速度 - 1）× 基本ダメージの追加ダメージを与える。"
+      },
+      "skills": {
+        "skater-ult": {
+          "name": "クールボード",
+          "kind": "アルティメット",
+          "description": "ブーメランボード · 建物を貫通しスタン",
+          "detail_description": "ボードをブーメランのように投げ、1秒間で350の距離を飛行して戻ってくる。往復とも建物を貫通し、命中した敵にダメージと1秒のスタンを与える。発動中、自身の移動速度は30%低下する。"
+        },
+        "skater-smash": {
+          "name": "ハードボード",
+          "kind": "スキル",
+          "description": "ボードを叩きつけ · 範囲ダメージとスロー",
+          "detail_description": "ボードを地面に叩きつけ、周囲200以内の敵に中程度のダメージを与え、20%スローを3秒間付与する。"
+        },
+        "skater-flight": {
+          "name": "フライングボード",
+          "kind": "スキル",
+          "description": "加速滑行 · スペースで無敵ジャンプから叩きつけ",
+          "detail_description": "5秒間、移動速度+30%。この間は他のスキルが使えない。スペースで通常攻撃の代わりに無敵状態になり、さらに移動速度+20%。1秒後に地面に叩きつけ、周囲200以内の敵に小ダメージと強力なノックバックを与える。"
+        }
+      }
+    },
+    "bball": {
+      "name": "バスケットボーイ",
+      "class_name": "コートシューター",
+      "tagline": "弾倉が空でない限り、火力は止まらない。",
+      "initial": "篮",
+      "stats": [
+        "攻撃",
+        "防御",
+        "機動"
+      ],
+      "passive": {
+        "name": "マガジンシューター",
+        "description": "通常攻撃がバスケットボールの射撃に変わる。弾倉の初期容量は10で、5体撃破ごとに容量+1。弾があるときは毎秒5発射出し、弾倉が空の間は通常攻撃できない。"
+      },
+      "skills": {
+        "bball-ult": {
+          "name": "クイッククロスオーバー",
+          "kind": "アルティメット",
+          "description": "敵を連続で貫通 · 遅延で大ダメージ",
+          "detail_description": "0.5秒間で最も近い敵5体を順に貫通して位移する（無敵）。1秒後にそれらの敵に大ダメージを与える。"
+        },
+        "bball-layup": {
+          "name": "レイアップダッシュ",
+          "kind": "スキル",
+          "description": "無敵で突進 · 終点でダメージとスタン",
+          "detail_description": "前方へ1秒間で最大350まで突進する（無敵だが建物に阻まれる）。終点で付近の敵に中程度のダメージと1秒のスタンを与える。"
+        },
+        "bball-shooter": {
+          "name": "シューター",
+          "kind": "スキル",
+          "description": "数秒間弾倉が無限",
+          "detail_description": "3秒間、弾倉容量が無限とみなされ、毎秒5発の速度でバスケットボールを射出し続けられる。"
         }
       }
     }
@@ -1146,7 +1256,9 @@
       "pipa": "琵琶の音刃が命中、{damage} ダメージ。",
       "volt2": "音波が命中、{damage} ダメージ、エネルギー5回復。",
       "sakura": "花火が命中、{damage} ダメージを与え対象を着火。",
-      "jianghu": "剣閃が走り、{damage} ダメージ。"
+      "jianghu": "剣閃が走り、{damage} ダメージ。",
+      "skater": "ボードの直撃が {damage} ダメージ、速度が速いほどダメージが増加。",
+      "bball": "バスケットボールが命中、{damage} ダメージ。"
     },
     "templates": {
       "skill.cooling": "{name} はクールダウン中、あと {seconds} 秒。",
@@ -1261,6 +1373,17 @@
       "reward.run_infinite": "今回の獲得コイン {coins}（テストセーブ：コイン無制限）。",
       "reward.run_empty": "今回コインは獲得できませんでした。",
       "skill.jianghu_busy": "侠客行が続いているため、他のスキルは使えません。",
+      "skill.skater_smash": "ハードボード叩きつけ：{hits} 体の敵がダメージとスローを受ける。",
+      "skill.skater_flight_start": "フライングボード発動：{seconds} 秒間移動速度 +{speed}%、スペースが無敵ジャンプに変化。",
+      "skill.skater_flight_slam": "ボード叩きつけ：{hits} 体の敵がダメージとノックバックを受ける。",
+      "skill.skater_boomerang": "クールボード飛翔：往復で建物を貫通、{hits} 体の敵に命中。",
+      "skill.bball_layup": "レイアップダッシュ終了：{hits} 体の敵がダメージとスタンを受ける。",
+      "skill.bball_shooter": "シューター：{seconds} 秒間弾倉が無限。",
+      "skill.bball_crossover": "クイッククロスオーバー：{targets} 体の敵を貫通、遅延後に大ダメージ。",
+      "float.skater_flight": "フライングボード",
+      "float.skater_slam": "叩きつけ",
+      "float.bball_reload": "装填中",
+      "float.bball_empty": "弾倉空",
       "pause_stats.wave": "到達ウェーブ",
       "pause_stats.kills": "撃破数（今回）",
       "pause_stats.passive_kills": "パッシブ累計撃破",
@@ -1271,7 +1394,8 @@
       "pause_stats.dodge": "回避",
       "pause_stats.range": "通常攻撃距離",
       "pause_stats.energy_regen": "エネルギー回復",
-      "pause_stats.supplies": "補給回収"
+      "pause_stats.supplies": "補給回収",
+      "pause_stats.equipment_attack": "装備攻撃"
     }
   },
   "lobby": {
@@ -1375,6 +1499,18 @@
     "剑客之刃普攻伤害加成 20% → 40%": "剣客の刃の通常攻撃ダメージ +20% → +40%",
     "剑客之刃吸血 10% → 25%": "剣客の刃の吸血 10% → 25%",
     "御剑飞行持续时间 3 秒 → 5 秒": "御剣飛行の持続 3 秒 → 5 秒",
-    "御剑飞行速度提升 50% → 100%": "御剣飛行の速度上昇 50% → 100%"
+    "御剑飞行速度提升 50% → 100%": "御剣飛行の速度上昇 50% → 100%",
+    "回旋镖飞行距离 350 → 500": "ブーメラン飛行距離 350 → 500",
+    "期间不减速且向最近 2 个敌人额外发射滑板": "自身の減速なし、最寄りの敵2体に追加ボード発射",
+    "减速 20% → 30%": "スロー 20% → 30%",
+    "范围 200 → 270": "範囲 200 → 270",
+    "持续时间 5 秒 → 7 秒": "持続時間 5秒 → 7秒",
+    "砸地后额外眩晕 1 秒": "叩きつけ後に追加で1秒スタン",
+    "造成伤害同时眩晕 1 秒": "ダメージと同時に1秒スタン",
+    "穿透目标 5 → 10 个": "貫通目標 5 → 10体",
+    "眩晕 +1 秒": "スタン +1秒",
+    "连续进行 2 次冲刺和攻击": "突進と攻撃を2連続で行う",
+    "篮球发射速度 5/秒 → 10/秒": "バスケットボール射出速度 5/秒 → 10/秒",
+    "时长 +2 秒且普攻无视距离（不无视建筑）": "持続 +2秒、通常攻撃が距離を無視（建物は無視しない）"
   }
 }

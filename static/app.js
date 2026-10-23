@@ -18,7 +18,7 @@ function getMapConfig() {
     return mapConfig;
 }
 const world = requireElement("#world");
-const context = requireContext(world);
+let context = requireContext(world);
 const minimap = requireElement("#minimap");
 const miniContext = requireContext(minimap);
 const config = getMapConfig();
@@ -70,23 +70,27 @@ function rosterCombat(heroId) {
 }
 const mapTheme = config.mapTheme;
 const map = { width: config.duel ? 1400 : 3200, height: config.duel ? 900 : 2400 };
+// Keep static geometry off the per-frame path; actors and map events remain dynamic.
+let staticMapLayer;
+const equipmentBonuses = config.equipmentBonuses || {};
 const player = {
     x: config.multiplayer?.x ?? (config.duel ? 430 : mapTheme === "airport" ? 1840 : 1600),
     y: config.multiplayer?.y ?? (config.duel ? 450 : mapTheme === "airport" ? 1300 : 1200),
     radius: 19,
-    speed: heroCombat.speed,
+    speed: heroCombat.speed + (equipmentBonuses.speed || 0),
+    invulnerable: false,
 };
 const camera = { x: 0, y: 0 };
 const facing = { x: 1, y: 0 };
 const playerState = {
-    hp: config.multiplayer?.hp ?? 100,
-    maxHp: config.multiplayer?.max_hp ?? 100,
+    hp: config.multiplayer?.hp ?? 100 + (equipmentBonuses.max_hp || 0),
+    maxHp: config.multiplayer?.max_hp ?? 100 + (equipmentBonuses.max_hp || 0),
     shield: config.multiplayer?.shield ?? 0,
-    energy: config.multiplayer?.energy ?? 100,
-    maxEnergy: config.multiplayer?.max_energy ?? 100,
+    energy: config.multiplayer?.energy ?? 100 + (equipmentBonuses.max_energy || 0),
+    maxEnergy: config.multiplayer?.max_energy ?? 100 + (equipmentBonuses.max_energy || 0),
     damageMultiplier: 1,
     attackSpeed: 2,
-    damageReduction: Math.min(0.6, config.defense / 250),
+    damageReduction: Math.min(0.6, (config.defense + (equipmentBonuses.defense || 0)) / 250),
     energyRegen: 1.5,
     cooldownReduction: 0,
     lifesteal: 0,
@@ -95,8 +99,8 @@ const playerState = {
     thornReturnDamage: 12,
     /** 被动累计的普攻范围加成（luna 每次击杀 +5，无上限）。 */
     passiveRangeBonus: 0,
-    /** 预留：被动提供的伤害加成。 */
-    damageBonus: 0,
+    /** 装备提供的攻击加成，加到普攻基础伤害上。 */
+    equipmentAttackBonus: equipmentBonuses.attack || 0,
 };
 const heroPassive = rosterById.get(config.heroId)?.passive || {
     id: "none",
@@ -145,12 +149,25 @@ function addPassiveStat(stat, amount) {
     const mutable = playerState;
     mutable[field] = (mutable[field] || 0) + amount;
 }
+// 篮球少年：弹夹系统必须在被动初始化前声明
+let bballMagazine = 10;
+let bballMagazineMax = 10;
+let bballReloadTimer = 0;
+let bballInfiniteAmmo = false;
+let bballShooterTimer = 0;
+let bballShooterFireRate = 5;
+let bballIgnoreRange = false;
 // 苔藓守卫的初始吸血等开局即生效的被动数值
 // 必须放在 PASSIVE_STAT_FIELDS / addPassiveStat 之后，否则 const 处于
 // 暂时性死区（TDZ），moss 这类带 init 被动的英雄会在加载时就抛错。
 Object.entries(heroPassive.init || {}).forEach(([stat, amount]) => {
     addPassiveStat(stat, amount);
 });
+// 篮球少年：根据被动初始化弹夹容量
+if (heroPassive.id === "bball_magazine") {
+    bballMagazineMax = heroPassive.magazine_size || 10;
+    bballMagazine = bballMagazineMax;
+}
 let empoweredAttack = false;
 /** 电音人强化普攻：本次普攻的技能实例编号，用于被动层数去重。 */
 let empoweredCastId = 0;
@@ -166,6 +183,11 @@ let bladeLifesteal = 0.1;
 let jianghuDashSerial = 0;
 /** 侠客行：进行中的位移链。 */
 let jianghuDash;
+/* ---------- 滑板小子（skater） ---------- */
+/** 当前移速加成倍数（被动每次普攻 +0.5%，永久叠加）。 */
+let skaterSpeedMultiplier = 1;
+/** 滑板能飞状态。 */
+let skaterFlight;
 let wave = 0;
 let waveState = "starting";
 let enemiesToSpawn = 0;
@@ -777,86 +799,6 @@ function spawnEnemyForWave() {
         effects: {},
         experienceAwarded: false,
     });
-    impactParticles.forEach((particle) => {
-        context.save();
-        context.globalAlpha = Math.max(0, particle.life / particle.maxLife);
-        context.shadowColor = particle.color;
-        context.shadowBlur = 9;
-        context.fillStyle = particle.color;
-        context.beginPath();
-        context.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-        context.fill();
-        context.restore();
-    });
-    tabletProjectiles.forEach((tablet) => {
-        const progress = Math.min(1, tablet.age / tablet.duration);
-        const spread = (1 - progress) * tablet.lane * 38;
-        const x = tablet.startX + (tablet.targetX - tablet.startX) * progress + spread * -tablet.directionY;
-        const y = tablet.startY + (tablet.targetY - tablet.startY) * progress + spread * tablet.directionX;
-        context.save();
-        context.globalAlpha = 0.24 * (1 - progress * 0.35);
-        context.strokeStyle = "#438dff";
-        context.shadowColor = "#438dff";
-        context.shadowBlur = 16;
-        context.lineWidth = 9;
-        context.beginPath();
-        context.moveTo(x - tablet.directionX * 34, y - tablet.directionY * 34);
-        context.lineTo(x, y);
-        context.stroke();
-        context.globalAlpha = 1;
-        context.translate(x, y);
-        context.rotate(Math.atan2(tablet.directionY, tablet.directionX) + Math.PI / 2);
-        context.shadowColor = "#438dff";
-        context.shadowBlur = 22;
-        context.fillStyle = "#101a36";
-        context.strokeStyle = "#73b4ff";
-        context.lineWidth = 2.5;
-        context.beginPath();
-        context.roundRect(-12, -19, 24, 38, 5);
-        context.fill();
-        context.stroke();
-        const screen = context.createLinearGradient(-8, -12, 8, 12);
-        screen.addColorStop(0, "#b7e3ff");
-        screen.addColorStop(0.42, "#438dff");
-        screen.addColorStop(1, "#172e72");
-        context.shadowBlur = 10;
-        context.fillStyle = screen;
-        context.beginPath();
-        context.roundRect(-8, -13, 16, 26, 3);
-        context.fill();
-        context.shadowBlur = 0;
-        context.fillStyle = "#ffffff";
-        context.globalAlpha = 0.8;
-        context.fillRect(-5, -8, 8, 1.5);
-        context.fillStyle = "#8fd3ff";
-        context.fillRect(-5, -4, 10, 1);
-        context.fillRect(-5, 0, 7, 1);
-        context.globalAlpha = 1;
-        context.fillStyle = "#d6efff";
-        context.beginPath();
-        context.arc(0, 16, 1.4, 0, Math.PI * 2);
-        context.fill();
-        context.restore();
-    });
-    if (afterimage && afterimage.age < afterimage.duration) {
-        context.save();
-        context.globalAlpha = 0.68 * (1 - afterimage.age / afterimage.duration);
-        context.shadowColor = "#49e6e0";
-        context.shadowBlur = 24;
-        context.strokeStyle = "#baffff";
-        context.fillStyle = "#49e6e055";
-        context.lineWidth = 3;
-        context.beginPath();
-        context.arc(afterimage.x, afterimage.y, player.radius + 4, 0, Math.PI * 2);
-        context.fill();
-        context.stroke();
-        context.fillStyle = "#d4fffb";
-        context.font = "bold 18px sans-serif";
-        context.textAlign = "center";
-        context.textBaseline = "middle";
-        context.fillText(config.initial, afterimage.x, afterimage.y);
-        context.restore();
-    }
 }
 function startWave() {
     wave += 1;
@@ -1166,6 +1108,11 @@ function getEffectiveAttackSpeed() {
         (schoolClassDuration > 0 ? 0.5 : 1);
 }
 function getBasicAttackCooldown() {
+    // 篮球少年：普攻攻速改为篮球射速
+    if (heroPassive.id === "bball_magazine") {
+        const fireRate = bballShooterTimer > 0 ? bballShooterFireRate : (heroPassive.fire_rate || 5);
+        return 1 / fireRate;
+    }
     return 1 / getEffectiveAttackSpeed();
 }
 function skillIsPaused() {
@@ -1207,6 +1154,7 @@ function renderPauseStats() {
         [t("pause_stats.range"), String(heroCombat.basic_range + playerState.passiveRangeBonus)],
         [t("pause_stats.energy_regen"), `${playerState.energyRegen.toFixed(1)} /s`],
         [t("pause_stats.supplies"), String(lootCollected)],
+        [t("pause_stats.equipment_attack"), `+${playerState.equipmentAttackBonus}`],
     ];
     pauseStats.replaceChildren(...rows.map(([label, value]) => {
         const item = document.createElement("div");
@@ -1360,7 +1308,7 @@ function roundedRect(ctx, x, y, width, height, radius) {
     ctx.beginPath();
     ctx.roundRect(x, y, width, height, radius);
 }
-function drawMap() {
+function drawMapBase() {
     context.fillStyle = mapTheme === "hospital" ? "#17232e"
         : mapTheme === "music" ? "#191426"
             : mapTheme === "gym" ? "#1d171b"
@@ -1398,10 +1346,6 @@ function drawMap() {
                     : mapTheme === "gym" ? "#302528"
                         : mapTheme === "school" ? "#263034" : "#1a2530";
             context.fillRect(road.x, road.y, road.w, road.h);
-            if (randomEventWarning > 0 && mapTheme === "city") {
-                context.fillStyle = Math.floor(randomEventWarning * 5) % 2 ? "#7a2938aa" : "#1a2530";
-                context.fillRect(road.x, road.y, road.w, road.h);
-            }
             context.strokeStyle = mapTheme === "hospital" ? "#52777b"
                 : mapTheme === "music" ? "#755386"
                     : mapTheme === "gym" ? "#76504b"
@@ -1512,6 +1456,39 @@ function drawMap() {
                 context.fillRect(obstacle.x + obstacle.w - 49, obstacle.y + 24, 18, 4);
             }
         });
+    context.strokeStyle = "#49e6e0";
+    context.lineWidth = 8;
+    context.strokeRect(4, 4, map.width - 8, map.height - 8);
+}
+function drawMap() {
+    if (!staticMapLayer) {
+        const layer = document.createElement("canvas");
+        layer.width = map.width;
+        layer.height = map.height;
+        const layerContext = layer.getContext("2d");
+        if (!layerContext)
+            throw new Error("Unable to create the static map canvas.");
+        const screenContext = context;
+        staticMapLayer = layer;
+        context = layerContext;
+        try {
+            drawMapBase();
+        }
+        catch (error) {
+            staticMapLayer = undefined;
+            throw error;
+        }
+        finally {
+            context = screenContext;
+        }
+    }
+    const sourceWidth = Math.min(window.innerWidth, map.width - camera.x);
+    const sourceHeight = Math.min(window.innerHeight, map.height - camera.y);
+    context.drawImage(staticMapLayer, camera.x, camera.y, sourceWidth, sourceHeight, camera.x, camera.y, sourceWidth, sourceHeight);
+    if (randomEventWarning > 0 && mapTheme === "city") {
+        context.fillStyle = Math.floor(randomEventWarning * 5) % 2 ? "#7a2938aa" : "#1a2530";
+        roads.forEach((road) => context.fillRect(road.x, road.y, road.w, road.h));
+    }
     if (mapTheme === "airport")
         drawAirportTerminalSign();
     if (mapTheme === "school")
@@ -1536,9 +1513,88 @@ function drawMap() {
     enemies.filter((enemy) => !enemy.gymRusher).forEach(drawEnemy);
     pipaMinions.forEach(drawPipaMinion);
     drawFloatingTexts();
-    context.strokeStyle = "#49e6e0";
-    context.lineWidth = 8;
-    context.strokeRect(4, 4, map.width - 8, map.height - 8);
+}
+function drawWorldEffects() {
+    impactParticles.forEach((particle) => {
+        context.save();
+        context.globalAlpha = Math.max(0, particle.life / particle.maxLife);
+        context.shadowColor = particle.color;
+        context.shadowBlur = 9;
+        context.fillStyle = particle.color;
+        context.beginPath();
+        context.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+        context.fill();
+        context.restore();
+    });
+    tabletProjectiles.forEach((tablet) => {
+        const progress = Math.min(1, tablet.age / tablet.duration);
+        const spread = (1 - progress) * tablet.lane * 38;
+        const x = tablet.startX + (tablet.targetX - tablet.startX) * progress + spread * -tablet.directionY;
+        const y = tablet.startY + (tablet.targetY - tablet.startY) * progress + spread * tablet.directionX;
+        context.save();
+        context.globalAlpha = 0.24 * (1 - progress * 0.35);
+        context.strokeStyle = "#438dff";
+        context.shadowColor = "#438dff";
+        context.shadowBlur = 16;
+        context.lineWidth = 9;
+        context.beginPath();
+        context.moveTo(x - tablet.directionX * 34, y - tablet.directionY * 34);
+        context.lineTo(x, y);
+        context.stroke();
+        context.globalAlpha = 1;
+        context.translate(x, y);
+        context.rotate(Math.atan2(tablet.directionY, tablet.directionX) + Math.PI / 2);
+        context.shadowColor = "#438dff";
+        context.shadowBlur = 22;
+        context.fillStyle = "#101a36";
+        context.strokeStyle = "#73b4ff";
+        context.lineWidth = 2.5;
+        context.beginPath();
+        context.roundRect(-12, -19, 24, 38, 5);
+        context.fill();
+        context.stroke();
+        const screen = context.createLinearGradient(-8, -12, 8, 12);
+        screen.addColorStop(0, "#b7e3ff");
+        screen.addColorStop(0.42, "#438dff");
+        screen.addColorStop(1, "#172e72");
+        context.shadowBlur = 10;
+        context.fillStyle = screen;
+        context.beginPath();
+        context.roundRect(-8, -13, 16, 26, 3);
+        context.fill();
+        context.shadowBlur = 0;
+        context.fillStyle = "#ffffff";
+        context.globalAlpha = 0.8;
+        context.fillRect(-5, -8, 8, 1.5);
+        context.fillStyle = "#8fd3ff";
+        context.fillRect(-5, -4, 10, 1);
+        context.fillRect(-5, 0, 7, 1);
+        context.globalAlpha = 1;
+        context.fillStyle = "#d6efff";
+        context.beginPath();
+        context.arc(0, 16, 1.4, 0, Math.PI * 2);
+        context.fill();
+        context.restore();
+    });
+    if (afterimage && afterimage.age < afterimage.duration) {
+        context.save();
+        context.globalAlpha = 0.68 * (1 - afterimage.age / afterimage.duration);
+        context.shadowColor = "#49e6e0";
+        context.shadowBlur = 24;
+        context.strokeStyle = "#baffff";
+        context.fillStyle = "#49e6e055";
+        context.lineWidth = 3;
+        context.beginPath();
+        context.arc(afterimage.x, afterimage.y, player.radius + 4, 0, Math.PI * 2);
+        context.fill();
+        context.stroke();
+        context.fillStyle = "#d4fffb";
+        context.font = "bold 18px sans-serif";
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.fillText(config.initial, afterimage.x, afterimage.y);
+        context.restore();
+    }
 }
 function drawAirportRunways() {
     context.save();
@@ -3102,6 +3158,17 @@ function registerKill(viaFrenzy, viaMinion) {
         passiveState.techBonus += 1;
         showToast(t("passive.tech_stack_up", { count: passiveState.techBonus }), "success");
     }
+    // 篮球少年：每击杀 5 个敌人弹夹容量 +1
+    if (heroPassive.id === "bball_magazine") {
+        const killsPerBonus = heroPassive.kills_per_magazine_bonus || 5;
+        if (passiveState.kills % killsPerBonus === 0) {
+            bballMagazineMax += 1;
+            if (bballReloadTimer <= 0 && !bballInfiniteAmmo) {
+                bballMagazine = Math.min(bballMagazineMax, bballMagazine + 1);
+            }
+            addFloatingText(player.x, player.y - 50, "弹夹 +1", "#ff6b35");
+        }
+    }
     // 弦音不绝：狂舞击杀或小兵击杀累计到阈值 → 之后每次十面埋伏多召唤 1 名小兵（可叠加层数）
     if (heroPassive.threshold_effect !== "extra_minion")
         return;
@@ -3342,6 +3409,10 @@ function healFromDamage(damage, x, y) {
     updateHud();
 }
 function applyPlayerDamage(damage, attacker) {
+    if (player.invulnerable) {
+        addFloatingText(player.x, player.y - 34, t("float.invulnerable_dodge"), "#ff8a00");
+        return false;
+    }
     if (jianghuDash) {
         addFloatingText(player.x, player.y - 34, t("float.invulnerable_dodge"), "#ffd98e");
         return false;
@@ -4271,6 +4342,225 @@ function castJianghuFlight(skill) {
         dodge: Math.round((skill.flight_dodge || 0.5) * 100),
     }));
 }
+/* ---------- 滑板小子（skater）技能 ---------- */
+/** 坚硬滑板（E）：对周围敌人造成伤害并减速。 */
+function castSkaterSmash(skill) {
+    const radius = skill.radius || 200;
+    const slowRatio = skill.smash_slow_ratio || 0.2;
+    const victims = enemies.filter((enemy) => enemy.hp > 0 && distanceTo(enemy.x, enemy.y) <= radius);
+    victims.forEach((enemy) => {
+        hitEnemy(enemy, skill.damage, "减速", skill.effect_turns);
+        enemy.speed *= (1 - slowRatio);
+    });
+    addSkillVisual(skill);
+    showToast(t("skill.skater_smash", { hits: victims.length }));
+}
+/** 滑板能飞（R）：进入加速滑行状态，空格变为无敌起跳砸地。 */
+function castSkaterFlight(skill) {
+    const duration = Math.max(1, skill.flight_duration || 5);
+    const speedRatio = skill.flight_speed_ratio || 0.3;
+    skaterFlight = {
+        timer: duration,
+        baseSpeed: player.speed,
+        jumpPending: false,
+        jumpTimer: 0,
+        slamStun: skill.slam_stun_turns || 0,
+    };
+    player.speed *= (1 + speedRatio);
+    addSkillVisual(skill);
+    addFloatingText(player.x, player.y - 40, t("float.skater_flight"), "#ff8a00");
+    showToast(t("skill.skater_flight_start", {
+        name: skill.name,
+        seconds: duration,
+        speed: Math.round(speedRatio * 100),
+    }));
+    updateSkillButtons();
+}
+function startSkaterJump() {
+    if (!skaterFlight || skaterFlight.jumpPending)
+        return;
+    skaterFlight.jumpPending = true;
+    skaterFlight.jumpTimer = 1;
+    player.speed *= 1.2;
+    player.invulnerable = true;
+    addFloatingText(player.x, player.y - 50, "无敌起跳", "#ff8a00");
+}
+function performSkaterSlam() {
+    if (!skaterFlight)
+        return;
+    const skill = config.skills.find((s) => s.action === "skater_flight");
+    const radius = skill?.radius || 200;
+    const damage = skill?.damage || 18;
+    const stun = skaterFlight.slamStun;
+    const victims = enemies.filter((enemy) => enemy.hp > 0 && distanceTo(enemy.x, enemy.y) <= radius);
+    victims.forEach((enemy) => {
+        hitEnemy(enemy, damage, stun > 0 ? "眩晕" : "", stun);
+        knockbackEnemy(enemy, 160);
+    });
+    addFloatingText(player.x, player.y - 40, t("float.skater_slam"), "#ff8a00");
+    showToast(t("skill.skater_flight_slam", { hits: victims.length }));
+    endSkaterFlight();
+}
+function endSkaterFlight() {
+    if (!skaterFlight)
+        return;
+    player.speed = skaterFlight.baseSpeed;
+    player.invulnerable = false;
+    skaterFlight = undefined;
+    updateSkillButtons();
+}
+/** 炫酷滑板（Q）：向前投出穿透建筑的回旋镖并返回。 */
+function castSkaterBoomerang(skill) {
+    const range = skill.boomerang_range || 350;
+    const speed = skill.boomerang_speed || 350;
+    const selfSlow = skill.boomerang_self_slow === undefined ? 0.3 : skill.boomerang_self_slow;
+    const extraTargets = skill.boomerang_extra_targets || 0;
+    const flightTime = range / speed;
+    const victims = [];
+    const collectVictims = () => {
+        enemies.filter((enemy) => enemy.hp > 0 &&
+            distanceTo(enemy.x, enemy.y) <= (skill.radius || 70) &&
+            !victims.includes(enemy)).forEach((enemy) => {
+            victims.push(enemy);
+            hitEnemy(enemy, skill.damage, skill.effect, skill.effect_turns);
+        });
+    };
+    const startX = player.x;
+    const startY = player.y;
+    const dirX = facing.x || 1;
+    const dirY = facing.y || 0;
+    const originalSpeed = player.speed;
+    player.speed *= (1 - selfSlow);
+    addSkillVisual(skill);
+    // 飞出
+    let elapsed = 0;
+    const projectileId = ++attackSequence;
+    const flyOut = setInterval(() => {
+        elapsed += 0.05;
+        const progress = Math.min(1, elapsed / flightTime);
+        const px = startX + dirX * range * progress;
+        const py = startY + dirY * range * progress;
+        collectVictims();
+        skillVisuals.push({
+            type: "beam", x: px, y: py, targetX: px + dirX * 20, targetY: py + dirY * 20,
+            age: 0, duration: 0.15, color: "#ff8a00",
+        });
+        if (progress >= 1) {
+            clearInterval(flyOut);
+            // 返回
+            let elapsedBack = 0;
+            const flyBack = setInterval(() => {
+                elapsedBack += 0.05;
+                const progressBack = Math.min(1, elapsedBack / flightTime);
+                const px2 = startX + dirX * range * (1 - progressBack);
+                const py2 = startY + dirY * range * (1 - progressBack);
+                collectVictims();
+                skillVisuals.push({
+                    type: "beam", x: px2, y: py2, targetX: px2 - dirX * 20, targetY: py2 - dirY * 20,
+                    age: 0, duration: 0.15, color: "#ff8a00",
+                });
+                if (progressBack >= 1) {
+                    clearInterval(flyBack);
+                    player.speed = originalSpeed;
+                }
+            }, 50);
+        }
+    }, 50);
+    // 3 阶：向最近 2 个敌人额外发射追踪滑板
+    if (extraTargets > 0) {
+        enemies
+            .filter((enemy) => enemy.hp > 0)
+            .sort((a, b) => distanceTo(a.x, a.y) - distanceTo(b.x, b.y))
+            .slice(0, extraTargets)
+            .forEach((enemy) => {
+            hitEnemy(enemy, skill.damage, skill.effect, skill.effect_turns);
+            skillVisuals.push({
+                type: "beam", x: player.x, y: player.y, targetX: enemy.x, targetY: enemy.y,
+                age: 0, duration: 0.3, color: "#ff8a00",
+            });
+        });
+    }
+    showToast(t("skill.skater_boomerang", { hits: victims.length }));
+}
+/* ---------- 篮球少年（bball）技能 ---------- */
+/** 三步上篮（E）：向前冲刺并眩晕终点敌人。 */
+function castBballLayup(skill) {
+    const charges = skill.layup_charges || 1;
+    const range = skill.layup_range || 350;
+    const duration = skill.layup_duration || 1;
+    let performed = 0;
+    const doDash = () => {
+        const dirX = facing.x || 1;
+        const dirY = facing.y || 0;
+        const startX = player.x;
+        const startY = player.y;
+        const originalInvulnerable = player.invulnerable;
+        player.invulnerable = true;
+        const travelled = movePlayerToward(startX + dirX * range, startY + dirY * range, range);
+        skillVisuals.push({
+            type: "beam", x: startX, y: startY, targetX: player.x, targetY: player.y,
+            age: 0, duration: 0.35, color: "#ff6b35",
+        });
+        const victims = enemies.filter((enemy) => enemy.hp > 0 && Math.hypot(enemy.x - player.x, enemy.y - player.y) <= (skill.radius || 90));
+        victims.forEach((enemy) => hitEnemy(enemy, skill.damage, skill.effect, skill.effect_turns));
+        performed += 1;
+        if (performed < charges) {
+            setTimeout(doDash, duration * 500);
+        }
+        else {
+            player.invulnerable = originalInvulnerable;
+            showToast(t("skill.bball_layup", { hits: victims.length }));
+        }
+    };
+    addSkillVisual(skill);
+    doDash();
+}
+/** 投篮高手（R）：数秒内弹夹无限。 */
+function castBballShooter(skill) {
+    const duration = skill.shooter_duration || 3;
+    bballInfiniteAmmo = true;
+    bballShooterTimer = duration;
+    bballShooterFireRate = skill.shooter_fire_rate || 5;
+    bballIgnoreRange = (skill.shooter_ignore_range || 0) > 0;
+    addSkillVisual(skill);
+    showToast(t("skill.bball_shooter", { seconds: duration }));
+}
+/** 快速过人（Q）：穿透最近敌人，延迟后造成伤害。 */
+function castBballCrossover(skill) {
+    const targetCount = skill.crossover_targets || 5;
+    const duration = skill.crossover_duration || 0.5;
+    const delay = skill.crossover_delay || 1;
+    const stun = skill.crossover_stun_turns || 0;
+    const targets = enemies
+        .filter((enemy) => enemy.hp > 0)
+        .sort((a, b) => distanceTo(a.x, a.y) - distanceTo(b.x, b.y))
+        .slice(0, targetCount);
+    const originalInvulnerable = player.invulnerable;
+    player.invulnerable = true;
+    const hitTargets = [];
+    if (targets.length > 0) {
+        const stepInterval = duration / targets.length;
+        targets.forEach((target, index) => {
+            setTimeout(() => {
+                const startX = player.x;
+                const startY = player.y;
+                player.x = target.x;
+                player.y = target.y;
+                skillVisuals.push({
+                    type: "beam", x: startX, y: startY, targetX: player.x, targetY: player.y,
+                    age: 0, duration: 0.25, color: "#ff6b35",
+                });
+                hitTargets.push(target);
+            }, index * stepInterval * 1000);
+        });
+    }
+    setTimeout(() => {
+        player.invulnerable = originalInvulnerable;
+        hitTargets.forEach((enemy) => hitEnemy(enemy, skill.damage, stun > 0 ? "眩晕" : "", stun));
+        showToast(t("skill.bball_crossover", { targets: hitTargets.length }));
+    }, (duration + delay) * 1000);
+    addSkillVisual(skill);
+}
 function castSkill(index) {
     if (skillIsPaused())
         return;
@@ -4284,6 +4574,10 @@ function castSkill(index) {
     }
     if (jianghuDash) {
         showToast(t("skill.jianghu_busy"), "warning");
+        return;
+    }
+    if (skaterFlight) {
+        showToast("滑板能飞期间无法使用其他技能，按空格起跳砸地。", "warning");
         return;
     }
     const skill = config.skills[index];
@@ -4572,6 +4866,24 @@ function castSkill(index) {
     else if (skill.action === "jianghu_flight") {
         castJianghuFlight(skill);
     }
+    else if (skill.action === "skater_smash") {
+        castSkaterSmash(skill);
+    }
+    else if (skill.action === "skater_flight") {
+        castSkaterFlight(skill);
+    }
+    else if (skill.action === "skater_boomerang") {
+        castSkaterBoomerang(skill);
+    }
+    else if (skill.action === "bball_layup") {
+        castBballLayup(skill);
+    }
+    else if (skill.action === "bball_shooter") {
+        castBballShooter(skill);
+    }
+    else if (skill.action === "bball_crossover") {
+        castBballCrossover(skill);
+    }
     else if (skill.target === "self") {
         addSkillVisual(skill);
         const duration = Math.max(3, skill.effect_turns * 3);
@@ -4605,6 +4917,13 @@ function basicAttack() {
         showControlBlocked("普通攻击");
         return false;
     }
+    // 篮球少年：弹夹为空时不能普攻
+    if (heroPassive.id === "bball_magazine" && bballMagazine <= 0 && !bballInfiniteAmmo) {
+        if (bballReloadTimer <= 0)
+            bballReloadTimer = 1.5;
+        addFloatingText(player.x, player.y - 40, t("float.bball_empty"), "#ff6b35");
+        return false;
+    }
     const range = getPlayerAttackRange();
     const target = nearestEnemy(range);
     const remoteTarget = nearestRemoteAt(player.x, player.y, range);
@@ -4626,6 +4945,12 @@ function basicAttack() {
         return false;
     }
     basicAttackTimer = getBasicAttackCooldown();
+    // 篮球少年：消耗弹夹；投篮高手期间不消耗
+    if (heroPassive.id === "bball_magazine" && !bballInfiniteAmmo) {
+        bballMagazine = Math.max(0, bballMagazine - 1);
+        if (bballMagazine <= 0)
+            bballReloadTimer = 1.5;
+    }
     const wasEmpowered = empoweredAttack;
     // 霓虹拳王用 empower_attack，电音人用 volt2_empower，两者的强化普攻结算方式不同
     const empoweredSkill = config.skills.find((skill) => skill.action === "empower_attack" || skill.action === "volt2_empower");
@@ -4635,7 +4960,13 @@ function basicAttack() {
         : empoweredSkill?.empowered_damage || 34;
     // 剑客之刃：强化期间每次普攻额外增伤，命中后按造成的伤害吸血
     const bladeStrike = bladeCharges > 0;
-    let damage = wasEmpowered ? Math.round(baseEmpoweredDamage) : heroCombat.basic_damage;
+    let damage = wasEmpowered
+        ? Math.round(baseEmpoweredDamage + playerState.equipmentAttackBonus)
+        : heroCombat.basic_damage + playerState.equipmentAttackBonus;
+    // 滑板小子被动：附加（移速倍率 - 1）× 基础伤害 的额外伤害
+    if (heroPassive.id === "skater_momentum") {
+        damage += Math.round(heroCombat.basic_damage * (skaterSpeedMultiplier - 1));
+    }
     if (bladeStrike)
         damage = Math.round(damage * bladeDamageScale);
     if (heroCombat.basic_beam && !wasEmpowered) {
@@ -4692,9 +5023,15 @@ function basicAttack() {
 /** 霓虹拳王被动：每普攻 1 次叠加攻速。 */
 function onPlayerBasicAttack() {
     const gains = heroPassive.on_basic_attack;
-    if (!gains)
-        return;
-    Object.entries(gains).forEach(([stat, amount]) => addPassiveStat(stat, amount));
+    if (gains) {
+        Object.entries(gains).forEach(([stat, amount]) => addPassiveStat(stat, amount));
+    }
+    // 滑板小子被动：每次普攻永久 +0.5% 移速
+    if (heroPassive.id === "skater_momentum") {
+        skaterSpeedMultiplier += heroPassive.speed_per_attack || 0.005;
+        player.speed = heroCombat.speed * skaterSpeedMultiplier + (equipmentBonuses.speed || 0);
+        addFloatingText(player.x, player.y - 44, `+${Math.round((skaterSpeedMultiplier - 1) * 100)}%`, "#ff8a00");
+    }
     updateHud();
 }
 function getPlayerAttackRange() {
@@ -4811,14 +5148,50 @@ function updateCombat(dt) {
         skillCooldowns.set(id, next);
     });
     basicAttackTimer = Math.max(0, basicAttackTimer - dt * (schoolClassDuration > 0 ? 0.5 : 1));
+    // 篮球少年：装填计时与投篮高手计时
+    if (heroPassive.id === "bball_magazine") {
+        if (bballReloadTimer > 0) {
+            bballReloadTimer = Math.max(0, bballReloadTimer - dt);
+            if (bballReloadTimer <= 0) {
+                bballMagazine = bballMagazineMax;
+                addFloatingText(player.x, player.y - 40, t("float.bball_reload"), "#ff6b35");
+            }
+        }
+        if (bballShooterTimer > 0) {
+            bballShooterTimer = Math.max(0, bballShooterTimer - dt);
+            if (bballShooterTimer <= 0) {
+                bballInfiniteAmmo = false;
+                bballIgnoreRange = false;
+            }
+        }
+    }
+    // 滑板小子：滑板能飞计时
+    if (skaterFlight) {
+        skaterFlight.timer = Math.max(0, skaterFlight.timer - dt);
+        if (skaterFlight.jumpPending) {
+            skaterFlight.jumpTimer = Math.max(0, skaterFlight.jumpTimer - dt);
+            if (skaterFlight.jumpTimer <= 0) {
+                performSkaterSlam();
+            }
+        }
+        if (skaterFlight && skaterFlight.timer <= 0 && !skaterFlight.jumpPending) {
+            endSkaterFlight();
+        }
+    }
     // 按住空格（或触控普攻键）时，冷却一结束就自动续击。
     // 挥空时 basicAttack 返回 false，此时进入短暂等待，避免每帧弹出「未命中」提示。
     if (basicAttackTimer === 0 && !swingWaitTimer && (keys.has(" ") || basicAttackHeld)) {
-        if (basicAttack()) {
-            swingWaitTimer = 0;
+        // 滑板小子·滑板能飞期间：空格变为无敌起跳砸地
+        if (skaterFlight && !skaterFlight.jumpPending) {
+            startSkaterJump();
         }
-        else {
-            swingWaitTimer = BASIC_SWING_RETRY_DELAY;
+        else if (!skaterFlight) {
+            if (basicAttack()) {
+                swingWaitTimer = 0;
+            }
+            else {
+                swingWaitTimer = BASIC_SWING_RETRY_DELAY;
+            }
         }
     }
     swingWaitTimer = Math.max(0, swingWaitTimer - dt);
@@ -5199,6 +5572,15 @@ function drawMinimap() {
     miniContext.strokeRect(camera.x * sx, camera.y * sy, window.innerWidth * sx, window.innerHeight * sy);
 }
 let lastFrameTime = 0;
+let frameRequest;
+function scheduleFrame() {
+    if (document.hidden || frameRequest !== undefined)
+        return;
+    frameRequest = window.requestAnimationFrame((timestamp) => {
+        frameRequest = undefined;
+        drawFrame(timestamp);
+    });
+}
 function drawFrame(timestamp) {
     if (!mapTransitionComplete && mapTransition) {
         const elapsed = performance.now() - mapTransitionStartedAt;
@@ -5250,6 +5632,7 @@ function drawFrame(timestamp) {
     context.save();
     context.translate(-camera.x, -camera.y);
     drawMap();
+    drawWorldEffects();
     drawSkillVisuals();
     drawPlayer();
     drawRemotePlayers();
@@ -5259,8 +5642,14 @@ function drawFrame(timestamp) {
         lastSync = timestamp;
         void syncMultiplayer();
     }
-    requestAnimationFrame(drawFrame);
+    scheduleFrame();
 }
+document.addEventListener("visibilitychange", () => {
+    if (document.hidden)
+        return;
+    lastFrameTime = performance.now();
+    scheduleFrame();
+});
 function normalizeKey(key) {
     return key.length === 1 ? key.toLowerCase() : key;
 }
@@ -5381,4 +5770,4 @@ else {
     showToast(tx("探索提示：靠近闪光物资后按 F 收集；Q / E / R 释放技能。"));
 }
 drawMap();
-requestAnimationFrame(drawFrame);
+scheduleFrame();

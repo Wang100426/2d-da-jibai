@@ -65,7 +65,10 @@ def inject_language():
     lang = request.args.get("lang", request.cookies.get("lang", "zh"))
     if lang not in LOCALE_PACKAGES:
         lang = "zh"
-    return {"lang": lang, "locale_pack": get_locale(lang), "tr": lambda key: get_locale(lang)["ui"].get(key, key)}
+    def _tr(key, **kwargs):
+        text = get_locale(lang)["ui"].get(key, key)
+        return text.format(**kwargs) if kwargs else text
+    return {"lang": lang, "locale_pack": get_locale(lang), "tr": _tr}
 
 
 @app.after_request
@@ -421,6 +424,95 @@ HEROES = [
                               3: {"label": "御剑飞行速度提升 50% → 100%", "patch": {"flight_speed_scale": {"set": 2}}}}},
         ],
     },
+    {
+        "id": "skater",
+        "name": "滑板小子",
+        "class_name": "街头滑手",
+        "tagline": "速度就是武器，滑板就是态度。",
+        "initial": "滑",
+        "accent": "skater",
+        "price": 1000,
+        "palette": {"main": "#ff8a00", "light": "#ffe4c2", "dark": "#7a3d00"},
+        "stats": {"攻击": 80, "防御": 56, "机动": 94},
+        "combat": {
+            "speed": 235,
+            "basic_range": 100,
+            "basic_damage": 14,
+            "basic_effect": "",
+            "basic_effect_turns": 0,
+            "basic_beam": None,
+            "basic_restore_label": "MELEE_RESTORE",
+            "bot_skill_effect": "眩晕",
+            "bot_skill_effect_turns": 0.8,
+            "bot_skill_damage_scale": 2.2,
+            "thorns_damage": 0,
+        },
+        "passive": {
+            "id": "skater_momentum",
+            # 每次普攻永久 +0.5% 移速；普攻附加 (当前移速 / 基础移速 - 1) × 基础伤害 的额外伤害
+            "speed_per_attack": 0.005,
+            "speed_bonus_base": 235,
+        },
+        "skills": [
+            {"id": "skater-ult", "name": "炫酷滑板", "description": "将滑板当回旋镖飞出 · 穿透建筑并眩晕敌人", "kind": "大招", "target": "self", "action": "skater_boomerang", "cost": 60, "cooldown": 16, "damage": 42, "radius": 70, "effect": "眩晕", "effect_turns": 1,
+             "boomerang_range": 350, "boomerang_speed": 350, "boomerang_extra_targets": 0,
+             "tier_effects": {2: {"label": "回旋镖飞行距离 350 → 500", "patch": {"boomerang_range": {"add": 150}}},
+                              3: {"label": "期间不减速且向最近 2 个敌人额外发射滑板", "patch": {"boomerang_self_slow": {"set": 0}, "boomerang_extra_targets": {"set": 2}}}}},
+            {"id": "skater-smash", "name": "坚硬滑板", "description": "猛砸滑板 · 附近敌人受到伤害并减速", "kind": "小技能", "target": "self", "action": "skater_smash", "cost": 25, "cooldown": 8, "damage": 26, "radius": 200, "effect": "减速", "effect_turns": 3,
+             "smash_slow_ratio": 0.2,
+             "tier_effects": {2: {"label": "减速 20% → 30%", "patch": {"smash_slow_ratio": {"set": 0.3}}},
+                              3: {"label": "范围 200 → 270", "patch": {"radius": {"add": 70}}}}},
+            {"id": "skater-flight", "name": "滑板能飞", "description": "加速滑行 · 空格起跳无敌砸地造成伤害和击退", "kind": "小技能", "target": "self", "action": "skater_flight", "cost": 35, "cooldown": 12, "damage": 18, "radius": 200, "effect": "", "effect_turns": 0,
+             "flight_duration": 5, "flight_speed_ratio": 0.3, "jump_speed_ratio": 0.2, "jump_slam_delay": 1,
+             "tier_effects": {2: {"label": "持续时间 5 秒 → 7 秒", "patch": {"flight_duration": {"add": 2}}},
+                              3: {"label": "砸地后额外眩晕 1 秒", "patch": {"slam_stun_turns": {"set": 1}}}}},
+        ],
+    },
+    {
+        "id": "bball",
+        "name": "篮球少年",
+        "class_name": "球场射手",
+        "tagline": "弹夹不空，火力不停。",
+        "initial": "篮",
+        "accent": "bball",
+        "price": 1500,
+        "palette": {"main": "#ff6b35", "light": "#ffe0d4", "dark": "#7a2600"},
+        "stats": {"攻击": 86, "防御": 52, "机动": 82},
+        "combat": {
+            "speed": 230,
+            "basic_range": 200,
+            "basic_damage": 12,
+            "basic_effect": "",
+            "basic_effect_turns": 0,
+            "basic_beam": {"color": "#ff8a5b", "duration": 0.18},
+            "basic_restore_label": "RANGED_RESTORE",
+            "bot_skill_effect": "减速",
+            "bot_skill_effect_turns": 1.8,
+            "bot_skill_damage_scale": 2.2,
+            "thorns_damage": 0,
+        },
+        "passive": {
+            "id": "bball_magazine",
+            # 弹夹容量 10，每击杀 5 个敌人 +1；普攻时若弹夹有子弹，以 5 个/秒射出；空弹夹时不能普攻
+            "magazine_size": 10,
+            "kills_per_magazine_bonus": 5,
+            "fire_rate": 5,
+        },
+        "skills": [
+            {"id": "bball-ult", "name": "快速过人", "description": "连续穿透最近敌人 · 延迟后造成大额伤害", "kind": "大招", "target": "self", "action": "bball_crossover", "cost": 60, "cooldown": 16, "damage": 48, "radius": 90, "effect": "", "effect_turns": 0,
+             "crossover_targets": 5, "crossover_duration": 0.5, "crossover_delay": 1,
+             "tier_effects": {2: {"label": "造成伤害同时眩晕 1 秒", "patch": {"crossover_stun_turns": {"set": 1}}},
+                              3: {"label": "穿透目标 5 → 10 个", "patch": {"crossover_targets": {"add": 5}}}}},
+            {"id": "bball-layup", "name": "三步上篮", "description": "向前冲刺并无敌 · 终点造成伤害和眩晕", "kind": "小技能", "target": "self", "action": "bball_layup", "cost": 30, "cooldown": 9, "damage": 28, "radius": 90, "effect": "眩晕", "effect_turns": 1,
+             "layup_range": 350, "layup_duration": 1, "layup_charges": 1,
+             "tier_effects": {2: {"label": "眩晕 +1 秒", "patch": {"effect_turns": {"add": 1}}},
+                              3: {"label": "连续进行 2 次冲刺和攻击", "patch": {"layup_charges": {"set": 2}}}}},
+            {"id": "bball-shooter", "name": "投篮高手", "description": "接下来数秒内弹夹容量视为无限", "kind": "小技能", "target": "self", "action": "bball_shooter", "cost": 25, "cooldown": 10, "damage": 0, "effect": "", "effect_turns": 0,
+             "shooter_duration": 3, "shooter_fire_rate": 5, "shooter_ignore_range": 0,
+             "tier_effects": {2: {"label": "篮球发射速度 5/秒 → 10/秒", "patch": {"shooter_fire_rate": {"set": 10}}},
+                              3: {"label": "时长 +2 秒且普攻无视距离（不无视建筑）", "patch": {"shooter_duration": {"add": 2}, "shooter_ignore_range": {"set": 1}}}}},
+        ],
+    },
 ]
 
 
@@ -439,12 +531,14 @@ def unlocked_hero_ids():
 
 
 def profile_snapshot():
-    """存档的公开状态：金币、是否无限金币、已解锁英雄。"""
+    """存档的公开状态：金币、是否无限金币、已解锁英雄与装备摘要。"""
     profile = player_save.load()
     return {
         "coins": profile["coins"],
         "infinite_coins": profile["infinite_coins"],
         "unlocked_heroes": sorted(unlocked_hero_ids()),
+        "equipment_count": len(profile.get("equipment_inventory", [])),
+        "equipment_bonuses": player_save.calculate_equipment_bonuses(profile),
     }
 
 
@@ -481,7 +575,7 @@ def hero_roster(language="zh"):
 
 @app.get("/")
 def home():
-    """主页：右上角有商店入口与存档管理面板。"""
+    """主页：模式选择、开始游戏、底部功能导航。"""
     language = request.args.get("lang", request.cookies.get("lang", "zh"))
     heroes = localized_heroes(language)
     unlocked = unlocked_hero_ids()
@@ -493,6 +587,46 @@ def home():
         save_path=str(player_save.save_path()),
         settled_count=len(player_save.load()["settled_runs"]),
     )
+
+
+@app.get("/mode")
+def mode_page():
+    """模式选择独立页面：左侧列表，右侧详情，选定后返回主页。"""
+    lang = request.args.get("lang", request.cookies.get("lang", "zh"))
+    locale = get_locale(lang)["ui"]
+    modes = [
+        {
+            "id": "rogue",
+            "name": locale["ROGUE"],
+            "kicker": locale.get("ROGUE_KICKER", "单机挑战"),
+            "tagline": locale["ROGUE_TAGLINE"],
+            "description": locale["ROGUE_DESCRIPTION"],
+            "icon": locale["ROGUE_ICON"],
+            "accent": "rogue",
+            "palette": {"main": "#ff66c4", "light": "#ffd6f0", "dark": "#7a1a52"},
+        },
+        {
+            "id": "lan",
+            "name": locale["LAN"],
+            "kicker": locale.get("LAN_KICKER", "本地联机"),
+            "tagline": locale["LAN_TAGLINE"],
+            "description": locale["LAN_DESCRIPTION"],
+            "icon": locale["LAN_ICON"],
+            "accent": "lan",
+            "palette": {"main": "#49e6e0", "light": "#d4fffd", "dark": "#0f5a57"},
+        },
+        {
+            "id": "duel",
+            "name": locale["DUEL"],
+            "kicker": locale.get("DUEL_KICKER", "人机竞技"),
+            "tagline": locale["DUEL_TAGLINE"],
+            "description": locale["DUEL_DESCRIPTION"],
+            "icon": locale["DUEL_ICON"],
+            "accent": "duel",
+            "palette": {"main": "#b4ff5c", "light": "#eeffd6", "dark": "#3d5c12"},
+        },
+    ]
+    return render_template("mode.html", profile=profile_snapshot(), modes=modes, default_mode=modes[0])
 
 
 @app.get("/select")
@@ -521,6 +655,37 @@ def shop():
         heroes=heroes,
         profile=snapshot,
         owned_count=sum(1 for hero in heroes if not hero["locked"]),
+    )
+
+
+@app.get("/equipment")
+def equipment_page():
+    """装备工坊：抽取与装配装备。"""
+    language = request.args.get("lang", request.cookies.get("lang", "zh"))
+    return render_template(
+        "equipment.html",
+        profile=profile_snapshot(),
+        draw_price=player_save.EQUIPMENT_DRAW_PRICE,
+        slots=player_save.EQUIPMENT_SLOTS,
+        qualities=player_save.EQUIPMENT_QUALITIES,
+        quality_colors=player_save.EQUIPMENT_QUALITY_COLORS,
+        slot_labels=player_save.EQUIPMENT_SLOT_LABELS,
+        quality_labels=player_save.EQUIPMENT_QUALITY_LABELS,
+    )
+
+
+@app.get("/backpack")
+def backpack_page():
+    """背包：查看所有拥有的装备。"""
+    language = request.args.get("lang", request.cookies.get("lang", "zh"))
+    return render_template(
+        "backpack.html",
+        profile=profile_snapshot(),
+        slots=player_save.EQUIPMENT_SLOTS,
+        qualities=player_save.EQUIPMENT_QUALITIES,
+        quality_colors=player_save.EQUIPMENT_QUALITY_COLORS,
+        slot_labels=player_save.EQUIPMENT_SLOT_LABELS,
+        quality_labels=player_save.EQUIPMENT_QUALITY_LABELS,
     )
 
 
@@ -607,6 +772,67 @@ def api_shop_buy():
         return jsonify({"ok": False, "reason": result["reason"], "message": message, "bought": hero_id,
                         "price": price, **profile_snapshot()}), 400
     return jsonify({"ok": True, "bought": hero_id, "price": price, "reason": "", **profile_snapshot()})
+
+
+@app.get("/api/equipment/state")
+def api_equipment_state():
+    """装备系统完整状态：背包、装配、属性加成、抽取价格。"""
+    profile = player_save.load()
+    return jsonify({
+        "ok": True,
+        "inventory": profile.get("equipment_inventory", []),
+        "loadout": profile.get("equipment_loadout", {}),
+        "bonuses": player_save.calculate_equipment_bonuses(profile),
+        "draw_price": player_save.EQUIPMENT_DRAW_PRICE,
+        "coins": profile["coins"],
+        "infinite_coins": profile["infinite_coins"],
+    })
+
+
+@app.post("/api/equipment/draw")
+def api_equipment_draw():
+    """花费金币抽取一件装备。"""
+    result = player_save.purchase_draw()
+    if not result["ok"]:
+        return jsonify({"ok": False, "reason": result["reason"], **profile_snapshot()}), 400
+    return jsonify({"ok": True, "item": result["item"], **profile_snapshot()})
+
+
+@app.post("/api/equipment/equip")
+def api_equipment_equip():
+    """装配指定装备。"""
+    body = request.get_json(silent=True) or {}
+    equip_id = str(body.get("equip_id", "")).strip()
+    if not equip_id:
+        return jsonify({"ok": False, "reason": "missing_id", **profile_snapshot()}), 400
+    result = player_save.equip_item(equip_id)
+    if not result["ok"]:
+        return jsonify({"ok": False, "reason": result["reason"], **profile_snapshot()}), 400
+    return jsonify({"ok": True, "loadout": result["loadout"], **profile_snapshot()})
+
+
+@app.post("/api/equipment/unequip")
+def api_equipment_unequip():
+    """卸下指定槽位。"""
+    body = request.get_json(silent=True) or {}
+    slot = str(body.get("slot", "")).strip()
+    if slot not in player_save.EQUIPMENT_SLOTS:
+        return jsonify({"ok": False, "reason": "bad_slot", **profile_snapshot()}), 400
+    result = player_save.unequip_slot(slot)
+    return jsonify({"ok": True, "loadout": result["loadout"], **profile_snapshot()})
+
+
+@app.post("/api/equipment/delete")
+def api_equipment_delete():
+    """从背包删除一件装备（若已装配先卸下）。"""
+    body = request.get_json(silent=True) or {}
+    equip_id = str(body.get("equip_id", "")).strip()
+    if not equip_id:
+        return jsonify({"ok": False, "reason": "missing_id", **profile_snapshot()}), 400
+    result = player_save.delete_equipment(equip_id)
+    if not result["ok"]:
+        return jsonify({"ok": False, "reason": result["reason"], **profile_snapshot()}), 400
+    return jsonify({"ok": True, **profile_snapshot()})
 
 
 @app.post("/api/run/settle")
@@ -1136,6 +1362,7 @@ def battle():
         map_event_key = "MAP_EVENT_MULTIPLAYER"
     locale_ui = get_locale(lang)["ui"]
     localized = {hero["id"]: hero for hero in localized_heroes(lang)}
+    equipment_bonuses = player_save.calculate_equipment_bonuses()
     return render_template(
         "battle.html",
         player=localized[player["id"]],
@@ -1147,6 +1374,7 @@ def battle():
         map_theme=map_theme,
         transition_map_name=locale_ui[map_name_key],
         transition_event=locale_ui[map_event_key],
+        equipment_bonuses=equipment_bonuses,
     )
 
 
