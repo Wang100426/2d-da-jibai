@@ -1,6 +1,6 @@
-# 🏆 2DFight Arena 2.0.0-preview is HERE!
+# 🏆 2DFight Arena 2.0.0 is HERE!
 
-**Six versions in one drop.** Since 1.5.0 nothing was published individually, so 2.0.0-preview bundles everything from 1.6.0 through 1.9.0 — **four new heroes**, a new arena, the coin/save/shop economy, the equipment system, a rebuilt home screen — plus a battle-rendering overhaul and a full animation pass. If you have been playing 1.5.0, this is a different game.
+**Six versions in one drop.** Since 1.5.0 nothing was published individually, so 2.0.0 bundles everything from 1.6.0 through 1.9.0 — **four new heroes**, a new arena, the coin/save/shop economy, the equipment system, a rebuilt home screen — plus a battle-rendering overhaul and a full animation pass. If you have been playing 1.5.0, this is a different game.
 
 * * *
 
@@ -92,7 +92,7 @@ Five tracks, six platforms. The waiting hall shows train arrival times and each 
 * ✅ Two matching buttons: **Resume** and **Exit Run**. Exiting still settles this run's coins
 * ✅ Sakura Girl's skill keys were corrected to the universal order: **Q = ultimate, E = first ability, R = second**
 
-## ⚡ 11. Rendering Overhaul (2.0.0-preview)
+## ⚡ 11. Rendering Overhaul (2.0.0)
 
 * ✅ Static map geometry (grid, roads, buildings) is now rasterized **once** instead of being repainted every frame
 * ✅ Fixed particle, tablet-projectile and afterimage effects so they draw in the right place at the right time
@@ -116,15 +116,21 @@ Five tracks, six platforms. The waiting hall shows train arrival times and each 
 * 🐛 Fixed untranslated skill-rank labels and missing English text for basic-attack hit messages
 * 🐛 Combat text now runs on a **placeholder template system**, killing the mixed Chinese/English lines such as `受到damage降低 45%`
 
-# 🚀 Download 2DFight Arena 2.0.0-preview!
+## 🖼️ 14. New Key Art & Launch Screen (2.0.0)
+
+* ✅ The home screen now uses a new **cyber-city arena key art** — neon skyline, a giant VS billboard, reflective plaza
+* ✅ New **launch screen**: white background, the publisher logo fades in, then the **48-character Healthy Gaming notice** (6 characters per line × 8 lines) fades in below it, and the home screen appears after about 3 seconds
+* ✅ It plays **once per app session** — returning home from a battle skips straight through
+
+# 🚀 Download 2DFight Arena 2.0.0!
 
 Grab the **installer** or the **portable build** from the Assets section below.
 
 ---
 
-# 🎉 2D大击败 2.0.0-preview 正式发布！
+# 🎉 2D大击败 2.0.0 正式发布！
 
-**六个版本一次交付。** 1.5.0 之后没有单独发过任何版本，所以 2.0.0-preview 把 1.6.0 到 1.9.0 的内容全部打包了 —— **四个新英雄**、一张新地图、金币/存档/商店经济、装备系统、重做的主页 —— 外加一次战斗渲染重构和一整轮动画打磨。如果你还停在 1.5.0，这基本是另一个游戏了。
+**六个版本一次交付。** 1.5.0 之后没有单独发过任何版本，所以 2.0.0 把 1.6.0 到 1.9.0 的内容全部打包了 —— **四个新英雄**、一张新地图、金币/存档/商店经济、装备系统、重做的主页 —— 外加一次战斗渲染重构和一整轮动画打磨。如果你还停在 1.5.0，这基本是另一个游戏了。
 
 * * *
 
@@ -216,7 +222,7 @@ Grab the **installer** or the **portable build** from the Assets section below.
 * ✅ 两个同风格按钮：**继续游戏** / **退出本局**。退出同样结算本局金币
 * ✅ 樱花少女的技能键位修正为统一顺序：**Q = 大招，E = 一技能，R = 二技能**
 
-## ⚡ 11. 渲染重构（2.0.0-preview）
+## ⚡ 11. 渲染重构（2.0.0）
 
 * ✅ 地图静态几何（网格、道路、建筑）现在只光栅化**一次**，不再逐帧重绘
 * ✅ 修复粒子、平板投射物与残影的绘制位置和时机，特效现在跟战斗帧对得上
@@ -240,15 +246,21 @@ Grab the **installer** or the **portable build** from the Assets section below.
 * 🐛 补齐技能阶级的英文翻译，以及各英雄普攻命中的英文提示
 * 🐛 战斗文案改用**占位符模板系统**，彻底干掉 `受到damage降低 45%` 这类中英混排
 
-# 🚀 快来下载《2D大击败》2.0.0-preview！
+## 🖼️ 14. 全新主视觉与启动画面（2.0.0）
+
+* ✅ 主页换成全新的**赛博都市竞技场主视觉** —— 霓虹天际线、巨型 VS 广告牌、镜面广场
+* ✅ 新增**启动画面**：白色背景，发行公司图标渐入，下方**健康游戏公约**（每行 6 字 × 8 行，共 48 字）渐入，约 3 秒后进入主页
+* ✅ 每个应用会话只播放**一次** —— 从战斗返回主页直接跳过
+
+# 🚀 快来下载《2D大击败》2.0.0！
 
 **安装包**和**便携版**都在下方 Assets 里。
 
 ---
 
-# 🎌 2D大撃破 2.0.0-preview リリース！
+# 🎌 2D大撃破 2.0.0 リリース！
 
-**6 バージョン分を一度に。** 1.5.0 以降は単独リリースがなかったため、2.0.0-preview には 1.6.0 から 1.9.0 までの内容がすべて入っています —— **新ヒーロー 4 体**、新マップ、コイン／セーブ／ショップ経済、装備システム、刷新されたホーム画面。さらに戦闘描画のリファクタリングとアニメーションの全面調整も含みます。1.5.0 のままだと、もはや別のゲームです。
+**6 バージョン分を一度に。** 1.5.0 以降は単独リリースがなかったため、2.0.0 には 1.6.0 から 1.9.0 までの内容がすべて入っています —— **新ヒーロー 4 体**、新マップ、コイン／セーブ／ショップ経済、装備システム、刷新されたホーム画面。さらに戦闘描画のリファクタリングとアニメーションの全面調整も含みます。1.5.0 のままだと、もはや別のゲームです。
 
 * * *
 
@@ -340,7 +352,7 @@ Grab the **installer** or the **portable build** from the Assets section below.
 * ✅ 同スタイルの 2 ボタン：**続ける** / **リタイア**。リタイア時もコインは精算
 * ✅ 桜少女のスキルキーを統一順に修正：**Q = アルティメット、E = スキル 1、R = スキル 2**
 
-## ⚡ 11. 描画リファクタリング（2.0.0-preview）
+## ⚡ 11. 描画リファクタリング（2.0.0）
 
 * ✅ マップの静的ジオメトリ（グリッド、道路、建物）を**一度だけ**ラスタライズし、毎フレームの再描画を廃止
 * ✅ パーティクル、タブレット投射物、残像の描画位置とタイミングを修正し、戦闘フレームと同期
@@ -364,7 +376,13 @@ Grab the **installer** or the **portable build** from the Assets section below.
 * 🐛 スキル段階ラベルの未翻訳と、通常攻撃命中メッセージの英語欠落を修正
 * 🐛 戦闘テキストを**プレースホルダーのテンプレート方式**に変更し、`受到damage降低 45%` のような中国語混在を根絶
 
-# 🚀 2D大撃破 2.0.0-preview をダウンロード！
+## 🖼️ 14. 新しいキービジュアルと起動画面（2.0.0）
+
+* ✅ ホーム画面を新しい**サイバー都市アリーナのキービジュアル**に変更 —— ネオンのスカイライン、巨大な VS ビルボード、鏡面の広場
+* ✅ 新**起動画面**：白い背景に発行元のロゴがフェードインし、その下に**健康ゲームのお知らせ**（1 行 6 文字 × 8 行、計 48 文字）がフェードイン、約 3 秒後にホーム画面へ
+* ✅ **1 セッションにつき 1 回**のみ再生 —— 戦闘からホームへ戻る時はスキップ
+
+# 🚀 2D大撃破 2.0.0 をダウンロード！
 
 **インストーラー**と**ポータブル版**は下の Assets から。
 
@@ -374,4 +392,4 @@ Grab the **installer** or the **portable build** from the Assets section below.
 
 If you enjoy the game, a **Star** on this repo keeps the arena running.
 
-**Full Changelog**: https://github.com/Wang100426/2d-da-jibai/compare/v1.5.0...v2.0.0-preview
+**Full Changelog**: https://github.com/Wang100426/2d-da-jibai/compare/v1.5.0...v2.0.0

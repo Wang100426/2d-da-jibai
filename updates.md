@@ -1,27 +1,33 @@
 # 更新日志 / Updates
 
-## 2.0.0-preview
+## 2.0.0
 
 ### 中文
 
+- 主页背景更换为全新的赛博都市竞技场主视觉。
+- 新增启动画面：白色背景上发行公司图标渐入，下方依次渐入健康游戏公约（6×8 共 48 字），约 3 秒后进入主页；每个应用会话只播放一次，从战斗中返回主页不再重复。
 - 优化战斗动画：地图网格、道路与建筑等静态画面只绘制一次，减少逐帧重绘。
 - 修复粒子、平板投射物和残影的绘制位置与时机，使特效能随战斗帧正确播放。
 - 页面隐藏时暂停渲染循环，返回页面后平滑续播；简化过场模糊动画以降低绘制开销。
-- 将本地未发布的 1.9.0 功能与动画优化合并为 2.0.0-preview。
+- 将本地未发布的 1.9.0 功能与动画优化合并为 2.0.0。
 
 ### English
 
+- Replaced the home-screen background with a new cyber-city arena key art.
+- Added a launch screen: on a white background the publisher logo fades in, then the Healthy Gaming notice (48 characters, 6 per line × 8 lines) fades in below it, and the home screen appears after about 3 seconds. It plays once per app session, so returning home from a battle does not repeat it.
 - Optimized battle rendering by drawing static map geometry once instead of redrawing it every frame.
 - Fixed particle, tablet-projectile, and afterimage rendering so effects animate in the correct place and at the right time.
 - Pause rendering while the page is hidden and resume smoothly when it returns; simplified transition blur effects to reduce paint cost.
-- Combined the pending 1.9.0 work with these animation improvements as 2.0.0-preview.
+- Combined the pending 1.9.0 work with these animation improvements as 2.0.0.
 
 ### 日本語
 
+- ホーム画面の背景を新しいサイバー都市アリーナのキービジュアルに変更。
+- 起動画面を追加：白い背景に発行元のロゴがフェードインし、その下に健康ゲームのお知らせ（48 文字、6 文字 × 8 行）がフェードイン、約 3 秒後にホーム画面へ。1 セッションにつき 1 回だけ再生され、戦闘からホームへ戻っても繰り返しません。
 - 戦闘描画を最適化：マップのグリッド、道路、建物などの静的な背景を一度だけ描画し、毎フレームの再描画を削減。
 - パーティクル、タブレット投射物、残像の描画位置とタイミングを修正し、戦闘中に正しくアニメーション表示。
 - ページが非表示の間は描画ループを停止し、復帰時に滑らかに再開。画面遷移のぼかし効果を簡略化して描画負荷を軽減。
-- 未公開の 1.9.0 機能とアニメーション改善を 2.0.0-preview として統合。
+- 未公開の 1.9.0 機能とアニメーション改善を 2.0.0 として統合。
 
 ## 1.9.0
 

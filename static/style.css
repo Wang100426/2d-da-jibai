@@ -20,6 +20,20 @@ button:disabled{transform:none}
 .status-list{min-height:25px;display:flex;justify-content:center;gap:4px;flex-wrap:wrap;margin-top:8px;width:150px}.status-badge{padding:4px 5px;background:#251a3a;border:1px solid #8157a4;color:#e0c5ff;font:9px 'Chakra Petch';white-space:nowrap}.status-badge b{color:var(--pink);margin-left:3px}.enemy .status-badge{border-color:#71833a;background:#253125;color:#d2ef8a}.skill-button{position:relative;min-height:91px}.skill-button:disabled{opacity:.42;cursor:not-allowed;transform:none}.cooldown-label{display:block;color:var(--pink);font:10px 'Chakra Petch';margin-top:5px;min-height:12px}
 .skill-button kbd,.combat-hints kbd{display:inline-block;padding:2px 5px;border:1px solid #555b7c;background:#20243b;color:var(--cyan);font:10px 'Chakra Petch';letter-spacing:1px}.skill-button kbd{position:absolute;top:8px;left:8px}.basic-attack{border-color:#4d5475}.basic-attack span{color:var(--cyan)}.combat-hints{display:flex;justify-content:flex-end;gap:18px;color:var(--muted);font:11px 'Chakra Petch';margin-top:-12px}.combat-hints kbd{margin-right:4px}.ai-label{color:var(--lime)}.ai-label i{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--lime);box-shadow:0 0 8px var(--lime);margin-right:5px}
 
+/* ───── 启动画面：白底 + 公司图标 + 健康游戏公约 ───── */
+.splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#fff;transition:opacity .5s ease}
+.splash-out{opacity:0;pointer-events:none}
+.splash-inner{display:flex;flex-direction:column;align-items:center;gap:clamp(30px,4.5vw,58px);padding:32px;text-align:center}
+.splash-logo{width:clamp(140px,17vw,215px);height:auto;animation:splash-logo-in .95s cubic-bezier(.2,.7,.3,1) .12s both}
+.splash-rules{margin:0;display:flex;flex-direction:column;gap:clamp(4px,.7vw,8px);color:#3a3f52;font-size:clamp(13px,1.35vw,17px);letter-spacing:.18em;line-height:1.85;animation:splash-rules-in 1.05s cubic-bezier(.2,.7,.3,1) .85s both}
+.splash-rules span{display:block}
+@keyframes splash-logo-in{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes splash-rules-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media(max-width:760px){
+  .splash-inner{gap:26px;padding:22px}
+  .splash-rules{letter-spacing:.1em;font-size:12.5px;line-height:1.9}
+}
+
 /* ───── 主页 1.9.0：左侧标题 + 右侧「模式选择+开始游戏」+ 底部导航 ───── */
 .home-page{height:100vh;height:100svh;min-height:620px;display:grid;grid-template-rows:64px minmax(0,1fr) 72px;overflow:hidden;position:relative;background:#090a13 url('/static/home-background.png') center/cover no-repeat}
 .home-page::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:linear-gradient(180deg,#090a1355 0%,#090a1322 38%,#090a1366 74%,#090a13a6 100%)}

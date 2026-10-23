@@ -8,6 +8,37 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="home-page">
+  <div class="splash" id="splash" role="presentation" aria-hidden="true">
+    <div class="splash-inner">
+      <img class="splash-logo" src="{{ url_for('static', filename='gamecom.png') }}" alt="">
+      <p class="splash-rules">
+        <span>抵制不良游戏，拒绝盗版游戏。</span>
+        <span>注意自我保护，谨防受骗上当。</span>
+        <span>适度游戏益脑，沉迷游戏伤身。</span>
+        <span>合理安排时间，享受健康生活。</span>
+      </p>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var splash = document.getElementById("splash");
+      if (!splash) return;
+      // 每个应用会话只播一次：刷新/从战斗返回主页都不会再挡 3 秒。
+      try {
+        if (sessionStorage.getItem("splashShown") === "1") {
+          splash.remove();
+          return;
+        }
+        sessionStorage.setItem("splashShown", "1");
+      } catch (error) {
+        // 隐私模式下 sessionStorage 不可用时，本次照常播放。
+      }
+      window.setTimeout(function () {
+        splash.classList.add("splash-out");
+        window.setTimeout(function () { splash.remove(); }, 520);
+      }, 2520);
+    })();
+  </script>
   <div class="scanlines"></div>
 
   <header class="home-topbar" aria-label="{{ tr('HOME') }}">
