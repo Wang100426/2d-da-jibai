@@ -12,6 +12,8 @@ interface SelectionSkill {
   kind: string;
   cost: number;
   cooldown: number;
+  /** 2 阶 / 3 阶预览，label 已在后端按当前语言翻译。 */
+  tier_effects?: Record<string, { label: string }>;
 }
 
 interface SelectionHero {
@@ -38,6 +40,8 @@ function requireSelectionElement<T extends HTMLElement>(id: string): T {
 const heroes: SelectionHero[] = (window as Window & Partial<{ HERO_SELECTION: SelectionHero[] }>).HERO_SELECTION || [];
 if (!heroes.length) throw new Error("Hero selection data was not provided by the Flask page.");
 const gameMode = (window as Window & Partial<{ GAME_MODE: string }>).GAME_MODE === "duel" ? "duel" : "rogue";
+const tierLabels: Record<string, string> =
+  (window as Window & Partial<{ SELECT_TIER_LABELS: Record<string, string> }>).SELECT_TIER_LABELS || {};
 
 const choices = [...document.querySelectorAll<HTMLButtonElement>("[data-hero-id]")];
 const portrait = requireSelectionElement<HTMLDivElement>("detail-portrait");
@@ -88,6 +92,24 @@ function renderSkills(hero: SelectionHero): void {
     const description = document.createElement("small");
     description.textContent = skill.detail_description || skill.description;
     copy.append(name, description);
+    // 升阶预览：2 阶 / 3 阶各一行，文案由后端按当前语言翻译好。
+    const tiers = Object.entries(skill.tier_effects || {}).sort(
+      ([a], [b]) => Number(a) - Number(b),
+    );
+    if (tiers.length) {
+      const list = document.createElement("ul");
+      list.className = "skill-tiers";
+      tiers.forEach(([tier, effect]) => {
+        const item = document.createElement("li");
+        const tag = document.createElement("em");
+        tag.textContent = tierLabels[tier] || tier;
+        const text = document.createElement("span");
+        text.textContent = effect.label;
+        item.append(tag, text);
+        list.append(item);
+      });
+      copy.append(list);
+    }
     const cooldown = document.createElement("span");
     cooldown.textContent = `${skill.cost} EN / ${skill.cooldown}s`;
     row.append(key, copy, cooldown);

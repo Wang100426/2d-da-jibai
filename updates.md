@@ -1,5 +1,22 @@
 # 更新日志 / Updates
 
+## 2.1.0
+
+### 中文
+
+- 选人页技能详情新增**升阶预览**：每个技能直接列出 2 阶与 3 阶效果，切换英雄时同步更新，文案随界面语言切换。
+- 修复滑板小子大招「炫酷滑板」**完全不造成伤害**的问题：命中判定误用了「玩家到敌人」的距离，滑板飞出后打不到路径上的任何目标。现在按滑板当前位置判定，且去程与回程各自独立命中，来回都能造成伤害。
+
+### English
+
+- The hero-select skill panel now shows a **tier preview**: every skill lists its Tier 2 and Tier 3 effects, updates when you switch heroes, and follows the interface language.
+- Fixed Skater Boy's ultimate **dealing no damage at all**: the hit test used the player-to-enemy distance, so the boomerang could not hit anything along its flight path. Hits are now resolved from the board's current position, with separate outbound and return passes so both legs deal damage.
+
+### 日本語
+
+- ヒーロー選択画面のスキル詳細に**段階プレビュー**を追加：各スキルが 2 段階目と 3 段階目の効果を表示し、ヒーローを切り替えると更新、UI 言語にも追従します。
+- スケーターボーイのアルティメットが**まったくダメージを与えない**不具合を修正：命中判定が「プレイヤーから敵まで」の距離を使っていたため、ボードが飛んでも経路上の敵に当たりませんでした。現在はボードの現在位置で判定し、往路と復路を別々に処理するので両方でダメージが入ります。
+
 ## 2.0.0
 
 ### 中文

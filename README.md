@@ -8,7 +8,7 @@
 
 《2D大击败》是一款赛博风 2D 战斗竞技场游戏，技术栈为 **Flask + 原生 HTML/CSS/TypeScript**，桌面版用 **Electron** 封装、**PyInstaller** 打包后端。选择英雄，在霓虹废墟中迎战敌潮、挑战 AI，或与局域网好友并肩作战。
 
-游戏支持中文 / English / 日本語三种界面，英文名为 **2DFight Arena**，日文名为 **2D大撃破**。当前版本 **2.0.0**。
+游戏支持中文 / English / 日本語三种界面，英文名为 **2DFight Arena**，日文名为 **2D大撃破**。当前版本 **2.1.0**。
 
 ## 目录
 
@@ -434,7 +434,7 @@ npm run dist:portable  # 便携版 → release-portable/
 
 2DFight Arena is a cyberpunk 2D combat arena built with **Flask + plain HTML/CSS/TypeScript**. The desktop build wraps it in **Electron** with a **PyInstaller**-packaged backend. Pick a hero, fight through neon ruins, challenge an AI opponent, or battle alongside friends over a local network.
 
-The interface ships in Chinese, English, and Japanese (2D大撃破). Current version: **2.0.0**.
+The interface ships in Chinese, English, and Japanese (2D大撃破). Current version: **2.1.0**.
 
 ## Contents
 

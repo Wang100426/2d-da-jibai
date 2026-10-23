@@ -363,6 +363,12 @@ html[lang="en"] .mode-card p{max-width:340px}
 .detail-skill>div b{font-size:10px}
 .detail-skill>div small{margin-top:3px;color:#a0a8bb;font-size:10px;line-height:1.5;overflow-wrap:anywhere}
 .detail-skill>span{flex:none;color:#ff8abb;font:10px 'Chakra Petch'}
+/* 选人页技能升阶预览（2.1.0） */
+.skill-tiers{margin:5px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px}
+.skill-tiers li{display:flex;align-items:baseline;gap:6px;font-size:9.5px;line-height:1.45;color:#8b93a9}
+.skill-tiers em{flex:none;padding:1px 5px;border:1px solid #2f3b57;background:#131a28;color:#8fd3ff;font:9px 'Chakra Petch';font-style:normal;letter-spacing:.4px;white-space:nowrap}
+.skill-tiers li:last-child em{color:#ffd166;border-color:#4a3d1f;background:#1b1710}
+.skill-tiers span{min-width:0;overflow-wrap:anywhere}
 .detail-footer{flex:none;display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid #30364a}
 .detail-footer>span b,.detail-footer>span small{display:block}
 .detail-footer>span b{font-size:12px}

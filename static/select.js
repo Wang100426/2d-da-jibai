@@ -9,6 +9,7 @@ const heroes = window.HERO_SELECTION || [];
 if (!heroes.length)
     throw new Error("Hero selection data was not provided by the Flask page.");
 const gameMode = window.GAME_MODE === "duel" ? "duel" : "rogue";
+const tierLabels = window.SELECT_TIER_LABELS || {};
 const choices = [...document.querySelectorAll("[data-hero-id]")];
 const portrait = requireSelectionElement("detail-portrait");
 const initial = requireSelectionElement("detail-initial");
@@ -56,6 +57,22 @@ function renderSkills(hero) {
         const description = document.createElement("small");
         description.textContent = skill.detail_description || skill.description;
         copy.append(name, description);
+        // 升阶预览：2 阶 / 3 阶各一行，文案由后端按当前语言翻译好。
+        const tiers = Object.entries(skill.tier_effects || {}).sort(([a], [b]) => Number(a) - Number(b));
+        if (tiers.length) {
+            const list = document.createElement("ul");
+            list.className = "skill-tiers";
+            tiers.forEach(([tier, effect]) => {
+                const item = document.createElement("li");
+                const tag = document.createElement("em");
+                tag.textContent = tierLabels[tier] || tier;
+                const text = document.createElement("span");
+                text.textContent = effect.label;
+                item.append(tag, text);
+                list.append(item);
+            });
+            copy.append(list);
+        }
         const cooldown = document.createElement("span");
         cooldown.textContent = `${skill.cost} EN / ${skill.cooldown}s`;
         row.append(key, copy, cooldown);
