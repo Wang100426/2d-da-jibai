@@ -195,6 +195,7 @@
                     "damage": 16,
                     "cooldown": 8.0,
                     "effect": "击退",
+                    "effect_text": "",
                     "effect_turns": 0.4,
                     "radius": 150.0
                   }
@@ -234,6 +235,7 @@
                     "damage": 26,
                     "cooldown": 12.0,
                     "effect": "眩晕",
+                    "effect_text": "眩晕 1s",
                     "effect_turns": 1.0,
                     "radius": 170.0
                   }
@@ -273,6 +275,7 @@
                   "damage": 16,
                   "cooldown": 8.0,
                   "effect": "击退",
+                  "effect_text": "",
                   "effect_turns": 0.4,
                   "radius": 150.0
                 }
@@ -312,6 +315,7 @@
                   "damage": 26,
                   "cooldown": 12.0,
                   "effect": "眩晕",
+                  "effect_text": "眩晕 1s",
                   "effect_turns": 1.0,
                   "radius": 170.0
                 }
@@ -454,6 +458,7 @@
                     "damage": 14,
                     "cooldown": 10.0,
                     "effect": "禁锢",
+                    "effect_text": "禁锢 2s",
                     "effect_turns": 2.0,
                     "radius": 220.0
                   }
@@ -493,6 +498,7 @@
                     "damage": 24,
                     "cooldown": 9.0,
                     "effect": "眩晕",
+                    "effect_text": "眩晕 1s",
                     "effect_turns": 1.0,
                     "radius": 140.0
                   }
@@ -529,6 +535,7 @@
                   "damage": 14,
                   "cooldown": 10.0,
                   "effect": "禁锢",
+                  "effect_text": "禁锢 2s",
                   "effect_turns": 2.0,
                   "radius": 220.0
                 }
@@ -568,6 +575,7 @@
                   "damage": 24,
                   "cooldown": 9.0,
                   "effect": "眩晕",
+                  "effect_text": "眩晕 1s",
                   "effect_turns": 1.0,
                   "radius": 140.0
                 }
@@ -722,6 +730,7 @@
                     "damage": 20,
                     "cooldown": 11.0,
                     "effect": "击退",
+                    "effect_text": "击退",
                     "effect_turns": 0.5,
                     "radius": 150.0
                   }
@@ -764,6 +773,7 @@
                     "damage": 38,
                     "cooldown": 14.0,
                     "effect": "斩杀",
+                    "effect_text": "斩杀",
                     "effect_turns": 0.0,
                     "radius": 130.0
                   }
@@ -800,6 +810,7 @@
                   "damage": 20,
                   "cooldown": 11.0,
                   "effect": "击退",
+                  "effect_text": "击退",
                   "effect_turns": 0.5,
                   "radius": 150.0
                 }
@@ -842,6 +853,7 @@
                   "damage": 38,
                   "cooldown": 14.0,
                   "effect": "斩杀",
+                  "effect_text": "斩杀",
                   "effect_turns": 0.0,
                   "radius": 130.0
                 }
@@ -943,6 +955,7 @@
                     "damage": 22,
                     "cooldown": 9.0,
                     "effect": "击退",
+                    "effect_text": "击退",
                     "effect_turns": 0.5,
                     "radius": 160.0
                   }
@@ -985,6 +998,7 @@
                     "damage": 28,
                     "cooldown": 12.0,
                     "effect": "减速",
+                    "effect_text": "减速 3s",
                     "effect_turns": 3.0,
                     "radius": 200.0
                   }
@@ -1024,6 +1038,7 @@
                     "damage": 52,
                     "cooldown": 18.0,
                     "effect": "击退",
+                    "effect_text": "击退",
                     "effect_turns": 0.6,
                     "radius": 240.0
                   }
@@ -1063,6 +1078,7 @@
                   "damage": 22,
                   "cooldown": 9.0,
                   "effect": "击退",
+                  "effect_text": "击退",
                   "effect_turns": 0.5,
                   "radius": 160.0
                 }
@@ -1105,6 +1121,7 @@
                   "damage": 28,
                   "cooldown": 12.0,
                   "effect": "减速",
+                  "effect_text": "减速 3s",
                   "effect_turns": 3.0,
                   "radius": 200.0
                 }
@@ -1144,6 +1161,7 @@
                   "damage": 52,
                   "cooldown": 18.0,
                   "effect": "击退",
+                  "effect_text": "击退",
                   "effect_turns": 0.6,
                   "radius": 240.0
                 }
@@ -1302,6 +1320,7 @@
                     "damage": 16,
                     "cooldown": 10.0,
                     "effect": "禁锢",
+                    "effect_text": "禁锢 3s",
                     "effect_turns": 3.0,
                     "radius": 220.0
                   }
@@ -1331,6 +1350,7 @@
                     "damage": 40,
                     "cooldown": 14.0,
                     "effect": "斩杀",
+                    "effect_text": "斩杀",
                     "effect_turns": 0.0,
                     "radius": 130.0
                   }
@@ -1367,6 +1387,7 @@
                   "damage": 16,
                   "cooldown": 10.0,
                   "effect": "禁锢",
+                  "effect_text": "禁锢 3s",
                   "effect_turns": 3.0,
                   "radius": 220.0
                 }
@@ -1396,6 +1417,7 @@
                   "damage": 40,
                   "cooldown": 14.0,
                   "effect": "斩杀",
+                  "effect_text": "斩杀",
                   "effect_turns": 0.0,
                   "radius": 130.0
                 }

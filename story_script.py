@@ -365,7 +365,10 @@ def _merge_battle_waves(structured, text_waves) -> list:
                 "description": skill_text.get("description", ""),
                 "damage": int(skill.get("damage", 0)),
                 "cooldown": float(skill.get("cooldown", 8)),
+                # effect 是给前端逻辑用的内部键（眩晕/禁锢/…），不能翻译
                 "effect": skill.get("effect", ""),
+                # effect_text 只用于展示，按语言取 locale 里的文案
+                "effect_text": skill_text.get("effect", ""),
                 "effect_turns": float(skill.get("effect_turns", 0)),
                 "radius": float(skill.get("radius", 150)),
             })

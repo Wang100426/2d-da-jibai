@@ -688,8 +688,10 @@ function renderWave(wave) {
             const parts = [`${str("cooldown", "CD")} ${skill.cooldown}s`];
             if (skill.damage)
                 parts.push(`${str("damage", "DMG")} ${skill.damage}`);
-            if (skill.effect)
-                parts.push(skill.effect);
+            // effect 是内部键（眩晕/禁锢…），展示用 locale 文案
+            const effectLabel = skill.effect_text || skill.effect;
+            if (effectLabel)
+                parts.push(effectLabel);
             metaInfo.textContent = parts.join(" · ");
             item.append(name, desc, metaInfo);
             list.append(item);
