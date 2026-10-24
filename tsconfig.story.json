@@ -9,5 +9,5 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "files": ["frontend/story.ts"]
+  "files": ["frontend/story_engine.ts", "frontend/story.ts"]
 }

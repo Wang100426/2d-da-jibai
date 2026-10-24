@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="{{ {'en': 'en', 'ja': 'ja'}.get(lang, 'zh-CN') }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="{{ url_for('favicon', lang=lang) }}">
+  <title>{{ tr("STORY_CHOOSE_TITLE") }} · {{ tr("PRODUCT_NAME") }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="story-choose-page">
+  <div class="scanlines"></div>
+  <div class="story-backdrop" aria-hidden="true"></div>
+
+  <header class="story-topbar">
+    <a class="select-back story-back" href="/" aria-label="{{ tr('BACK_HOME') }}">← <span>{{ tr("BACK_HOME") }}</span></a>
+    <div class="story-heading">
+      <small>{{ tr("STORY_TITLE") }}</small>
+      <b>{{ tr("STORY_CHOOSE_TITLE") }}</b>
+    </div>
+    <div class="story-tools">
+      <a class="coin-pill" href="/shop" title="{{ tr('SHOP') }}">
+        <span class="coin-pill-icon" aria-hidden="true">◈</span>
+        <b>{{ "∞" if profile.infinite_coins else "{:,}".format(profile.coins) }}</b>
+        <small>{{ tr("SHOP") }}</small>
+      </a>
+      <div class="language-switch" data-language-switch></div>
+    </div>
+  </header>
+
+  <main class="story-choose-main">
+    <section class="story-choose-head">
+      <p class="eyebrow"><span></span> {{ tr("STORY_TITLE") }}</p>
+      <h1>{{ tr("STORY_CHOOSE_HEADING") }} <span>/ {{ "%02d"|format(chapters|length) }}</span></h1>
+      <p>{{ tr("STORY_CHOOSE_SUBTITLE") }}</p>
+    </section>
+
+    <nav class="story-tabs" id="story-tabs" aria-label="{{ tr('STORY_CHOOSE_TITLE') }}"></nav>
+    <section class="story-chapter-grid" id="story-chapters" aria-live="polite"></section>
+  </main>
+
+  <script>
+    window.STORY_CATEGORIES = {{ categories|tojson }};
+    window.STORY_CHAPTERS = {{ chapters|tojson }};
+    window.STORY_PROGRESS = {{ story|tojson }};
+    window.STORY_ROSTER = {{ roster|tojson }};
+    window.STORY_STRINGS = {{ {
+      "all": tr("STORY_CATEGORY_ALL"),
+      "enter": tr("STORY_ENTER"),
+      "continue": tr("STORY_CONTINUE_RUN"),
+      "replay": tr("STORY_REPLAY"),
+      "notStarted": tr("STORY_NOT_STARTED"),
+      "inProgress": tr("STORY_IN_PROGRESS"),
+      "completed": tr("STORY_COMPLETED"),
+      "nodes": tr("STORY_NODES"),
+      "heroChapter": tr("STORY_HERO_CHAPTER"),
+      "worldChapter": tr("STORY_WORLD_CHAPTER"),
+      "empty": tr("STORY_EMPTY")
+    }|tojson }};
+  </script>
+  <script src="{{ url_for('static', filename='choose_story.js') }}"></script>
+  <script src="{{ url_for('static', filename='language.js') }}"></script>
+  <script src="{{ url_for('static', filename='page-transition.js') }}" defer></script>
+</body>
+</html>

@@ -626,27 +626,96 @@ def mode_page():
             "accent": "duel",
             "palette": {"main": "#b4ff5c", "light": "#eeffd6", "dark": "#3d5c12"},
         },
+        {
+            "id": "story",
+            "name": locale["STORY_TITLE"],
+            "kicker": locale.get("STORY_KICKER", "剧情模式"),
+            "tagline": locale["STORY_TAGLINE"],
+            "description": locale["STORY_DESCRIPTION"],
+            "icon": locale["STORY_ICON"],
+            "accent": "story",
+            "palette": {"main": "#a78bfa", "light": "#e9e1ff", "dark": "#4c2d99"},
+        },
     ]
     return render_template("mode.html", profile=profile_snapshot(), modes=modes, default_mode=modes[0])
 
 
-@app.get("/story")
-def story_page():
-    """剧情模式（框架阶段）：只渲染脚本与战斗配置，不接入正式流程。"""
+@app.get("/story/choose")
+def story_choose_page():
+    """剧情选择页：赛博世界剧情 / 英雄剧情 两类。"""
     lang = request.args.get("lang", request.cookies.get("lang", "zh"))
     lang = lang if lang in LOCALE_PACKAGES else "zh"
-    script = copy.deepcopy(story_script.DEMO_SCRIPT)
-    # 剧情正文暂未做多语言，标题/副标题先按界面语言覆盖。
-    for field in ("title", "subtitle"):
-        localized = script.get(f"{field}_i18n", {})
-        if lang in localized:
-            script[field] = localized[lang]
+    pack = get_locale(lang)
+    return render_template(
+        "story_choose.html",
+        profile=profile_snapshot(),
+        categories=story_script.category_list(lang, pack),
+        chapters=story_script.chapter_list(lang, pack),
+        roster=hero_roster(lang),
+        story=player_save.story_state(),
+    )
+
+
+@app.get("/story")
+def story_page():
+    """剧情执行页：按 chapter 加载章节，进度来自存档。"""
+    lang = request.args.get("lang", request.cookies.get("lang", "zh"))
+    lang = lang if lang in LOCALE_PACKAGES else "zh"
+    chapter_id = request.args.get("chapter", "").strip()
+    if not chapter_id:
+        return redirect(url_for("story_choose_page"))
+    chapter = story_script.localized_chapter(chapter_id, lang, get_locale(lang))
+    if chapter is None:
+        return redirect(url_for("story_choose_page"))
     return render_template(
         "story.html",
         profile=profile_snapshot(),
-        script=script,
+        chapter=chapter,
+        chapters=story_script.chapter_list(lang, get_locale(lang)),
         roster=hero_roster(lang),
+        story=player_save.story_state(),
     )
+
+
+@app.get("/api/story/state")
+def api_story_state():
+    return jsonify({"ok": True, "story": player_save.story_state()})
+
+
+@app.post("/api/story/progress")
+def api_story_progress():
+    body = request.get_json(silent=True) or {}
+    chapter_id = str(body.get("chapter", "")).strip()
+    if not chapter_id:
+        return jsonify({"ok": False, "reason": "invalid_chapter"}), 400
+    result = player_save.save_story_progress(
+        chapter_id,
+        node=body.get("node"),
+        flags=body.get("flags"),
+        objectives=body.get("objectives"),
+        choices=body.get("choices"),
+        completed=body.get("completed"),
+    )
+    return jsonify(result)
+
+
+@app.post("/api/story/reward")
+def api_story_reward():
+    """剧情奖励发放：服务端按 rewardId 幂等，重复请求不会二次入账。"""
+    body = request.get_json(silent=True) or {}
+    chapter_id = str(body.get("chapter", "")).strip()
+    reward_id = str(body.get("reward_id", "")).strip()
+    if not chapter_id or not reward_id:
+        return jsonify({"ok": False, "reason": "invalid_reward"}), 400
+    result = player_save.claim_story_reward(chapter_id, reward_id, body.get("coins", 0))
+    return jsonify({**result, **profile_snapshot()})
+
+
+@app.post("/api/story/reset")
+def api_story_reset():
+    body = request.get_json(silent=True) or {}
+    chapter_id = str(body.get("chapter", "")).strip() or None
+    return jsonify({**player_save.reset_story_progress(chapter_id), "ok": True})
 
 
 @app.get("/select")
@@ -1332,10 +1401,34 @@ def sync_multiplayer_room(room_id):
 
 @app.get("/battle")
 def battle():
+    # 剧情战斗：章节可绑定英雄并声明目标波次，胜负由前端按波次判定后回传
+    story_context = None
+    story_chapter_id = request.args.get("story", "").strip()
+    story_node_id = request.args.get("node", "").strip()
+    story_chapter = story_script.chapter_by_id(story_chapter_id) if story_chapter_id else None
+    story_node = None
+    if story_chapter:
+        story_node = next(
+            (node for node in story_chapter["nodes"] if node["id"] == story_node_id), None
+        )
+
     selected_id = request.args.get("hero", "volt")
-    if selected_id not in unlocked_hero_ids():
+    if story_chapter and story_chapter.get("hero"):
+        # 英雄剧情固定用该英雄；剧情内借用角色，不检查解锁
+        selected_id = story_chapter["hero"]
+    elif selected_id not in unlocked_hero_ids():
         # 未解锁的英雄不允许直接开打，先去商店。
         return redirect(url_for("shop"))
+    if story_chapter and story_node and story_node.get("type") == "battle":
+        battle_config = story_node.get("battle") or {}
+        story_context = {
+            "chapter": story_chapter_id,
+            "node": story_node_id,
+            "target_waves": max(1, int(battle_config.get("target_waves", 1))),
+            "hero": story_chapter.get("hero"),
+            "return_url": f"/story?chapter={story_chapter_id}&node={story_node_id}",
+        }
+
     base_player = hero_by_id(selected_id)
     base_defense = base_player["stats"]["防御"]
     player = base_player
@@ -1344,7 +1437,11 @@ def battle():
     player_id = request.args.get("pid", "").strip()
     multiplayer_config = None
     game_mode = "duel" if request.args.get("mode") == "duel" else "rogue"
-    map_theme = "city" if game_mode == "duel" else secrets.choice(MAP_THEMES[:-1] if room_id else MAP_THEMES)
+    story_map = ((story_node.get("battle") if story_node else None) or {}).get("map_theme")
+    if story_map in MAP_THEMES:
+        map_theme = story_map
+    else:
+        map_theme = "city" if game_mode == "duel" else secrets.choice(MAP_THEMES[:-1] if room_id else MAP_THEMES)
     if room_id and player_id:
         with ROOMS_LOCK:
             room, room_player = find_room_player(room_id, player_id)
@@ -1392,6 +1489,7 @@ def battle():
         game_mode=game_mode,
         defense=base_defense,
         map_theme=map_theme,
+        story_context=story_context,
         transition_map_name=locale_ui[map_name_key],
         transition_event=locale_ui[map_event_key],
         equipment_bonuses=equipment_bonuses,

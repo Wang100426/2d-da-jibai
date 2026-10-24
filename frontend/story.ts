@@ -1,8 +1,11 @@
-interface StoryPalette {
-  main: string;
-  light: string;
-  dark: string;
-}
+/**
+ * 剧情执行页的 UI 层。
+ *
+ * 分工：所有状态机逻辑在 `story_engine.ts`（可单测），本文件只做三件事：
+ * 1. 把节点画出来
+ * 2. 把交互交给引擎
+ * 3. 把进度/奖励同步到后端（进度写档、奖励幂等领取）
+ */
 
 interface StoryRosterEntry {
   id: string;
@@ -11,89 +14,50 @@ interface StoryRosterEntry {
   palette: StoryPalette;
 }
 
-interface StoryEnemy {
-  hero: string;
-  count: number;
-  mod?: string;
-}
-
-interface StorySkill {
-  name: string;
-  description: string;
-  cooldown: number;
-  damage: number;
-  effect?: string;
-}
-
-interface StoryWave {
-  index: number;
-  label: string;
-  note?: string;
-  event?: string;
-  enemies: StoryEnemy[];
-  skills: StorySkill[];
-}
-
-interface StoryOption {
-  label: string;
-  hint?: string;
-  next: string;
-}
-
-interface StoryNode {
-  id: string;
-  type: string;
-  next?: string;
-  speaker?: string;
-  role?: string;
-  initial?: string;
-  accent?: string;
-  palette?: StoryPalette;
-  text?: string;
-  prompt?: string;
-  options?: StoryOption[];
-  title?: string;
-  brief?: string;
-  waves?: StoryWave[];
-}
-
-interface StoryScript {
-  id: string;
-  title: string;
-  subtitle?: string;
-  background?: string;
-  start: string;
-  nodes: StoryNode[];
-}
-
 interface StoryStrings {
   [key: string]: string;
 }
 
-const script = (window as unknown as { STORY_SCRIPT?: StoryScript }).STORY_SCRIPT;
-const roster = (window as unknown as { STORY_ROSTER?: StoryRosterEntry[] }).STORY_ROSTER || [];
-const strings = (window as unknown as { STORY_STRINGS?: StoryStrings }).STORY_STRINGS || {};
+interface StoryRewardResponse {
+  ok?: boolean;
+  already_claimed?: boolean;
+  gained?: number;
+  coins?: number;
+  infinite_coins?: boolean;
+}
+
+const storyWindow = window as unknown as {
+  STORY_CHAPTER?: StoryChapter;
+  STORY_PROGRESS?: unknown;
+  STORY_ROSTER?: StoryRosterEntry[];
+  STORY_STRINGS?: StoryStrings;
+};
+
+const chapter = storyWindow.STORY_CHAPTER;
+const roster = storyWindow.STORY_ROSTER || [];
+const strings = storyWindow.STORY_STRINGS || {};
+
+if (!chapter) throw new Error("剧情数据未由 Flask 页面注入。");
+
+const engine = new StoryEngine(chapter, storyWindow.STORY_PROGRESS);
+
+const stage = document.getElementById("story-stage");
+if (!stage) throw new Error("缺少剧情舞台元素。");
+const backdrop = document.getElementById("story-backdrop");
+const skipButton = document.getElementById("story-skip");
+const progressLabel = document.getElementById("story-progress");
+const titleLabel = document.getElementById("story-title");
+const chapterLabel = document.getElementById("story-chapter");
+
+const params = new URLSearchParams(window.location.search);
+let lastBattleResult: "win" | "lose" | null = null;
 
 function str(key: string, fallback = ""): string {
   return strings[key] || fallback;
 }
 
-const stage = document.getElementById("story-stage");
-if (!stage) throw new Error("Missing story stage element.");
-const backdrop = document.getElementById("story-backdrop");
-const skipButton = document.getElementById("story-skip");
-const progressLabel = document.getElementById("story-progress");
-const titleLabel = document.getElementById("story-title");
-
-const nodeMap = new Map<string, StoryNode>();
-let currentNode: StoryNode | null = null;
-
-function buildNodeMap(): void {
-  nodeMap.clear();
-  (script?.nodes || []).forEach((node) => nodeMap.set(node.id, node));
-}
-
-function heroOf(id: string): StoryRosterEntry | undefined {
+function heroOf(id: string | null | undefined): StoryRosterEntry | undefined {
+  if (!id) return undefined;
   return roster.find((entry) => entry.id === id);
 }
 
@@ -139,31 +103,43 @@ function startTyping(target: HTMLElement, text: string): void {
 }
 
 /* ---------- 轻提示 ---------- */
-function toast(message: string): void {
+function toast(message: string, kind: "info" | "warning" = "info"): void {
   const element = document.createElement("div");
-  element.className = "story-toast";
+  element.className = `story-toast${kind === "warning" ? " story-toast-warning" : ""}`;
   element.textContent = message;
   document.body.append(element);
   window.setTimeout(() => element.classList.add("story-toast-out"), 1700);
   window.setTimeout(() => element.remove(), 2200);
 }
 
-/* ---------- 节点导航 ---------- */
-function updateProgress(): void {
-  if (!progressLabel || !script) return;
-  const total = script.nodes.length;
-  const index = currentNode ? script.nodes.findIndex((node) => node.id === currentNode?.id) : -1;
-  progressLabel.textContent = `${str("progress", "PROGRESS")} ${String(index + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}`;
+/* ---------- 存档同步 ---------- */
+function persist(): void {
+  const snapshot = engine.snapshot();
+  void fetch("/api/story/progress", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chapter: chapter?.id, ...snapshot }),
+  }).catch(() => {
+    /* 存档失败不打断阅读，下次节点切换会重试 */
+  });
 }
 
-function goTo(nodeId: string | undefined): void {
-  if (!nodeId) return;
-  const node = nodeMap.get(nodeId);
-  if (!node) return;
+/* ---------- 导航 ---------- */
+function updateHeader(): void {
+  if (!progressLabel || !chapter) return;
+  const index = chapter.nodes.findIndex((node) => node.id === engine.progress.node);
+  progressLabel.textContent = `${str("progress", "PROGRESS")} ${String(Math.max(0, index) + 1).padStart(2, "0")} / ${String(chapter.nodes.length).padStart(2, "0")}`;
+}
+
+function render(): void {
   stopTyping();
-  currentNode = node;
-  updateProgress();
+  updateHeader();
+  const node = engine.currentNode();
   stage?.replaceChildren();
+  if (!node) {
+    renderBroken(str("broken", "章节数据异常"), engine.issues.map((issue) => issue.message));
+    return;
+  }
   switch (node.type) {
     case "dialogue":
       renderDialogue(node);
@@ -174,50 +150,35 @@ function goTo(nodeId: string | undefined): void {
     case "battle":
       renderBattle(node);
       break;
+    case "objective":
+      renderObjective(node);
+      break;
+    case "reward":
+      renderReward(node);
+      break;
+    case "chapter_end":
+      renderChapterEnd(node);
+      break;
     default:
-      renderEnd(node);
+      renderBroken(str("unknown_node", "未知节点类型"), [`type=${String((node as { type?: string }).type)}`]);
       break;
   }
 }
 
-function advance(): void {
-  if (!currentNode) return;
-  if (currentNode.type === "dialogue") {
-    if (isTyping()) {
-      finishTyping();
-      return;
-    }
-    goTo(currentNode.next);
+/** 统一的跳转入口：失败时给出可见错误，而不是白屏。 */
+function move(step: StoryStep): void {
+  if (!step.ok) {
+    const message = step.error?.message || str("invalid_transition", "无法继续");
+    toast(message, "warning");
+    console.warn("[story] invalid transition", step.error);
+    return;
   }
-}
-
-/** 下一个节点：对话/战斗用 next，分支节点取第一个选项。 */
-function nextCursor(node: StoryNode): string | undefined {
-  if (node.next) return node.next;
-  return node.options?.[0]?.next;
-}
-
-/** 跳到当前路线上的第一个战斗节点；没有战斗则跳到结束节点。 */
-function skipToBattle(): void {
-  let cursor = currentNode?.id;
-  const seen = new Set<string>();
-  while (cursor && !seen.has(cursor)) {
-    seen.add(cursor);
-    const node = nodeMap.get(cursor);
-    if (!node) break;
-    if (node.type === "battle" || node.type === "end") {
-      if (node.type === "end" && currentNode?.type !== "end") {
-        toast(str("skipped", "SKIPPED"));
-      }
-      goTo(node.id);
-      return;
-    }
-    cursor = nextCursor(node);
-  }
+  persist();
+  render();
 }
 
 /* ---------- 渲染：对话框 ---------- */
-function renderDialogue(node: StoryNode): void {
+function renderDialogue(node: StoryDialogueNode): void {
   const section = document.createElement("section");
   section.className = "story-dialogue";
 
@@ -231,7 +192,7 @@ function renderDialogue(node: StoryNode): void {
 
   const identity = document.createElement("div");
   const role = document.createElement("small");
-  role.textContent = node.role || "";
+  role.textContent = node.accent ? node.accent.toUpperCase() : "";
   const name = document.createElement("b");
   name.textContent = node.speaker || "";
   identity.append(role, name);
@@ -246,15 +207,21 @@ function renderDialogue(node: StoryNode): void {
   hint.className = "story-hint";
   hint.textContent = `${str("clickHint", "CLICK")} ▸`;
   box.append(body, hint);
-  box.addEventListener("click", advance);
+  box.addEventListener("click", () => {
+    if (isTyping()) {
+      finishTyping();
+      return;
+    }
+    move(engine.goTo(node.next || ""));
+  });
 
   section.append(speaker, box);
   stage?.append(section);
   startTyping(body, node.text || "");
 }
 
-/* ---------- 渲染：分支选择 ---------- */
-function renderChoice(node: StoryNode): void {
+/* ---------- 渲染：分支 ---------- */
+function renderChoice(node: StoryChoiceNode): void {
   const section = document.createElement("section");
   section.className = "story-choice";
 
@@ -273,17 +240,12 @@ function renderChoice(node: StoryNode): void {
     key.textContent = String(index + 1);
     const copy = document.createElement("div");
     const label = document.createElement("b");
-    label.textContent = option.label;
+    label.textContent = option.label || option.id;
     copy.append(label);
-    if (option.hint) {
-      const hint = document.createElement("small");
-      hint.textContent = option.hint;
-      copy.append(hint);
-    }
     const arrow = document.createElement("span");
     arrow.textContent = "›";
     button.append(key, copy, arrow);
-    button.addEventListener("click", () => goTo(option.next));
+    button.addEventListener("click", () => move(engine.choose(index)));
     options.append(button);
   });
 
@@ -291,8 +253,17 @@ function renderChoice(node: StoryNode): void {
   stage?.append(section);
 }
 
-/* ---------- 渲染：战斗剧情 ---------- */
-function renderBattle(node: StoryNode): void {
+/* ---------- 渲染：战斗 ---------- */
+interface StoryWave {
+  index?: number;
+  label?: string;
+  note?: string;
+  event?: string;
+  enemies?: Array<{ hero: string; count: number; mod?: string }>;
+  skills?: Array<{ name: string; description: string; cooldown: number; damage: number; effect?: string }>;
+}
+
+function renderBattle(node: StoryBattleNode): void {
   const section = document.createElement("section");
   section.className = "story-battle";
 
@@ -300,7 +271,7 @@ function renderBattle(node: StoryNode): void {
   head.className = "story-battle-head";
   const kicker = document.createElement("p");
   kicker.className = "eyebrow";
-  kicker.textContent = str("wave", "WAVE");
+  kicker.textContent = str("battleKicker", "BATTLE");
   const heading = document.createElement("h2");
   heading.textContent = node.title || "";
   head.append(kicker, heading);
@@ -312,30 +283,57 @@ function renderBattle(node: StoryNode): void {
   }
   section.append(head);
 
-  const waves = document.createElement("div");
-  waves.className = "story-waves";
-  (node.waves || []).forEach((wave) => {
-    waves.append(renderWave(wave));
-  });
-  section.append(waves);
+  const heroId = node.battle?.hero || chapter?.hero || "volt";
+  const hero = heroOf(heroId);
+  const meta = document.createElement("div");
+  meta.className = "story-battle-meta";
+  const heroChip = document.createElement("span");
+  heroChip.className = "story-unit";
+  applyPalette(heroChip, hero?.palette);
+  const mark = document.createElement("i");
+  mark.textContent = hero?.initial || "?";
+  const heroName = document.createElement("b");
+  heroName.textContent = hero?.name || heroId;
+  heroChip.append(mark, heroName);
+  const wavesChip = document.createElement("span");
+  wavesChip.className = "story-badge";
+  wavesChip.textContent = `${str("targetWaves", "TARGET")} ${node.battle?.target_waves ?? 1}`;
+  meta.append(heroChip, wavesChip);
+  section.append(meta);
+
+  if (Array.isArray(node.waves) && node.waves.length) {
+    const waves = document.createElement("div");
+    waves.className = "story-waves";
+    node.waves.forEach((raw) => {
+      waves.append(renderWave(raw as StoryWave));
+    });
+    section.append(waves);
+  }
 
   const footer = document.createElement("footer");
   footer.className = "story-battle-foot";
+  if (lastBattleResult === "lose") {
+    const failNote = document.createElement("p");
+    failNote.className = "story-fail-note";
+    failNote.textContent = str("battleLost", "战斗失败，可以重试。");
+    footer.append(failNote);
+  }
   const startButton = document.createElement("button");
   startButton.type = "button";
   startButton.className = "enter-trapezoid story-start";
-  startButton.innerHTML = `${str("startBattle", "START")} <b>&gt;&gt;</b>`;
-  startButton.addEventListener("click", () => {
-    toast(str("battleLocked", "NOT CONNECTED"));
-  });
-  const continueButton = document.createElement("button");
-  continueButton.type = "button";
-  continueButton.className = "button button-ghost story-skip-battle";
-  continueButton.textContent = str("continue", "CONTINUE");
-  continueButton.addEventListener("click", () => goTo(node.next));
-  footer.append(startButton, continueButton);
-  section.append(footer);
+  startButton.innerHTML = `${lastBattleResult === "lose" ? str("retryBattle", "RETRY") : str("startBattle", "START")} <b>&gt;&gt;</b>`;
+  startButton.addEventListener("click", () => startStoryBattle(node, heroId));
+  footer.append(startButton);
 
+  if (node.on_lose && node.on_lose !== node.id) {
+    const backButton = document.createElement("button");
+    backButton.type = "button";
+    backButton.className = "button button-ghost";
+    backButton.textContent = str("backChapter", "返回");
+    backButton.addEventListener("click", () => move(engine.goTo(node.on_lose || "")));
+    footer.append(backButton);
+  }
+  section.append(footer);
   stage?.append(section);
 }
 
@@ -345,7 +343,7 @@ function renderWave(wave: StoryWave): HTMLElement {
 
   const head = document.createElement("header");
   const label = document.createElement("b");
-  label.textContent = wave.label || `${str("wave", "WAVE")} ${wave.index}`;
+  label.textContent = wave.label || `${str("wave", "WAVE")} ${wave.index ?? ""}`;
   head.append(label);
   if (wave.note) {
     const note = document.createElement("small");
@@ -354,131 +352,345 @@ function renderWave(wave: StoryWave): HTMLElement {
   }
   card.append(head);
 
-  const event = document.createElement("p");
-  event.className = "story-event";
-  event.textContent = `${str("event", "EVENT")}：${wave.event || "—"}`;
-  card.append(event);
+  if (wave.event) {
+    const event = document.createElement("p");
+    event.className = "story-event";
+    event.textContent = `${str("event", "EVENT")}：${wave.event}`;
+    card.append(event);
+  }
 
-  const unitBlock = document.createElement("div");
-  unitBlock.className = "story-block";
-  const unitTitle = document.createElement("small");
-  unitTitle.textContent = str("enemyUnits", "ENEMIES");
-  const units = document.createElement("div");
-  units.className = "story-units";
-  (wave.enemies || []).forEach((enemy) => {
-    const hero = heroOf(enemy.hero);
-    const chip = document.createElement("span");
-    chip.className = "story-unit";
-    applyPalette(chip, hero?.palette);
-    const mark = document.createElement("i");
-    mark.textContent = hero?.initial || "?";
-    const text = document.createElement("b");
-    text.textContent = `${hero?.name || enemy.hero} ×${enemy.count}`;
-    chip.append(mark, text);
-    if (enemy.mod) {
-      const mod = document.createElement("em");
-      mod.textContent = enemy.mod;
-      chip.append(mod);
-    }
-    units.append(chip);
-  });
-  unitBlock.append(unitTitle, units);
-  card.append(unitBlock);
+  if (wave.enemies?.length) {
+    const units = document.createElement("div");
+    units.className = "story-units";
+    wave.enemies.forEach((enemy) => {
+      const heroEntry = heroOf(enemy.hero);
+      const chip = document.createElement("span");
+      chip.className = "story-unit";
+      applyPalette(chip, heroEntry?.palette);
+      const mark = document.createElement("i");
+      mark.textContent = heroEntry?.initial || "?";
+      const text = document.createElement("b");
+      text.textContent = `${heroEntry?.name || enemy.hero} ×${enemy.count}`;
+      chip.append(mark, text);
+      if (enemy.mod) {
+        const mod = document.createElement("em");
+        mod.textContent = enemy.mod;
+        chip.append(mod);
+      }
+      units.append(chip);
+    });
+    card.append(units);
+  }
 
-  const skillBlock = document.createElement("div");
-  skillBlock.className = "story-block";
-  const skillTitle = document.createElement("small");
-  skillTitle.textContent = str("enemySkills", "SKILLS");
-  skillBlock.append(skillTitle);
-  const list = document.createElement("ul");
-  list.className = "story-skills";
-  if (!wave.skills || !wave.skills.length) {
-    const empty = document.createElement("li");
-    empty.className = "story-skill-empty";
-    empty.textContent = str("noSkills", "NONE");
-    list.append(empty);
-  } else {
+  if (wave.skills?.length) {
+    const list = document.createElement("ul");
+    list.className = "story-skills";
     wave.skills.forEach((skill) => {
       const item = document.createElement("li");
       const name = document.createElement("b");
       name.textContent = skill.name;
       const desc = document.createElement("small");
       desc.textContent = skill.description;
-      const meta = document.createElement("em");
+      const metaInfo = document.createElement("em");
       const parts = [`${str("cooldown", "CD")} ${skill.cooldown}s`];
       if (skill.damage) parts.push(`${str("damage", "DMG")} ${skill.damage}`);
       if (skill.effect) parts.push(skill.effect);
-      meta.textContent = parts.join(" · ");
-      item.append(name, desc, meta);
+      metaInfo.textContent = parts.join(" · ");
+      item.append(name, desc, metaInfo);
       list.append(item);
     });
+    card.append(list);
   }
-  skillBlock.append(list);
-  card.append(skillBlock);
 
   return card;
 }
 
-/* ---------- 渲染：结束 ---------- */
-function renderEnd(node: StoryNode): void {
+/** 复用现有 /battle：只传英雄、章节、节点，战斗本身不在这里实现。 */
+function startStoryBattle(node: StoryBattleNode, heroId: string): void {
+  persist();
+  const query = new URLSearchParams({
+    hero: heroId,
+    story: chapter?.id || "",
+    node: node.id,
+  });
+  window.location.href = `/battle?${query.toString()}`;
+}
+
+/* ---------- 渲染：任务目标 ---------- */
+function renderObjective(node: StoryObjectiveNode): void {
+  const section = document.createElement("section");
+  section.className = "story-objective";
+
+  const kicker = document.createElement("p");
+  kicker.className = "eyebrow";
+  kicker.textContent = str("objectiveKicker", "OBJECTIVE");
+  const heading = document.createElement("h2");
+  heading.textContent = node.title || "";
+  section.append(kicker, heading);
+
+  if (node.description) {
+    const desc = document.createElement("p");
+    desc.className = "story-brief";
+    desc.textContent = node.description;
+    section.append(desc);
+  }
+
+  const list = document.createElement("ul");
+  list.className = "story-goals";
+  (node.goals || []).forEach((goal) => {
+    const done = Boolean(engine.progress.objectives[goal.id]);
+    const item = document.createElement("li");
+    item.className = `story-goal${done ? " done" : ""}`;
+    const check = document.createElement("i");
+    check.textContent = done ? "✓" : "";
+    const text = document.createElement("span");
+    text.textContent = goal.label || goal.id;
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.textContent = done ? str("goalUndo", "取消") : str("goalDone", "标记完成");
+    toggle.addEventListener("click", () => {
+      engine.setObjective(goal.id, !done);
+      persist();
+      render();
+    });
+    item.append(check, text, toggle);
+    list.append(item);
+  });
+  section.append(list);
+
+  const footer = document.createElement("footer");
+  footer.className = "story-battle-foot";
+  if (!engine.canLeaveObjective()) {
+    const note = document.createElement("p");
+    note.className = "story-fail-note";
+    note.textContent = str("objectiveBlocked", "完成全部目标后才能继续。");
+    footer.append(note);
+  } else {
+    const next = document.createElement("button");
+    next.type = "button";
+    next.className = "enter-trapezoid story-start";
+    next.innerHTML = `${str("continue", "CONTINUE")} <b>&gt;&gt;</b>`;
+    next.addEventListener("click", () => move(engine.goTo(node.next || "")));
+    footer.append(next);
+  }
+  section.append(footer);
+  stage?.append(section);
+}
+
+/* ---------- 渲染：奖励 ---------- */
+function renderReward(node: StoryRewardNode): void {
+  const section = document.createElement("section");
+  section.className = "story-reward";
+
+  const kicker = document.createElement("p");
+  kicker.className = "eyebrow";
+  kicker.textContent = str("rewardKicker", "REWARD");
+  const heading = document.createElement("h2");
+  heading.textContent = node.title || "";
+  section.append(kicker, heading);
+
+  if (node.description) {
+    const desc = document.createElement("p");
+    desc.className = "story-brief";
+    desc.textContent = node.description;
+    section.append(desc);
+  }
+
+  const amount = document.createElement("p");
+  amount.className = "story-reward-amount";
+  amount.textContent = `◈ +${node.coins || 0}`;
+  section.append(amount);
+
+  const status = document.createElement("p");
+  status.className = "story-reward-status";
+  status.textContent = str("rewardClaiming", "领取中…");
+  section.append(status);
+
+  const footer = document.createElement("footer");
+  footer.className = "story-battle-foot";
+  const next = document.createElement("button");
+  next.type = "button";
+  next.className = "enter-trapezoid story-start";
+  next.innerHTML = `${str("continue", "CONTINUE")} <b>&gt;&gt;</b>`;
+  next.disabled = true;
+  next.addEventListener("click", () => move(engine.goTo(node.next || "")));
+  footer.append(next);
+  section.append(footer);
+  stage?.append(section);
+
+  void claimReward(node, status, next);
+}
+
+async function claimReward(node: StoryRewardNode, status: HTMLElement, next: HTMLButtonElement): Promise<void> {
+  const rewardId = node.reward_id;
+  if (!rewardId) {
+    status.textContent = str("rewardInvalid", "奖励配置缺失");
+    next.disabled = false;
+    return;
+  }
+  try {
+    const response = await fetch("/api/story/reward", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chapter: chapter?.id, reward_id: rewardId, coins: node.coins || 0 }),
+    });
+    const data: StoryRewardResponse = await response.json();
+    engine.markRewardClaimed(rewardId);
+    if (data.already_claimed) {
+      status.textContent = str("rewardAlready", "该奖励已领取过，不会重复发放。");
+    } else {
+      status.textContent = data.infinite_coins
+        ? str("rewardInfinite", "金币无限，奖励已记录。")
+        : str("rewardGained", "已获得金币：{coins}").replace("{coins}", String(data.gained ?? node.coins ?? 0));
+    }
+  } catch {
+    status.textContent = str("rewardFailed", "领取失败，可稍后重试。");
+  } finally {
+    next.disabled = false;
+    persist();
+  }
+}
+
+/* ---------- 渲染：章节结束 ---------- */
+function renderChapterEnd(node: StoryChapterEndNode): void {
+  engine.finishChapter();
+  persist();
+
   const section = document.createElement("section");
   section.className = "story-end";
 
   const kicker = document.createElement("p");
   kicker.className = "eyebrow";
-  kicker.textContent = "END";
+  kicker.textContent = str("chapterEndKicker", "CHAPTER COMPLETE");
   const heading = document.createElement("h2");
   heading.textContent = node.title || "";
   const text = document.createElement("p");
   text.className = "story-end-text";
   text.textContent = node.text || "";
+  section.append(kicker, heading, text);
 
   const actions = document.createElement("div");
   actions.className = "story-end-actions";
-  const home = document.createElement("a");
-  home.className = "enter-trapezoid";
-  home.href = "/";
-  home.textContent = str("backHome", "HOME");
+  const back = document.createElement("a");
+  back.className = "enter-trapezoid";
+  back.href = "/story/choose";
+  back.textContent = str("backChoose", "返回剧情选择");
   const replay = document.createElement("button");
   replay.type = "button";
   replay.className = "button button-ghost";
-  replay.textContent = str("replay", "REPLAY");
+  replay.textContent = str("replay", "从头再看");
   replay.addEventListener("click", () => {
-    goTo(script?.start);
+    const step = engine.goTo(chapter?.entry || "");
+    if (step.ok) {
+      engine.progress.completed = false;
+      persist();
+      render();
+    }
   });
-  actions.append(home, replay);
-
-  section.append(kicker, heading, text, actions);
+  actions.append(back, replay);
+  section.append(actions);
   stage?.append(section);
 }
 
-/* ---------- 初始化 ---------- */
-function init(): void {
-  if (!script) throw new Error("Story script was not provided by the Flask page.");
-  buildNodeMap();
-  if (titleLabel) titleLabel.textContent = script.title;
-  if (backdrop && script.background) {
-    backdrop.style.backgroundImage = `url("/static/${script.background}")`;
+/* ---------- 渲染：异常 ---------- */
+function renderBroken(title: string, details: string[]): void {
+  const section = document.createElement("section");
+  section.className = "story-end";
+  const heading = document.createElement("h2");
+  heading.textContent = title;
+  const list = document.createElement("ul");
+  list.className = "story-goals";
+  details.forEach((detail) => {
+    const item = document.createElement("li");
+    item.className = "story-goal";
+    const text = document.createElement("span");
+    text.textContent = detail;
+    item.append(text);
+    list.append(item);
+  });
+  const back = document.createElement("a");
+  back.className = "enter-trapezoid";
+  back.href = "/story/choose";
+  back.textContent = str("backChoose", "返回剧情选择");
+  const actions = document.createElement("div");
+  actions.className = "story-end-actions";
+  actions.append(back);
+  section.append(heading, list, actions);
+  stage?.append(section);
+}
+
+/* ---------- 跳过 ---------- */
+function skipToBattle(): void {
+  let cursor: string | null = engine.progress.node;
+  const seen = new Set<string>();
+  while (cursor && !seen.has(cursor)) {
+    seen.add(cursor);
+    const node = engine.getNode(cursor);
+    if (!node) break;
+    if (node.type === "battle" || node.type === "chapter_end") {
+      move(engine.goTo(node.id));
+      return;
+    }
+    if (node.type === "choice") {
+      cursor = node.options?.[0]?.next || null;
+      continue;
+    }
+    cursor = node.next || null;
   }
+  toast(str("skipFailed", "这条线没有可跳过的战斗。"), "warning");
+}
+
+/* ---------- 初始化 ---------- */
+function boot(): void {
+  if (engine.issues.length) {
+    console.warn("[story] chapter has problems", engine.issues);
+  }
+  if (titleLabel) titleLabel.textContent = chapter?.title || "";
+  if (chapterLabel) chapterLabel.textContent = chapter?.category_name || "";
+  if (backdrop && chapter?.background) {
+    backdrop.style.backgroundImage = `url("/static/${chapter.background}")`;
+  }
+
+  const rawResult = params.get("result");
+  if (rawResult === "win" || rawResult === "lose") {
+    lastBattleResult = rawResult;
+    const step = engine.applyBattleResult(rawResult);
+    if (!step.ok && step.error) {
+      toast(step.error.message, "warning");
+    }
+    // 清掉 URL 上的战斗结果，避免刷新时重复应用
+    const clean = new URLSearchParams(window.location.search);
+    clean.delete("result");
+    clean.delete("waves");
+    window.history.replaceState({}, "", `${window.location.pathname}?${clean.toString()}`);
+  } else {
+    engine.start();
+  }
+
   skipButton?.addEventListener("click", skipToBattle);
   document.addEventListener("keydown", (event) => {
-    if (event.key === " " || event.key === "Enter") {
-      if (currentNode?.type === "dialogue") {
-        event.preventDefault();
-        advance();
+    const node = engine.currentNode();
+    if (!node) return;
+    if ((event.key === " " || event.key === "Enter") && node.type === "dialogue") {
+      event.preventDefault();
+      if (isTyping()) {
+        finishTyping();
+      } else {
+        move(engine.goTo(node.next || ""));
       }
       return;
     }
-    if (currentNode?.type === "choice" && /^[1-9]$/.test(event.key)) {
+    if (node.type === "choice" && /^[1-9]$/.test(event.key)) {
       const index = Number(event.key) - 1;
-      const option = currentNode.options?.[index];
-      if (option) {
+      if (node.options?.[index]) {
         event.preventDefault();
-        goTo(option.next);
+        move(engine.choose(index));
       }
     }
   });
-  goTo(script.start);
+
+  render();
+  persist();
 }
 
-init();
+boot();

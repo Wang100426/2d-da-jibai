@@ -254,7 +254,47 @@
     "SAVE_RESET_DONE": "存档已重置。",
     "SAVE_FAILED": "操作失败，请稍后再试。",
     "SAVE_INFINITE_NOTE": "无限金币测试存档",
-    "EXIT_RUN": "退出本局"
+    "EXIT_RUN": "退出本局",
+    "STORY_KICKER": "剧情模式",
+    "STORY_TAGLINE": "选择剧情 · 逐段推进 · 战斗与抉择",
+    "STORY_DESCRIPTION": "分「赛博世界剧情」与「英雄剧情」两条线。对话、抉择、任务目标与剧情战斗都会记进存档。",
+    "STORY_ICON": "剧",
+    "STORY_CHOOSE_TITLE": "剧情选择",
+    "STORY_CHOOSE_HEADING": "选择剧情",
+    "STORY_CHOOSE_SUBTITLE": "赛博世界剧情讲述城市本身，英雄剧情只属于某一位角色。进度自动保存。",
+    "STORY_CATEGORY_ALL": "全部",
+    "STORY_ENTER": "进入章节",
+    "STORY_CONTINUE_RUN": "继续",
+    "STORY_NOT_STARTED": "未开始",
+    "STORY_IN_PROGRESS": "进行中",
+    "STORY_COMPLETED": "已完成",
+    "STORY_NODES": "节点",
+    "STORY_HERO_CHAPTER": "英雄剧情",
+    "STORY_WORLD_CHAPTER": "赛博世界",
+    "STORY_EMPTY": "这个分类下还没有章节。",
+    "STORY_BATTLE_KICKER": "剧情战斗",
+    "STORY_TARGET_WAVES": "目标波次",
+    "STORY_BATTLE_LOST": "战斗失败，可以重试。",
+    "STORY_RETRY_BATTLE": "重试战斗",
+    "STORY_BACK_CHAPTER": "放弃战斗",
+    "STORY_OBJECTIVE_KICKER": "任务目标",
+    "STORY_GOAL_DONE": "标记完成",
+    "STORY_GOAL_UNDO": "取消完成",
+    "STORY_OBJECTIVE_BLOCKED": "完成全部目标后才能继续。",
+    "STORY_REWARD_KICKER": "剧情奖励",
+    "STORY_REWARD_CLAIMING": "领取中…",
+    "STORY_REWARD_ALREADY": "该奖励已领取过，不会重复发放。",
+    "STORY_REWARD_GAINED": "已获得金币：{coins}",
+    "STORY_REWARD_INFINITE": "金币无限，奖励已记录。",
+    "STORY_REWARD_FAILED": "领取失败，可稍后重试。",
+    "STORY_REWARD_INVALID": "奖励配置缺失。",
+    "STORY_CHAPTER_END_KICKER": "章节完成",
+    "STORY_BACK_CHOOSE": "返回剧情选择",
+    "STORY_SKIP_FAILED": "这条线没有可跳过的战斗。",
+    "STORY_BROKEN": "章节数据异常",
+    "STORY_UNKNOWN_NODE": "未知节点类型",
+    "STORY_INVALID_TRANSITION": "无法继续：跳转目标无效。",
+    "STORY_FRAMEWORK_NOTE": "剧情模式 · 框架版"
   },
   "heroes": {
     "volt": {
@@ -1138,5 +1178,170 @@
     "连续进行 2 次冲刺和攻击": "连续进行 2 次冲刺和攻击",
     "篮球发射速度 5/秒 → 10/秒": "篮球发射速度 5/秒 → 10/秒",
     "时长 +2 秒且普攻无视距离（不无视建筑）": "时长 +2 秒且普攻无视距离（不无视建筑）"
+  },
+  "story": {
+    "categories": {
+      "cyber": {
+        "name": "赛博世界剧情",
+        "description": "关于这座城市本身的线：断电、封锁、谁在背后拉闸。"
+      },
+      "hero": {
+        "name": "英雄剧情",
+        "description": "只属于某一位角色的支线，绑定该英雄出战。"
+      }
+    },
+    "chapters": {
+      "cyber-01": {
+        "title": "霓虹断电",
+        "summary": "凌晨三点，城南的供电被掐掉三成。你要穿过被封锁的街口，去看看那台还在响的机器。",
+        "nodes": {
+          "c1-intro": {
+            "speaker": "旁白",
+            "text": "霓虹城的供电在天亮前断了三成。街口的广告牌还在闪，拼出一句没人看得懂的口号。"
+          },
+          "c1-pick": {
+            "prompt": "街区被封了，你打算怎么过去？",
+            "options": [
+              "直接冲过去",
+              "先摸清巡逻路线"
+            ]
+          },
+          "c1-objective": {
+            "title": "摸清街口",
+            "description": "封锁线每十分钟换一次班。先看清楚再动。",
+            "goals": [
+              "观察巡逻队换班",
+              "找到可以翻越的围墙"
+            ]
+          },
+          "c1-battle": {
+            "title": "街口突围",
+            "brief": "打退两波巡逻队就能穿过封锁线。第二波会有远程支援。",
+            "waves": [
+              {
+                "label": "波次 1",
+                "note": "巡逻 · 试探",
+                "event": "无特殊事件",
+                "enemies": [
+                  {
+                    "hero": "volt",
+                    "count": 2,
+                    "mod": "生命 ×1.0"
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "街头冲撞",
+                    "description": "向前突进并击退目标",
+                    "cooldown": 8,
+                    "damage": 18
+                  }
+                ]
+              },
+              {
+                "label": "波次 2",
+                "note": "增援 · 远程压制",
+                "event": "街口车流加速，横穿时会造成眩晕",
+                "enemies": [
+                  {
+                    "hero": "volt",
+                    "count": 1,
+                    "mod": "生命 ×1.5"
+                  },
+                  {
+                    "hero": "tech",
+                    "count": 1,
+                    "mod": "远程支援"
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "震地连击",
+                    "description": "连续三次砸地，最后一击眩晕 1 秒",
+                    "cooldown": 12,
+                    "damage": 32,
+                    "effect": "眩晕 1s"
+                  }
+                ]
+              }
+            ]
+          },
+          "c1-reward": {
+            "title": "穿过封锁线",
+            "description": "废弃仓库里留着一批没被搬走的补给。"
+          },
+          "c1-end": {
+            "title": "章节结束",
+            "text": "街口的警报还在响，但你已经过去了。那台机器的声音，比昨晚更近了一点。"
+          }
+        }
+      },
+      "hero-volt-01": {
+        "title": "拳王的旧账",
+        "summary": "三年前的一场地下赛，霓虹拳王欠了一个人情。今晚有人来收了。",
+        "nodes": {
+          "h1-intro": {
+            "speaker": "霓虹拳王",
+            "text": "这条街的规矩很简单：欠了就得还。今晚来的人，我认识。"
+          },
+          "h1-battle": {
+            "title": "旧账清算",
+            "brief": "两波对手，都是老熟人。打完就散。",
+            "waves": [
+              {
+                "label": "波次 1",
+                "note": "旧识 · 试探",
+                "event": "无特殊事件",
+                "enemies": [
+                  {
+                    "hero": "pipa",
+                    "count": 1,
+                    "mod": "控场"
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "弦音禁锢",
+                    "description": "禁锢目标并持续掉血",
+                    "cooldown": 10,
+                    "damage": 16,
+                    "effect": "禁锢 3s"
+                  }
+                ]
+              },
+              {
+                "label": "波次 2",
+                "note": "收账 · 压上",
+                "event": "围观人群散开，场地变窄",
+                "enemies": [
+                  {
+                    "hero": "jianghu",
+                    "count": 1,
+                    "mod": "生命 ×1.6 · 伤害 ×1.2"
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "一剑封喉",
+                    "description": "目标残血时斩杀概率大幅提升",
+                    "cooldown": 14,
+                    "damage": 40,
+                    "effect": "斩杀"
+                  }
+                ]
+              }
+            ]
+          },
+          "h1-reward": {
+            "title": "人情还清",
+            "description": "对方扔下一句「下次别让我等」，转身走进雨里。"
+          },
+          "h1-end": {
+            "title": "章节结束",
+            "text": "拳王把护腕重新缠好。街口的灯亮了一半，够了。"
+          }
+        }
+      }
+    }
   }
 }

@@ -23,6 +23,8 @@ const minimap = requireElement("#minimap");
 const miniContext = requireContext(minimap);
 const config = getMapConfig();
 const locale = config.locale;
+const storyBattle = window.STORY_BATTLE || null;
+let storyBattleDone = false;
 /** 源语言是中文（zh）；en / ja 等目标语言都需要跑 patterns + phrases 片段替换。 */
 const translateByPattern = locale.code !== "zh";
 const tx = (source) => localizeBattleText(source);
@@ -861,6 +863,11 @@ function updateWaveSpawner(dt) {
         spawnTimer = Math.max(0.45, 1.25 - wave * 0.035);
     }
     if (enemiesToSpawn === 0 && enemies.every((enemy) => enemy.anesthetist || enemy.hp <= 0)) {
+        // 剧情战斗：清完目标波次即判胜，不弹肉鸽强化
+        if (storyBattle && wave >= storyBattle.target_waves) {
+            finishStoryBattle("win");
+            return;
+        }
         showWaveUpgrade();
     }
     updateWaveHud();
@@ -882,9 +889,30 @@ function showToast(message, kind = "success") {
     window.clearTimeout(toastTimer);
     toastTimer = window.setTimeout(() => toast.classList.remove("visible"), 2200);
 }
+/** 剧情战斗结束：带结果跳回剧情页，由剧情引擎决定下一节点。 */
+function finishStoryBattle(result) {
+    if (!storyBattle || storyBattleDone)
+        return;
+    storyBattleDone = true;
+    runEnded = true;
+    keys.clear();
+    touchKeys.clear();
+    const separator = storyBattle.return_url.includes("?") ? "&" : "?";
+    const target = `${storyBattle.return_url}${separator}result=${result}&waves=${wave}`;
+    showToast(result === "win" ? tx("战斗胜利") : tx("战斗失败"), result === "win" ? "success" : "warning");
+    // 留一帧给提示与结算请求，再跳转
+    window.setTimeout(() => {
+        window.location.href = target;
+    }, 260);
+}
 function finishRun() {
     if (config.duel) {
         finishDuelRound(false);
+        return;
+    }
+    if (storyBattle) {
+        // 剧情战斗不打肉鸽结算，胜负交给剧情进度
+        finishStoryBattle("lose");
         return;
     }
     runEnded = true;
@@ -901,9 +929,9 @@ const runId = `run-${Date.now().toString(36)}-${Math.random().toString(36).slice
 /** 本局累计击杀数：金币 = 到达波次 × 10 + 击杀 × 1（上限由服务端限制）。 */
 let runKills = 0;
 let coinsSettled = false;
-/** 人机对抗与联机不结算金币。 */
+/** 人机对抗、联机与剧情战斗都不结算肉鸽金币（剧情奖励走 /api/story/reward）。 */
 function coinSettlementEnabled() {
-    return !config.duel && !config.multiplayer;
+    return !config.duel && !config.multiplayer && !storyBattle;
 }
 function showRunCoins(payload) {
     if (!runOverCoins)
@@ -5755,6 +5783,12 @@ retryRunButton.addEventListener("click", () => {
     else
         window.location.reload();
 });
+// 剧情战斗：暂停面板的「退出本局」回到剧情页，而不是选人页
+if (storyBattle) {
+    const exitRunLink = document.querySelector("#exit-run");
+    if (exitRunLink)
+        exitRunLink.href = storyBattle.return_url;
+}
 pauseToggle?.addEventListener("click", togglePause);
 resumeRunButton?.addEventListener("click", togglePause);
 bindCoinSettlement();

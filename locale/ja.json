@@ -254,7 +254,47 @@
     "SAVE_RESET_DONE": "セーブをリセットしました。",
     "SAVE_FAILED": "操作に失敗しました。もう一度お試しください。",
     "SAVE_INFINITE_NOTE": "コイン無制限のテストセーブ",
-    "EXIT_RUN": "リタイア"
+    "EXIT_RUN": "リタイア",
+    "STORY_KICKER": "ストーリーモード",
+    "STORY_TAGLINE": "ストーリーを選ぶ · 読み進める · 選択と戦闘",
+    "STORY_DESCRIPTION": "「サイバーワールド」と「ヒーロー」の 2 系統。会話・選択・目標・戦闘はすべてセーブされます。",
+    "STORY_ICON": "物",
+    "STORY_CHOOSE_TITLE": "ストーリー選択",
+    "STORY_CHOOSE_HEADING": "ストーリーを選ぶ",
+    "STORY_CHOOSE_SUBTITLE": "サイバーワールド編は街の物語、ヒーロー編は特定のキャラクターの物語。進行状況は自動保存されます。",
+    "STORY_CATEGORY_ALL": "すべて",
+    "STORY_ENTER": "開始",
+    "STORY_CONTINUE_RUN": "続きから",
+    "STORY_NOT_STARTED": "未開始",
+    "STORY_IN_PROGRESS": "進行中",
+    "STORY_COMPLETED": "クリア済み",
+    "STORY_NODES": "ノード",
+    "STORY_HERO_CHAPTER": "ヒーロー編",
+    "STORY_WORLD_CHAPTER": "サイバーワールド編",
+    "STORY_EMPTY": "このカテゴリにはまだ章がありません。",
+    "STORY_BATTLE_KICKER": "ストーリー戦闘",
+    "STORY_TARGET_WAVES": "目標ウェーブ",
+    "STORY_BATTLE_LOST": "敗北しました。再挑戦できます。",
+    "STORY_RETRY_BATTLE": "再挑戦",
+    "STORY_BACK_CHAPTER": "撤退",
+    "STORY_OBJECTIVE_KICKER": "目標",
+    "STORY_GOAL_DONE": "達成にする",
+    "STORY_GOAL_UNDO": "取り消す",
+    "STORY_OBJECTIVE_BLOCKED": "すべての目標を達成すると進めます。",
+    "STORY_REWARD_KICKER": "報酬",
+    "STORY_REWARD_CLAIMING": "受け取り中…",
+    "STORY_REWARD_ALREADY": "受け取り済みです。二重には付与されません。",
+    "STORY_REWARD_GAINED": "獲得コイン：{coins}",
+    "STORY_REWARD_INFINITE": "コイン無限のため記録のみ。",
+    "STORY_REWARD_FAILED": "受け取りに失敗しました。後でもう一度。",
+    "STORY_REWARD_INVALID": "報酬の設定がありません。",
+    "STORY_CHAPTER_END_KICKER": "章クリア",
+    "STORY_BACK_CHOOSE": "ストーリー選択へ",
+    "STORY_SKIP_FAILED": "このルートにスキップ先の戦闘がありません。",
+    "STORY_BROKEN": "章データが不正です",
+    "STORY_UNKNOWN_NODE": "不明なノード種別",
+    "STORY_INVALID_TRANSITION": "進めません：遷移先が不正です。",
+    "STORY_FRAMEWORK_NOTE": "ストーリーモード · フレームワーク版"
   },
   "heroes": {
     "volt": {
@@ -1532,5 +1572,170 @@
     "连续进行 2 次冲刺和攻击": "突進と攻撃を2連続で行う",
     "篮球发射速度 5/秒 → 10/秒": "バスケットボール射出速度 5/秒 → 10/秒",
     "时长 +2 秒且普攻无视距离（不无视建筑）": "持続 +2秒、通常攻撃が距離を無視（建物は無視しない）"
+  },
+  "story": {
+    "categories": {
+      "cyber": {
+        "name": "サイバーワールド編",
+        "description": "街そのものの物語：停電、封鎖、そして誰が電源を切ったのか。"
+      },
+      "hero": {
+        "name": "ヒーロー編",
+        "description": "特定のファイターのサイドストーリー。そのヒーローで戦います。"
+      }
+    },
+    "chapters": {
+      "cyber-01": {
+        "title": "ネオンの停電",
+        "summary": "午前 3 時、南区の電力が 3 割落ちた。封鎖された街角を抜けて、まだ唸っている機械を見に行く。",
+        "nodes": {
+          "c1-intro": {
+            "speaker": "ナレーション",
+            "text": "ネオンシティは夜明け前に電力の 3 割を失った。街角の看板はまだ点滅し、誰にも読めない標語を映している。"
+          },
+          "c1-pick": {
+            "prompt": "街区は封鎖されている。どう抜ける？",
+            "options": [
+              "そのまま突っ込む",
+              "先に巡回ルートを探る"
+            ]
+          },
+          "c1-objective": {
+            "title": "検問所を読む",
+            "description": "巡回は 10 分ごとに交代する。動く前に見ろ。",
+            "goals": [
+              "巡回の交代を見る",
+              "乗り越えられる壁を見つける"
+            ]
+          },
+          "c1-battle": {
+            "title": "封鎖線を突破",
+            "brief": "巡回を 2 ウェーブ片付ければ抜けられる。2 波目は遠距離支援が来る。",
+            "waves": [
+              {
+                "label": "ウェーブ 1",
+                "note": "巡回 · 探り",
+                "event": "特殊イベントなし",
+                "enemies": [
+                  {
+                    "hero": "volt",
+                    "count": 2,
+                    "mod": "HP ×1.0"
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "ストリートチャージ",
+                    "description": "前方に突進して対象をノックバック",
+                    "cooldown": 8,
+                    "damage": 18
+                  }
+                ]
+              },
+              {
+                "label": "ウェーブ 2",
+                "note": "増援 · 遠距離制圧",
+                "event": "街路の交通が加速し、横断時にスタンする",
+                "enemies": [
+                  {
+                    "hero": "volt",
+                    "count": 1,
+                    "mod": "HP ×1.5"
+                  },
+                  {
+                    "hero": "tech",
+                    "count": 1,
+                    "mod": "遠距離支援"
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "グラウンドコンボ",
+                    "description": "3 連続で叩きつけ、最後の一撃で 1 秒スタン",
+                    "cooldown": 12,
+                    "damage": 32,
+                    "effect": "スタン 1s"
+                  }
+                ]
+              }
+            ]
+          },
+          "c1-reward": {
+            "title": "封鎖線の先へ",
+            "description": "使われていない倉庫に、誰も運び出さなかった補給が残っていた。"
+          },
+          "c1-end": {
+            "title": "章クリア",
+            "text": "背中の警報はまだ鳴っている。あの機械の唸りは、昨夜より少し近い。"
+          }
+        }
+      },
+      "hero-volt-01": {
+        "title": "チャンピオンの借り",
+        "summary": "3 年前の地下試合で、ネオンチャンピオンはある人物に借りを作った。今夜、取り立てに来た。",
+        "nodes": {
+          "h1-intro": {
+            "speaker": "ネオンチャンピオン",
+            "text": "この街のルールは単純だ。借りは返す。今夜来る相手なら、俺は知っている。"
+          },
+          "h1-battle": {
+            "title": "借りを清算",
+            "brief": "2 ウェーブ、どちらも古馴染みだ。終わらせて帰る。",
+            "waves": [
+              {
+                "label": "ウェーブ 1",
+                "note": "旧知 · 探り",
+                "event": "特殊イベントなし",
+                "enemies": [
+                  {
+                    "hero": "pipa",
+                    "count": 1,
+                    "mod": "制圧"
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "弦音の束縛",
+                    "description": "対象を拘束し継続ダメージ",
+                    "cooldown": 10,
+                    "damage": 16,
+                    "effect": "拘束 3s"
+                  }
+                ]
+              },
+              {
+                "label": "ウェーブ 2",
+                "note": "取り立て · 全力",
+                "event": "野次馬が下がり、場が狭くなる",
+                "enemies": [
+                  {
+                    "hero": "jianghu",
+                    "count": 1,
+                    "mod": "HP ×1.6 · DMG ×1.2"
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "一撃必殺",
+                    "description": "残り HP が少ないほど即死確率が上昇",
+                    "cooldown": 14,
+                    "damage": 40,
+                    "effect": "即死"
+                  }
+                ]
+              }
+            ]
+          },
+          "h1-reward": {
+            "title": "貸しを返した",
+            "description": "「次は待たせるな」とだけ残して、相手は雨の中へ消えた。"
+          },
+          "h1-end": {
+            "title": "章クリア",
+            "text": "チャンピオンはリストガードを巻き直す。街灯は半分だけ戻った。それで十分だ。"
+          }
+        }
+      }
+    }
   }
 }

@@ -169,7 +169,8 @@
       const modeRoutes = {
         rogue: { label: {{ tr("ROGUE")|tojson }}, href: "/select", icon: {{ tr("ROGUE_ICON")|tojson }} },
         lan: { label: {{ tr("LAN")|tojson }}, href: "/multiplayer", icon: {{ tr("LAN_ICON")|tojson }} },
-        duel: { label: {{ tr("DUEL")|tojson }}, href: "/select?mode=duel", icon: {{ tr("DUEL_ICON")|tojson }} }
+        duel: { label: {{ tr("DUEL")|tojson }}, href: "/select?mode=duel", icon: {{ tr("DUEL_ICON")|tojson }} },
+        story: { label: {{ tr("STORY_TITLE")|tojson }}, href: "/story/choose", icon: {{ tr("STORY_ICON")|tojson }} }
       };
       const selected = localStorage.getItem("selectedMode") || "rogue";
       const info = modeRoutes[selected] || modeRoutes.rogue;

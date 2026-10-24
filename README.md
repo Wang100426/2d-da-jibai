@@ -17,7 +17,7 @@
 - [英雄](#英雄)
 - [装备系统](#装备系统)
 - [地图](#地图)
-- [剧情模式（框架）](#剧情模式框架)
+- [剧情模式](#剧情模式)
 - [操作](#操作)
 - [运行与构建](#运行与构建)
 - [项目结构](#项目结构)
@@ -173,44 +173,97 @@
 
 **地图图鉴**：主页底部栏的「图鉴」入口（`/codex`），一次看完全部 7 张赛场的实机布局缩略图、地形特点、随机事件与建筑 / 路障数量。
 
-## 剧情模式（框架）
+## 剧情模式
 
-> **状态：框架已就位，尚未接入正式流程。** 页面能完整跑通「对话 → 分支 → 战斗配置 → 结束」，但「开始战斗」目前只提示未接入，不会真的开打。
+从**模式选择页**选「剧情模式」→ 主页「开始游戏」进入剧情选择页，分两条线：
 
-路由 `/story`，数据源是 `story_script.py` 里的 `DEMO_SCRIPT`。
+- **赛博世界剧情**（`cyber`）—— 关于城市本身的故事，玩家自选英雄出战
+- **英雄剧情**（`hero`）—— 绑定某位英雄的支线，强制用该英雄出战
 
-一局剧情是一个有向图：`start` 指向入口节点，每个节点用 `next`（或分支选项的 `next`）指向下一个。
-
-| 节点类型 | 作用 |
+| 路由 | 页面 |
 | --- | --- |
-| `dialogue` | 对话框：说话人 + 正文，打字机逐字显示，点击 / 空格继续 |
-| `choice` | 分支选择：若干按钮，可带提示文案，各自跳转到指定节点 |
-| `battle` | 战斗剧情：自定义每一波的敌人、战场事件与敌方技能 |
-| `end` | 结束页：返回主页 / 从头再看 |
+| `/story/choose` | 剧情选择（分类标签 + 章节卡片 + 进度状态） |
+| `/story?chapter=<id>` | 剧情执行页 |
 
-`battle` 节点的 `waves` 每一项独立配置：
+### 节点类型
 
-```python
+一局剧情是有向图：`entry` 指向入口，节点用 `next`（`choice` 用各选项的 `next`）串联。
+
+| 类型 | 作用 | 状态 |
+| --- | --- | --- |
+| `dialogue` | 说话人 + 正文，打字机 24ms/字，点击 / 空格继续 | 已实现 |
+| `choice` | 分支按钮，记录选择，支持数字键 1-9 | 已实现 |
+| `battle` | 剧情战斗：声明目标波次，复用 `/battle` | 已实现 |
+| `objective` | 任务目标清单，可勾选；`allow_skip` 控制未完成能否继续 | 部分实现（目标为手动勾选，尚无击杀/到达自动追踪） |
+| `reward` | 发放金币，服务端按 `reward_id` 幂等 | 已实现 |
+| `chapter_end` | 章节结束，标记完成 | 已实现 |
+
+### 战斗如何复用现有系统
+
+**不复制战斗实现**，只通过参数与结果两条边连接：
+
+```text
+/story?chapter=cyber-01
+   ↓ 点「开始战斗」
+/battle?hero=volt&story=cyber-01&node=c1-battle
+   ↓ 打到 target_waves 波清场（胜）/ 阵亡（负）
+/story?chapter=cyber-01&node=c1-battle&result=win|lose
+```
+
+- `app.py` 的 `/battle` 解析 `story` / `node`，注入 `window.STORY_BATTLE = { chapter, node, target_waves, hero, return_url }`
+- `map.ts` 只加了三处钩子：`finishRun()` 判负、`updateWaveSpawner()` 达标判胜、结果跳回剧情页；战斗本身、敌人、技能、AI 全部复用原有实现
+- 剧情战斗**不触发肉鸽金币结算**（`coinSettlementEnabled()` 排除），奖励改由 `reward` 节点发放
+
+### 存档结构
+
+剧情进度存在游戏存档的独立子结构里，与金币、英雄、装备互不干扰：
+
+```json
 {
-    "index": 2,
-    "label": "波次 2",
-    "note": "压制 · 拳王下场",
-    "event": "街口车流加速，横穿时会造成眩晕",
-    "enemies": [
-        {"hero": "volt", "count": 1, "mod": "生命 ×1.6 · 伤害 ×1.2"},
-    ],
-    "skills": [
-        {"name": "震地连击", "description": "连续三次砸地", "cooldown": 12, "damage": 32, "effect": "眩晕 1s"},
-    ],
+  "story": {
+    "version": 1,
+    "chapters": {
+      "cyber-01": {
+        "node": "c1-battle",
+        "flags": { "battle:c1-battle": true, "scouted": true },
+        "objectives": { "scout": true },
+        "choices": { "c1-pick": "careful" },
+        "claimed_rewards": ["cyber-01-clear"],
+        "completed": false,
+        "updated_at": 1761300000.0
+      }
+    }
+  }
 }
 ```
 
-- `enemies[].hero` 填英雄 id，页面从花名册取头像字、名字与配色
-- 敌方技能里 `damage` 为 0 时只显示冷却，不显示伤害
-- 「跳过剧情」沿当前路线直接跳到第一个战斗节点；路线里没有战斗就跳到结束节点
-- 界面文案走 `locale/*.json` 的 `STORY_*`；剧情正文暂时只有一种语言，`title_i18n` / `subtitle_i18n` 可按界面语言覆盖标题
+- `version` 不匹配时**只丢弃剧情子结构**，金币与英雄不受影响
+- 奖励防重复：服务端记录 `claimed_rewards`，重复请求返回 `already_claimed: true` 且 `gained: 0`
+- 进度在每次节点切换时写入 `/api/story/progress`
 
-新增剧情：复制 `DEMO_SCRIPT` 的结构改内容，在 `app.py` 的 `/story` 路由里换成新脚本。
+### 接口
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/api/story/state` | 读取全部剧情进度 |
+| POST | `/api/story/progress` | 写入单章进度（node / flags / objectives / choices / completed） |
+| POST | `/api/story/reward` | 发放奖励（按 `reward_id` 幂等） |
+| POST | `/api/story/reset` | 重置单章或全部剧情进度 |
+
+### 新增章节
+
+1. `story_script.py` 的 `CHAPTERS` 追加一条：`id`、`category`、`hero`、`entry`、`nodes`
+2. 三份语言包的 `story.chapters.<id>` 补 `title`、`summary` 与每个节点的文案
+3. 跑一次 `python -m py_compile story_script.py`，再 `npm run build:story` 让 `story.js` 生效
+4. 章节结构与跳转会在 Python 侧（`validate_chapter`）和前端（`StoryEngine` 构造时）各校验一遍
+
+### 测试
+
+```powershell
+npm run test:story
+```
+
+`tests/story_engine.test.cjs` 用 `node:test` 跑 22 项断言，覆盖节点跳转、分支记录、战斗胜负、失败重试、存档恢复、奖励防重复、无效节点、缺配置、重复 id、objective 阻塞。
 
 ## 操作
 
@@ -305,13 +358,16 @@ npm run dist:portable  # 便携版 → release-portable/
 ├─ frontend/               TypeScript 源码（每个页面一份）
 │  ├─ map.ts               战斗与地图逻辑（最大的一块）
 │  ├─ select.ts / codex.ts / shop.ts / save.ts
-│  ├─ multiplayer.ts / equipment.ts / backpack.ts / mode.ts / story.ts
+│  ├─ multiplayer.ts / equipment.ts / backpack.ts / mode.ts
+│  ├─ story_engine.ts      剧情状态机（纯逻辑，可单测）
+│  └─ story.ts / choose_story.ts   剧情执行页 / 剧情选择页
 ├─ static/                 编译产物 + 样式 + 图片
 │  ├─ app.js / select.js / …（tsc 生成，勿手改）
 │  ├─ style.css / map.css / multiplayer.css
 │  ├─ home-background.png / gamecom.png / 图标
 │  └─ page-transition.js   站内跳转淡出过场
-├─ templates/              Jinja2 模板（index / mode / select / battle / shop / codex / equipment / backpack / multiplayer / story）
+├─ templates/              Jinja2 模板（index / mode / select / battle / shop / codex / equipment / backpack / multiplayer / story / story_choose）
+├─ tests/                  剧情引擎测试（node:test）与章节 fixture
 ├─ locale/                 zh.json / en.json / ja.json
 ├─ save/profile.json       本地测试存档
 ├─ scripts/                build-backend.ps1 / clean-release.ps1
@@ -484,7 +540,7 @@ The interface ships in Chinese, English, and Japanese (2D大撃破). Current ver
 - [Heroes](#heroes)
 - [Equipment](#equipment)
 - [Maps](#maps)
-- [Story mode (framework)](#story-mode-framework)
+- [Story Mode](#story-mode)
 - [Controls](#controls)
 - [Running and building](#running-and-building)
 - [Project layout](#project-layout)
@@ -640,44 +696,97 @@ Seven arenas, each with distinct terrain and a random event. Data source: `map_c
 
 **Map codex**: the **Codex** entry in the home bottom bar (`/codex`) shows all seven arenas at once, with a to-scale layout preview, terrain notes, the random event, and building/barrier counts.
 
-## Story mode (framework)
+## Story Mode
 
-> **Status: the framework is in place but not wired into the game yet.** The page runs the full "dialogue → branch → battle config → end" loop, but **Start Battle** only shows a "not connected" notice — it does not launch a real fight.
+Pick **Story** on the mode screen, then **Start Game** on the home screen to reach the story selector. Two lines:
 
-Route `/story`; the data source is `DEMO_SCRIPT` in `story_script.py`.
+- **Cyber World** (`cyber`) — stories about the city itself; you choose the fighter
+- **Hero Stories** (`hero`) — side stories bound to one fighter, played as that fighter
 
-A story is a directed graph: `start` points at the entry node, and each node points onward through `next` (or through its branch options).
-
-| Node type | Purpose |
+| Route | Page |
 | --- | --- |
-| `dialogue` | Speaker + body text, typed out character by character; click or press Space to continue |
-| `choice` | Branch buttons with optional hints, each jumping to its own node |
-| `battle` | Battle scene: per-wave enemies, battlefield event, and enemy skills |
-| `end` | End card: back home or replay |
+| `/story/choose` | Story select (category tabs, chapter cards, progress state) |
+| `/story?chapter=<id>` | Story runner |
 
-Each entry in a `battle` node's `waves` is configured independently:
+### Node types
 
-```python
+A story is a directed graph: `entry` is the first node, and nodes link onward through `next` (or through each choice option's `next`).
+
+| Type | Purpose | Status |
+| --- | --- | --- |
+| `dialogue` | Speaker + body, typed at 24ms per character; click or Space to continue | Implemented |
+| `choice` | Branch buttons, records the pick; number keys 1-9 work | Implemented |
+| `battle` | Battle scene: declares target waves, reuses `/battle` | Implemented |
+| `objective` | Goal checklist; `allow_skip` controls whether an incomplete list blocks progress | Partial (goals are toggled manually; no automatic kill/reach tracking yet) |
+| `reward` | Grants coins; the server deduplicates by `reward_id` | Implemented |
+| `chapter_end` | Ends the chapter and marks it complete | Implemented |
+
+### How battle reuse works
+
+The battle implementation is **not duplicated** — only two edges connect the story to it:
+
+```text
+/story?chapter=cyber-01
+   -> Start Battle
+/battle?hero=volt&story=cyber-01&node=c1-battle
+   -> clear target_waves (win) / die (lose)
+/story?chapter=cyber-01&node=c1-battle&result=win|lose
+```
+
+- `/battle` in `app.py` reads `story` / `node` and injects `window.STORY_BATTLE = { chapter, node, target_waves, hero, return_url }`
+- `map.ts` adds exactly three hooks: `finishRun()` for the loss, `updateWaveSpawner()` for the win, and the redirect back. Enemies, skills, AI and rendering are untouched
+- Story battles **skip rogue coin settlement** (`coinSettlementEnabled()` excludes them); rewards come from `reward` nodes instead
+
+### Save layout
+
+Story progress lives in its own sub-structure of the game save, isolated from coins, heroes and equipment:
+
+```json
 {
-    "index": 2,
-    "label": "波次 2",
-    "note": "压制 · 拳王下场",
-    "event": "街口车流加速，横穿时会造成眩晕",
-    "enemies": [
-        {"hero": "volt", "count": 1, "mod": "生命 ×1.6 · 伤害 ×1.2"},
-    ],
-    "skills": [
-        {"name": "震地连击", "description": "连续三次砸地", "cooldown": 12, "damage": 32, "effect": "眩晕 1s"},
-    ],
+  "story": {
+    "version": 1,
+    "chapters": {
+      "cyber-01": {
+        "node": "c1-battle",
+        "flags": { "battle:c1-battle": true, "scouted": true },
+        "objectives": { "scout": true },
+        "choices": { "c1-pick": "careful" },
+        "claimed_rewards": ["cyber-01-clear"],
+        "completed": false,
+        "updated_at": 1761300000.0
+      }
+    }
+  }
 }
 ```
 
-- `enemies[].hero` takes a hero id; the page pulls the portrait glyph, name, and palette from the roster
-- When an enemy skill's `damage` is 0, only the cooldown is shown
-- **Skip Story** follows the current route straight to the first battle node; if the route has no battle, it jumps to the end node
-- UI text lives under `STORY_*` in `locale/*.json`; story prose is single-language for now, while `title_i18n` / `subtitle_i18n` override the header per interface language
+- A mismatched `version` **drops only the story sub-structure**; coins and heroes are left alone
+- Reward dedupe: the server records `claimed_rewards`, and repeats return `already_claimed: true` with `gained: 0`
+- Progress is written on every node transition via `/api/story/progress`
 
-To add a story, copy the shape of `DEMO_SCRIPT`, change the content, and swap the script in the `/story` route in `app.py`.
+### Endpoints
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/api/story/state` | Read all story progress |
+| POST | `/api/story/progress` | Write one chapter's progress (node / flags / objectives / choices / completed) |
+| POST | `/api/story/reward` | Grant a reward (idempotent by `reward_id`) |
+| POST | `/api/story/reset` | Reset one chapter or all story progress |
+
+### Adding a chapter
+
+1. Append an entry to `CHAPTERS` in `story_script.py`: `id`, `category`, `hero`, `entry`, `nodes`
+2. Add `story.chapters.<id>` to all three locale packs with `title`, `summary`, and each node's text
+3. Run `python -m py_compile story_script.py`, then `npm run build:story`
+4. Structure and transitions are validated twice — by `validate_chapter` in Python and by the `StoryEngine` constructor in the browser
+
+### Tests
+
+```powershell
+npm run test:story
+```
+
+`tests/story_engine.test.cjs` runs 22 assertions with `node:test`, covering node transitions, branch recording, battle win/loss, retry after defeat, save restore, reward dedupe, invalid nodes, missing config, duplicate ids, and objective blocking.
 
 ## Controls
 
@@ -772,13 +881,16 @@ Save layout (`version: 2`):
 ├─ frontend/               TypeScript sources (one per page)
 │  ├─ map.ts               Combat and map logic (the largest module)
 │  ├─ select.ts / codex.ts / shop.ts / save.ts
-│  ├─ multiplayer.ts / equipment.ts / backpack.ts / mode.ts / story.ts
+│  ├─ multiplayer.ts / equipment.ts / backpack.ts / mode.ts
+│  ├─ story_engine.ts      Story state machine (pure logic, unit-tested)
+│  └─ story.ts / choose_story.ts   Story runner / story select
 ├─ static/                 Compiled output + styles + images
 │  ├─ app.js / select.js / … (generated by tsc, do not edit)
 │  ├─ style.css / map.css / multiplayer.css
 │  ├─ home-background.png / gamecom.png / icons
 │  └─ page-transition.js   Fade-out transition for in-site navigation
-├─ templates/              Jinja2 templates (index / mode / select / battle / shop / codex / equipment / backpack / multiplayer / story)
+├─ templates/              Jinja2 templates (index / mode / select / battle / shop / codex / equipment / backpack / multiplayer / story / story_choose)
+├─ tests/                  Story engine tests (node:test) and chapter fixture
 ├─ locale/                 zh.json / en.json / ja.json
 ├─ save/profile.json       Local test save
 ├─ scripts/                build-backend.ps1 / clean-release.ps1

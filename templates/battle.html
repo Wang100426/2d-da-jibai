@@ -154,6 +154,8 @@
       equipmentBonuses: {{ equipment_bonuses|tojson }},
       locale: {{ locale_pack|tojson }}
     };
+    // 剧情战斗上下文（非剧情模式为 null）。胜负由 app.js 按 target_waves 判定后回传。
+    window.STORY_BATTLE = {{ story_context|tojson }};
   </script>
   <script src="{{ url_for('static', filename='dot-motion-loader.js') }}"></script>
   <script src="{{ url_for('static', filename='app.js') }}"></script>

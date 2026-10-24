@@ -25,6 +25,7 @@ import random
 import sys
 import tempfile
 import threading
+import time
 from pathlib import Path
 
 SAVE_VERSION = 2
@@ -80,6 +81,60 @@ EQUIPMENT_BASE_STATS = {
 
 _LOCK = threading.RLock()
 
+# ── 剧情进度（与对战数据完全隔离，单独一个 "story" 子结构）──────────────────
+# 结构版本变了就 +1；读档时版本不符会保守丢弃该子结构，不影响金币与英雄。
+STORY_STATE_VERSION = 1
+# 防御性上限，避免手改存档把文件撑爆。
+STORY_CHAPTER_LIMIT = 64
+STORY_FLAG_LIMIT = 64
+STORY_REWARD_LIMIT = 256
+
+
+def default_story_state() -> dict:
+    return {"version": STORY_STATE_VERSION, "chapters": {}}
+
+
+def _normalized_story(raw) -> dict:
+    """把任意形状的剧情进度整理成合法结构，坏数据一律丢弃而不是报错。"""
+    state = default_story_state()
+    if not isinstance(raw, dict):
+        return state
+    if raw.get("version") != STORY_STATE_VERSION:
+        return state
+    chapters = raw.get("chapters")
+    if not isinstance(chapters, dict):
+        return state
+    for chapter_id, entry in list(chapters.items())[:STORY_CHAPTER_LIMIT]:
+        if not isinstance(chapter_id, str) or not chapter_id or not isinstance(entry, dict):
+            continue
+        flags = {}
+        for key, value in list((entry.get("flags") or {}).items())[:STORY_FLAG_LIMIT]:
+            if isinstance(key, str) and key:
+                flags[key] = bool(value)
+        objectives = {}
+        for key, value in list((entry.get("objectives") or {}).items())[:STORY_FLAG_LIMIT]:
+            if isinstance(key, str) and key:
+                objectives[key] = bool(value)
+        choices = {}
+        for key, value in list((entry.get("choices") or {}).items())[:STORY_FLAG_LIMIT]:
+            if isinstance(key, str) and key:
+                choices[key] = str(value)[:64]
+        rewards = [
+            str(item)[:96]
+            for item in (entry.get("claimed_rewards") or [])
+            if isinstance(item, str) and item
+        ][:STORY_REWARD_LIMIT]
+        state["chapters"][chapter_id] = {
+            "node": entry.get("node") if isinstance(entry.get("node"), str) else None,
+            "flags": flags,
+            "objectives": objectives,
+            "choices": choices,
+            "claimed_rewards": rewards,
+            "completed": bool(entry.get("completed")),
+            "updated_at": float(entry.get("updated_at") or 0),
+        }
+    return state
+
 
 def save_path() -> Path:
     override = os.environ.get("DAJIBAI_SAVE")
@@ -100,6 +155,7 @@ def default_profile() -> dict:
         "equipment_inventory": [],
         "equipment_loadout": {slot: None for slot in EQUIPMENT_SLOTS},
         "settled_runs": [],
+        "story": default_story_state(),
     }
 
 
@@ -175,6 +231,9 @@ def _normalized(raw) -> dict:
     else:
         # 没有装配数据时，自动把第一件各槽位装备穿上（测试存档友好）
         _auto_equip_first(profile)
+
+    # 剧情进度：独立子结构，旧存档没有时补默认值
+    profile["story"] = _normalized_story(raw.get("story"))
 
     return profile
 
@@ -460,3 +519,111 @@ def import_text(text: str, allowed_heroes=None) -> dict:
     except ValueError as error:
         raise ValueError("存档文件不是合法的 JSON。") from error
     return import_data(raw, allowed_heroes)
+
+
+# ── 剧情进度读写 ──────────────────────────────────────────────────────────
+def story_state() -> dict:
+    """返回全部章节的剧情进度。"""
+    return load()["story"]
+
+
+def _story_entry(profile: dict, chapter_id: str) -> dict:
+    chapters = profile["story"]["chapters"]
+    entry = chapters.get(chapter_id)
+    if entry is None:
+        entry = {
+            "node": None,
+            "flags": {},
+            "objectives": {},
+            "choices": {},
+            "claimed_rewards": [],
+            "completed": False,
+            "updated_at": 0.0,
+        }
+        chapters[chapter_id] = entry
+    return entry
+
+
+def save_story_progress(
+    chapter_id: str,
+    node=None,
+    flags=None,
+    objectives=None,
+    choices=None,
+    completed=None,
+) -> dict:
+    """写入单章进度：只覆盖传入的字段，未传的保持原值。"""
+    chapter_id = str(chapter_id or "").strip()
+    if not chapter_id:
+        return {"ok": False, "reason": "invalid_chapter"}
+    with _LOCK:
+        profile = load()
+        entry = _story_entry(profile, chapter_id)
+        if isinstance(node, str):
+            entry["node"] = node
+        if isinstance(flags, dict):
+            for key, value in flags.items():
+                if isinstance(key, str) and key:
+                    entry["flags"][key] = bool(value)
+        if isinstance(objectives, dict):
+            for key, value in objectives.items():
+                if isinstance(key, str) and key:
+                    entry["objectives"][key] = bool(value)
+        if isinstance(choices, dict):
+            for key, value in choices.items():
+                if isinstance(key, str) and key:
+                    entry["choices"][key] = str(value)[:64]
+        if completed is not None:
+            entry["completed"] = bool(completed)
+        entry["updated_at"] = time.time()
+        write(profile)
+        return {"ok": True, "chapter": chapter_id, "entry": entry}
+
+
+def claim_story_reward(chapter_id: str, reward_id: str, coins: int = 0) -> dict:
+    """幂等发放剧情奖励：同一 rewardId 只入账一次。
+
+    重复调用（重试、页面刷新、从存档恢复后重新进节点）都返回
+    `already_claimed: True` 且 `gained: 0`，不会二次加币。
+    """
+    chapter_id = str(chapter_id or "").strip()
+    reward_id = str(reward_id or "").strip()
+    if not chapter_id or not reward_id:
+        return {"ok": False, "reason": "invalid_reward"}
+    coins = max(0, int(coins or 0))
+    with _LOCK:
+        profile = load()
+        entry = _story_entry(profile, chapter_id)
+        if reward_id in entry["claimed_rewards"]:
+            return {
+                "ok": True,
+                "already_claimed": True,
+                "gained": 0,
+                "coins": profile["coins"],
+                "infinite_coins": profile["infinite_coins"],
+            }
+        entry["claimed_rewards"].append(reward_id)
+        entry["claimed_rewards"] = entry["claimed_rewards"][-STORY_REWARD_LIMIT:]
+        if not profile["infinite_coins"]:
+            profile["coins"] = min(MAX_COINS, profile["coins"] + coins)
+        entry["updated_at"] = time.time()
+        write(profile)
+        return {
+            "ok": True,
+            "already_claimed": False,
+            "gained": coins,
+            "coins": profile["coins"],
+            "infinite_coins": profile["infinite_coins"],
+        }
+
+
+def reset_story_progress(chapter_id: str = None) -> dict:
+    """重置某章或全部剧情进度（金币与已解锁英雄不受影响）。"""
+    with _LOCK:
+        profile = load()
+        if chapter_id:
+            profile["story"]["chapters"].pop(str(chapter_id), None)
+        else:
+            profile["story"] = default_story_state()
+        write(profile)
+        return {"ok": True, "chapters": profile["story"]["chapters"]}

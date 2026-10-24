@@ -254,7 +254,47 @@
     "SAVE_RESET_DONE": "Save reset.",
     "SAVE_FAILED": "Something went wrong, please try again.",
     "SAVE_INFINITE_NOTE": "Unlimited-coin test save",
-    "EXIT_RUN": "EXIT RUN"
+    "EXIT_RUN": "EXIT RUN",
+    "STORY_KICKER": "STORY MODE",
+    "STORY_TAGLINE": "Pick a story · Play it out · Choose and fight",
+    "STORY_DESCRIPTION": "Two lines: Cyber World stories about the city itself, and Hero stories tied to one fighter. Dialogue, choices, objectives and battles are all saved.",
+    "STORY_ICON": "ST",
+    "STORY_CHOOSE_TITLE": "STORY SELECT",
+    "STORY_CHOOSE_HEADING": "CHOOSE A STORY",
+    "STORY_CHOOSE_SUBTITLE": "Cyber World stories are about the city. Hero stories belong to a single fighter. Progress saves automatically.",
+    "STORY_CATEGORY_ALL": "ALL",
+    "STORY_ENTER": "ENTER",
+    "STORY_CONTINUE_RUN": "CONTINUE",
+    "STORY_NOT_STARTED": "NOT STARTED",
+    "STORY_IN_PROGRESS": "IN PROGRESS",
+    "STORY_COMPLETED": "COMPLETED",
+    "STORY_NODES": "NODES",
+    "STORY_HERO_CHAPTER": "HERO STORY",
+    "STORY_WORLD_CHAPTER": "CYBER WORLD",
+    "STORY_EMPTY": "No chapters in this category yet.",
+    "STORY_BATTLE_KICKER": "STORY BATTLE",
+    "STORY_TARGET_WAVES": "TARGET",
+    "STORY_BATTLE_LOST": "You lost. Try again.",
+    "STORY_RETRY_BATTLE": "RETRY",
+    "STORY_BACK_CHAPTER": "GIVE UP",
+    "STORY_OBJECTIVE_KICKER": "OBJECTIVE",
+    "STORY_GOAL_DONE": "Mark done",
+    "STORY_GOAL_UNDO": "Undo",
+    "STORY_OBJECTIVE_BLOCKED": "Finish every objective to continue.",
+    "STORY_REWARD_KICKER": "REWARD",
+    "STORY_REWARD_CLAIMING": "Claiming…",
+    "STORY_REWARD_ALREADY": "Already claimed — it will not be granted twice.",
+    "STORY_REWARD_GAINED": "Coins gained: {coins}",
+    "STORY_REWARD_INFINITE": "Infinite coins; the reward was recorded.",
+    "STORY_REWARD_FAILED": "Claim failed. Try again later.",
+    "STORY_REWARD_INVALID": "Reward is misconfigured.",
+    "STORY_CHAPTER_END_KICKER": "CHAPTER COMPLETE",
+    "STORY_BACK_CHOOSE": "BACK TO STORIES",
+    "STORY_SKIP_FAILED": "No battle to skip to on this route.",
+    "STORY_BROKEN": "Chapter data is broken",
+    "STORY_UNKNOWN_NODE": "Unknown node type",
+    "STORY_INVALID_TRANSITION": "Cannot continue: invalid target.",
+    "STORY_FRAMEWORK_NOTE": "STORY MODE · FRAMEWORK"
   },
   "heroes": {
     "volt": {
@@ -1532,5 +1572,170 @@
     "连续进行 2 次冲刺和攻击": "Perform 2 consecutive dashes and attacks",
     "篮球发射速度 5/秒 → 10/秒": "Basketball fire rate 5/sec → 10/sec",
     "时长 +2 秒且普攻无视距离（不无视建筑）": "Duration +2s and basic attacks ignore range (not buildings)"
+  },
+  "story": {
+    "categories": {
+      "cyber": {
+        "name": "Cyber World",
+        "description": "Stories about the city itself: blackouts, blockades, and whoever pulls the switch."
+      },
+      "hero": {
+        "name": "Hero Stories",
+        "description": "Side stories owned by one fighter, played as that fighter."
+      }
+    },
+    "chapters": {
+      "cyber-01": {
+        "title": "Neon Blackout",
+        "summary": "At 3 a.m. the south district loses thirty percent of its power. You need to get through a blockaded street and reach the machine that is still humming.",
+        "nodes": {
+          "c1-intro": {
+            "speaker": "Narrator",
+            "text": "Neon City lost thirty percent of its power before dawn. A billboard at the corner kept blinking, spelling out a slogan nobody understood."
+          },
+          "c1-pick": {
+            "prompt": "The block is sealed. How do you get through?",
+            "options": [
+              "Charge straight in",
+              "Scout the patrol route first"
+            ]
+          },
+          "c1-objective": {
+            "title": "Read the checkpoint",
+            "description": "The patrol changes every ten minutes. Look before you move.",
+            "goals": [
+              "Watch the patrol handover",
+              "Find a wall you can climb"
+            ]
+          },
+          "c1-battle": {
+            "title": "Break the Blockade",
+            "brief": "Clear two waves of patrols and you are through. The second wave brings ranged support.",
+            "waves": [
+              {
+                "label": "Wave 1",
+                "note": "Patrol · Probe",
+                "event": "No special event",
+                "enemies": [
+                  {
+                    "hero": "volt",
+                    "count": 2,
+                    "mod": "HP ×1.0"
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "Street Charge",
+                    "description": "Dash forward and knock the target back",
+                    "cooldown": 8,
+                    "damage": 18
+                  }
+                ]
+              },
+              {
+                "label": "Wave 2",
+                "note": "Reinforced · Ranged pressure",
+                "event": "Traffic speeds up; crossing the street stuns you",
+                "enemies": [
+                  {
+                    "hero": "volt",
+                    "count": 1,
+                    "mod": "HP ×1.5"
+                  },
+                  {
+                    "hero": "tech",
+                    "count": 1,
+                    "mod": "Ranged support"
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "Ground Combo",
+                    "description": "Three slams; the last one stuns for 1s",
+                    "cooldown": 12,
+                    "damage": 32,
+                    "effect": "Stun 1s"
+                  }
+                ]
+              }
+            ]
+          },
+          "c1-reward": {
+            "title": "Through the Line",
+            "description": "An abandoned warehouse still holds a crate of supplies nobody carried off."
+          },
+          "c1-end": {
+            "title": "Chapter Complete",
+            "text": "The alarm is still ringing behind you. The hum of that machine sounds closer than it did last night."
+          }
+        }
+      },
+      "hero-volt-01": {
+        "title": "The Champion's Debt",
+        "summary": "Three years ago, in an underground match, Neon Champion owed someone a favor. Tonight someone came to collect.",
+        "nodes": {
+          "h1-intro": {
+            "speaker": "Neon Champion",
+            "text": "The rule on this street is simple: a debt gets paid. I know the people coming tonight."
+          },
+          "h1-battle": {
+            "title": "Settle the Debt",
+            "brief": "Two waves, both old acquaintances. Finish it and walk away.",
+            "waves": [
+              {
+                "label": "Wave 1",
+                "note": "Old friend · Probe",
+                "event": "No special event",
+                "enemies": [
+                  {
+                    "hero": "pipa",
+                    "count": 1,
+                    "mod": "Controller"
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "String Root",
+                    "description": "Roots the target and drains health",
+                    "cooldown": 10,
+                    "damage": 16,
+                    "effect": "Root 3s"
+                  }
+                ]
+              },
+              {
+                "label": "Wave 2",
+                "note": "Collection · All in",
+                "event": "The crowd backs off and the arena narrows",
+                "enemies": [
+                  {
+                    "hero": "jianghu",
+                    "count": 1,
+                    "mod": "HP ×1.6 · DMG ×1.2"
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "One-Strike Execution",
+                    "description": "Execution chance spikes against low-health targets",
+                    "cooldown": 14,
+                    "damage": 40,
+                    "effect": "Execute"
+                  }
+                ]
+              }
+            ]
+          },
+          "h1-reward": {
+            "title": "Debt Cleared",
+            "description": "They leave one line behind — \"don't keep me waiting next time\" — and walk into the rain."
+          },
+          "h1-end": {
+            "title": "Chapter Complete",
+            "text": "The Champion rewraps his wrist guard. Half the street lights come back on. That is enough."
+          }
+        }
+      }
+    }
   }
 }
