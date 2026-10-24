@@ -14,7 +14,7 @@
   <header class="story-topbar">
     <a class="select-back story-back" href="/story/choose" aria-label="{{ tr('STORY_BACK_CHOOSE') }}">← <span>{{ tr("STORY_BACK_CHOOSE") }}</span></a>
     <div class="story-heading">
-      <small id="story-chapter">{{ chapter.category_name }}</small>
+      <small id="story-chapter">{{ chapter.card_code }} · {{ chapter.category_name }}</small>
       <b id="story-title">{{ chapter.title }}</b>
     </div>
     <div class="story-tools">
@@ -26,7 +26,7 @@
 
   <main class="story-stage" id="story-stage" aria-live="polite"></main>
 
-  <div class="story-framework-note">{{ tr("STORY_FRAMEWORK_NOTE") }}</div>
+  <div class="story-framework-note">{{ chapter.card_code }} · {{ chapter.card_title }}</div>
 
   <script>
     window.STORY_CHAPTER = {{ chapter|tojson }};

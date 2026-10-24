@@ -91,7 +91,8 @@ function makeWindow(search, chapter, progress, heroes) {
 }
 
 const code = fs.readFileSync("static/story.js", "utf8");
-const chapter = JSON.parse(fs.readFileSync("tests/fixtures/chapters.zh.json", "utf8"));
+const fixture = JSON.parse(fs.readFileSync("tests/fixtures/chapters.zh.json", "utf8"));
+const sections = fixture.sections;
 
 function boot(win) {
   Object.keys(ids).forEach((k) => { ids[k].replaceChildren(); });
@@ -118,7 +119,7 @@ function boot(win) {
   return ids["story-stage"];
 }
 
-const heroList = chapter[0] && [
+const heroList = [
   { id: "volt", name: "霓虹拳王", initial: "拳", palette: { main: "#ff4fa3", light: "#ffd3e8", dark: "#812354" }, locked: false, price: 0 },
   { id: "moss", name: "苔藓守卫", initial: "苔", palette: { main: "#b7ef55", light: "#e9ffb7", dark: "#263b2d" }, locked: false, price: 0 },
   { id: "jianghu", name: "江湖客", initial: "江", palette: { main: "#ffd98e", light: "#fff6d8", dark: "#7a4a12" }, locked: true, price: 1000 },
@@ -130,11 +131,11 @@ function check(label, cond, extra = "") {
   if (!cond) fail.push(label);
 }
 
-const cyber = chapter.find((c) => c.id === "cyber-01");
-const heroChapter = chapter.find((c) => c.id === "hero-volt-01");
+const cyber = sections.find((s) => s.id === "rc001-p0");
+const heroChapter = sections.find((s) => s.id === "hero-volt-01");
 
 // 1. 赛博世界剧情：战斗节点应出现英雄选择器
-let stage = boot(makeWindow("?chapter=cyber-01", cyber, { node: "c1-battle" }, heroList));
+let stage = boot(makeWindow("?chapter=rc001-p0", cyber, { node: "p0-battle" }, heroList));
 let picker = stage.find((n) => n.className === "story-hero-pick")[0];
 check("赛博世界剧情渲染英雄选择器", Boolean(picker));
 let options = stage.find((n) => n._classes && n._classes.has("story-hero-option"));
@@ -150,7 +151,7 @@ const metaText = stage.find((n) => n.className === "story-battle-meta")[0].textC
 check("英雄剧情显示固定出战", metaText.includes("本场固定出战") && metaText.includes("霓虹拳王"), metaText);
 
 // 3. 失败结果：显示重试 + 退出
-stage = boot(makeWindow("?chapter=cyber-01&result=lose", cyber, { node: "c1-battle" }, heroList));
+stage = boot(makeWindow("?chapter=rc001-p0&result=lose", cyber, { node: "p0-battle" }, heroList));
 const note = stage.find((n) => n.className === "story-fail-note")[0];
 check("失败时显示失败提示", Boolean(note), note && note.textContent);
 const startBtn = stage.find((n) => n.className && n.className.includes("story-start"))[0];
@@ -161,14 +162,14 @@ const exitLink = stage.find((n) => n.tagName === "A" && n.href === "/story/choos
 check("失败时提供返回剧情选择", Boolean(exitLink));
 
 // 4. 胜利结果：推进到奖励节点并请求发奖
-stage = boot(makeWindow("?chapter=cyber-01&result=win", cyber, { node: "c1-battle" }, heroList));
+stage = boot(makeWindow("?chapter=rc001-p0&result=win", cyber, { node: "p0-battle" }, heroList));
 const reward = stage.find((n) => n.className === "story-reward")[0];
 check("胜利推进到奖励节点", Boolean(reward));
 check("奖励节点请求 /api/story/reward", fetched.some((f) => f.url === "/api/story/reward"),
   JSON.stringify(fetched.map((f) => f.url)));
 
 // 5. 已完成存档：直接进结束页
-stage = boot(makeWindow("?chapter=cyber-01", cyber, { node: "c1-end", completed: true }, heroList));
+stage = boot(makeWindow("?chapter=rc001-p0", cyber, { node: "p0-end", completed: true }, heroList));
 check("已完成章节直接显示结束页", Boolean(stage.find((n) => n.className === "story-end")[0]));
 
 console.log(fail.length ? `\n${fail.length} FAILED: ${fail.join(" | ")}` : "\nALL PASS");

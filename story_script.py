@@ -1,27 +1,22 @@
-"""剧情模式的数据层（只放结构与非文本配置，文本全部在 locale/*.json）。
+"""剧情模式的数据层（结构与非文本配置；文本全在 locale/*.json）。
 
-设计要点
---------
-- **数据与执行分离**：本文件只声明章节与节点；执行逻辑在 `frontend/story_engine.ts`。
-- **多语言**：节点文案不写在这里，全部走 `locale/<lang>.json` 的 `story.*`，
-  由 `localized_chapter()` 在渲染前合并，执行逻辑永远不碰文本。
-- **可扩展章节**：往 `CHAPTERS` 追加一条即可，前端不需要改代码。
-- **战斗复用**：`battle` 节点只声明 `target_waves` / `hero` 等配置，
-  实际战斗由现有 `/battle` 页面执行，结果经 URL 回传。
+概念
+----
+- **重现卡（card）**：玩家在游戏里读到的一个「剧本」，例如 `RC-001 城市之下`。
+- **分区（section）**：一张卡拆成的若干段，每段是一份独立的「记忆核心」，
+  有自己的节点图与存档。分区按 `order` 顺序**逐段解锁**：打完上一段才能进下一段。
+
+数据与执行的边界
+----------------
+- 本文件只声明卡、分区、节点与跳转；文案一律走 `locale/<lang>.json` 的
+  `story.cards.*` 与 `story.sections.*`，由 `localized_chapter()` 合并。
+- 执行逻辑在 `frontend/story_engine.ts`（纯逻辑，可单测）。
+- 战斗复用 `/battle`，只通过 `target_waves` 判胜负并回传结果。
 
 节点类型（全部已实现）
 ----------------------
-| type          | 作用                                             |
-|---------------|--------------------------------------------------|
-| `dialogue`    | 对话框                                           |
-| `choice`      | 分支选择                                         |
-| `battle`      | 剧情战斗（复用 /battle，按目标波次判胜负）        |
-| `objective`   | 任务目标清单（展示 + flags 判定是否可继续）       |
-| `reward`      | 奖励发放（服务端幂等，按 rewardId 防重复）        |
-| `chapter_end` | 章节结束                                         |
-
-`objective` 说明：本阶段为「展示 + 条件判定」——`goals[].done_flag` 为真才允许继续；
-需要真实任务追踪（击杀计数等）的部分尚未接入，属于**部分实现**。
+`dialogue` / `choice` / `battle` / `objective` / `reward` / `chapter_end`
+`objective` 目前是「手动勾选 + 可配置是否阻塞」，尚无击杀/到达的自动追踪。
 """
 
 from copy import deepcopy
@@ -35,111 +30,145 @@ CATEGORIES = [
     {"id": "hero", "order": 2},
 ]
 
-# 章节列表。文本字段（title/summary/节点文案）都从 locale 取，这里只留 id 与配置。
-CHAPTERS = [
+# ── 重现卡 RC-001《城市之下》──────────────────────────────────────────────
+# 四个分区，逐段解锁。每个分区是一份独立的记忆核心。
+RC001_SECTIONS = [
     {
-        "id": "cyber-01",
+        "id": "rc001-p0",
+        "card": "RC-001",
         "category": "cyber",
-        "order": 1,
-        # hero 为 None 表示玩家可自选英雄
+        "order": 0,
         "hero": None,
         "background": "home-background.png",
-        "entry": "c1-intro",
+        "entry": "p0-intro",
         "nodes": [
-            {
-                "id": "c1-intro",
-                "type": "dialogue",
-                "speaker_key": "narrator",
-                "initial": "旁",
-                "accent": "narrator",
-                "next": "c1-pick",
-            },
-            {
-                "id": "c1-pick",
-                "type": "choice",
-                "prompt_key": "prompt",
-                "options": [
-                    {"id": "direct", "next": "c1-battle"},
-                    {"id": "careful", "next": "c1-objective"},
-                ],
-            },
-            {
-                "id": "c1-objective",
-                "type": "objective",
-                "goals": [
-                    {"id": "scout", "done_flag": "scouted"},
-                    {"id": "reach", "done_flag": "reached_street"},
-                ],
-                # 展示型目标：允许玩家直接继续，不阻塞（真实追踪未接入）
-                "allow_skip": True,
-                "next": "c1-battle",
-            },
-            {
-                "id": "c1-battle",
-                "type": "battle",
-                "battle": {
-                    "hero": None,
-                    "target_waves": 2,
-                    "map_theme": "city",
-                },
-                "on_win": "c1-reward",
-                "on_lose": "c1-battle",
-            },
-            {
-                "id": "c1-reward",
-                "type": "reward",
-                # rewardId 全局唯一：服务端按它去重，重复进节点不会重复发
-                "reward_id": "cyber-01-clear",
-                "coins": 120,
-                "next": "c1-end",
-            },
-            {
-                "id": "c1-end",
-                "type": "chapter_end",
-                "next": None,
-            },
+            {"id": "p0-intro", "type": "dialogue", "speaker_key": "narrator", "initial": "序", "accent": "narrator", "next": "p0-ai"},
+            {"id": "p0-ai", "type": "dialogue", "speaker_key": "terminal", "initial": "穹", "accent": "terminal",
+             "palette": {"main": "#7cd4ff", "light": "#dff3ff", "dark": "#1b4a66"}, "next": "p0-choice"},
+            {"id": "p0-choice", "type": "choice", "prompt_key": "prompt", "options": [
+                {"id": "ask", "next": "p0-ai-ask"},
+                {"id": "fix", "next": "p0-ai-fix"},
+            ]},
+            {"id": "p0-ai-ask", "type": "dialogue", "speaker_key": "terminal", "initial": "穹", "accent": "terminal",
+             "palette": {"main": "#7cd4ff", "light": "#dff3ff", "dark": "#1b4a66"}, "next": "p0-battle"},
+            {"id": "p0-ai-fix", "type": "dialogue", "speaker_key": "terminal", "initial": "穹", "accent": "terminal",
+             "palette": {"main": "#7cd4ff", "light": "#dff3ff", "dark": "#1b4a66"}, "next": "p0-battle"},
+            {"id": "p0-battle", "type": "battle",
+             "battle": {"hero": None, "target_waves": 2, "map_theme": "school"},
+             "on_win": "p0-reward", "on_lose": "p0-battle"},
+            {"id": "p0-reward", "type": "reward", "reward_id": "rc001-p0-clear", "coins": 120, "next": "p0-end"},
+            {"id": "p0-end", "type": "chapter_end", "next": None},
         ],
     },
     {
-        "id": "hero-volt-01",
-        "category": "hero",
+        "id": "rc001-p1",
+        "card": "RC-001",
+        "category": "cyber",
         "order": 1,
-        # 英雄剧情绑定英雄，进入战斗时固定用这个英雄
+        "hero": None,
+        "background": "home-background.png",
+        "entry": "p1-intro",
+        "nodes": [
+            {"id": "p1-intro", "type": "dialogue", "speaker_key": "narrator", "initial": "一", "accent": "narrator", "next": "p1-station"},
+            {"id": "p1-station", "type": "dialogue", "speaker_key": "narrator", "initial": "一", "accent": "narrator", "next": "p1-choice"},
+            {"id": "p1-choice", "type": "choice", "prompt_key": "prompt", "options": [
+                {"id": "scan", "next": "p1-objective"},
+                {"id": "down", "next": "p1-warn"},
+            ]},
+            {"id": "p1-warn", "type": "dialogue", "speaker_key": "narrator", "initial": "一", "accent": "narrator", "next": "p1-objective"},
+            {"id": "p1-objective", "type": "objective", "goals": [
+                {"id": "coords", "done_flag": "coords_confirmed"},
+                {"id": "signal", "done_flag": "signal_located"},
+            ], "allow_skip": False, "next": "p1-battle"},
+            {"id": "p1-battle", "type": "battle",
+             "battle": {"hero": None, "target_waves": 2, "map_theme": "station"},
+             "on_win": "p1-archive", "on_lose": "p1-battle"},
+            {"id": "p1-archive", "type": "dialogue", "speaker_key": "narrator", "initial": "档", "accent": "narrator", "next": "p1-reward"},
+            {"id": "p1-reward", "type": "reward", "reward_id": "rc001-p1-clear", "coins": 150, "next": "p1-end"},
+            {"id": "p1-end", "type": "chapter_end", "next": None},
+        ],
+    },
+    {
+        "id": "rc001-p2",
+        "card": "RC-001",
+        "category": "cyber",
+        "order": 2,
+        "hero": None,
+        "background": "home-background.png",
+        "entry": "p2-intro",
+        "nodes": [
+            {"id": "p2-intro", "type": "dialogue", "speaker_key": "narrator", "initial": "二", "accent": "narrator", "next": "p2-db"},
+            {"id": "p2-db", "type": "dialogue", "speaker_key": "terminal", "initial": "穹", "accent": "terminal",
+             "palette": {"main": "#7cd4ff", "light": "#dff3ff", "dark": "#1b4a66"}, "next": "p2-stranger"},
+            {"id": "p2-stranger", "type": "dialogue", "speaker_key": "stranger", "initial": "？", "accent": "stranger",
+             "palette": {"main": "#c9a0ff", "light": "#f0e4ff", "dark": "#4a2f6b"}, "next": "p2-choice"},
+            {"id": "p2-choice", "type": "choice", "prompt_key": "prompt", "options": [
+                {"id": "trust", "next": "p2-battle"},
+                {"id": "press", "next": "p2-press"},
+            ]},
+            {"id": "p2-press", "type": "dialogue", "speaker_key": "stranger", "initial": "？", "accent": "stranger",
+             "palette": {"main": "#c9a0ff", "light": "#f0e4ff", "dark": "#4a2f6b"}, "next": "p2-battle"},
+            {"id": "p2-battle", "type": "battle",
+             "battle": {"hero": None, "target_waves": 2, "map_theme": "gym"},
+             "on_win": "p2-after", "on_lose": "p2-battle"},
+            {"id": "p2-after", "type": "dialogue", "speaker_key": "narrator", "initial": "二", "accent": "narrator", "next": "p2-reward"},
+            {"id": "p2-reward", "type": "reward", "reward_id": "rc001-p2-clear", "coins": 180, "next": "p2-end"},
+            {"id": "p2-end", "type": "chapter_end", "next": None},
+        ],
+    },
+    {
+        "id": "rc001-p3",
+        "card": "RC-001",
+        "category": "cyber",
+        "order": 3,
+        "hero": None,
+        "background": "home-background.png",
+        "entry": "p3-intro",
+        "nodes": [
+            {"id": "p3-intro", "type": "dialogue", "speaker_key": "narrator", "initial": "终", "accent": "narrator", "next": "p3-archive"},
+            {"id": "p3-archive", "type": "dialogue", "speaker_key": "narrator", "initial": "档", "accent": "narrator", "next": "p3-battle"},
+            {"id": "p3-battle", "type": "battle",
+             "battle": {"hero": None, "target_waves": 3, "map_theme": "hospital"},
+             "on_win": "p3-reveal", "on_lose": "p3-battle"},
+            {"id": "p3-reveal", "type": "dialogue", "speaker_key": "narrator", "initial": "终", "accent": "narrator", "next": "p3-truth"},
+            {"id": "p3-truth", "type": "dialogue", "speaker_key": "stranger", "initial": "？", "accent": "stranger",
+             "palette": {"main": "#c9a0ff", "light": "#f0e4ff", "dark": "#4a2f6b"}, "next": "p3-last"},
+            {"id": "p3-last", "type": "dialogue", "speaker_key": "narrator", "initial": "终", "accent": "narrator", "next": "p3-choice"},
+            {"id": "p3-choice", "type": "choice", "prompt_key": "prompt", "options": [
+                {"id": "keep", "next": "p3-reward-keep"},
+                {"id": "burn", "next": "p3-reward-burn"},
+            ]},
+            {"id": "p3-reward-keep", "type": "reward", "reward_id": "rc001-p3-keep", "coins": 260, "next": "p3-end-keep"},
+            {"id": "p3-end-keep", "type": "chapter_end", "next": None},
+            {"id": "p3-reward-burn", "type": "reward", "reward_id": "rc001-p3-burn", "coins": 260, "next": "p3-end-burn"},
+            {"id": "p3-end-burn", "type": "chapter_end", "next": None},
+        ],
+    },
+]
+
+# 英雄剧情：绑定英雄，暂为单段（不拆分区）
+HERO_SECTIONS = [
+    {
+        "id": "hero-volt-01",
+        "card": "RC-H01",
+        "category": "hero",
+        "order": 0,
         "hero": "volt",
         "background": "home-background.png",
         "entry": "h1-intro",
         "nodes": [
-            {
-                "id": "h1-intro",
-                "type": "dialogue",
-                "speaker_key": "hero",
-                "initial": "拳",
-                "accent": "volt",
-                "palette": {"main": "#ff4fa3", "light": "#ffd3e8", "dark": "#812354"},
-                "next": "h1-battle",
-            },
-            {
-                "id": "h1-battle",
-                "type": "battle",
-                "battle": {"hero": "volt", "target_waves": 2, "map_theme": "gym"},
-                "on_win": "h1-reward",
-                "on_lose": "h1-battle",
-            },
-            {
-                "id": "h1-reward",
-                "type": "reward",
-                "reward_id": "hero-volt-01-clear",
-                "coins": 150,
-                "next": "h1-end",
-            },
-            {
-                "id": "h1-end",
-                "type": "chapter_end",
-                "next": None,
-            },
+            {"id": "h1-intro", "type": "dialogue", "speaker_key": "hero", "initial": "拳", "accent": "volt",
+             "palette": {"main": "#ff4fa3", "light": "#ffd3e8", "dark": "#812354"}, "next": "h1-battle"},
+            {"id": "h1-battle", "type": "battle",
+             "battle": {"hero": "volt", "target_waves": 2, "map_theme": "gym"},
+             "on_win": "h1-reward", "on_lose": "h1-battle"},
+            {"id": "h1-reward", "type": "reward", "reward_id": "hero-volt-01-clear", "coins": 150, "next": "h1-end"},
+            {"id": "h1-end", "type": "chapter_end", "next": None},
         ],
     },
 ]
+
+CHAPTERS = RC001_SECTIONS + HERO_SECTIONS
 
 NODE_TYPES = ("dialogue", "choice", "battle", "objective", "reward", "chapter_end")
 
@@ -155,11 +184,44 @@ def chapter_by_id(chapter_id: str):
     return None
 
 
-def validate_chapter(chapter: dict) -> list:
-    """结构与跳转校验，返回问题列表（空表示通过）。
+def chapter_cards() -> list:
+    """按卡聚合，返回 [(card_id, [section...])]，分区已按 order 排序。"""
+    grouped = {}
+    for chapter in CHAPTERS:
+        grouped.setdefault(chapter.get("card") or chapter["id"], []).append(chapter)
+    cards = list(grouped.items())
+    for _, sections in cards:
+        sections.sort(key=lambda item: item.get("order", 0))
+    cards.sort(key=lambda pair: (pair[1][0].get("category", ""), pair[0]))
+    return cards
 
-    前端也有同类校验；这里先拦一遍，避免把坏数据送到浏览器。
+
+def section_locked(chapter_id: str, progress: dict) -> bool:
+    """分区是否锁定：同一张卡里，前一个分区没完成就锁。
+
+    `progress` 是 `player_save.story_state()["chapters"]`（chapter_id -> 进度）。
     """
+    chapter = chapter_by_id(chapter_id)
+    if chapter is None:
+        return True
+    card = chapter.get("card") or chapter["id"]
+    card_sections = [item for item in CHAPTERS if (item.get("card") or item["id"]) == card]
+    card_sections.sort(key=lambda item: item.get("order", 0))
+    for section in card_sections:
+        if section["id"] != chapter_id:
+            continue
+        if section.get("order", 0) == 0:
+            return False
+        previous = [item for item in card_sections if item.get("order", 0) < section.get("order", 0)]
+        if not previous:
+            return False
+        latest = max(previous, key=lambda item: item.get("order", 0))
+        return not bool((progress.get(latest["id"]) or {}).get("completed"))
+    return True
+
+
+def validate_chapter(chapter: dict) -> list:
+    """结构与跳转校验，返回问题列表（空表示通过）。"""
     problems = []
     nodes = chapter.get("nodes") or []
     ids = [node.get("id") for node in nodes]
@@ -203,21 +265,21 @@ def validate_chapter(chapter: dict) -> list:
 
 
 def localized_chapter(chapter_id: str, lang: str, locale_pack: dict):
-    """把章节结构 + 当前语言的文案合并成前端可直接渲染的对象。
-
-    文案缺失时回落到 key，绝不抛错——剧情文本永远不该让页面崩掉。
-    """
+    """把分区结构 + 当前语言的文案合并成前端可直接渲染的对象。"""
     chapter = chapter_by_id(chapter_id)
     if chapter is None:
         return None
     merged = deepcopy(chapter)
-    pack = (locale_pack.get("story") or {})
-    chapter_text = ((pack.get("chapters") or {}).get(chapter_id) or {})
-    node_text = chapter_text.get("nodes") or {}
+    pack = locale_pack.get("story") or {}
+    section_text = ((pack.get("sections") or {}).get(chapter_id) or {})
+    card_text = ((pack.get("cards") or {}).get(chapter.get("card") or chapter_id) or {})
+    node_text = section_text.get("nodes") or {}
 
     merged["background"] = chapter.get("background", "home-background.png")
-    merged["title"] = chapter_text.get("title", chapter_id)
-    merged["summary"] = chapter_text.get("summary", "")
+    merged["title"] = section_text.get("title", chapter_id)
+    merged["summary"] = section_text.get("summary", "")
+    merged["card_code"] = card_text.get("code", chapter.get("card") or "")
+    merged["card_title"] = card_text.get("title", "")
     merged["category_name"] = (
         ((pack.get("categories") or {}).get(chapter["category"]) or {}).get("name", chapter["category"])
     )
@@ -252,22 +314,43 @@ def localized_chapter(chapter_id: str, lang: str, locale_pack: dict):
     return merged
 
 
-def chapter_list(lang: str, locale_pack: dict) -> list:
-    """剧情选择页用的章节摘要（含分类、标题、是否绑定英雄）。"""
+def card_list(lang: str, locale_pack: dict, progress: dict = None) -> list:
+    """选择页用的重现卡列表：每张卡带分区、解锁状态与完成状态。"""
+    progress = progress or {}
     pack = locale_pack.get("story") or {}
-    chapters_text = pack.get("chapters") or {}
+    cards_text = pack.get("cards") or {}
+    sections_text = pack.get("sections") or {}
+
     result = []
-    for chapter in CHAPTERS:
-        text = chapters_text.get(chapter["id"]) or {}
+    for card_id, sections in chapter_cards():
+        card_meta = cards_text.get(card_id) or {}
+        previous_completed = True
+        entries = []
+        for section in sections:
+            section_meta = sections_text.get(section["id"]) or {}
+            state = progress.get(section["id"]) or {}
+            completed = bool(state.get("completed"))
+            entries.append({
+                "id": section["id"],
+                "order": section.get("order", 0),
+                "title": section_meta.get("title", section["id"]),
+                "summary": section_meta.get("summary", ""),
+                "node_count": len(section.get("nodes") or []),
+                "hero": section.get("hero"),
+                "locked": not previous_completed,
+                "completed": completed,
+                "started": bool(state.get("node")),
+                "entry": section.get("entry"),
+            })
+            previous_completed = completed
         result.append({
-            "id": chapter["id"],
-            "category": chapter["category"],
-            "order": chapter.get("order", 0),
-            "title": text.get("title", chapter["id"]),
-            "summary": text.get("summary", ""),
-            "hero": chapter.get("hero"),
-            "node_count": len(chapter.get("nodes") or []),
-            "entry": chapter.get("entry"),
+            "id": card_id,
+            "code": card_meta.get("code", card_id),
+            "title": card_meta.get("title", card_id),
+            "summary": card_meta.get("summary", ""),
+            "quote": card_meta.get("quote", ""),
+            "category": sections[0].get("category", ""),
+            "sections": entries,
         })
     return result
 

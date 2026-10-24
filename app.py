@@ -642,15 +642,16 @@ def mode_page():
 
 @app.get("/story/choose")
 def story_choose_page():
-    """剧情选择页：赛博世界剧情 / 英雄剧情 两类。"""
+    """重现卡库：按分类列出卡，卡内是逐段解锁的分区。"""
     lang = request.args.get("lang", request.cookies.get("lang", "zh"))
     lang = lang if lang in LOCALE_PACKAGES else "zh"
     pack = get_locale(lang)
+    progress = player_save.story_state().get("chapters", {})
     return render_template(
         "story_choose.html",
         profile=profile_snapshot(),
         categories=story_script.category_list(lang, pack),
-        chapters=story_script.chapter_list(lang, pack),
+        cards=story_script.card_list(lang, pack, progress),
         roster=hero_roster(lang),
         story=player_save.story_state(),
     )
@@ -666,6 +667,10 @@ def story_page():
         return redirect(url_for("story_choose_page"))
     chapter = story_script.localized_chapter(chapter_id, lang, get_locale(lang))
     if chapter is None:
+        return redirect(url_for("story_choose_page"))
+    progress = player_save.story_state().get("chapters", {})
+    # 分区解锁校验：上一段没打完不允许直接改 URL 跳进来
+    if story_script.section_locked(chapter_id, progress):
         return redirect(url_for("story_choose_page"))
     # 赛博世界剧情可在战斗前自选英雄，所以要把花名册（含解锁状态）带给页面
     story_heroes = [
@@ -683,7 +688,7 @@ def story_page():
         "story.html",
         profile=profile_snapshot(),
         chapter=chapter,
-        chapters=story_script.chapter_list(lang, get_locale(lang)),
+        chapters=story_script.card_list(lang, get_locale(lang), progress),
         roster=hero_roster(lang),
         story_heroes=story_heroes,
         story=player_save.story_state(),

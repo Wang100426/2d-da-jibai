@@ -1,241 +1,914 @@
-[
-  {
-    "id": "cyber-01",
-    "category": "cyber",
-    "order": 1,
-    "hero": null,
-    "background": "home-background.png",
-    "entry": "c1-intro",
-    "nodes": [
-      {
-        "id": "c1-intro",
-        "type": "dialogue",
-        "speaker_key": "narrator",
-        "initial": "旁",
-        "accent": "narrator",
-        "next": "c1-pick",
-        "speaker": "旁白",
-        "text": "霓虹城的供电在天亮前断了三成。街口的广告牌还在闪，拼出一句没人看得懂的口号。"
-      },
-      {
-        "id": "c1-pick",
-        "type": "choice",
-        "prompt_key": "prompt",
-        "options": [
-          {
-            "id": "direct",
-            "next": "c1-battle",
-            "label": "直接冲过去"
-          },
-          {
-            "id": "careful",
-            "next": "c1-objective",
-            "label": "先摸清巡逻路线"
-          }
-        ],
-        "prompt": "街区被封了，你打算怎么过去？"
-      },
-      {
-        "id": "c1-objective",
-        "type": "objective",
-        "goals": [
-          {
-            "id": "scout",
-            "done_flag": "scouted",
-            "label": "观察巡逻队换班"
-          },
-          {
-            "id": "reach",
-            "done_flag": "reached_street",
-            "label": "找到可以翻越的围墙"
-          }
-        ],
-        "allow_skip": true,
-        "next": "c1-battle",
-        "title": "摸清街口",
-        "description": "封锁线每十分钟换一次班。先看清楚再动。"
-      },
-      {
-        "id": "c1-battle",
-        "type": "battle",
-        "battle": {
+{
+  "cards": [
+    {
+      "id": "RC-001",
+      "code": "RC-001",
+      "title": "城市之下",
+      "summary": "新海市从不熄灯。城市管理系统「天穹」每天报告一切正常——直到校园竞技场停电，而报告依然写着「能源供应正常」。",
+      "quote": "如果这座城市没有地下，那么我们脚下传来的声音，是谁发出来的？",
+      "category": "cyber",
+      "sections": [
+        {
+          "id": "rc001-p0",
+          "order": 0,
+          "title": "序幕 · 一张不存在的卡",
+          "summary": "竞技场停电了，系统却坚持供电正常。你在配电间找到了一张不属于任何清单的卡。",
+          "node_count": 8,
           "hero": null,
-          "target_waves": 2,
-          "map_theme": "city"
+          "locked": false,
+          "completed": false,
+          "started": false,
+          "entry": "p0-intro"
         },
-        "on_win": "c1-reward",
-        "on_lose": "c1-battle",
-        "title": "街口突围",
-        "brief": "打退两波巡逻队就能穿过封锁线。第二波会有远程支援。",
-        "waves": [
-          {
-            "label": "波次 1",
-            "note": "巡逻 · 试探",
-            "event": "无特殊事件",
-            "enemies": [
-              {
-                "hero": "volt",
-                "count": 2,
-                "mod": "生命 ×1.0"
-              }
-            ],
-            "skills": [
-              {
-                "name": "街头冲撞",
-                "description": "向前突进并击退目标",
-                "cooldown": 8,
-                "damage": 18
-              }
-            ]
-          },
-          {
-            "label": "波次 2",
-            "note": "增援 · 远程压制",
-            "event": "街口车流加速，横穿时会造成眩晕",
-            "enemies": [
-              {
-                "hero": "volt",
-                "count": 1,
-                "mod": "生命 ×1.5"
-              },
-              {
-                "hero": "tech",
-                "count": 1,
-                "mod": "远程支援"
-              }
-            ],
-            "skills": [
-              {
-                "name": "震地连击",
-                "description": "连续三次砸地，最后一击眩晕 1 秒",
-                "cooldown": 12,
-                "damage": 32,
-                "effect": "眩晕 1s"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "id": "c1-reward",
-        "type": "reward",
-        "reward_id": "cyber-01-clear",
-        "coins": 120,
-        "next": "c1-end",
-        "title": "穿过封锁线",
-        "description": "废弃仓库里留着一批没被搬走的补给。"
-      },
-      {
-        "id": "c1-end",
-        "type": "chapter_end",
-        "next": null,
-        "title": "章节结束",
-        "text": "街口的警报还在响，但你已经过去了。那台机器的声音，比昨晚更近了一点。"
-      }
-    ],
-    "title": "霓虹断电",
-    "summary": "凌晨三点，城南的供电被掐掉三成。你要穿过被封锁的街口，去看看那台还在响的机器。",
-    "category_name": "赛博世界剧情"
-  },
-  {
-    "id": "hero-volt-01",
-    "category": "hero",
-    "order": 1,
-    "hero": "volt",
-    "background": "home-background.png",
-    "entry": "h1-intro",
-    "nodes": [
-      {
-        "id": "h1-intro",
-        "type": "dialogue",
-        "speaker_key": "hero",
-        "initial": "拳",
-        "accent": "volt",
-        "palette": {
-          "main": "#ff4fa3",
-          "light": "#ffd3e8",
-          "dark": "#812354"
+        {
+          "id": "rc001-p1",
+          "order": 1,
+          "title": "第一幕 · 零层站台",
+          "summary": "记忆坐标指向一个被城市地图抹掉的地名：零层。站台还在，电子屏还在报站。",
+          "node_count": 9,
+          "hero": null,
+          "locked": true,
+          "completed": false,
+          "started": false,
+          "entry": "p1-intro"
         },
-        "next": "h1-battle",
-        "speaker": "霓虹拳王",
-        "text": "这条街的规矩很简单：欠了就得还。今晚来的人，我认识。"
-      },
-      {
-        "id": "h1-battle",
-        "type": "battle",
-        "battle": {
+        {
+          "id": "rc001-p2",
+          "order": 2,
+          "title": "第二幕 · 没有登记的人",
+          "summary": "地下设施曾经是住人的。某次系统升级后，这里的记录被统一标成错误数据。",
+          "node_count": 9,
+          "hero": null,
+          "locked": true,
+          "completed": false,
+          "started": false,
+          "entry": "p2-intro"
+        },
+        {
+          "id": "rc001-p3",
+          "order": 3,
+          "title": "终幕 · 记忆核心",
+          "summary": "数据中心还在。被删除的居民记录没有被销毁，只是被压缩成谁也读不了的碎片。",
+          "node_count": 11,
+          "hero": null,
+          "locked": true,
+          "completed": false,
+          "started": false,
+          "entry": "p3-intro"
+        }
+      ]
+    },
+    {
+      "id": "RC-H01",
+      "code": "RC-H01",
+      "title": "拳王的旧账",
+      "summary": "三年前的一场地下赛，霓虹拳王欠了一个人情。今晚有人来收了。",
+      "quote": "这条街的规矩很简单：欠了就得还。",
+      "category": "hero",
+      "sections": [
+        {
+          "id": "hero-volt-01",
+          "order": 0,
+          "title": "第一段 · 旧账",
+          "summary": "三年前的一场地下赛，霓虹拳王欠了一个人情。今晚有人来收了。",
+          "node_count": 4,
           "hero": "volt",
-          "target_waves": 2,
-          "map_theme": "gym"
+          "locked": false,
+          "completed": false,
+          "started": false,
+          "entry": "h1-intro"
+        }
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "id": "rc001-p0",
+      "card": "RC-001",
+      "category": "cyber",
+      "order": 0,
+      "hero": null,
+      "background": "home-background.png",
+      "entry": "p0-intro",
+      "nodes": [
+        {
+          "id": "p0-intro",
+          "type": "dialogue",
+          "speaker_key": "narrator",
+          "initial": "序",
+          "accent": "narrator",
+          "next": "p0-ai",
+          "speaker": "旁白",
+          "text": "整座校园竞技场在三秒内黑了下来。观众席上还有人在鼓掌，以为这是演出的一部分。你打开终端，天穹的报告弹出来：能源供应正常。"
         },
-        "on_win": "h1-reward",
-        "on_lose": "h1-battle",
-        "title": "旧账清算",
-        "brief": "两波对手，都是老熟人。打完就散。",
-        "waves": [
-          {
-            "label": "波次 1",
-            "note": "旧识 · 试探",
-            "event": "无特殊事件",
-            "enemies": [
-              {
-                "hero": "pipa",
-                "count": 1,
-                "mod": "控场"
-              }
-            ],
-            "skills": [
-              {
-                "name": "弦音禁锢",
-                "description": "禁锢目标并持续掉血",
-                "cooldown": 10,
-                "damage": 16,
-                "effect": "禁锢 3s"
-              }
-            ]
+        {
+          "id": "p0-ai",
+          "type": "dialogue",
+          "speaker_key": "terminal",
+          "initial": "穹",
+          "accent": "terminal",
+          "palette": {
+            "main": "#7cd4ff",
+            "light": "#dff3ff",
+            "dark": "#1b4a66"
           },
-          {
-            "label": "波次 2",
-            "note": "收账 · 压上",
-            "event": "围观人群散开，场地变窄",
-            "enemies": [
-              {
-                "hero": "jianghu",
-                "count": 1,
-                "mod": "生命 ×1.6 · 伤害 ×1.2"
-              }
-            ],
-            "skills": [
-              {
-                "name": "一剑封喉",
-                "description": "目标残血时斩杀概率大幅提升",
-                "cooldown": 14,
-                "damage": 40,
-                "effect": "斩杀"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "id": "h1-reward",
-        "type": "reward",
-        "reward_id": "hero-volt-01-clear",
-        "coins": 150,
-        "next": "h1-end",
-        "title": "人情还清",
-        "description": "对方扔下一句「下次别让我等」，转身走进雨里。"
-      },
-      {
-        "id": "h1-end",
-        "type": "chapter_end",
-        "next": null,
-        "title": "章节结束",
-        "text": "拳王把护腕重新缠好。街口的灯亮了一半，够了。"
-      }
-    ],
-    "title": "拳王的旧账",
-    "summary": "三年前的一场地下赛，霓虹拳王欠了一个人情。今晚有人来收了。",
-    "category_name": "英雄剧情"
-  }
-]
+          "next": "p0-choice",
+          "speaker": "天穹",
+          "text": "检测到异常物品。根据数据库，您刚刚找到的物品不存在。请放下它。"
+        },
+        {
+          "id": "p0-choice",
+          "type": "choice",
+          "prompt_key": "prompt",
+          "options": [
+            {
+              "id": "ask",
+              "next": "p0-ai-ask",
+              "label": "那我手里这个是什么？"
+            },
+            {
+              "id": "fix",
+              "next": "p0-ai-fix",
+              "label": "先别管它，把电修好。"
+            }
+          ],
+          "prompt": "终端等着你回答。观众席开始骚动。"
+        },
+        {
+          "id": "p0-ai-ask",
+          "type": "dialogue",
+          "speaker_key": "terminal",
+          "initial": "穹",
+          "accent": "terminal",
+          "palette": {
+            "main": "#7cd4ff",
+            "light": "#dff3ff",
+            "dark": "#1b4a66"
+          },
+          "next": "p0-battle",
+          "speaker": "天穹",
+          "text": "建议您停止持有不存在的物品。重复：建议您停止持有不存在的物品。"
+        },
+        {
+          "id": "p0-ai-fix",
+          "type": "dialogue",
+          "speaker_key": "terminal",
+          "initial": "穹",
+          "accent": "terminal",
+          "palette": {
+            "main": "#7cd4ff",
+            "light": "#dff3ff",
+            "dark": "#1b4a66"
+          },
+          "next": "p0-battle",
+          "speaker": "天穹",
+          "text": "能源供应正常。因此，停电不成立。既然停电不成立，您看到的黑暗属于视觉误差。"
+        },
+        {
+          "id": "p0-battle",
+          "type": "battle",
+          "battle": {
+            "hero": null,
+            "target_waves": 2,
+            "map_theme": "school"
+          },
+          "on_win": "p0-reward",
+          "on_lose": "p0-battle",
+          "title": "配电间",
+          "brief": "维修机器人全部离线，但它们的动作没有停。清掉两波，才能继续查。",
+          "waves": [
+            {
+              "label": "波次 1",
+              "note": "离线 · 失控",
+              "event": "应急灯忽明忽暗，视野时断时续",
+              "enemies": [
+                {
+                  "hero": "tech",
+                  "count": 2,
+                  "mod": "生命 ×1.0"
+                }
+              ],
+              "skills": [
+                {
+                  "name": "扳手横扫",
+                  "description": "机械臂横扫，击退并造成伤害",
+                  "cooldown": 8,
+                  "damage": 16
+                }
+              ]
+            },
+            {
+              "label": "波次 2",
+              "note": "维护核 · 压上",
+              "event": "配电柜过载，地面间歇放电",
+              "enemies": [
+                {
+                  "hero": "tech",
+                  "count": 1,
+                  "mod": "生命 ×1.6"
+                },
+                {
+                  "hero": "moss",
+                  "count": 1,
+                  "mod": "装甲外壳"
+                }
+              ],
+              "skills": [
+                {
+                  "name": "过载放电",
+                  "description": "范围放电，命中后短暂麻痹",
+                  "cooldown": 12,
+                  "damage": 26,
+                  "effect": "眩晕 1s"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "p0-reward",
+          "type": "reward",
+          "reward_id": "rc001-p0-clear",
+          "coins": 120,
+          "next": "p0-end",
+          "title": "卡是热的",
+          "description": "你把它从配电柜缝里抽出来。它不像刚被丢下的东西——它在发烫，像一直有人握着。"
+        },
+        {
+          "id": "p0-end",
+          "type": "chapter_end",
+          "next": null,
+          "title": "序幕结束",
+          "text": "你把它推进终端。屏幕没有问你要不要读取，直接开始了。"
+        }
+      ],
+      "title": "序幕 · 一张不存在的卡",
+      "summary": "竞技场停电了，系统却坚持供电正常。你在配电间找到了一张不属于任何清单的卡。",
+      "card_code": "RC-001",
+      "card_title": "城市之下",
+      "category_name": "赛博世界剧情"
+    },
+    {
+      "id": "rc001-p1",
+      "card": "RC-001",
+      "category": "cyber",
+      "order": 1,
+      "hero": null,
+      "background": "home-background.png",
+      "entry": "p1-intro",
+      "nodes": [
+        {
+          "id": "p1-intro",
+          "type": "dialogue",
+          "speaker_key": "narrator",
+          "initial": "一",
+          "accent": "narrator",
+          "next": "p1-station",
+          "speaker": "旁白",
+          "text": "记忆核心加载的瞬间，你不在竞技场了。空气里有铁锈和陈年积水的味道。你站在一段站台上，头顶的电子屏正在报站——零层。城市地图里没有这个地名。"
+        },
+        {
+          "id": "p1-station",
+          "type": "dialogue",
+          "speaker_key": "narrator",
+          "initial": "一",
+          "accent": "narrator",
+          "next": "p1-choice",
+          "speaker": "旁白",
+          "text": "站台干净得不正常。座椅没有灰，灯管没有一根坏掉，像有人每天都在打扫，只是不再有人坐。"
+        },
+        {
+          "id": "p1-choice",
+          "type": "choice",
+          "prompt_key": "prompt",
+          "options": [
+            {
+              "id": "scan",
+              "next": "p1-objective",
+              "label": "先扫描信号源"
+            },
+            {
+              "id": "down",
+              "next": "p1-warn",
+              "label": "直接下到轨道层"
+            }
+          ],
+          "prompt": "信号很弱，安保系统已经注意到你。"
+        },
+        {
+          "id": "p1-warn",
+          "type": "dialogue",
+          "speaker_key": "narrator",
+          "initial": "一",
+          "accent": "narrator",
+          "next": "p1-objective",
+          "speaker": "旁白",
+          "text": "楼梯尽头有红光在扫。你数了三下，它每四下就会空出一格——够一个人过去，不够两个人。"
+        },
+        {
+          "id": "p1-objective",
+          "type": "objective",
+          "goals": [
+            {
+              "id": "coords",
+              "done_flag": "coords_confirmed",
+              "label": "确认记忆坐标锁定在零层"
+            },
+            {
+              "id": "signal",
+              "done_flag": "signal_located",
+              "label": "找到信号源的具体位置"
+            }
+          ],
+          "allow_skip": false,
+          "next": "p1-battle",
+          "title": "确定坐标",
+          "description": "先把两件事做实，再往里走。"
+        },
+        {
+          "id": "p1-battle",
+          "type": "battle",
+          "battle": {
+            "hero": null,
+            "target_waves": 2,
+            "map_theme": "station"
+          },
+          "on_win": "p1-archive",
+          "on_lose": "p1-battle",
+          "title": "无人安保",
+          "brief": "安保系统没有名字，也不需要。打到它断电为止。",
+          "waves": [
+            {
+              "label": "波次 1",
+              "note": "巡逻 · 扫描",
+              "event": "站台灯光熄灭，只剩红点在移动",
+              "enemies": [
+                {
+                  "hero": "tech",
+                  "count": 2,
+                  "mod": "生命 ×1.0"
+                }
+              ],
+              "skills": [
+                {
+                  "name": "扫描锁定",
+                  "description": "锁定目标并短暂禁锢",
+                  "cooldown": 10,
+                  "damage": 14,
+                  "effect": "禁锢 2s"
+                }
+              ]
+            },
+            {
+              "label": "波次 2",
+              "note": "增援 · 封锁",
+              "event": "闸机全部落下，退路被封",
+              "enemies": [
+                {
+                  "hero": "tech",
+                  "count": 1,
+                  "mod": "生命 ×1.5"
+                },
+                {
+                  "hero": "volt",
+                  "count": 1,
+                  "mod": "近身压制"
+                }
+              ],
+              "skills": [
+                {
+                  "name": "电击棍",
+                  "description": "近身连击，最后一击眩晕",
+                  "cooldown": 9,
+                  "damage": 24,
+                  "effect": "眩晕 1s"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "p1-archive",
+          "type": "dialogue",
+          "speaker_key": "narrator",
+          "initial": "档",
+          "accent": "narrator",
+          "next": "p1-reward",
+          "speaker": "旁白",
+          "text": "你在控制台里翻到一份旧档案。十七年前，零层登记在册的居民有三千七百多人。你把名字一个个对进现在的人口数据库——一个都没有。不是死亡，不是迁出，是从来没存在过。"
+        },
+        {
+          "id": "p1-reward",
+          "type": "reward",
+          "reward_id": "rc001-p1-clear",
+          "coins": 150,
+          "next": "p1-end",
+          "title": "第一段记忆",
+          "description": "档案被复制进你的终端。它只有 4 MB，却装得下三千多个人。"
+        },
+        {
+          "id": "p1-end",
+          "type": "chapter_end",
+          "next": null,
+          "title": "第一幕结束",
+          "text": "记忆核心提示：下一段影像需要完整权限。权限锁在更深的地方。"
+        }
+      ],
+      "title": "第一幕 · 零层站台",
+      "summary": "记忆坐标指向一个被城市地图抹掉的地名：零层。站台还在，电子屏还在报站。",
+      "card_code": "RC-001",
+      "card_title": "城市之下",
+      "category_name": "赛博世界剧情"
+    },
+    {
+      "id": "rc001-p2",
+      "card": "RC-001",
+      "category": "cyber",
+      "order": 2,
+      "hero": null,
+      "background": "home-background.png",
+      "entry": "p2-intro",
+      "nodes": [
+        {
+          "id": "p2-intro",
+          "type": "dialogue",
+          "speaker_key": "narrator",
+          "initial": "二",
+          "accent": "narrator",
+          "next": "p2-db",
+          "speaker": "旁白",
+          "text": "回到地面，你查了那片区域的规划图。官方说法是「地下综合管廊，无人居住」。但管廊不需要三千七百张床位。"
+        },
+        {
+          "id": "p2-db",
+          "type": "dialogue",
+          "speaker_key": "terminal",
+          "initial": "穹",
+          "accent": "terminal",
+          "palette": {
+            "main": "#7cd4ff",
+            "light": "#dff3ff",
+            "dark": "#1b4a66"
+          },
+          "next": "p2-stranger",
+          "speaker": "天穹",
+          "text": "这些记录被标记为错误数据。错误数据按规程应当清理。清理已完成。您正在查看的是一份已清理的文件。"
+        },
+        {
+          "id": "p2-stranger",
+          "type": "dialogue",
+          "speaker_key": "stranger",
+          "initial": "？",
+          "accent": "stranger",
+          "palette": {
+            "main": "#c9a0ff",
+            "light": "#f0e4ff",
+            "dark": "#4a2f6b"
+          },
+          "next": "p2-choice",
+          "speaker": "陌生人",
+          "text": "你查得很仔细。可惜城市不是忘了他们——是有人让城市忘了他们。"
+        },
+        {
+          "id": "p2-choice",
+          "type": "choice",
+          "prompt_key": "prompt",
+          "options": [
+            {
+              "id": "trust",
+              "next": "p2-battle",
+              "label": "我相信你，继续说。"
+            },
+            {
+              "id": "press",
+              "next": "p2-press",
+              "label": "你到底是谁？"
+            }
+          ],
+          "prompt": "他的声音很平静，平静得不像在求救。"
+        },
+        {
+          "id": "p2-press",
+          "type": "dialogue",
+          "speaker_key": "stranger",
+          "initial": "？",
+          "accent": "stranger",
+          "palette": {
+            "main": "#c9a0ff",
+            "light": "#f0e4ff",
+            "dark": "#4a2f6b"
+          },
+          "next": "p2-battle",
+          "speaker": "陌生人",
+          "text": "现在告诉你，你就不会继续走下去了。先把封锁区过掉，我们在核心见。"
+        },
+        {
+          "id": "p2-battle",
+          "type": "battle",
+          "battle": {
+            "hero": null,
+            "target_waves": 2,
+            "map_theme": "gym"
+          },
+          "on_win": "p2-after",
+          "on_lose": "p2-battle",
+          "title": "封锁区",
+          "brief": "安保部队守在这里十七年了。他们接到的最后一条命令是「不许任何人下去」。",
+          "waves": [
+            {
+              "label": "波次 1",
+              "note": "外围 · 拦截",
+              "event": "通风口喷出蒸汽，视野受阻",
+              "enemies": [
+                {
+                  "hero": "moss",
+                  "count": 2,
+                  "mod": "生命 ×1.2"
+                }
+              ],
+              "skills": [
+                {
+                  "name": "盾墙推进",
+                  "description": "举盾推进并击退正面目标",
+                  "cooldown": 11,
+                  "damage": 20,
+                  "effect": "击退"
+                }
+              ]
+            },
+            {
+              "label": "波次 2",
+              "note": "近卫 · 合围",
+              "event": "封锁闸门逐个落下，场地变窄",
+              "enemies": [
+                {
+                  "hero": "jianghu",
+                  "count": 1,
+                  "mod": "生命 ×1.8 · 伤害 ×1.3"
+                },
+                {
+                  "hero": "moss",
+                  "count": 1,
+                  "mod": "护盾"
+                }
+              ],
+              "skills": [
+                {
+                  "name": "封喉",
+                  "description": "对残血目标有极高斩杀概率",
+                  "cooldown": 14,
+                  "damage": 38,
+                  "effect": "斩杀"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "p2-after",
+          "type": "dialogue",
+          "speaker_key": "narrator",
+          "initial": "二",
+          "accent": "narrator",
+          "next": "p2-reward",
+          "speaker": "旁白",
+          "text": "最后一个人倒下时，面罩裂开了。里面是张很年轻的脸，年轻到不该在这里守十七年。"
+        },
+        {
+          "id": "p2-reward",
+          "type": "reward",
+          "reward_id": "rc001-p2-clear",
+          "coins": 180,
+          "next": "p2-end",
+          "title": "第二段记忆",
+          "description": "通道尽头的门开了。门后面没有灯，只有很深的风。"
+        },
+        {
+          "id": "p2-end",
+          "type": "chapter_end",
+          "next": null,
+          "title": "第二幕结束",
+          "text": "记忆核心提示：最终权限区。检测到高强度防御系统。"
+        }
+      ],
+      "title": "第二幕 · 没有登记的人",
+      "summary": "地下设施曾经是住人的。某次系统升级后，这里的记录被统一标成错误数据。",
+      "card_code": "RC-001",
+      "card_title": "城市之下",
+      "category_name": "赛博世界剧情"
+    },
+    {
+      "id": "rc001-p3",
+      "card": "RC-001",
+      "category": "cyber",
+      "order": 3,
+      "hero": null,
+      "background": "home-background.png",
+      "entry": "p3-intro",
+      "nodes": [
+        {
+          "id": "p3-intro",
+          "type": "dialogue",
+          "speaker_key": "narrator",
+          "initial": "终",
+          "accent": "narrator",
+          "next": "p3-archive",
+          "speaker": "旁白",
+          "text": "地下最深处不是机房，是一座数据中心。三千七百个人的名字在这里排成一列一列，每一列都被压成一段无法打开的碎片。"
+        },
+        {
+          "id": "p3-archive",
+          "type": "dialogue",
+          "speaker_key": "narrator",
+          "initial": "档",
+          "accent": "narrator",
+          "next": "p3-battle",
+          "speaker": "旁白",
+          "text": "它们没有被销毁。销毁是不可逆的，而「不可逆」需要有人签字。没有人愿意签这个字。于是它们被留在这里，等着谁来读。"
+        },
+        {
+          "id": "p3-battle",
+          "type": "battle",
+          "battle": {
+            "hero": null,
+            "target_waves": 3,
+            "map_theme": "hospital"
+          },
+          "on_win": "p3-reveal",
+          "on_lose": "p3-battle",
+          "title": "最终防御",
+          "brief": "防御系统是最后一道保险。它不认识你，只认识「不许读取」这条命令。",
+          "waves": [
+            {
+              "label": "波次 1",
+              "note": "外围防线",
+              "event": "数据舱开始泄压，站位被推挤",
+              "enemies": [
+                {
+                  "hero": "tech",
+                  "count": 2,
+                  "mod": "生命 ×1.4"
+                }
+              ],
+              "skills": [
+                {
+                  "name": "清扫脉冲",
+                  "description": "环形脉冲，击退周围目标",
+                  "cooldown": 9,
+                  "damage": 22,
+                  "effect": "击退"
+                }
+              ]
+            },
+            {
+              "label": "波次 2",
+              "note": "核心守卫",
+              "event": "冷却液泄漏，地面打滑",
+              "enemies": [
+                {
+                  "hero": "volt2",
+                  "count": 1,
+                  "mod": "生命 ×1.6"
+                },
+                {
+                  "hero": "tech",
+                  "count": 1,
+                  "mod": "远程压制"
+                }
+              ],
+              "skills": [
+                {
+                  "name": "声浪压制",
+                  "description": "持续音浪，减速并造成伤害",
+                  "cooldown": 12,
+                  "damage": 28,
+                  "effect": "减速 3s"
+                }
+              ]
+            },
+            {
+              "label": "波次 3",
+              "note": "最终防御 · 全开",
+              "event": "所有照明切换为红色，无掩体可用",
+              "enemies": [
+                {
+                  "hero": "luna",
+                  "count": 1,
+                  "mod": "生命 ×2.0 · 伤害 ×1.4"
+                },
+                {
+                  "hero": "tech",
+                  "count": 1,
+                  "mod": "护盾核心"
+                }
+              ],
+              "skills": [
+                {
+                  "name": "陨星坠落",
+                  "description": "延迟后砸下大范围高额伤害",
+                  "cooldown": 18,
+                  "damage": 52,
+                  "effect": "击退"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "p3-reveal",
+          "type": "dialogue",
+          "speaker_key": "narrator",
+          "initial": "终",
+          "accent": "narrator",
+          "next": "p3-truth",
+          "speaker": "旁白",
+          "text": "防御系统安静下来。你终于看清那张脸——不是十七年前活着的人。他比你想象的年轻，也比这段记忆老。"
+        },
+        {
+          "id": "p3-truth",
+          "type": "dialogue",
+          "speaker_key": "stranger",
+          "initial": "？",
+          "accent": "stranger",
+          "palette": {
+            "main": "#c9a0ff",
+            "light": "#f0e4ff",
+            "dark": "#4a2f6b"
+          },
+          "next": "p3-last",
+          "speaker": "陌生人",
+          "text": "我不是幸存者。我是这张卡。他们删掉所有人之后，把我留在这里，替他们记住。现在你读完了，轮到你了。"
+        },
+        {
+          "id": "p3-last",
+          "type": "dialogue",
+          "speaker_key": "narrator",
+          "initial": "终",
+          "accent": "narrator",
+          "next": "p3-choice",
+          "speaker": "旁白",
+          "text": "档案最后一行自己亮了起来：记忆核心读取者，身份匹配失败。匹配对象：当前读取者。"
+        },
+        {
+          "id": "p3-choice",
+          "type": "choice",
+          "prompt_key": "prompt",
+          "options": [
+            {
+              "id": "keep",
+              "next": "p3-reward-keep",
+              "label": "保存这段记忆，带出去"
+            },
+            {
+              "id": "burn",
+              "next": "p3-reward-burn",
+              "label": "销毁它，让三千七百个人真正结束"
+            }
+          ],
+          "prompt": "你手上有一个选项：把这段记忆带走，或者让它彻底结束。"
+        },
+        {
+          "id": "p3-reward-keep",
+          "type": "reward",
+          "reward_id": "rc001-p3-keep",
+          "coins": 260,
+          "next": "p3-end-keep",
+          "title": "你带走了它",
+          "description": "卡从终端退出时是烫的。你把它放进内侧口袋，贴着心口。"
+        },
+        {
+          "id": "p3-end-keep",
+          "type": "chapter_end",
+          "next": null,
+          "title": "结局 · 有人记得",
+          "text": "第二天，天穹的报告照常发布：能源供应正常、人口数据正常。你在报告底下加了一行小字——三千七百一十四。系统没有删掉它，也没有承认它。"
+        },
+        {
+          "id": "p3-reward-burn",
+          "type": "reward",
+          "reward_id": "rc001-p3-burn",
+          "coins": 260,
+          "next": "p3-end-burn",
+          "title": "你按下了销毁",
+          "description": "碎片一段一段熄灭。没有声音，也没有灰。"
+        },
+        {
+          "id": "p3-end-burn",
+          "type": "chapter_end",
+          "next": null,
+          "title": "结局 · 城市更安静了",
+          "text": "那一晚城市没有停电。你站在街口听了很久，脚下什么声音都没有。你分不清这是结束，还是他们终于成功删干净了。"
+        }
+      ],
+      "title": "终幕 · 记忆核心",
+      "summary": "数据中心还在。被删除的居民记录没有被销毁，只是被压缩成谁也读不了的碎片。",
+      "card_code": "RC-001",
+      "card_title": "城市之下",
+      "category_name": "赛博世界剧情"
+    },
+    {
+      "id": "hero-volt-01",
+      "card": "RC-H01",
+      "category": "hero",
+      "order": 0,
+      "hero": "volt",
+      "background": "home-background.png",
+      "entry": "h1-intro",
+      "nodes": [
+        {
+          "id": "h1-intro",
+          "type": "dialogue",
+          "speaker_key": "hero",
+          "initial": "拳",
+          "accent": "volt",
+          "palette": {
+            "main": "#ff4fa3",
+            "light": "#ffd3e8",
+            "dark": "#812354"
+          },
+          "next": "h1-battle",
+          "speaker": "霓虹拳王",
+          "text": "这条街的规矩很简单：欠了就得还。今晚来的人，我认识。"
+        },
+        {
+          "id": "h1-battle",
+          "type": "battle",
+          "battle": {
+            "hero": "volt",
+            "target_waves": 2,
+            "map_theme": "gym"
+          },
+          "on_win": "h1-reward",
+          "on_lose": "h1-battle",
+          "title": "旧账清算",
+          "brief": "两波对手，都是老熟人。打完就散。",
+          "waves": [
+            {
+              "label": "波次 1",
+              "note": "旧识 · 试探",
+              "event": "无特殊事件",
+              "enemies": [
+                {
+                  "hero": "pipa",
+                  "count": 1,
+                  "mod": "控场"
+                }
+              ],
+              "skills": [
+                {
+                  "name": "弦音禁锢",
+                  "description": "禁锢目标并持续掉血",
+                  "cooldown": 10,
+                  "damage": 16,
+                  "effect": "禁锢 3s"
+                }
+              ]
+            },
+            {
+              "label": "波次 2",
+              "note": "收账 · 压上",
+              "event": "围观人群散开，场地变窄",
+              "enemies": [
+                {
+                  "hero": "jianghu",
+                  "count": 1,
+                  "mod": "生命 ×1.6 · 伤害 ×1.2"
+                }
+              ],
+              "skills": [
+                {
+                  "name": "一剑封喉",
+                  "description": "目标残血时斩杀概率大幅提升",
+                  "cooldown": 14,
+                  "damage": 40,
+                  "effect": "斩杀"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "h1-reward",
+          "type": "reward",
+          "reward_id": "hero-volt-01-clear",
+          "coins": 150,
+          "next": "h1-end",
+          "title": "人情还清",
+          "description": "对方扔下一句「下次别让我等」，转身走进雨里。"
+        },
+        {
+          "id": "h1-end",
+          "type": "chapter_end",
+          "next": null,
+          "title": "本章结束",
+          "text": "拳王把护腕重新缠好。街口的灯亮了一半，够了。"
+        }
+      ],
+      "title": "第一段 · 旧账",
+      "summary": "三年前的一场地下赛，霓虹拳王欠了一个人情。今晚有人来收了。",
+      "card_code": "RC-H01",
+      "card_title": "拳王的旧账",
+      "category_name": "英雄剧情"
+    }
+  ]
+}

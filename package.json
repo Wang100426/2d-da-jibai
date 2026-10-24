@@ -20,7 +20,7 @@
     "build:story": "tsc -p tsconfig.story.json",
     "build:choose-story": "tsc -p tsconfig.choose_story.json",
     "build:story-engine": "tsc -p tsconfig.story-engine.json",
-    "test:story": "npm run build:story-engine && npm run build:story && node --test tests/story_engine.test.cjs && node tests/story_ui.test.cjs",
+    "test:story": "npm run build:story-engine && npm run build:story && npm run build:choose-story && node --test tests/story_engine.test.cjs && node tests/story_ui.test.cjs && node tests/story_choose.test.cjs",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.multiplayer.json --noEmit && tsc -p tsconfig.select.json --noEmit && tsc -p tsconfig.codex.json --noEmit && tsc -p tsconfig.shop.json --noEmit && tsc -p tsconfig.save.json --noEmit && tsc -p tsconfig.equipment.json --noEmit && tsc -p tsconfig.backpack.json --noEmit && tsc -p tsconfig.mode.json --noEmit && tsc -p tsconfig.story.json --noEmit && tsc -p tsconfig.choose_story.json --noEmit",
     "build:backend": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\\build-backend.ps1",
     "clean:release": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\\clean-release.ps1",
@@ -29,7 +29,8 @@
     "start:desktop": "electron .",
     "dist:win": "npm run clean:installer && npm run build && npm run build:backend && electron-builder --win nsis --config.directories.output=release-installer",
     "dist:portable": "npm run clean:portable && npm run build && npm run build:backend && electron-builder --win portable --config.directories.output=release-portable",
-    "test:story-ui": "node tests/story_ui.test.cjs"
+    "test:story-ui": "node tests/story_ui.test.cjs",
+    "test:story-choose": "node tests/story_choose.test.cjs"
   },
   "devDependencies": {
     "electron": "^44.4.5",

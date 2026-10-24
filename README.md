@@ -190,6 +190,19 @@
 - **赛博世界剧情**：战斗节点列出全部英雄，**未解锁的置灰不可选**；选中的英雄随 `/battle?hero=` 传入
 - **英雄剧情**：章节绑定 `hero`，前端不显示选择器，后端 `/battle` 也会强制使用该英雄（剧情内借用角色，不检查解锁）
 
+### 重现卡与分区
+
+游戏里的每个剧本是一张**重现卡**（Replay Card），读取后进入的是一份**记忆核心**。
+
+一张卡可以拆成多个**分区**，按 `order` 顺序**逐段解锁**：打完上一段才会开下一段。每个分区都是独立的一份记忆核心，有自己的节点图与存档。
+
+| 重现卡 | 分区 |
+| --- | --- |
+| `RC-001` 城市之下 | 序幕 · 一张不存在的卡 / 第一幕 · 零层站台 / 第二幕 · 没有登记的人 / 终幕 · 记忆核心 |
+| `RC-H01` 拳王的旧账 | 第一段 · 旧账 |
+
+解锁规则写在 `story_script.section_locked()`，并且 `/story` 入口会再校验一次——手改 URL 跳不进被锁住的分区。
+
 ### 节点类型
 
 一局剧情是有向图：`entry` 指向入口，节点用 `next`（`choice` 用各选项的 `next`）串联。
@@ -268,12 +281,13 @@
 npm run test:story
 ```
 
-分两段跑：
+分三段跑：
 
-- `tests/story_engine.test.cjs` —— **30 项** `node:test` 断言，跑纯逻辑引擎：节点跳转、分支记录、战斗胜负、失败重试、重复上报、存档恢复、旧存档迁移（缺字段 / 类型全错 / 结构不符）、已完成状态不被回退、奖励防重复、无效节点、缺配置、重复 id
-- `tests/story_ui.test.cjs` —— **12 项** DOM stub 断言，真跑编译后的 `story.js`：赛博世界剧情的英雄选择器、英雄剧情的固定出战、未解锁英雄禁用、失败后的重试与退路、胜利推进并请求发奖、已完成章节直达结束页
+- `tests/story_engine.test.cjs` —— **32 项** `node:test` 断言，跑纯逻辑引擎：节点跳转、分支记录、战斗胜负、失败重试、重复上报、存档恢复、旧存档迁移（缺字段 / 类型全错 / 结构不符）、已完成状态不被回退、奖励防重复、无效节点、缺配置、重复 id、分区解锁初始状态
+- `tests/story_ui.test.cjs` —— **12 项** DOM stub 断言，真跑编译后的 `story.js`：赛博世界剧情的英雄选择器、英雄剧情的固定出战、未解锁英雄禁用、失败后的重试与退路、胜利推进并请求发奖、已完成分区直达结束页
+- `tests/story_choose.test.cjs` —— **10 项** DOM stub 断言，真跑编译后的 `choose_story.js`：卡数与分区行、锁定分区按钮禁用、解锁分区可点击并跳转、卡上的编号与通关进度
 
-两段都会先重新编译，避免测到旧产物。
+三段都会先重新编译，避免测到旧产物。
 
 ## 操作
 
@@ -723,6 +737,19 @@ The two lines handle fighters differently:
 - **Cyber World**: the battle node lists every hero; **locked heroes are greyed out and unselectable**. The pick is passed through `/battle?hero=`
 - **Hero Stories**: the chapter binds `hero`, the UI hides the picker, and `/battle` forces that hero server-side too (the story borrows the character, so unlock state is not checked)
 
+### Replay cards and sections
+
+Every story in the game is a **Replay Card**. Reading one drops you into a **memory core**.
+
+A card can be split into several **sections** that unlock **in order**: clearing one opens the next. Each section is a self-contained memory core with its own node graph and its own save slot.
+
+| Card | Sections |
+| --- | --- |
+| `RC-001` City Beneath | Prologue · A Card That Doesn't Exist / Act I · Platform Zero / Act II · The Unregistered / Finale · Memory Core |
+| `RC-H01` The Champion's Debt | Segment 1 · The Debt |
+
+The unlock rule lives in `story_script.section_locked()`, and `/story` re-checks it on entry, so editing the URL cannot open a locked section.
+
 ### Node types
 
 A story is a directed graph: `entry` is the first node, and nodes link onward through `next` (or through each choice option's `next`).
@@ -801,12 +828,13 @@ Story progress lives in its own sub-structure of the game save, isolated from co
 npm run test:story
 ```
 
-Two stages:
+Three stages:
 
-- `tests/story_engine.test.cjs` — **30** `node:test` assertions against the pure engine: node transitions, branch recording, battle win/loss, retry after defeat, duplicate result reports, save restore, legacy-save migration (missing fields / wrong types / wrong shape), completed state never rolled back, reward dedupe, invalid nodes, missing config, duplicate ids
-- `tests/story_ui.test.cjs` — **12** DOM-stub assertions that execute the compiled `story.js`: hero picker for Cyber World stories, fixed fighter for Hero stories, locked heroes disabled, retry and exit after a loss, win advancing to the reward node and calling the reward endpoint, completed chapters landing on the end card
+- `tests/story_engine.test.cjs` — **32** `node:test` assertions against the pure engine: node transitions, branch recording, battle win/loss, retry after defeat, duplicate result reports, save restore, legacy-save migration (missing fields / wrong types / wrong shape), completed state never rolled back, reward dedupe, invalid nodes, missing config, duplicate ids
+- `tests/story_ui.test.cjs` — **12** DOM-stub assertions that execute the compiled `story.js`: hero picker for Cyber World stories, fixed fighter for Hero stories, locked heroes disabled, retry and exit after a loss, win advancing to the reward node and calling the reward endpoint, completed sections landing on the end card
+- `tests/story_choose.test.cjs` — **10** DOM-stub assertions that execute the compiled `choose_story.js`: card and section counts, locked sections disabled, unlocked sections clickable and navigating, card code and clear progress on the card
 
-Both recompile first so the tests never run against stale output.
+All three recompile first so the tests never run against stale output.
 
 ## Controls
 

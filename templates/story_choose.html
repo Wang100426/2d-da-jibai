@@ -40,7 +40,7 @@
 
   <script>
     window.STORY_CATEGORIES = {{ categories|tojson }};
-    window.STORY_CHAPTERS = {{ chapters|tojson }};
+    window.STORY_CARDS = {{ cards|tojson }};
     window.STORY_PROGRESS = {{ story|tojson }};
     window.STORY_ROSTER = {{ roster|tojson }};
     window.STORY_STRINGS = {{ {
@@ -54,7 +54,11 @@
       "nodes": tr("STORY_NODES"),
       "heroChapter": tr("STORY_HERO_CHAPTER"),
       "worldChapter": tr("STORY_WORLD_CHAPTER"),
-      "empty": tr("STORY_EMPTY")
+      "empty": tr("STORY_EMPTY"),
+      "cleared": tr("STORY_CLEARED"),
+      "locked": tr("STORY_LOCKED"),
+      "lockedHint": tr("STORY_LOCKED_HINT"),
+      "fixedHeroShort": tr("STORY_FIXED_HERO")
     }|tojson }};
   </script>
   <script src="{{ url_for('static', filename='choose_story.js') }}"></script>

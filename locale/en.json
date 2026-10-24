@@ -259,9 +259,9 @@
     "STORY_TAGLINE": "Pick a story · Play it out · Choose and fight",
     "STORY_DESCRIPTION": "Two lines: Cyber World stories about the city itself, and Hero stories tied to one fighter. Dialogue, choices, objectives and battles are all saved.",
     "STORY_ICON": "ST",
-    "STORY_CHOOSE_TITLE": "STORY SELECT",
-    "STORY_CHOOSE_HEADING": "CHOOSE A STORY",
-    "STORY_CHOOSE_SUBTITLE": "Cyber World stories are about the city. Hero stories belong to a single fighter. Progress saves automatically.",
+    "STORY_CHOOSE_TITLE": "CARD ARCHIVE",
+    "STORY_CHOOSE_HEADING": "READ A REPLAY CARD",
+    "STORY_CHOOSE_SUBTITLE": "Each replay card is split into sections, and every section is a self-contained memory core. Clear one to unlock the next.",
     "STORY_CATEGORY_ALL": "ALL",
     "STORY_ENTER": "ENTER",
     "STORY_CONTINUE_RUN": "CONTINUE",
@@ -296,7 +296,10 @@
     "STORY_INVALID_TRANSITION": "Cannot continue: invalid target.",
     "STORY_FRAMEWORK_NOTE": "STORY MODE · FRAMEWORK",
     "STORY_PICK_HERO": "PICK YOUR FIGHTER",
-    "STORY_FIXED_HERO": "FIXED FOR THIS BATTLE"
+    "STORY_FIXED_HERO": "FIXED FOR THIS BATTLE",
+    "STORY_CLEARED": "CLEARED",
+    "STORY_LOCKED": "LOCKED",
+    "STORY_LOCKED_HINT": "Finish the previous section first"
   },
   "heroes": {
     "volt": {
@@ -1586,94 +1589,432 @@
         "description": "Side stories owned by one fighter, played as that fighter."
       }
     },
-    "chapters": {
-      "cyber-01": {
-        "title": "Neon Blackout",
-        "summary": "At 3 a.m. the south district loses thirty percent of its power. You need to get through a blockaded street and reach the machine that is still humming.",
+    "cards": {
+      "RC-001": {
+        "code": "RC-001",
+        "title": "City Beneath",
+        "summary": "Xinhai never goes dark. Every day the city system Skyvault reports that all is normal — until the campus arena loses power and the report still says supply is normal.",
+        "quote": "If this city has no underground, then who is making the sound beneath our feet?"
+      },
+      "RC-H01": {
+        "code": "RC-H01",
+        "title": "The Champion's Debt",
+        "summary": "Three years ago, in an underground match, Neon Champion owed someone a favor. Tonight someone came to collect.",
+        "quote": "The rule on this street is simple: a debt gets paid."
+      }
+    },
+    "sections": {
+      "rc001-p0": {
+        "title": "Prologue · A Card That Doesn't Exist",
+        "summary": "The arena goes dark, but the system insists power is fine. In the switch room you find a card that is on no inventory list.",
         "nodes": {
-          "c1-intro": {
+          "p0-intro": {
             "speaker": "Narrator",
-            "text": "Neon City lost thirty percent of its power before dawn. A billboard at the corner kept blinking, spelling out a slogan nobody understood."
+            "text": "The whole campus arena went dark in three seconds. Some of the crowd was still clapping, assuming it was part of the show. You open the terminal; Skyvault's report pops up: energy supply normal."
           },
-          "c1-pick": {
-            "prompt": "The block is sealed. How do you get through?",
+          "p0-ai": {
+            "speaker": "Skyvault",
+            "text": "Anomalous object detected. According to the database, the item you just picked up does not exist. Please put it down."
+          },
+          "p0-choice": {
+            "prompt": "The terminal waits. The crowd starts to stir.",
             "options": [
-              "Charge straight in",
-              "Scout the patrol route first"
+              "Then what is this thing in my hand?",
+              "Forget it — just fix the power."
             ]
           },
-          "c1-objective": {
-            "title": "Read the checkpoint",
-            "description": "The patrol changes every ten minutes. Look before you move.",
-            "goals": [
-              "Watch the patrol handover",
-              "Find a wall you can climb"
-            ]
+          "p0-ai-ask": {
+            "speaker": "Skyvault",
+            "text": "Recommendation: stop holding a non-existent object. Repeat: stop holding a non-existent object."
           },
-          "c1-battle": {
-            "title": "Break the Blockade",
-            "brief": "Clear two waves of patrols and you are through. The second wave brings ranged support.",
+          "p0-ai-fix": {
+            "speaker": "Skyvault",
+            "text": "Energy supply is normal. Therefore the outage does not exist. Since the outage does not exist, the darkness you see is a visual error."
+          },
+          "p0-battle": {
+            "title": "Switch Room",
+            "brief": "Every maintenance bot is offline, yet they are still moving. Clear two waves to keep digging.",
             "waves": [
               {
                 "label": "Wave 1",
-                "note": "Patrol · Probe",
-                "event": "No special event",
+                "note": "Offline · Runaway",
+                "event": "Emergency lights flicker; vision comes and goes",
                 "enemies": [
                   {
-                    "hero": "volt",
+                    "hero": "tech",
                     "count": 2,
                     "mod": "HP ×1.0"
                   }
                 ],
                 "skills": [
                   {
-                    "name": "Street Charge",
-                    "description": "Dash forward and knock the target back",
+                    "name": "Wrench Sweep",
+                    "description": "Mechanical arm sweeps, knocking targets back",
                     "cooldown": 8,
-                    "damage": 18
+                    "damage": 16
                   }
                 ]
               },
               {
                 "label": "Wave 2",
-                "note": "Reinforced · Ranged pressure",
-                "event": "Traffic speeds up; crossing the street stuns you",
+                "note": "Maintenance Core · Push",
+                "event": "Switch cabinets overload; the floor discharges",
                 "enemies": [
-                  {
-                    "hero": "volt",
-                    "count": 1,
-                    "mod": "HP ×1.5"
-                  },
                   {
                     "hero": "tech",
                     "count": 1,
-                    "mod": "Ranged support"
+                    "mod": "HP ×1.6"
+                  },
+                  {
+                    "hero": "moss",
+                    "count": 1,
+                    "mod": "Armored shell"
                   }
                 ],
                 "skills": [
                   {
-                    "name": "Ground Combo",
-                    "description": "Three slams; the last one stuns for 1s",
+                    "name": "Overload Discharge",
+                    "description": "Area discharge that briefly paralyzes",
                     "cooldown": 12,
-                    "damage": 32,
+                    "damage": 26,
                     "effect": "Stun 1s"
                   }
                 ]
               }
             ]
           },
-          "c1-reward": {
-            "title": "Through the Line",
-            "description": "An abandoned warehouse still holds a crate of supplies nobody carried off."
+          "p0-reward": {
+            "title": "The Card Is Warm",
+            "description": "You pull it from the gap in the cabinet. It doesn't feel discarded — it's warm, as if someone has been holding it."
           },
-          "c1-end": {
-            "title": "Chapter Complete",
-            "text": "The alarm is still ringing behind you. The hum of that machine sounds closer than it did last night."
+          "p0-end": {
+            "title": "Prologue Complete",
+            "text": "You push it into the terminal. The screen doesn't ask whether to read it. It just starts."
+          }
+        }
+      },
+      "rc001-p1": {
+        "title": "Act I · Platform Zero",
+        "summary": "The memory coordinates point at a name erased from the city map: Level Zero. The platform is still there, and the sign is still calling trains.",
+        "nodes": {
+          "p1-intro": {
+            "speaker": "Narrator",
+            "text": "The moment the memory core loads, you are no longer in the arena. The air tastes of rust and old standing water. You are standing on a platform, and the display overhead is announcing a stop — Level Zero. The city map has no such place."
+          },
+          "p1-station": {
+            "speaker": "Narrator",
+            "text": "The platform is too clean. No dust on the seats, not a single dead tube light, as if someone still cleans it every day. Just no one left to sit."
+          },
+          "p1-choice": {
+            "prompt": "The signal is weak, and security has already noticed you.",
+            "options": [
+              "Scan for the signal source",
+              "Head straight down to the tracks"
+            ]
+          },
+          "p1-warn": {
+            "speaker": "Narrator",
+            "text": "Red light sweeps the bottom of the stairs. You count three passes; every fourth sweep leaves a gap — enough for one person, not two."
+          },
+          "p1-objective": {
+            "title": "Pin Down the Coordinates",
+            "description": "Nail down two things before going deeper.",
+            "goals": [
+              "Confirm the coordinates are locked on Level Zero",
+              "Locate the exact position of the signal"
+            ]
+          },
+          "p1-battle": {
+            "title": "Unmanned Security",
+            "brief": "The security system has no name and needs none. Keep hitting it until it loses power.",
+            "waves": [
+              {
+                "label": "Wave 1",
+                "note": "Patrol · Scan",
+                "event": "Platform lights die; only red dots move",
+                "enemies": [
+                  {
+                    "hero": "tech",
+                    "count": 2,
+                    "mod": "HP ×1.0"
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "Scan Lock",
+                    "description": "Locks a target and briefly roots it",
+                    "cooldown": 10,
+                    "damage": 14,
+                    "effect": "Root 2s"
+                  }
+                ]
+              },
+              {
+                "label": "Wave 2",
+                "note": "Reinforced · Lockdown",
+                "event": "Every gate drops; the way back is sealed",
+                "enemies": [
+                  {
+                    "hero": "tech",
+                    "count": 1,
+                    "mod": "HP ×1.5"
+                  },
+                  {
+                    "hero": "volt",
+                    "count": 1,
+                    "mod": "Close pressure"
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "Shock Baton",
+                    "description": "Melee combo; the last hit stuns",
+                    "cooldown": 9,
+                    "damage": 24,
+                    "effect": "Stun 1s"
+                  }
+                ]
+              }
+            ]
+          },
+          "p1-archive": {
+            "speaker": "Narrator",
+            "text": "In the console you find an old archive. Seventeen years ago, Level Zero had three thousand seven hundred registered residents. You check the names one by one against the current population database — none of them. Not dead, not relocated. Never existed."
+          },
+          "p1-reward": {
+            "title": "The First Memory",
+            "description": "The archive copies into your terminal. It is only 4 MB, and it holds more than three thousand people."
+          },
+          "p1-end": {
+            "title": "Act I Complete",
+            "text": "Memory core notice: the next segment requires full clearance. The clearance is locked deeper down."
+          }
+        }
+      },
+      "rc001-p2": {
+        "title": "Act II · The Unregistered",
+        "summary": "The underground facility used to be lived in. After one system upgrade, every record here was marked as bad data.",
+        "nodes": {
+          "p2-intro": {
+            "speaker": "Narrator",
+            "text": "Back on the surface you pull up the zoning map. The official line is \"underground utility corridor, uninhabited.\" Corridors don't need three thousand seven hundred beds."
+          },
+          "p2-db": {
+            "speaker": "Skyvault",
+            "text": "These records are marked as bad data. Bad data is purged per procedure. Purge complete. You are viewing a purged file."
+          },
+          "p2-stranger": {
+            "speaker": "Stranger",
+            "text": "You dig carefully. Too bad the city didn't forget them — someone made the city forget."
+          },
+          "p2-choice": {
+            "prompt": "His voice is calm, too calm for someone asking to be saved.",
+            "options": [
+              "I believe you. Keep talking.",
+              "Who are you, really?"
+            ]
+          },
+          "p2-press": {
+            "speaker": "Stranger",
+            "text": "If I tell you now, you won't keep walking. Get through the lockdown first. We'll meet at the core."
+          },
+          "p2-battle": {
+            "title": "Lockdown Zone",
+            "brief": "The security detail has held this line for seventeen years. Their last order was: let no one go down.",
+            "waves": [
+              {
+                "label": "Wave 1",
+                "note": "Outer ring · Intercept",
+                "event": "Steam vents; visibility drops",
+                "enemies": [
+                  {
+                    "hero": "moss",
+                    "count": 2,
+                    "mod": "HP ×1.2"
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "Shield Advance",
+                    "description": "Advances behind a shield and knocks targets back",
+                    "cooldown": 11,
+                    "damage": 20,
+                    "effect": "Knockback"
+                  }
+                ]
+              },
+              {
+                "label": "Wave 2",
+                "note": "Guard · Encircle",
+                "event": "Blast gates drop one by one; the arena narrows",
+                "enemies": [
+                  {
+                    "hero": "jianghu",
+                    "count": 1,
+                    "mod": "HP ×1.8 · DMG ×1.3"
+                  },
+                  {
+                    "hero": "moss",
+                    "count": 1,
+                    "mod": "Shield"
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "Throat Cut",
+                    "description": "Extremely high execute chance against low-health targets",
+                    "cooldown": 14,
+                    "damage": 38,
+                    "effect": "Execute"
+                  }
+                ]
+              }
+            ]
+          },
+          "p2-after": {
+            "speaker": "Narrator",
+            "text": "When the last one fell, his visor cracked open. The face inside was young — too young to have guarded this place for seventeen years."
+          },
+          "p2-reward": {
+            "title": "The Second Memory",
+            "description": "The door at the end of the passage opens. No light behind it, only deep wind."
+          },
+          "p2-end": {
+            "title": "Act II Complete",
+            "text": "Memory core notice: final clearance zone. High-intensity defense system detected."
+          }
+        }
+      },
+      "rc001-p3": {
+        "title": "Finale · Memory Core",
+        "summary": "The data center is still here. The deleted records were never destroyed — only compressed into fragments no one can read.",
+        "nodes": {
+          "p3-intro": {
+            "speaker": "Narrator",
+            "text": "The deepest level isn't a server room. It's a data center. Three thousand seven hundred names stand in columns here, every column crushed into a fragment that cannot be opened."
+          },
+          "p3-archive": {
+            "speaker": "Narrator",
+            "text": "They were never destroyed. Destruction is irreversible, and \"irreversible\" needs a signature. Nobody would sign. So they were left here, waiting for someone to read."
+          },
+          "p3-battle": {
+            "title": "Final Defense",
+            "brief": "The defense system is the last safeguard. It doesn't know you — only the order: no reading.",
+            "waves": [
+              {
+                "label": "Wave 1",
+                "note": "Outer line",
+                "event": "Data pods vent; your footing gets pushed around",
+                "enemies": [
+                  {
+                    "hero": "tech",
+                    "count": 2,
+                    "mod": "HP ×1.4"
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "Clear Pulse",
+                    "description": "Ring pulse that knocks back nearby targets",
+                    "cooldown": 9,
+                    "damage": 22,
+                    "effect": "Knockback"
+                  }
+                ]
+              },
+              {
+                "label": "Wave 2",
+                "note": "Core guard",
+                "event": "Coolant leaks; the floor turns slick",
+                "enemies": [
+                  {
+                    "hero": "volt2",
+                    "count": 1,
+                    "mod": "HP ×1.6"
+                  },
+                  {
+                    "hero": "tech",
+                    "count": 1,
+                    "mod": "Ranged pressure"
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "Sound Suppression",
+                    "description": "Sustained soundwave that slows and damages",
+                    "cooldown": 12,
+                    "damage": 28,
+                    "effect": "Slow 3s"
+                  }
+                ]
+              },
+              {
+                "label": "Wave 3",
+                "note": "Final defense · Full",
+                "event": "All lighting turns red; no cover left",
+                "enemies": [
+                  {
+                    "hero": "luna",
+                    "count": 1,
+                    "mod": "HP ×2.0 · DMG ×1.4"
+                  },
+                  {
+                    "hero": "tech",
+                    "count": 1,
+                    "mod": "Shield core"
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "Falling Star",
+                    "description": "Delayed wide-area heavy damage",
+                    "cooldown": 18,
+                    "damage": 52,
+                    "effect": "Knockback"
+                  }
+                ]
+              }
+            ]
+          },
+          "p3-reveal": {
+            "speaker": "Narrator",
+            "text": "The defense system goes quiet. You finally see the face — not someone who was alive seventeen years ago. Younger than you expected, and older than this memory."
+          },
+          "p3-truth": {
+            "speaker": "Stranger",
+            "text": "I'm not a survivor. I'm this card. After they deleted everyone, they left me here to remember for them. Now you've read it. Your turn."
+          },
+          "p3-last": {
+            "speaker": "Narrator",
+            "text": "The last line of the archive lights up on its own: Memory core reader — identity match failed. Matched subject: current reader."
+          },
+          "p3-choice": {
+            "prompt": "You have one choice left: take this memory with you, or let it end for good.",
+            "options": [
+              "Save this memory and take it out",
+              "Destroy it — let all three thousand seven hundred end"
+            ]
+          },
+          "p3-reward-keep": {
+            "title": "You Took It",
+            "description": "The card is hot when it leaves the terminal. You slide it into an inside pocket, against your chest."
+          },
+          "p3-end-keep": {
+            "title": "Ending · Someone Remembers",
+            "text": "The next day Skyvault publishes its report as usual: energy supply normal, population data normal. You add a line under it in small type — three thousand seven hundred and fourteen. The system doesn't delete it. It doesn't acknowledge it either."
+          },
+          "p3-reward-burn": {
+            "title": "You Pressed Destroy",
+            "description": "The fragments go out one after another. No sound, no ash."
+          },
+          "p3-end-burn": {
+            "title": "Ending · The City Got Quieter",
+            "text": "The city didn't lose power that night. You stood at the corner and listened for a long time. Nothing came from under your feet. You can't tell whether this is the end, or whether they finally finished deleting."
           }
         }
       },
       "hero-volt-01": {
-        "title": "The Champion's Debt",
+        "title": "Segment 1 · The Debt",
         "summary": "Three years ago, in an underground match, Neon Champion owed someone a favor. Tonight someone came to collect.",
         "nodes": {
           "h1-intro": {
@@ -1733,7 +2074,7 @@
             "description": "They leave one line behind — \"don't keep me waiting next time\" — and walk into the rain."
           },
           "h1-end": {
-            "title": "Chapter Complete",
+            "title": "Segment Complete",
             "text": "The Champion rewraps his wrist guard. Half the street lights come back on. That is enough."
           }
         }
