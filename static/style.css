@@ -20,6 +20,96 @@ button:disabled{transform:none}
 .status-list{min-height:25px;display:flex;justify-content:center;gap:4px;flex-wrap:wrap;margin-top:8px;width:150px}.status-badge{padding:4px 5px;background:#251a3a;border:1px solid #8157a4;color:#e0c5ff;font:9px 'Chakra Petch';white-space:nowrap}.status-badge b{color:var(--pink);margin-left:3px}.enemy .status-badge{border-color:#71833a;background:#253125;color:#d2ef8a}.skill-button{position:relative;min-height:91px}.skill-button:disabled{opacity:.42;cursor:not-allowed;transform:none}.cooldown-label{display:block;color:var(--pink);font:10px 'Chakra Petch';margin-top:5px;min-height:12px}
 .skill-button kbd,.combat-hints kbd{display:inline-block;padding:2px 5px;border:1px solid #555b7c;background:#20243b;color:var(--cyan);font:10px 'Chakra Petch';letter-spacing:1px}.skill-button kbd{position:absolute;top:8px;left:8px}.basic-attack{border-color:#4d5475}.basic-attack span{color:var(--cyan)}.combat-hints{display:flex;justify-content:flex-end;gap:18px;color:var(--muted);font:11px 'Chakra Petch';margin-top:-12px}.combat-hints kbd{margin-right:4px}.ai-label{color:var(--lime)}.ai-label i{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--lime);box-shadow:0 0 8px var(--lime);margin-right:5px}
 
+/* ───── 剧情模式（框架版：对话框 / 分支 / 战斗剧情） ───── */
+.story-page{height:100vh;height:100svh;min-height:620px;display:grid;grid-template-rows:64px minmax(0,1fr);overflow:hidden;position:relative;background:#07080f}
+.story-backdrop{position:fixed;inset:0;z-index:0;background-position:center;background-size:cover;background-repeat:no-repeat;filter:saturate(.85) brightness(.45);transform:scale(1.04)}
+.story-backdrop::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#07080fdd,#07080f55 42%,#07080ff0)}
+.story-topbar{position:relative;z-index:3;height:64px;padding:0 clamp(16px,4vw,44px);display:flex;align-items:center;gap:18px;border-bottom:1px solid #232a3d;background:#080a12cc;backdrop-filter:blur(8px)}
+.story-topbar .select-back{position:static;margin:0}
+.story-heading{display:flex;flex-direction:column;gap:2px;min-width:0}
+.story-heading small{color:var(--cyan);font:9px 'Chakra Petch';letter-spacing:2px}
+.story-heading b{font-size:13px;letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.story-tools{margin-left:auto;display:flex;align-items:center;gap:12px}
+.story-progress{color:#7f88a1;font:10px 'Chakra Petch';letter-spacing:1px;white-space:nowrap}
+.story-skip{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px;border:1px solid #37415c;background:#111726;color:#c3cadb;font:11px 'Chakra Petch';letter-spacing:.6px;cursor:pointer}
+.story-skip:hover{border-color:var(--cyan);color:var(--text)}
+.story-skip b{color:var(--cyan);font-size:13px}
+.story-stage{position:relative;z-index:2;min-height:0;padding:clamp(16px,3vh,32px) clamp(18px,5vw,70px) clamp(28px,4vh,46px);display:flex;flex-direction:column;justify-content:center;overflow-y:auto}
+.story-framework-note{position:fixed;z-index:2;left:50%;bottom:9px;transform:translateX(-50%);color:#5a6280;font:9px 'Chakra Petch';letter-spacing:1.4px;pointer-events:none;white-space:nowrap}
+
+/* 对话框 */
+.story-dialogue{max-width:1100px;width:100%;margin-top:auto;display:flex;flex-direction:column;gap:14px}
+.story-speaker{display:flex;align-items:center;gap:12px}
+.story-portrait{width:54px;height:54px;flex:none;display:grid;place-items:center;background:linear-gradient(145deg,var(--hero-main,#ff4fa3),var(--hero-dark,#812354));color:var(--hero-light,#ffd3e8);font:900 23px 'Noto Sans SC';clip-path:polygon(50% 0,100% 22%,90% 100%,10% 100%,0 22%);border:1px solid #ffffff22}
+.story-speaker small{display:block;color:var(--cyan);font:9px 'Chakra Petch';letter-spacing:1.6px}
+.story-speaker b{font-size:15px;letter-spacing:.5px}
+.story-box{position:relative;width:100%;min-height:132px;padding:22px 26px 30px;background:#0b0f1ae8;border:1px solid #2f3a55;border-left:3px solid var(--cyan);color:var(--text);text-align:left;cursor:pointer;transition:border-color .16s,background .16s}
+.story-box:hover{border-color:#49e6e0aa;background:#0d1220f2}
+.story-text{margin:0;font-size:15px;line-height:1.85;letter-spacing:.3px;white-space:pre-wrap}
+.story-hint{position:absolute;right:16px;bottom:10px;color:#6f7893;font:9px 'Chakra Petch';letter-spacing:1.2px;animation:story-hint-blink 1.6s ease-in-out infinite}
+@keyframes story-hint-blink{50%{opacity:.3}}
+
+/* 分支选择 */
+.story-choice{max-width:840px;width:100%;margin:auto;display:flex;flex-direction:column;gap:14px}
+.story-prompt{margin:0;color:#cfd5e6;font-size:15px;letter-spacing:.4px}
+.story-options{display:flex;flex-direction:column;gap:10px}
+.story-option{width:100%;display:flex;align-items:center;gap:14px;padding:15px 18px;background:#0b0f1ad9;border:1px solid #2c3550;color:var(--text);text-align:left;cursor:pointer;transition:border-color .16s,background .16s,transform .12s}
+.story-option:hover{border-color:var(--cyan);background:#101827;transform:translateX(4px)}
+.story-option kbd{width:24px;height:24px;flex:none;display:grid;place-items:center;background:#17202d;border:1px solid #49e6e055;color:var(--cyan);font:10px 'Chakra Petch'}
+.story-option>div{flex:1;min-width:0}
+.story-option b{display:block;font-size:14px;line-height:1.5}
+.story-option small{display:block;margin-top:4px;color:#8b93a9;font-size:11px}
+.story-option>span{color:var(--cyan);font:20px 'Chakra Petch';flex:none}
+
+/* 战斗剧情 */
+.story-battle{max-width:1100px;width:100%;margin:auto;display:flex;flex-direction:column;gap:16px}
+.story-battle-head .eyebrow{margin:0 0 6px}
+.story-battle-head h2{margin:0 0 6px;font-size:clamp(20px,2.4vw,28px);letter-spacing:1px}
+.story-brief{margin:0;color:#a6aec4;font-size:12px;line-height:1.7}
+.story-waves{display:grid;grid-template-columns:repeat(auto-fit,minmax(285px,1fr));gap:12px}
+.story-wave{background:#0a0e18e6;border:1px solid #2a3348;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.story-wave>header{display:flex;align-items:baseline;gap:8px;border-bottom:1px solid #232c40;padding-bottom:8px}
+.story-wave>header b{font-size:14px;letter-spacing:.5px}
+.story-wave>header small{color:#7f88a1;font-size:10px}
+.story-event{margin:0;color:#8b93a9;font-size:11px;line-height:1.6}
+.story-block>small{display:block;color:var(--cyan);font:9px 'Chakra Petch';letter-spacing:1.6px;margin-bottom:6px}
+.story-units{display:flex;flex-wrap:wrap;gap:6px}
+.story-unit{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;background:#111827;border:1px solid #2b3651}
+.story-unit i{width:18px;height:18px;flex:none;display:grid;place-items:center;background:linear-gradient(145deg,var(--hero-main,#444),var(--hero-dark,#222));color:var(--hero-light,#fff);font:9px 'Noto Sans SC';font-style:normal;clip-path:polygon(50% 0,100% 22%,90% 100%,10% 100%,0 22%)}
+.story-unit b{font-size:11px}
+.story-unit em{color:#7f88a1;font:9px 'Chakra Petch';font-style:normal}
+.story-skills{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+.story-skills li{padding:7px 9px;background:#0d1420;border-left:2px solid #ff6b8a}
+.story-skills b{display:block;font-size:11px}
+.story-skills small{display:block;margin-top:3px;color:#8b93a9;font-size:10px;line-height:1.5}
+.story-skills em{display:block;margin-top:4px;color:#ffb1c4;font:9px 'Chakra Petch';letter-spacing:.6px;font-style:normal}
+.story-skill-empty{border-left-color:#3a4560!important;color:#6f7893;font-size:10px}
+.story-battle-foot{display:flex;justify-content:flex-end;align-items:center;gap:10px;padding-top:4px}
+.story-start{width:auto;padding:0 26px 0 30px;border:0;cursor:pointer}
+.story-skip-battle{background:#0f1524}
+
+/* 结束 */
+.story-end{max-width:720px;width:100%;margin:auto;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.story-end h2{margin:0;font-size:clamp(24px,3vw,34px);letter-spacing:1px}
+.story-end-text{margin:0;max-width:560px;color:#a6aec4;font-size:13px;line-height:1.9}
+.story-end-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:6px}
+
+/* 轻提示 */
+.story-toast{position:fixed;z-index:9999;left:50%;bottom:12%;transform:translateX(-50%);padding:10px 18px;background:#111a2a;border:1px solid var(--cyan);color:var(--text);font-size:12px;box-shadow:0 12px 30px #000a;transition:opacity .4s,transform .4s}
+.story-toast-out{opacity:0;transform:translate(-50%,10px)}
+
+@media(max-width:760px){
+  .story-page{grid-template-rows:56px minmax(0,1fr)}
+  .story-topbar{height:56px;gap:10px;padding:0 12px}
+  .story-heading small,.story-progress{display:none}
+  .story-stage{padding:16px 14px 42px}
+  .story-text{font-size:13.5px}
+  .story-waves{grid-template-columns:1fr}
+  .story-battle-foot{flex-direction:column-reverse;align-items:stretch}
+  .story-start{width:100%}
+  .story-framework-note{font-size:8px;letter-spacing:.8px}
+}
+
 /* ───── 启动画面：白底 + 公司图标 + 健康游戏公约 ───── */
 .splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#fff;transition:opacity .5s ease}
 .splash-out{opacity:0;pointer-events:none}

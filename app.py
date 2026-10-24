@@ -9,6 +9,7 @@ from pathlib import Path
 from flask import Flask, jsonify, redirect, render_template, request, send_file, url_for
 
 import player_save
+import story_script
 from map_codex import codex_entries
 
 
@@ -627,6 +628,25 @@ def mode_page():
         },
     ]
     return render_template("mode.html", profile=profile_snapshot(), modes=modes, default_mode=modes[0])
+
+
+@app.get("/story")
+def story_page():
+    """剧情模式（框架阶段）：只渲染脚本与战斗配置，不接入正式流程。"""
+    lang = request.args.get("lang", request.cookies.get("lang", "zh"))
+    lang = lang if lang in LOCALE_PACKAGES else "zh"
+    script = copy.deepcopy(story_script.DEMO_SCRIPT)
+    # 剧情正文暂未做多语言，标题/副标题先按界面语言覆盖。
+    for field in ("title", "subtitle"):
+        localized = script.get(f"{field}_i18n", {})
+        if lang in localized:
+            script[field] = localized[lang]
+    return render_template(
+        "story.html",
+        profile=profile_snapshot(),
+        script=script,
+        roster=hero_roster(lang),
+    )
 
 
 @app.get("/select")

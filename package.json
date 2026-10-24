@@ -7,7 +7,7 @@
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
-    "build": "tsc -p tsconfig.json && tsc -p tsconfig.multiplayer.json && tsc -p tsconfig.select.json && tsc -p tsconfig.codex.json && tsc -p tsconfig.shop.json && tsc -p tsconfig.save.json && tsc -p tsconfig.equipment.json && tsc -p tsconfig.backpack.json && tsc -p tsconfig.mode.json",
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.multiplayer.json && tsc -p tsconfig.select.json && tsc -p tsconfig.codex.json && tsc -p tsconfig.shop.json && tsc -p tsconfig.save.json && tsc -p tsconfig.equipment.json && tsc -p tsconfig.backpack.json && tsc -p tsconfig.mode.json && tsc -p tsconfig.story.json",
     "build:map": "tsc -p tsconfig.json",
     "build:lobby": "tsc -p tsconfig.multiplayer.json",
     "build:select": "tsc -p tsconfig.select.json",
@@ -17,7 +17,8 @@
     "build:equipment": "tsc -p tsconfig.equipment.json",
     "build:backpack": "tsc -p tsconfig.backpack.json",
     "build:mode": "tsc -p tsconfig.mode.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.multiplayer.json --noEmit && tsc -p tsconfig.select.json --noEmit && tsc -p tsconfig.codex.json --noEmit && tsc -p tsconfig.shop.json --noEmit && tsc -p tsconfig.save.json --noEmit && tsc -p tsconfig.equipment.json --noEmit && tsc -p tsconfig.backpack.json --noEmit && tsc -p tsconfig.mode.json --noEmit",
+    "build:story": "tsc -p tsconfig.story.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.multiplayer.json --noEmit && tsc -p tsconfig.select.json --noEmit && tsc -p tsconfig.codex.json --noEmit && tsc -p tsconfig.shop.json --noEmit && tsc -p tsconfig.save.json --noEmit && tsc -p tsconfig.equipment.json --noEmit && tsc -p tsconfig.backpack.json --noEmit && tsc -p tsconfig.mode.json --noEmit && tsc -p tsconfig.story.json --noEmit",
     "build:backend": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\\build-backend.ps1",
     "clean:release": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\\clean-release.ps1",
     "clean:installer": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts\\clean-release.ps1 -Target installer",

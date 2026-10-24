@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="{{ {'en': 'en', 'ja': 'ja'}.get(lang, 'zh-CN') }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="{{ url_for('favicon', lang=lang) }}">
+  <title>{{ tr("STORY_TITLE") }} · {{ tr("PRODUCT_NAME") }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="story-page">
+  <div class="scanlines"></div>
+  <div class="story-backdrop" id="story-backdrop" aria-hidden="true"></div>
+
+  <header class="story-topbar">
+    <a class="select-back story-back" href="/" aria-label="{{ tr('BACK_HOME') }}">← <span>{{ tr("BACK_HOME") }}</span></a>
+    <div class="story-heading">
+      <small>{{ tr("STORY_TITLE") }}</small>
+      <b id="story-title">{{ script.title }}</b>
+    </div>
+    <div class="story-tools">
+      <span class="story-progress" id="story-progress"></span>
+      <button class="story-skip" id="story-skip" type="button">{{ tr("STORY_SKIP") }} <b>»</b></button>
+      <div class="language-switch" data-language-switch></div>
+    </div>
+  </header>
+
+  <main class="story-stage" id="story-stage" aria-live="polite"></main>
+
+  <div class="story-framework-note">{{ script.subtitle }}</div>
+
+  <script>
+    window.STORY_SCRIPT = {{ script|tojson }};
+    window.STORY_ROSTER = {{ roster|tojson }};
+    window.STORY_STRINGS = {{ {
+      "skip": tr("STORY_SKIP"),
+      "continue": tr("STORY_CONTINUE"),
+      "clickHint": tr("STORY_CLICK_HINT"),
+      "choiceHint": tr("STORY_CHOICE_HINT"),
+      "wave": tr("STORY_WAVE"),
+      "enemyUnits": tr("STORY_ENEMY_UNITS"),
+      "enemySkills": tr("STORY_ENEMY_SKILLS"),
+      "event": tr("STORY_EVENT"),
+      "startBattle": tr("STORY_START_BATTLE"),
+      "battleLocked": tr("STORY_BATTLE_LOCKED"),
+      "noSkills": tr("STORY_NO_SKILLS"),
+      "cooldown": tr("STORY_COOLDOWN"),
+      "damage": tr("STORY_DAMAGE"),
+      "backHome": tr("STORY_BACK_HOME"),
+      "brief": tr("STORY_BATTLE_BRIEF"),
+      "progress": tr("STORY_PROGRESS"),
+      "skipped": tr("STORY_SKIPPED"),
+      "replay": tr("STORY_REPLAY")
+    }|tojson }};
+  </script>
+  <script src="{{ url_for('static', filename='story.js') }}"></script>
+  <script src="{{ url_for('static', filename='language.js') }}"></script>
+  <script src="{{ url_for('static', filename='page-transition.js') }}" defer></script>
+</body>
+</html>

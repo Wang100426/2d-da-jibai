@@ -17,6 +17,7 @@
 - [英雄](#英雄)
 - [装备系统](#装备系统)
 - [地图](#地图)
+- [剧情模式（框架）](#剧情模式框架)
 - [操作](#操作)
 - [运行与构建](#运行与构建)
 - [项目结构](#项目结构)
@@ -172,6 +173,45 @@
 
 **地图图鉴**：主页底部栏的「图鉴」入口（`/codex`），一次看完全部 7 张赛场的实机布局缩略图、地形特点、随机事件与建筑 / 路障数量。
 
+## 剧情模式（框架）
+
+> **状态：框架已就位，尚未接入正式流程。** 页面能完整跑通「对话 → 分支 → 战斗配置 → 结束」，但「开始战斗」目前只提示未接入，不会真的开打。
+
+路由 `/story`，数据源是 `story_script.py` 里的 `DEMO_SCRIPT`。
+
+一局剧情是一个有向图：`start` 指向入口节点，每个节点用 `next`（或分支选项的 `next`）指向下一个。
+
+| 节点类型 | 作用 |
+| --- | --- |
+| `dialogue` | 对话框：说话人 + 正文，打字机逐字显示，点击 / 空格继续 |
+| `choice` | 分支选择：若干按钮，可带提示文案，各自跳转到指定节点 |
+| `battle` | 战斗剧情：自定义每一波的敌人、战场事件与敌方技能 |
+| `end` | 结束页：返回主页 / 从头再看 |
+
+`battle` 节点的 `waves` 每一项独立配置：
+
+```python
+{
+    "index": 2,
+    "label": "波次 2",
+    "note": "压制 · 拳王下场",
+    "event": "街口车流加速，横穿时会造成眩晕",
+    "enemies": [
+        {"hero": "volt", "count": 1, "mod": "生命 ×1.6 · 伤害 ×1.2"},
+    ],
+    "skills": [
+        {"name": "震地连击", "description": "连续三次砸地", "cooldown": 12, "damage": 32, "effect": "眩晕 1s"},
+    ],
+}
+```
+
+- `enemies[].hero` 填英雄 id，页面从花名册取头像字、名字与配色
+- 敌方技能里 `damage` 为 0 时只显示冷却，不显示伤害
+- 「跳过剧情」沿当前路线直接跳到第一个战斗节点；路线里没有战斗就跳到结束节点
+- 界面文案走 `locale/*.json` 的 `STORY_*`；剧情正文暂时只有一种语言，`title_i18n` / `subtitle_i18n` 可按界面语言覆盖标题
+
+新增剧情：复制 `DEMO_SCRIPT` 的结构改内容，在 `app.py` 的 `/story` 路由里换成新脚本。
+
 ## 操作
 
 | 按键 | 操作 |
@@ -258,19 +298,20 @@ npm run dist:portable  # 便携版 → release-portable/
 ├─ app.py                  Flask 入口 + HEROES 英雄唯一数据源
 ├─ player_save.py          存档读写、金币结算、装备定义与抽取
 ├─ map_codex.py            地图图鉴数据（布局 / 配色 / 障碍）
+├─ story_script.py         剧情脚本数据（节点图 + 战斗波次配置）
 ├─ desktop_server.py       桌面版启动的后端服务（输出 ready 端口）
 ├─ server_gui.py           带局域网地址显示的服务启动器
 ├─ electron/main.cjs       Electron 主进程：启动后端 + 开窗口
 ├─ frontend/               TypeScript 源码（每个页面一份）
 │  ├─ map.ts               战斗与地图逻辑（最大的一块）
 │  ├─ select.ts / codex.ts / shop.ts / save.ts
-│  ├─ multiplayer.ts / equipment.ts / backpack.ts / mode.ts
+│  ├─ multiplayer.ts / equipment.ts / backpack.ts / mode.ts / story.ts
 ├─ static/                 编译产物 + 样式 + 图片
 │  ├─ app.js / select.js / …（tsc 生成，勿手改）
 │  ├─ style.css / map.css / multiplayer.css
 │  ├─ home-background.png / gamecom.png / 图标
 │  └─ page-transition.js   站内跳转淡出过场
-├─ templates/              Jinja2 模板（index / mode / select / battle / shop / codex / equipment / backpack / multiplayer）
+├─ templates/              Jinja2 模板（index / mode / select / battle / shop / codex / equipment / backpack / multiplayer / story）
 ├─ locale/                 zh.json / en.json / ja.json
 ├─ save/profile.json       本地测试存档
 ├─ scripts/                build-backend.ps1 / clean-release.ps1
@@ -443,6 +484,7 @@ The interface ships in Chinese, English, and Japanese (2D大撃破). Current ver
 - [Heroes](#heroes)
 - [Equipment](#equipment)
 - [Maps](#maps)
+- [Story mode (framework)](#story-mode-framework)
 - [Controls](#controls)
 - [Running and building](#running-and-building)
 - [Project layout](#project-layout)
@@ -598,6 +640,45 @@ Seven arenas, each with distinct terrain and a random event. Data source: `map_c
 
 **Map codex**: the **Codex** entry in the home bottom bar (`/codex`) shows all seven arenas at once, with a to-scale layout preview, terrain notes, the random event, and building/barrier counts.
 
+## Story mode (framework)
+
+> **Status: the framework is in place but not wired into the game yet.** The page runs the full "dialogue → branch → battle config → end" loop, but **Start Battle** only shows a "not connected" notice — it does not launch a real fight.
+
+Route `/story`; the data source is `DEMO_SCRIPT` in `story_script.py`.
+
+A story is a directed graph: `start` points at the entry node, and each node points onward through `next` (or through its branch options).
+
+| Node type | Purpose |
+| --- | --- |
+| `dialogue` | Speaker + body text, typed out character by character; click or press Space to continue |
+| `choice` | Branch buttons with optional hints, each jumping to its own node |
+| `battle` | Battle scene: per-wave enemies, battlefield event, and enemy skills |
+| `end` | End card: back home or replay |
+
+Each entry in a `battle` node's `waves` is configured independently:
+
+```python
+{
+    "index": 2,
+    "label": "波次 2",
+    "note": "压制 · 拳王下场",
+    "event": "街口车流加速，横穿时会造成眩晕",
+    "enemies": [
+        {"hero": "volt", "count": 1, "mod": "生命 ×1.6 · 伤害 ×1.2"},
+    ],
+    "skills": [
+        {"name": "震地连击", "description": "连续三次砸地", "cooldown": 12, "damage": 32, "effect": "眩晕 1s"},
+    ],
+}
+```
+
+- `enemies[].hero` takes a hero id; the page pulls the portrait glyph, name, and palette from the roster
+- When an enemy skill's `damage` is 0, only the cooldown is shown
+- **Skip Story** follows the current route straight to the first battle node; if the route has no battle, it jumps to the end node
+- UI text lives under `STORY_*` in `locale/*.json`; story prose is single-language for now, while `title_i18n` / `subtitle_i18n` override the header per interface language
+
+To add a story, copy the shape of `DEMO_SCRIPT`, change the content, and swap the script in the `/story` route in `app.py`.
+
 ## Controls
 
 | Key | Action |
@@ -684,19 +765,20 @@ Save layout (`version: 2`):
 ├─ app.py                  Flask entry point + HEROES, the hero source of truth
 ├─ player_save.py          Save I/O, coin settlement, equipment definitions and draws
 ├─ map_codex.py            Map codex data (layout / palette / obstacles)
+├─ story_script.py         Story script data (node graph + battle wave config)
 ├─ desktop_server.py       Backend launched by the desktop build (emits the ready port)
 ├─ server_gui.py           Server launcher that displays the LAN address
 ├─ electron/main.cjs       Electron main process: start backend, open window
 ├─ frontend/               TypeScript sources (one per page)
 │  ├─ map.ts               Combat and map logic (the largest module)
 │  ├─ select.ts / codex.ts / shop.ts / save.ts
-│  ├─ multiplayer.ts / equipment.ts / backpack.ts / mode.ts
+│  ├─ multiplayer.ts / equipment.ts / backpack.ts / mode.ts / story.ts
 ├─ static/                 Compiled output + styles + images
 │  ├─ app.js / select.js / … (generated by tsc, do not edit)
 │  ├─ style.css / map.css / multiplayer.css
 │  ├─ home-background.png / gamecom.png / icons
 │  └─ page-transition.js   Fade-out transition for in-site navigation
-├─ templates/              Jinja2 templates (index / mode / select / battle / shop / codex / equipment / backpack / multiplayer)
+├─ templates/              Jinja2 templates (index / mode / select / battle / shop / codex / equipment / backpack / multiplayer / story)
 ├─ locale/                 zh.json / en.json / ja.json
 ├─ save/profile.json       Local test save
 ├─ scripts/                build-backend.ps1 / clean-release.ps1
