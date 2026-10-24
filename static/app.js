@@ -900,9 +900,9 @@ function finishStoryBattle(result) {
     const separator = storyBattle.return_url.includes("?") ? "&" : "?";
     const target = `${storyBattle.return_url}${separator}result=${result}&waves=${wave}`;
     showToast(result === "win" ? tx("战斗胜利") : tx("战斗失败"), result === "win" ? "success" : "warning");
-    // 留一帧给提示与结算请求，再跳转
+    // 用 replace：避免战斗页留在历史记录里，按浏览器返回又回到战斗并重复判胜负
     window.setTimeout(() => {
-        window.location.href = target;
+        window.location.replace(target);
     }, 260);
 }
 function finishRun() {

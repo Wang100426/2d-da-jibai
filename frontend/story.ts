@@ -14,6 +14,15 @@ interface StoryRosterEntry {
   palette: StoryPalette;
 }
 
+interface StoryHeroEntry {
+  id: string;
+  name: string;
+  initial: string;
+  palette: StoryPalette;
+  locked: boolean;
+  price: number;
+}
+
 interface StoryStrings {
   [key: string]: string;
 }
@@ -30,16 +39,21 @@ const storyWindow = window as unknown as {
   STORY_CHAPTER?: StoryChapter;
   STORY_PROGRESS?: unknown;
   STORY_ROSTER?: StoryRosterEntry[];
+  STORY_HEROES?: StoryHeroEntry[];
   STORY_STRINGS?: StoryStrings;
 };
 
 const chapter = storyWindow.STORY_CHAPTER;
 const roster = storyWindow.STORY_ROSTER || [];
+const storyHeroes = storyWindow.STORY_HEROES || [];
 const strings = storyWindow.STORY_STRINGS || {};
 
 if (!chapter) throw new Error("剧情数据未由 Flask 页面注入。");
 
 const engine = new StoryEngine(chapter, storyWindow.STORY_PROGRESS);
+
+/** 赛博世界剧情：战斗前自选的英雄（英雄剧情固定用 chapter.hero，忽略这个）。 */
+let pickedHero: string | null = null;
 
 const stage = document.getElementById("story-stage");
 if (!stage) throw new Error("缺少剧情舞台元素。");
@@ -283,23 +297,34 @@ function renderBattle(node: StoryBattleNode): void {
   }
   section.append(head);
 
-  const heroId = node.battle?.hero || chapter?.hero || "volt";
-  const hero = heroOf(heroId);
+  // 英雄剧情：固定出战；赛博世界剧情：战斗前自选
+  const lockedHero = chapter?.hero || node.battle?.hero || null;
   const meta = document.createElement("div");
   meta.className = "story-battle-meta";
-  const heroChip = document.createElement("span");
-  heroChip.className = "story-unit";
-  applyPalette(heroChip, hero?.palette);
-  const mark = document.createElement("i");
-  mark.textContent = hero?.initial || "?";
-  const heroName = document.createElement("b");
-  heroName.textContent = hero?.name || heroId;
-  heroChip.append(mark, heroName);
+  if (lockedHero) {
+    const hero = heroOf(lockedHero);
+    const heroChip = document.createElement("span");
+    heroChip.className = "story-unit";
+    applyPalette(heroChip, hero?.palette);
+    const mark = document.createElement("i");
+    mark.textContent = hero?.initial || "?";
+    const heroName = document.createElement("b");
+    heroName.textContent = hero?.name || lockedHero;
+    heroChip.append(mark, heroName);
+    const fixedTag = document.createElement("em");
+    fixedTag.textContent = str("fixedHero", "FIXED");
+    heroChip.append(fixedTag);
+    meta.append(heroChip);
+  }
   const wavesChip = document.createElement("span");
   wavesChip.className = "story-badge";
   wavesChip.textContent = `${str("targetWaves", "TARGET")} ${node.battle?.target_waves ?? 1}`;
-  meta.append(heroChip, wavesChip);
+  meta.append(wavesChip);
   section.append(meta);
+
+  if (!lockedHero) {
+    section.append(renderHeroPicker());
+  }
 
   if (Array.isArray(node.waves) && node.waves.length) {
     const waves = document.createElement("div");
@@ -322,8 +347,17 @@ function renderBattle(node: StoryBattleNode): void {
   startButton.type = "button";
   startButton.className = "enter-trapezoid story-start";
   startButton.innerHTML = `${lastBattleResult === "lose" ? str("retryBattle", "RETRY") : str("startBattle", "START")} <b>&gt;&gt;</b>`;
-  startButton.addEventListener("click", () => startStoryBattle(node, heroId));
+  startButton.addEventListener("click", () => startStoryBattle(node, lockedHero || pickedHero || "volt"));
   footer.append(startButton);
+
+  // 失败后永远留一条退路，避免玩家卡在同一个战斗节点
+  if (lastBattleResult === "lose") {
+    const exitLink = document.createElement("a");
+    exitLink.className = "button button-ghost";
+    exitLink.href = "/story/choose";
+    exitLink.textContent = str("backChoose", "BACK TO STORIES");
+    footer.append(exitLink);
+  }
 
   if (node.on_lose && node.on_lose !== node.id) {
     const backButton = document.createElement("button");
@@ -335,6 +369,57 @@ function renderBattle(node: StoryBattleNode): void {
   }
   section.append(footer);
   stage?.append(section);
+}
+
+/** 赛博世界剧情：战斗前选择出战英雄（未解锁的不可选）。 */
+function renderHeroPicker(): HTMLElement {
+  const wrap = document.createElement("div");
+  wrap.className = "story-hero-pick";
+
+  const label = document.createElement("small");
+  label.textContent = str("pickHero", "PICK YOUR FIGHTER");
+  wrap.append(label);
+
+  const grid = document.createElement("div");
+  grid.className = "story-hero-grid";
+  const buttons: HTMLButtonElement[] = [];
+  const unlocked = storyHeroes.filter((hero) => !hero.locked);
+  if (!pickedHero || !unlocked.some((hero) => hero.id === pickedHero)) {
+    pickedHero = unlocked[0]?.id || "volt";
+  }
+
+  storyHeroes.forEach((hero) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "story-hero-option";
+    button.disabled = hero.locked;
+    if (hero.id === pickedHero) button.classList.add("selected");
+    if (hero.locked) button.classList.add("locked");
+    applyPalette(button, hero.palette);
+
+    const mark = document.createElement("i");
+    mark.textContent = hero.initial;
+    const name = document.createElement("b");
+    name.textContent = hero.name;
+    button.append(mark, name);
+    if (hero.locked) {
+      const lock = document.createElement("em");
+      lock.textContent = `◈ ${hero.price}`;
+      button.append(lock);
+    }
+    if (!hero.locked) {
+      button.addEventListener("click", () => {
+        pickedHero = hero.id;
+        buttons.forEach((item) => item.classList.remove("selected"));
+        button.classList.add("selected");
+      });
+    }
+    buttons.push(button);
+    grid.append(button);
+  });
+
+  wrap.append(grid);
+  return wrap;
 }
 
 function renderWave(wave: StoryWave): HTMLElement {

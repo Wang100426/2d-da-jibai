@@ -667,12 +667,25 @@ def story_page():
     chapter = story_script.localized_chapter(chapter_id, lang, get_locale(lang))
     if chapter is None:
         return redirect(url_for("story_choose_page"))
+    # 赛博世界剧情可在战斗前自选英雄，所以要把花名册（含解锁状态）带给页面
+    story_heroes = [
+        {
+            "id": hero["id"],
+            "name": hero["name"],
+            "initial": hero["initial"],
+            "palette": hero["palette"],
+            "locked": hero["locked"],
+            "price": hero["price"],
+        }
+        for hero in localized_heroes(lang)
+    ]
     return render_template(
         "story.html",
         profile=profile_snapshot(),
         chapter=chapter,
         chapters=story_script.chapter_list(lang, get_locale(lang)),
         roster=hero_roster(lang),
+        story_heroes=story_heroes,
         story=player_save.story_state(),
     )
 

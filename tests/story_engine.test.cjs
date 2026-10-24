@@ -223,3 +223,79 @@ test("章节结束标记完成", () => {
   assert.equal(engine.isCompleted(), true);
   assert.equal(new StoryEngine(clone(cyber), engine.snapshot()).isCompleted(), true);
 });
+
+/* ---------- 旧存档迁移 ---------- */
+
+test("旧存档：只有 node 字段也能正常恢复", () => {
+  const engine = new StoryEngine(clone(cyber), { node: "c1-pick" });
+  assert.equal(engine.currentNode().id, "c1-pick");
+  assert.deepEqual(engine.progress.flags, {});
+  assert.deepEqual(engine.progress.choices, {});
+  assert.deepEqual(engine.progress.claimed_rewards, []);
+});
+
+test("旧存档：整份格式不对（version/chapters 结构）回退到 entry", () => {
+  const engine = new StoryEngine(clone(cyber), { version: 0, chapters: { "cyber-01": { node: "c1-end" } } });
+  assert.equal(engine.currentNode().id, cyber.entry);
+  assert.equal(engine.isCompleted(), false);
+});
+
+test("旧存档：字段类型全错也不会抛错", () => {
+  const engine = new StoryEngine(clone(cyber), {
+    node: 42,
+    flags: ["a", "b"],
+    objectives: "nope",
+    choices: 1,
+    claimed_rewards: ["ok", 3, null],
+  });
+  assert.equal(engine.currentNode().id, cyber.entry);
+  assert.deepEqual(engine.progress.claimed_rewards, ["ok"]);
+});
+
+/* ---------- 已完成状态不能被复活 ---------- */
+
+test("已完成章节重新进入仍保持完成", () => {
+  const engine = new StoryEngine(clone(cyber), { node: "c1-end", completed: true });
+  assert.equal(engine.isCompleted(), true);
+  const again = new StoryEngine(clone(cyber), engine.snapshot());
+  assert.equal(again.isCompleted(), true);
+  assert.equal(again.currentNode().id, "c1-end");
+});
+
+test("节点被删除后回退 entry，但已完成标记保留", () => {
+  const engine = new StoryEngine(clone(cyber), { node: "removed-node", completed: true });
+  assert.equal(engine.currentNode().id, cyber.entry);
+  assert.equal(engine.isCompleted(), true, "结构变更不能把已完成章节打回未完成");
+});
+
+test("完成 + 已领奖励的存档重进不会复活奖励", () => {
+  const engine = new StoryEngine(clone(cyber), {
+    node: "c1-end",
+    completed: true,
+    claimed_rewards: ["cyber-01-clear"],
+  });
+  assert.equal(engine.isCompleted(), true);
+  engine.goTo("c1-reward");
+  assert.equal(engine.pendingReward(), null);
+});
+
+/* ---------- 重复上报 ---------- */
+
+test("重复上报胜利不会二次推进", () => {
+  const engine = new StoryEngine(clone(cyber), { node: "c1-battle" });
+  engine.applyBattleResult("win");
+  assert.equal(engine.currentNode().id, "c1-reward");
+  const second = engine.applyBattleResult("win");
+  assert.equal(second.ok, false);
+  assert.equal(second.error.code, "wrong_node_type");
+  assert.equal(engine.currentNode().id, "c1-reward");
+  assert.equal(engine.progress.claimed_rewards.length, 0, "推进本身不应发奖");
+});
+
+test("胜利后再失败不会倒退节点", () => {
+  const engine = new StoryEngine(clone(cyber), { node: "c1-battle" });
+  engine.applyBattleResult("win");
+  const back = engine.applyBattleResult("lose");
+  assert.equal(back.ok, false);
+  assert.equal(engine.currentNode().id, "c1-reward");
+});

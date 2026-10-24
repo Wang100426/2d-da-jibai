@@ -294,7 +294,9 @@
     "STORY_BROKEN": "章节数据异常",
     "STORY_UNKNOWN_NODE": "未知节点类型",
     "STORY_INVALID_TRANSITION": "无法继续：跳转目标无效。",
-    "STORY_FRAMEWORK_NOTE": "剧情模式 · 框架版"
+    "STORY_FRAMEWORK_NOTE": "剧情模式 · 框架版",
+    "STORY_PICK_HERO": "选择出战英雄",
+    "STORY_FIXED_HERO": "本场固定出战"
   },
   "heroes": {
     "volt": {

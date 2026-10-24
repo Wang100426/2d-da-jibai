@@ -294,7 +294,9 @@
     "STORY_BROKEN": "Chapter data is broken",
     "STORY_UNKNOWN_NODE": "Unknown node type",
     "STORY_INVALID_TRANSITION": "Cannot continue: invalid target.",
-    "STORY_FRAMEWORK_NOTE": "STORY MODE · FRAMEWORK"
+    "STORY_FRAMEWORK_NOTE": "STORY MODE · FRAMEWORK",
+    "STORY_PICK_HERO": "PICK YOUR FIGHTER",
+    "STORY_FIXED_HERO": "FIXED FOR THIS BATTLE"
   },
   "heroes": {
     "volt": {

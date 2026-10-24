@@ -104,6 +104,18 @@ button:disabled{transform:none}
 .story-badge{padding:4px 9px;border:1px solid #3a4560;color:#8fd3ff;font:10px 'Chakra Petch';letter-spacing:.8px}
 .story-fail-note{margin:0;margin-right:auto;color:#ff9d82;font-size:11px}
 
+/* 剧情：赛博世界剧情的出战英雄选择 */
+.story-hero-pick{display:flex;flex-direction:column;gap:8px}
+.story-hero-pick>small{color:var(--cyan);font:9px 'Chakra Petch';letter-spacing:1.6px}
+.story-hero-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));gap:8px}
+.story-hero-option{display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 8px;background:#0b0f1ad9;border:1px solid #2c3550;color:var(--text);cursor:pointer;transition:border-color .16s,background .16s,box-shadow .16s}
+.story-hero-option:hover:not(:disabled){border-color:#5a6a8e;background:#101827}
+.story-hero-option.selected{border-color:var(--cyan);background:#101b2b;box-shadow:0 0 16px #49e6e033}
+.story-hero-option.locked{opacity:.42;cursor:not-allowed}
+.story-hero-option i{width:30px;height:30px;flex:none;display:grid;place-items:center;background:linear-gradient(145deg,var(--hero-main,#444),var(--hero-dark,#222));color:var(--hero-light,#fff);font:13px 'Noto Sans SC';font-style:normal;clip-path:polygon(50% 0,100% 22%,90% 100%,10% 100%,0 22%)}
+.story-hero-option b{font-size:11px;letter-spacing:.3px;text-align:center;line-height:1.3}
+.story-hero-option em{color:#ffd166;font:9px 'Chakra Petch';font-style:normal}
+
 /* 剧情：任务目标 */
 .story-objective{max-width:760px;width:100%;margin:auto;display:flex;flex-direction:column;gap:12px}
 .story-objective .eyebrow{margin:0}

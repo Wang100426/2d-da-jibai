@@ -33,6 +33,7 @@
     window.STORY_PROGRESS = {{ (story.chapters.get(chapter.id) if story and story.chapters else none)|tojson }};
     window.STORY_CHAPTERS = {{ chapters|tojson }};
     window.STORY_ROSTER = {{ roster|tojson }};
+    window.STORY_HEROES = {{ story_heroes|tojson }};
     window.STORY_STRINGS = {{ {
       "skip": tr("STORY_SKIP"),
       "continue": tr("STORY_CONTINUE"),
@@ -47,6 +48,8 @@
       "startBattle": tr("STORY_START_BATTLE"),
       "battleKicker": tr("STORY_BATTLE_KICKER"),
       "targetWaves": tr("STORY_TARGET_WAVES"),
+      "pickHero": tr("STORY_PICK_HERO"),
+      "fixedHero": tr("STORY_FIXED_HERO"),
       "battleLost": tr("STORY_BATTLE_LOST"),
       "retryBattle": tr("STORY_RETRY_BATTLE"),
       "backChapter": tr("STORY_BACK_CHAPTER"),

@@ -185,6 +185,11 @@
 | `/story/choose` | 剧情选择（分类标签 + 章节卡片 + 进度状态） |
 | `/story?chapter=<id>` | 剧情执行页 |
 
+两种线对英雄的处理不同：
+
+- **赛博世界剧情**：战斗节点列出全部英雄，**未解锁的置灰不可选**；选中的英雄随 `/battle?hero=` 传入
+- **英雄剧情**：章节绑定 `hero`，前端不显示选择器，后端 `/battle` 也会强制使用该英雄（剧情内借用角色，不检查解锁）
+
 ### 节点类型
 
 一局剧情是有向图：`entry` 指向入口，节点用 `next`（`choice` 用各选项的 `next`）串联。
@@ -263,7 +268,12 @@
 npm run test:story
 ```
 
-`tests/story_engine.test.cjs` 用 `node:test` 跑 22 项断言，覆盖节点跳转、分支记录、战斗胜负、失败重试、存档恢复、奖励防重复、无效节点、缺配置、重复 id、objective 阻塞。
+分两段跑：
+
+- `tests/story_engine.test.cjs` —— **30 项** `node:test` 断言，跑纯逻辑引擎：节点跳转、分支记录、战斗胜负、失败重试、重复上报、存档恢复、旧存档迁移（缺字段 / 类型全错 / 结构不符）、已完成状态不被回退、奖励防重复、无效节点、缺配置、重复 id
+- `tests/story_ui.test.cjs` —— **12 项** DOM stub 断言，真跑编译后的 `story.js`：赛博世界剧情的英雄选择器、英雄剧情的固定出战、未解锁英雄禁用、失败后的重试与退路、胜利推进并请求发奖、已完成章节直达结束页
+
+两段都会先重新编译，避免测到旧产物。
 
 ## 操作
 
@@ -708,6 +718,11 @@ Pick **Story** on the mode screen, then **Start Game** on the home screen to rea
 | `/story/choose` | Story select (category tabs, chapter cards, progress state) |
 | `/story?chapter=<id>` | Story runner |
 
+The two lines handle fighters differently:
+
+- **Cyber World**: the battle node lists every hero; **locked heroes are greyed out and unselectable**. The pick is passed through `/battle?hero=`
+- **Hero Stories**: the chapter binds `hero`, the UI hides the picker, and `/battle` forces that hero server-side too (the story borrows the character, so unlock state is not checked)
+
 ### Node types
 
 A story is a directed graph: `entry` is the first node, and nodes link onward through `next` (or through each choice option's `next`).
@@ -786,7 +801,12 @@ Story progress lives in its own sub-structure of the game save, isolated from co
 npm run test:story
 ```
 
-`tests/story_engine.test.cjs` runs 22 assertions with `node:test`, covering node transitions, branch recording, battle win/loss, retry after defeat, save restore, reward dedupe, invalid nodes, missing config, duplicate ids, and objective blocking.
+Two stages:
+
+- `tests/story_engine.test.cjs` — **30** `node:test` assertions against the pure engine: node transitions, branch recording, battle win/loss, retry after defeat, duplicate result reports, save restore, legacy-save migration (missing fields / wrong types / wrong shape), completed state never rolled back, reward dedupe, invalid nodes, missing config, duplicate ids
+- `tests/story_ui.test.cjs` — **12** DOM-stub assertions that execute the compiled `story.js`: hero picker for Cyber World stories, fixed fighter for Hero stories, locked heroes disabled, retry and exit after a loss, win advancing to the reward node and calling the reward endpoint, completed chapters landing on the end card
+
+Both recompile first so the tests never run against stale output.
 
 ## Controls
 

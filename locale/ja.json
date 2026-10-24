@@ -294,7 +294,9 @@
     "STORY_BROKEN": "章データが不正です",
     "STORY_UNKNOWN_NODE": "不明なノード種別",
     "STORY_INVALID_TRANSITION": "進めません：遷移先が不正です。",
-    "STORY_FRAMEWORK_NOTE": "ストーリーモード · フレームワーク版"
+    "STORY_FRAMEWORK_NOTE": "ストーリーモード · フレームワーク版",
+    "STORY_PICK_HERO": "出撃ヒーローを選択",
+    "STORY_FIXED_HERO": "この戦闘は固定"
   },
   "heroes": {
     "volt": {

@@ -156,7 +156,8 @@ function normalizeProgress(raw: unknown, chapter: StoryChapter, known: Map<strin
   const node = typeof source.node === "string" && known.has(source.node) ? source.node : chapter.entry;
   const boolMap = (value: unknown): Record<string, boolean> => {
     const result: Record<string, boolean> = {};
-    if (value && typeof value === "object") {
+    // 数组也是 object，但当成映射处理会产生 "0"/"1" 这类垃圾键，直接丢弃
+    if (value && typeof value === "object" && !Array.isArray(value)) {
       Object.entries(value as Record<string, unknown>).forEach(([key, item]) => {
         if (key) result[key] = Boolean(item);
       });
@@ -165,7 +166,7 @@ function normalizeProgress(raw: unknown, chapter: StoryChapter, known: Map<strin
   };
   const stringMap = (value: unknown): Record<string, string> => {
     const result: Record<string, string> = {};
-    if (value && typeof value === "object") {
+    if (value && typeof value === "object" && !Array.isArray(value)) {
       Object.entries(value as Record<string, unknown>).forEach(([key, item]) => {
         if (key && typeof item === "string") result[key] = item;
       });
