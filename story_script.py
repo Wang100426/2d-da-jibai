@@ -54,7 +54,19 @@ RC001_SECTIONS = [
             {"id": "p0-ai-fix", "type": "dialogue", "speaker_key": "terminal", "initial": "穹", "accent": "terminal",
              "palette": {"main": "#7cd4ff", "light": "#dff3ff", "dark": "#1b4a66"}, "next": "p0-battle"},
             {"id": "p0-battle", "type": "battle",
-             "battle": {"hero": None, "target_waves": 2, "map_theme": "school"},
+             "battle": {"hero": None, "target_waves": 2, "map_theme": "school",
+                        # 结构化波次：数值在这里，文案在 locale/*.json（按索引合并）
+                        "waves": [
+                            {"enemies": [{"hero": "tech", "count": 2, "hp_scale": 1.0}],
+                             "skills": [{"damage": 16, "cooldown": 8, "effect": "击退",
+                                         "effect_turns": 0.4, "radius": 150}]},
+                            {"enemies": [{"hero": "tech", "count": 1, "hp_scale": 1.6},
+                                         {"hero": "moss", "count": 1, "hp_scale": 1.25,
+                                          "damage_scale": 0.9, "speed_scale": 0.85, "armor": 0.2}],
+                             "skills": [{"damage": 26, "cooldown": 12, "effect": "眩晕",
+                                         "effect_turns": 1, "radius": 170}],
+                             "hazard": {"interval": 7, "damage": 8}},
+                        ]},
              "on_win": "p0-reward", "on_lose": "p0-battle"},
             {"id": "p0-reward", "type": "reward", "reward_id": "rc001-p0-clear", "coins": 120, "next": "p0-end"},
             {"id": "p0-end", "type": "chapter_end", "next": None},
@@ -81,7 +93,17 @@ RC001_SECTIONS = [
                 {"id": "signal", "done_flag": "signal_located"},
             ], "allow_skip": False, "next": "p1-battle"},
             {"id": "p1-battle", "type": "battle",
-             "battle": {"hero": None, "target_waves": 2, "map_theme": "station"},
+             "battle": {"hero": None, "target_waves": 2, "map_theme": "station",
+                        "waves": [
+                            {"enemies": [{"hero": "tech", "count": 2, "hp_scale": 1.0}],
+                             "skills": [{"damage": 14, "cooldown": 10, "effect": "禁锢",
+                                         "effect_turns": 2, "radius": 220}]},
+                            {"enemies": [{"hero": "tech", "count": 1, "hp_scale": 1.5},
+                                         {"hero": "volt", "count": 1, "damage_scale": 1.25,
+                                          "speed_scale": 1.05}],
+                             "skills": [{"damage": 24, "cooldown": 9, "effect": "眩晕",
+                                         "effect_turns": 1, "radius": 140}]},
+                        ]},
              "on_win": "p1-archive", "on_lose": "p1-battle"},
             {"id": "p1-archive", "type": "dialogue", "speaker_key": "narrator", "initial": "档", "accent": "narrator", "next": "p1-reward"},
             {"id": "p1-reward", "type": "reward", "reward_id": "rc001-p1-clear", "coins": 150, "next": "p1-end"},
@@ -109,7 +131,17 @@ RC001_SECTIONS = [
             {"id": "p2-press", "type": "dialogue", "speaker_key": "stranger", "initial": "？", "accent": "stranger",
              "palette": {"main": "#c9a0ff", "light": "#f0e4ff", "dark": "#4a2f6b"}, "next": "p2-battle"},
             {"id": "p2-battle", "type": "battle",
-             "battle": {"hero": None, "target_waves": 2, "map_theme": "gym"},
+             "battle": {"hero": None, "target_waves": 2, "map_theme": "gym",
+                        "waves": [
+                            {"enemies": [{"hero": "moss", "count": 2, "hp_scale": 1.2, "speed_scale": 0.9}],
+                             "skills": [{"damage": 20, "cooldown": 11, "effect": "击退",
+                                         "effect_turns": 0.5, "radius": 150}],
+                             "hazard": {"interval": 8, "damage": 6}},
+                            {"enemies": [{"hero": "jianghu", "count": 1, "hp_scale": 1.8, "damage_scale": 1.3},
+                                         {"hero": "moss", "count": 1, "hp_scale": 1.3, "armor": 0.25}],
+                             "skills": [{"damage": 38, "cooldown": 14, "effect": "斩杀",
+                                         "radius": 130}]},
+                        ]},
              "on_win": "p2-after", "on_lose": "p2-battle"},
             {"id": "p2-after", "type": "dialogue", "speaker_key": "narrator", "initial": "二", "accent": "narrator", "next": "p2-reward"},
             {"id": "p2-reward", "type": "reward", "reward_id": "rc001-p2-clear", "coins": 180, "next": "p2-end"},
@@ -128,7 +160,22 @@ RC001_SECTIONS = [
             {"id": "p3-intro", "type": "dialogue", "speaker_key": "narrator", "initial": "终", "accent": "narrator", "next": "p3-archive"},
             {"id": "p3-archive", "type": "dialogue", "speaker_key": "narrator", "initial": "档", "accent": "narrator", "next": "p3-battle"},
             {"id": "p3-battle", "type": "battle",
-             "battle": {"hero": None, "target_waves": 3, "map_theme": "hospital"},
+             "battle": {"hero": None, "target_waves": 3, "map_theme": "hospital",
+                        "waves": [
+                            {"enemies": [{"hero": "tech", "count": 2, "hp_scale": 1.4}],
+                             "skills": [{"damage": 22, "cooldown": 9, "effect": "击退",
+                                         "effect_turns": 0.5, "radius": 160}],
+                             "hazard": {"interval": 9, "damage": 7}},
+                            {"enemies": [{"hero": "volt2", "count": 1, "hp_scale": 1.6},
+                                         {"hero": "tech", "count": 1, "damage_scale": 1.15}],
+                             "skills": [{"damage": 28, "cooldown": 12, "effect": "减速",
+                                         "effect_turns": 3, "radius": 200}]},
+                            {"enemies": [{"hero": "luna", "count": 1, "hp_scale": 2.0, "damage_scale": 1.4},
+                                         {"hero": "tech", "count": 1, "hp_scale": 1.2, "armor": 0.3}],
+                             "skills": [{"damage": 52, "cooldown": 18, "effect": "击退",
+                                         "effect_turns": 0.6, "radius": 240}],
+                             "hazard": {"interval": 6, "damage": 10}},
+                        ]},
              "on_win": "p3-reveal", "on_lose": "p3-battle"},
             {"id": "p3-reveal", "type": "dialogue", "speaker_key": "narrator", "initial": "终", "accent": "narrator", "next": "p3-truth"},
             {"id": "p3-truth", "type": "dialogue", "speaker_key": "stranger", "initial": "？", "accent": "stranger",
@@ -160,7 +207,15 @@ HERO_SECTIONS = [
             {"id": "h1-intro", "type": "dialogue", "speaker_key": "hero", "initial": "拳", "accent": "volt",
              "palette": {"main": "#ff4fa3", "light": "#ffd3e8", "dark": "#812354"}, "next": "h1-battle"},
             {"id": "h1-battle", "type": "battle",
-             "battle": {"hero": "volt", "target_waves": 2, "map_theme": "gym"},
+             "battle": {"hero": "volt", "target_waves": 2, "map_theme": "gym",
+                        "waves": [
+                            {"enemies": [{"hero": "pipa", "count": 1, "speed_scale": 0.95}],
+                             "skills": [{"damage": 16, "cooldown": 10, "effect": "禁锢",
+                                         "effect_turns": 3, "radius": 220}]},
+                            {"enemies": [{"hero": "jianghu", "count": 1, "hp_scale": 1.6, "damage_scale": 1.2}],
+                             "skills": [{"damage": 40, "cooldown": 14, "effect": "斩杀",
+                                         "radius": 130}]},
+                        ]},
              "on_win": "h1-reward", "on_lose": "h1-battle"},
             {"id": "h1-reward", "type": "reward", "reward_id": "hero-volt-01-clear", "coins": 150, "next": "h1-end"},
             {"id": "h1-end", "type": "chapter_end", "next": None},
@@ -220,6 +275,112 @@ def section_locked(chapter_id: str, progress: dict) -> bool:
     return True
 
 
+def _validate_battle_waves(chapter_id, node_id, battle: dict) -> list:
+    """结构化波次校验。没有 `waves` 的旧节点视为「只按目标波次判定」，不报错。"""
+    problems = []
+    waves = battle.get("waves")
+    if waves is None:
+        return problems
+    if not isinstance(waves, list) or not waves:
+        return [f"{chapter_id}/{node_id}: battle.waves 必须是非空数组"]
+    if len(waves) != battle.get("target_waves"):
+        problems.append(
+            f"{chapter_id}/{node_id}: battle.waves 有 {len(waves)} 波，"
+            f"但 target_waves 是 {battle.get('target_waves')}"
+        )
+    for index, wave in enumerate(waves):
+        prefix = f"{chapter_id}/{node_id} 第 {index + 1} 波"
+        if not isinstance(wave, dict):
+            problems.append(f"{prefix}: 波次配置必须是对象")
+            continue
+        enemies = wave.get("enemies")
+        if not isinstance(enemies, list) or not enemies:
+            problems.append(f"{prefix}: 至少要有一个敌人配置")
+        else:
+            for enemy in enemies:
+                if not isinstance(enemy, dict) or not enemy.get("hero"):
+                    problems.append(f"{prefix}: 敌人缺少 hero")
+                    continue
+                count = enemy.get("count", 1)
+                if not isinstance(count, int) or not 1 <= count <= 8:
+                    problems.append(f"{prefix}: 敌人 {enemy.get('hero')} 的 count 必须是 1-8 的整数")
+                for key in ("hp_scale", "damage_scale", "speed_scale", "armor"):
+                    if key in enemy and not isinstance(enemy[key], (int, float)):
+                        problems.append(f"{prefix}: 敌人 {enemy.get('hero')} 的 {key} 必须是数字")
+        for skill in wave.get("skills") or []:
+            if not isinstance(skill, dict):
+                problems.append(f"{prefix}: 技能配置必须是对象")
+                continue
+            if not isinstance(skill.get("damage", 0), (int, float)) or skill.get("damage", 0) < 0:
+                problems.append(f"{prefix}: 技能 damage 必须是非负数字")
+            if not isinstance(skill.get("cooldown", 8), (int, float)) or skill.get("cooldown", 8) <= 0:
+                problems.append(f"{prefix}: 技能 cooldown 必须是正数")
+        hazard = wave.get("hazard")
+        if hazard is not None:
+            if not isinstance(hazard, dict):
+                problems.append(f"{prefix}: hazard 必须是对象或 null")
+            elif not isinstance(hazard.get("interval"), (int, float)) or hazard["interval"] <= 0:
+                problems.append(f"{prefix}: hazard.interval 必须是正数")
+            elif not isinstance(hazard.get("damage", 0), (int, float)) or hazard.get("damage", 0) < 0:
+                problems.append(f"{prefix}: hazard.damage 必须是非负数字")
+    return problems
+
+
+def _merge_battle_waves(structured, text_waves) -> list:
+    """把结构化波次（数值）与当前语言的文案按索引合并。
+
+    数值只认 `story_script.py`，文案只认 `locale/*.json`；两边索引对齐，
+    剧情页的预览与 `/battle` 实际刷怪因此永远同源。
+    """
+    text_waves = text_waves or []
+    merged = []
+    for index, wave in enumerate(structured or []):
+        if not isinstance(wave, dict):
+            continue
+        text = text_waves[index] if index < len(text_waves) and isinstance(text_waves[index], dict) else {}
+        text_enemies = text.get("enemies") or []
+        text_skills = text.get("skills") or []
+        enemies = []
+        for enemy_index, enemy in enumerate(wave.get("enemies") or []):
+            if not isinstance(enemy, dict):
+                continue
+            enemy_text = text_enemies[enemy_index] if enemy_index < len(text_enemies) else {}
+            enemies.append({
+                "hero": enemy.get("hero", ""),
+                "count": int(enemy.get("count", 1)),
+                "mod": enemy_text.get("mod", ""),
+                "hp_scale": float(enemy.get("hp_scale", 1.0)),
+                "damage_scale": float(enemy.get("damage_scale", 1.0)),
+                "speed_scale": float(enemy.get("speed_scale", 1.0)),
+                "armor": float(enemy.get("armor", 0.0)),
+                "kind": enemy.get("kind"),
+            })
+        skills = []
+        for skill_index, skill in enumerate(wave.get("skills") or []):
+            if not isinstance(skill, dict):
+                continue
+            skill_text = text_skills[skill_index] if skill_index < len(text_skills) else {}
+            skills.append({
+                "name": skill_text.get("name", ""),
+                "description": skill_text.get("description", ""),
+                "damage": int(skill.get("damage", 0)),
+                "cooldown": float(skill.get("cooldown", 8)),
+                "effect": skill.get("effect", ""),
+                "effect_turns": float(skill.get("effect_turns", 0)),
+                "radius": float(skill.get("radius", 150)),
+            })
+        hazard = wave.get("hazard")
+        merged.append({
+            "label": text.get("label", ""),
+            "note": text.get("note", ""),
+            "event": text.get("event", ""),
+            "enemies": enemies,
+            "skills": skills,
+            "hazard": hazard if isinstance(hazard, dict) else None,
+        })
+    return merged
+
+
 def validate_chapter(chapter: dict) -> list:
     """结构与跳转校验，返回问题列表（空表示通过）。"""
     problems = []
@@ -253,6 +414,7 @@ def validate_chapter(chapter: dict) -> list:
             battle = node.get("battle") or {}
             if not isinstance(battle.get("target_waves"), int) or battle["target_waves"] < 1:
                 problems.append(f"{chapter.get('id')}/{nid}: battle.target_waves 必须是正整数")
+            problems.extend(_validate_battle_waves(chapter.get("id"), nid, battle))
         if ntype == "reward":
             if not node.get("reward_id"):
                 problems.append(f"{chapter.get('id')}/{nid}: reward 缺少 reward_id")
@@ -298,7 +460,11 @@ def localized_chapter(chapter_id: str, lang: str, locale_pack: dict):
         elif node_type == "battle":
             node["title"] = text.get("title", "")
             node["brief"] = text.get("brief", "")
-            node["waves"] = text.get("waves") or []
+            battle = node.setdefault("battle", {})
+            # 数值来自 Python、文案来自 locale；合并后预览与实战共用同一份波次
+            node["waves"] = _merge_battle_waves(battle.get("waves"), text.get("waves"))
+            if node["waves"]:
+                battle["waves"] = node["waves"]
         elif node_type == "objective":
             node["title"] = text.get("title", "")
             node["description"] = text.get("description", "")

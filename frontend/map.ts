@@ -368,6 +368,11 @@ interface EnemyUnit {
   /** 樱花少女被动：引燃的每秒伤害与跳秒计时。 */
   igniteDamage?: number;
   igniteTimer?: number;
+  /** 剧情战斗单位：用英雄配色/头像渲染，而不是杂兵符号。 */
+  storyUnit?: boolean;
+  /** 剧情战斗：该敌人携带的敌方技能（来自波次配置），按 CD 轮转施放。 */
+  storySkills?: StoryWaveSkillSpec[];
+  storySkillIndex?: number;
 }
 
 interface TrafficCar {
@@ -582,10 +587,17 @@ interface StoryBattleContext {
   target_waves: number;
   hero: string | null;
   return_url: string;
+  /** 结构化的逐波配置；有值时按剧本刷怪，没有时退回肉鸽随机波次。 */
+  waves?: StoryWaveSpec[];
+  map_theme?: string | null;
 }
 
 const storyBattle: StoryBattleContext | null =
   (window as unknown as { STORY_BATTLE?: StoryBattleContext | null }).STORY_BATTLE || null;
+/** 剧情波次：非空时整场战斗按剧本刷怪，不再走肉鸽随机。 */
+const storyWaves: StoryWaveSpec[] =
+  storyBattle && Array.isArray(storyBattle.waves) ? storyBattle.waves : [];
+const storyBattleTarget = storyBattle ? storyWaveTarget(storyWaves, storyBattle.target_waves) : 0;
 let storyBattleDone = false;
 /** 源语言是中文（zh）；en / ja 等目标语言都需要跑 patterns + phrases 片段替换。 */
 const translateByPattern = locale.code !== "zh";
@@ -785,6 +797,12 @@ let enemiesToSpawn = 0;
 let spawnTimer = 0;
 let breakTimer = 1.5;
 let randomEventTimer = 24 + Math.random() * 10;
+/* 剧情战斗的逐波状态：当前波待生成队列、当前波技能与场地效果。 */
+let storySpawnQueue: StoryWaveEnemySpec[] = [];
+let storyWaveSkills: StoryWaveSkillSpec[] = [];
+let storyWaveHazard: StoryWaveHazardSpec | null = null;
+let storyHazardTimer = 0;
+let storySpawnSerial = 0;
 let randomEventWarning = 0;
 const trafficCars: TrafficCar[] = [];
 const harpFields: HarpField[] = [];
@@ -1298,6 +1316,26 @@ function updateWaveHud(): void {
     return;
   }
   const displayWave = waveState === "starting" ? wave + 1 : wave;
+  if (storyWaves.length > 0) {
+    const spec = storyWaveAt(storyWaves, displayWave);
+    const label = spec?.label || `第 ${displayWave} 波`;
+    const stateText = waveState === "active" ? "交战中" : waveState === "upgrade" ? "波次完成" : "集结中";
+    const title = `${label} · ${Math.min(displayWave, storyBattleTarget)}/${storyBattleTarget} · ${stateText}`;
+    if (waveTitle.textContent !== title) waveTitle.textContent = localizeBattleText(title);
+    if (waveState === "active") {
+      const alive = enemies.filter((enemy) => enemy.hp > 0).length;
+      const counts = enemiesToSpawn > 0
+        ? tx(t("wave.on_field", { alive, incoming: enemiesToSpawn }))
+        : tx(t("wave.remaining", { alive }));
+      const detail = spec?.note || spec?.event || "";
+      const subtitle = detail ? `${detail} · ${counts}` : counts;
+      if (waveSubtitle.textContent !== subtitle) waveSubtitle.textContent = localizeBattleText(subtitle);
+    } else {
+      const subtitle = spec?.note || tx("敌人即将出现");
+      if (waveSubtitle.textContent !== subtitle) waveSubtitle.textContent = localizeBattleText(subtitle);
+    }
+    return;
+  }
   const title = `第 ${displayWave} 波 · ${waveState === "active" ? "交战中" : waveState === "upgrade" ? "波次完成" : "集结中"}`;
   if (waveTitle.textContent !== title) waveTitle.textContent = localizeBattleText(title);
   if (waveState === "active") {
@@ -1391,19 +1429,11 @@ function startDuelRound(): void {
 }
 
 function spawnEnemyForWave(): void {
-  let x = player.x;
-  let y = player.y;
-  for (let attempt = 0; attempt < 60; attempt += 1) {
-    const angle = Math.random() * Math.PI * 2;
-    const distance = 340 + Math.random() * 260;
-    const candidateX = Math.max(35, Math.min(map.width - 35, player.x + Math.cos(angle) * distance));
-    const candidateY = Math.max(35, Math.min(map.height - 35, player.y + Math.sin(angle) * distance));
-    if (isSpawnPositionClear(candidateX, candidateY)) {
-      x = candidateX;
-      y = candidateY;
-      break;
-    }
+  if (storyWaves.length > 0) {
+    spawnStoryEnemy();
+    return;
   }
+  const { x, y } = pickSpawnPoint();
   const roll = Math.random();
   const kind: EnemyUnit["kind"] = wave >= 3 && roll > 0.78 ? "brute" : wave >= 2 && roll > 0.5 ? "runner" : "grunt";
   const hpScale = 1 + (wave - 1) * 0.16;
@@ -1424,9 +1454,89 @@ function spawnEnemyForWave(): void {
   });
 }
 
+/** 找一个离玩家足够远、且不卡在障碍里的落点。 */
+function pickSpawnPoint(): { x: number; y: number } {
+  let x = player.x;
+  let y = player.y;
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    const angle = Math.random() * Math.PI * 2;
+    const distance = 340 + Math.random() * 260;
+    const candidateX = Math.max(35, Math.min(map.width - 35, player.x + Math.cos(angle) * distance));
+    const candidateY = Math.max(35, Math.min(map.height - 35, player.y + Math.sin(angle) * distance));
+    if (isSpawnPositionClear(candidateX, candidateY)) {
+      x = candidateX;
+      y = candidateY;
+      break;
+    }
+  }
+  return { x, y };
+}
+
+/**
+ * 剧情敌人：按剧本指定的英雄 + 倍率生成。
+ * 外观走英雄配色与头像字（和玩家同一套 roster），数值走 story_wave.ts。
+ */
+function spawnStoryEnemy(): void {
+  const spec = storySpawnQueue.shift();
+  if (!spec) return;
+  const { x, y } = pickSpawnPoint();
+  const entry = rosterById.get(spec.hero);
+  const stats = storyEnemyStats(
+    spec,
+    entry ? { ...entry.combat, defense: entry.defense } : undefined,
+  );
+  const serial = storySpawnSerial;
+  storySpawnSerial += 1;
+  const skills = storyWaveSkills.slice();
+  enemies.push({
+    id: `story-enemy-${++eventSerial}`,
+    x, y,
+    hp: stats.hp,
+    maxHp: stats.hp,
+    attackTimer: 0,
+    attack: stats.attack,
+    speed: stats.speed,
+    kind: stats.kind,
+    poisonDamage: 0,
+    poisonTimer: 0,
+    effects: {},
+    experienceAwarded: false,
+    storyUnit: true,
+    heroId: spec.hero,
+    accent: entry?.accent,
+    initial: entry?.initial || "?",
+    name: entry?.name || spec.hero,
+    defenseReduction: stats.armor,
+    storySkills: skills,
+    storySkillIndex: serial,
+    // 开局错开首次施法，避免同一帧整波同时放技能
+    skillTimer: 2.5 + (serial % Math.max(1, skills.length)) * 1.2,
+  });
+}
+
 function startWave(): void {
   wave += 1;
   waveState = "active";
+  if (storyWaves.length > 0) {
+    // 剧情战斗：按剧本生成这一波的敌人，不参与肉鸽的波次成长
+    if (wave > storyBattleTarget) {
+      finishStoryBattle("win");
+      return;
+    }
+    const spec = storyWaveAt(storyWaves, wave) || {};
+    storySpawnQueue = expandStoryWave(spec);
+    storyWaveSkills = Array.isArray(spec.skills) ? spec.skills.slice() : [];
+    storyWaveHazard = normalizeStoryHazard(spec.hazard);
+    storyHazardTimer = storyWaveHazard ? storyWaveHazard.interval : 0;
+    storySpawnSerial = 0;
+    enemiesToSpawn = storySpawnQueue.length;
+    spawnTimer = 0.5;
+    updateWaveHud();
+    const label = spec.label || `第 ${wave} 波`;
+    if (spec.event) showToast(`${label} · ${spec.event}`, "warning");
+    else showToast(label, "warning");
+    return;
+  }
   if (mapTheme === "airport") scheduleAirportFlightsForWave();
   enemiesToSpawn = Math.min(4 + wave * 2, 18);
   spawnTimer = 0.3;
@@ -1476,6 +1586,20 @@ function updateWaveSpawner(dt: number): void {
     return;
   }
   if (waveState !== "active") return;
+  // 剧情战斗的场地效果：按波次配置周期扣血（例如配电柜过载、冷却液泄漏）
+  if (storyWaves.length > 0 && storyWaveHazard) {
+    storyHazardTimer -= dt;
+    if (storyHazardTimer <= 0) {
+      storyHazardTimer = storyWaveHazard.interval;
+      if (applyPlayerDamage(storyWaveHazard.damage)) {
+        addFloatingText(player.x, player.y - 58, tx("场地"), "#ffb37a");
+        if (storyWaveHazard.effect) {
+          applyStoryEffect(storyWaveHazard.effect, storyWaveHazard.effect_turns || 0);
+        }
+      }
+      if (runEnded) return;
+    }
+  }
   spawnTimer -= dt;
   if (enemiesToSpawn > 0 && spawnTimer <= 0) {
     spawnEnemyForWave();
@@ -1483,9 +1607,15 @@ function updateWaveSpawner(dt: number): void {
     spawnTimer = Math.max(0.45, 1.25 - wave * 0.035);
   }
   if (enemiesToSpawn === 0 && enemies.every((enemy) => enemy.anesthetist || enemy.hp <= 0)) {
-    // 剧情战斗：清完目标波次即判胜，不弹肉鸽强化
-    if (storyBattle && wave >= storyBattle.target_waves) {
-      finishStoryBattle("win");
+    if (storyBattle) {
+      if (wave >= storyBattleTarget) {
+        finishStoryBattle("win");
+        return;
+      }
+      // 剧情战斗不给肉鸽强化：清场后短暂间歇，直接进下一波
+      waveState = "starting";
+      breakTimer = 2.2;
+      updateWaveHud();
       return;
     }
     showWaveUpgrade();
@@ -1510,6 +1640,70 @@ function showToast(message: string, kind: "success" | "warning" = "success"): vo
   toast.classList.add("visible");
   window.clearTimeout(toastTimer);
   toastTimer = window.setTimeout(() => toast.classList.remove("visible"), 2200);
+}
+
+/** 剧情战斗的负面效果（敌方技能 / 场地效果共用）。 */
+function applyStoryEffect(effect: string, turns: number, source?: EnemyUnit): void {
+  if (!effect) return;
+  const seconds = Math.max(0.3, Math.min(10, turns || 1));
+  if (effect === "眩晕" || effect === "禁锢") {
+    statusEffects[effect] = Math.max(statusEffects[effect] || 0, seconds);
+    addFloatingText(player.x, player.y - 52, effect, "#ffd166");
+    return;
+  }
+  if (effect === "减速" || effect === "强力减速") {
+    statusEffects[effect] = Math.max(statusEffects[effect] || 0, seconds);
+    addFloatingText(player.x, player.y - 52, effect, "#8c9aff");
+    return;
+  }
+  if (effect === "击退") {
+    const originX = source?.x ?? player.x - facing.x * 40;
+    const originY = source?.y ?? player.y - facing.y * 40;
+    const dx = player.x - originX;
+    const dy = player.y - originY;
+    const length = Math.hypot(dx, dy) || 1;
+    const push = Math.min(90, 26 + seconds * 60);
+    player.x = Math.max(30, Math.min(map.width - 30, player.x + (dx / length) * push));
+    player.y = Math.max(30, Math.min(map.height - 30, player.y + (dy / length) * push));
+    addFloatingText(player.x, player.y - 52, effect, "#ffb37a");
+  }
+}
+
+/**
+ * 敌方剧情技能：玩家进入射程才真正释放；不在射程只做短间隔重试，
+ * 不会白吃一次完整冷却。
+ */
+function updateStoryEnemySkill(enemy: EnemyUnit, dt: number): void {
+  const skills = enemy.storySkills;
+  if (!skills || skills.length === 0 || runEnded || skillIsPaused()) return;
+  if ((enemy.effects["眩晕"] || 0) > 0) return;
+  enemy.skillTimer = Math.max(0, (enemy.skillTimer ?? 0) - dt);
+  if (enemy.skillTimer > 0) return;
+  const index = Math.abs(enemy.storySkillIndex || 0) % skills.length;
+  enemy.storySkillIndex = index + 1;
+  const skill = normalizeStorySkill(skills[index]);
+  const distance = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+  if (distance > skill.radius) {
+    enemy.skillTimer = 0.6;
+    return;
+  }
+  enemy.skillTimer = skill.cooldown;
+  let damage = skill.damage;
+  if (skill.effect === "斩杀") {
+    // 残血时伤害递增，对应「对残血目标有极高斩杀概率」
+    const missing = 1 - playerState.hp / Math.max(1, playerState.maxHp);
+    damage = Math.round(damage * (1 + missing * 2));
+  }
+  skillVisuals.push({
+    type: "beam", x: enemy.x, y: enemy.y, targetX: player.x, targetY: player.y,
+    age: 0, duration: 0.24, color: "#ff8a5c",
+  });
+  if (skill.name) {
+    addFloatingText(enemy.x, enemy.y - 50, skill.name, "#ffd166");
+    showToast(`${enemy.name || ""} · ${skill.name}`, "warning");
+  }
+  if (!applyPlayerDamage(damage, enemy)) return;
+  if (skill.effect) applyStoryEffect(skill.effect, skill.effectTurns, enemy);
 }
 
 /** 剧情战斗结束：带结果跳回剧情页，由剧情引擎决定下一节点。 */
@@ -2787,6 +2981,50 @@ function drawPipaMinion(minion: EnemyUnit): void {
 
 function drawEnemy(enemy: EnemyUnit): void {
   if (enemy.hp <= 0) return;
+  if (enemy.storyUnit) {
+    // 剧情敌人：英雄配色 + 头像字，和花名册同一套视觉
+    const color = rosterPalette(enemy.heroId || "volt");
+    const size = enemy.kind === "brute" ? 24 : enemy.kind === "runner" ? 16 : 19;
+    context.save();
+    context.translate(enemy.x, enemy.y);
+    context.fillStyle = "#0009";
+    context.beginPath();
+    context.ellipse(2, size * 0.8, size + 3, size * 0.45, 0, 0, Math.PI * 2);
+    context.fill();
+    context.shadowColor = color.main;
+    context.shadowBlur = 16;
+    context.fillStyle = "#0a0f1c";
+    context.strokeStyle = color.main;
+    context.lineWidth = 3;
+    context.beginPath();
+    context.arc(0, 0, size, 0, Math.PI * 2);
+    context.fill();
+    context.stroke();
+    context.shadowBlur = 0;
+    context.fillStyle = color.light;
+    context.font = `bold ${Math.max(13, size * 0.95)}px sans-serif`;
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText(enemy.initial || "?", 0, 1);
+    context.fillStyle = "#e8ecff";
+    context.font = "11px sans-serif";
+    context.fillText(enemy.name || "", 0, -size - 22);
+    context.fillStyle = "#10131e";
+    context.fillRect(-size, -size - 14, size * 2, 5);
+    context.fillStyle = color.main;
+    context.fillRect(-size, -size - 14, size * 2 * Math.max(0, enemy.hp / enemy.maxHp), 5);
+    if ((enemy.storySkills?.length || 0) > 0 && (enemy.skillTimer ?? 0) <= 0.001) {
+      // 技能就绪：外圈亮一档，玩家能预判
+      context.strokeStyle = "#ffd166";
+      context.lineWidth = 2;
+      context.beginPath();
+      context.arc(0, 0, size + 5, 0, Math.PI * 2);
+      context.stroke();
+    }
+    drawEffectIndicators(0, -size - 34, enemy.effects);
+    context.restore();
+    return;
+  }
   if (enemy.duelBot) {
     const color = rosterPalette(enemy.heroId || "volt");
     context.save();
@@ -5913,7 +6151,8 @@ function updateCombat(dt: number): void {
     }
   });
   advanceSakuraEffects(dt);
-  updateRandomMapEvents(dt);
+  // 剧情战斗走剧本事件，不再叠加地图随机事件（避免同一波里两套意外伤害）
+  if (!storyBattle) updateRandomMapEvents(dt);
   enemies.forEach((enemy) => {
     if (runEnded || skillIsPaused()) return;
     Object.keys(enemy.effects).forEach((effect) => {
@@ -5972,6 +6211,7 @@ function updateCombat(dt: number): void {
       else updateDuelBot(enemy, dt);
       return;
     }
+    if (enemy.storySkills && enemy.storySkills.length > 0) updateStoryEnemySkill(enemy, dt);
     const target = getEnemyTarget(enemy);
     if (!target) return;
     const distance = Math.hypot(target.x - enemy.x, target.y - enemy.y);

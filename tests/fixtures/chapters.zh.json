@@ -170,7 +170,80 @@
           "battle": {
             "hero": null,
             "target_waves": 2,
-            "map_theme": "school"
+            "map_theme": "school",
+            "waves": [
+              {
+                "label": "波次 1",
+                "note": "离线 · 失控",
+                "event": "应急灯忽明忽暗，视野时断时续",
+                "enemies": [
+                  {
+                    "hero": "tech",
+                    "count": 2,
+                    "mod": "生命 ×1.0",
+                    "hp_scale": 1.0,
+                    "damage_scale": 1.0,
+                    "speed_scale": 1.0,
+                    "armor": 0.0,
+                    "kind": null
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "扳手横扫",
+                    "description": "机械臂横扫，击退并造成伤害",
+                    "damage": 16,
+                    "cooldown": 8.0,
+                    "effect": "击退",
+                    "effect_turns": 0.4,
+                    "radius": 150.0
+                  }
+                ],
+                "hazard": null
+              },
+              {
+                "label": "波次 2",
+                "note": "维护核 · 压上",
+                "event": "配电柜过载，地面间歇放电",
+                "enemies": [
+                  {
+                    "hero": "tech",
+                    "count": 1,
+                    "mod": "生命 ×1.6",
+                    "hp_scale": 1.6,
+                    "damage_scale": 1.0,
+                    "speed_scale": 1.0,
+                    "armor": 0.0,
+                    "kind": null
+                  },
+                  {
+                    "hero": "moss",
+                    "count": 1,
+                    "mod": "装甲外壳",
+                    "hp_scale": 1.25,
+                    "damage_scale": 0.9,
+                    "speed_scale": 0.85,
+                    "armor": 0.2,
+                    "kind": null
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "过载放电",
+                    "description": "范围放电，命中后短暂麻痹",
+                    "damage": 26,
+                    "cooldown": 12.0,
+                    "effect": "眩晕",
+                    "effect_turns": 1.0,
+                    "radius": 170.0
+                  }
+                ],
+                "hazard": {
+                  "interval": 7,
+                  "damage": 8
+                }
+              }
+            ]
           },
           "on_win": "p0-reward",
           "on_lose": "p0-battle",
@@ -185,17 +258,26 @@
                 {
                   "hero": "tech",
                   "count": 2,
-                  "mod": "生命 ×1.0"
+                  "mod": "生命 ×1.0",
+                  "hp_scale": 1.0,
+                  "damage_scale": 1.0,
+                  "speed_scale": 1.0,
+                  "armor": 0.0,
+                  "kind": null
                 }
               ],
               "skills": [
                 {
                   "name": "扳手横扫",
                   "description": "机械臂横扫，击退并造成伤害",
-                  "cooldown": 8,
-                  "damage": 16
+                  "damage": 16,
+                  "cooldown": 8.0,
+                  "effect": "击退",
+                  "effect_turns": 0.4,
+                  "radius": 150.0
                 }
-              ]
+              ],
+              "hazard": null
             },
             {
               "label": "波次 2",
@@ -205,23 +287,39 @@
                 {
                   "hero": "tech",
                   "count": 1,
-                  "mod": "生命 ×1.6"
+                  "mod": "生命 ×1.6",
+                  "hp_scale": 1.6,
+                  "damage_scale": 1.0,
+                  "speed_scale": 1.0,
+                  "armor": 0.0,
+                  "kind": null
                 },
                 {
                   "hero": "moss",
                   "count": 1,
-                  "mod": "装甲外壳"
+                  "mod": "装甲外壳",
+                  "hp_scale": 1.25,
+                  "damage_scale": 0.9,
+                  "speed_scale": 0.85,
+                  "armor": 0.2,
+                  "kind": null
                 }
               ],
               "skills": [
                 {
                   "name": "过载放电",
                   "description": "范围放电，命中后短暂麻痹",
-                  "cooldown": 12,
                   "damage": 26,
-                  "effect": "眩晕 1s"
+                  "cooldown": 12.0,
+                  "effect": "眩晕",
+                  "effect_turns": 1.0,
+                  "radius": 170.0
                 }
-              ]
+              ],
+              "hazard": {
+                "interval": 7,
+                "damage": 8
+              }
             }
           ]
         },
@@ -331,7 +429,77 @@
           "battle": {
             "hero": null,
             "target_waves": 2,
-            "map_theme": "station"
+            "map_theme": "station",
+            "waves": [
+              {
+                "label": "波次 1",
+                "note": "巡逻 · 扫描",
+                "event": "站台灯光熄灭，只剩红点在移动",
+                "enemies": [
+                  {
+                    "hero": "tech",
+                    "count": 2,
+                    "mod": "生命 ×1.0",
+                    "hp_scale": 1.0,
+                    "damage_scale": 1.0,
+                    "speed_scale": 1.0,
+                    "armor": 0.0,
+                    "kind": null
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "扫描锁定",
+                    "description": "锁定目标并短暂禁锢",
+                    "damage": 14,
+                    "cooldown": 10.0,
+                    "effect": "禁锢",
+                    "effect_turns": 2.0,
+                    "radius": 220.0
+                  }
+                ],
+                "hazard": null
+              },
+              {
+                "label": "波次 2",
+                "note": "增援 · 封锁",
+                "event": "闸机全部落下，退路被封",
+                "enemies": [
+                  {
+                    "hero": "tech",
+                    "count": 1,
+                    "mod": "生命 ×1.5",
+                    "hp_scale": 1.5,
+                    "damage_scale": 1.0,
+                    "speed_scale": 1.0,
+                    "armor": 0.0,
+                    "kind": null
+                  },
+                  {
+                    "hero": "volt",
+                    "count": 1,
+                    "mod": "近身压制",
+                    "hp_scale": 1.0,
+                    "damage_scale": 1.25,
+                    "speed_scale": 1.05,
+                    "armor": 0.0,
+                    "kind": null
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "电击棍",
+                    "description": "近身连击，最后一击眩晕",
+                    "damage": 24,
+                    "cooldown": 9.0,
+                    "effect": "眩晕",
+                    "effect_turns": 1.0,
+                    "radius": 140.0
+                  }
+                ],
+                "hazard": null
+              }
+            ]
           },
           "on_win": "p1-archive",
           "on_lose": "p1-battle",
@@ -346,18 +514,26 @@
                 {
                   "hero": "tech",
                   "count": 2,
-                  "mod": "生命 ×1.0"
+                  "mod": "生命 ×1.0",
+                  "hp_scale": 1.0,
+                  "damage_scale": 1.0,
+                  "speed_scale": 1.0,
+                  "armor": 0.0,
+                  "kind": null
                 }
               ],
               "skills": [
                 {
                   "name": "扫描锁定",
                   "description": "锁定目标并短暂禁锢",
-                  "cooldown": 10,
                   "damage": 14,
-                  "effect": "禁锢 2s"
+                  "cooldown": 10.0,
+                  "effect": "禁锢",
+                  "effect_turns": 2.0,
+                  "radius": 220.0
                 }
-              ]
+              ],
+              "hazard": null
             },
             {
               "label": "波次 2",
@@ -367,23 +543,36 @@
                 {
                   "hero": "tech",
                   "count": 1,
-                  "mod": "生命 ×1.5"
+                  "mod": "生命 ×1.5",
+                  "hp_scale": 1.5,
+                  "damage_scale": 1.0,
+                  "speed_scale": 1.0,
+                  "armor": 0.0,
+                  "kind": null
                 },
                 {
                   "hero": "volt",
                   "count": 1,
-                  "mod": "近身压制"
+                  "mod": "近身压制",
+                  "hp_scale": 1.0,
+                  "damage_scale": 1.25,
+                  "speed_scale": 1.05,
+                  "armor": 0.0,
+                  "kind": null
                 }
               ],
               "skills": [
                 {
                   "name": "电击棍",
                   "description": "近身连击，最后一击眩晕",
-                  "cooldown": 9,
                   "damage": 24,
-                  "effect": "眩晕 1s"
+                  "cooldown": 9.0,
+                  "effect": "眩晕",
+                  "effect_turns": 1.0,
+                  "radius": 140.0
                 }
-              ]
+              ],
+              "hazard": null
             }
           ]
         },
@@ -508,7 +697,80 @@
           "battle": {
             "hero": null,
             "target_waves": 2,
-            "map_theme": "gym"
+            "map_theme": "gym",
+            "waves": [
+              {
+                "label": "波次 1",
+                "note": "外围 · 拦截",
+                "event": "通风口喷出蒸汽，视野受阻",
+                "enemies": [
+                  {
+                    "hero": "moss",
+                    "count": 2,
+                    "mod": "生命 ×1.2",
+                    "hp_scale": 1.2,
+                    "damage_scale": 1.0,
+                    "speed_scale": 0.9,
+                    "armor": 0.0,
+                    "kind": null
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "盾墙推进",
+                    "description": "举盾推进并击退正面目标",
+                    "damage": 20,
+                    "cooldown": 11.0,
+                    "effect": "击退",
+                    "effect_turns": 0.5,
+                    "radius": 150.0
+                  }
+                ],
+                "hazard": {
+                  "interval": 8,
+                  "damage": 6
+                }
+              },
+              {
+                "label": "波次 2",
+                "note": "近卫 · 合围",
+                "event": "封锁闸门逐个落下，场地变窄",
+                "enemies": [
+                  {
+                    "hero": "jianghu",
+                    "count": 1,
+                    "mod": "生命 ×1.8 · 伤害 ×1.3",
+                    "hp_scale": 1.8,
+                    "damage_scale": 1.3,
+                    "speed_scale": 1.0,
+                    "armor": 0.0,
+                    "kind": null
+                  },
+                  {
+                    "hero": "moss",
+                    "count": 1,
+                    "mod": "护盾",
+                    "hp_scale": 1.3,
+                    "damage_scale": 1.0,
+                    "speed_scale": 1.0,
+                    "armor": 0.25,
+                    "kind": null
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "封喉",
+                    "description": "对残血目标有极高斩杀概率",
+                    "damage": 38,
+                    "cooldown": 14.0,
+                    "effect": "斩杀",
+                    "effect_turns": 0.0,
+                    "radius": 130.0
+                  }
+                ],
+                "hazard": null
+              }
+            ]
           },
           "on_win": "p2-after",
           "on_lose": "p2-battle",
@@ -523,18 +785,29 @@
                 {
                   "hero": "moss",
                   "count": 2,
-                  "mod": "生命 ×1.2"
+                  "mod": "生命 ×1.2",
+                  "hp_scale": 1.2,
+                  "damage_scale": 1.0,
+                  "speed_scale": 0.9,
+                  "armor": 0.0,
+                  "kind": null
                 }
               ],
               "skills": [
                 {
                   "name": "盾墙推进",
                   "description": "举盾推进并击退正面目标",
-                  "cooldown": 11,
                   "damage": 20,
-                  "effect": "击退"
+                  "cooldown": 11.0,
+                  "effect": "击退",
+                  "effect_turns": 0.5,
+                  "radius": 150.0
                 }
-              ]
+              ],
+              "hazard": {
+                "interval": 8,
+                "damage": 6
+              }
             },
             {
               "label": "波次 2",
@@ -544,23 +817,36 @@
                 {
                   "hero": "jianghu",
                   "count": 1,
-                  "mod": "生命 ×1.8 · 伤害 ×1.3"
+                  "mod": "生命 ×1.8 · 伤害 ×1.3",
+                  "hp_scale": 1.8,
+                  "damage_scale": 1.3,
+                  "speed_scale": 1.0,
+                  "armor": 0.0,
+                  "kind": null
                 },
                 {
                   "hero": "moss",
                   "count": 1,
-                  "mod": "护盾"
+                  "mod": "护盾",
+                  "hp_scale": 1.3,
+                  "damage_scale": 1.0,
+                  "speed_scale": 1.0,
+                  "armor": 0.25,
+                  "kind": null
                 }
               ],
               "skills": [
                 {
                   "name": "封喉",
                   "description": "对残血目标有极高斩杀概率",
-                  "cooldown": 14,
                   "damage": 38,
-                  "effect": "斩杀"
+                  "cooldown": 14.0,
+                  "effect": "斩杀",
+                  "effect_turns": 0.0,
+                  "radius": 130.0
                 }
-              ]
+              ],
+              "hazard": null
             }
           ]
         },
@@ -632,7 +918,122 @@
           "battle": {
             "hero": null,
             "target_waves": 3,
-            "map_theme": "hospital"
+            "map_theme": "hospital",
+            "waves": [
+              {
+                "label": "波次 1",
+                "note": "外围防线",
+                "event": "数据舱开始泄压，站位被推挤",
+                "enemies": [
+                  {
+                    "hero": "tech",
+                    "count": 2,
+                    "mod": "生命 ×1.4",
+                    "hp_scale": 1.4,
+                    "damage_scale": 1.0,
+                    "speed_scale": 1.0,
+                    "armor": 0.0,
+                    "kind": null
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "清扫脉冲",
+                    "description": "环形脉冲，击退周围目标",
+                    "damage": 22,
+                    "cooldown": 9.0,
+                    "effect": "击退",
+                    "effect_turns": 0.5,
+                    "radius": 160.0
+                  }
+                ],
+                "hazard": {
+                  "interval": 9,
+                  "damage": 7
+                }
+              },
+              {
+                "label": "波次 2",
+                "note": "核心守卫",
+                "event": "冷却液泄漏，地面打滑",
+                "enemies": [
+                  {
+                    "hero": "volt2",
+                    "count": 1,
+                    "mod": "生命 ×1.6",
+                    "hp_scale": 1.6,
+                    "damage_scale": 1.0,
+                    "speed_scale": 1.0,
+                    "armor": 0.0,
+                    "kind": null
+                  },
+                  {
+                    "hero": "tech",
+                    "count": 1,
+                    "mod": "远程压制",
+                    "hp_scale": 1.0,
+                    "damage_scale": 1.15,
+                    "speed_scale": 1.0,
+                    "armor": 0.0,
+                    "kind": null
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "声浪压制",
+                    "description": "持续音浪，减速并造成伤害",
+                    "damage": 28,
+                    "cooldown": 12.0,
+                    "effect": "减速",
+                    "effect_turns": 3.0,
+                    "radius": 200.0
+                  }
+                ],
+                "hazard": null
+              },
+              {
+                "label": "波次 3",
+                "note": "最终防御 · 全开",
+                "event": "所有照明切换为红色，无掩体可用",
+                "enemies": [
+                  {
+                    "hero": "luna",
+                    "count": 1,
+                    "mod": "生命 ×2.0 · 伤害 ×1.4",
+                    "hp_scale": 2.0,
+                    "damage_scale": 1.4,
+                    "speed_scale": 1.0,
+                    "armor": 0.0,
+                    "kind": null
+                  },
+                  {
+                    "hero": "tech",
+                    "count": 1,
+                    "mod": "护盾核心",
+                    "hp_scale": 1.2,
+                    "damage_scale": 1.0,
+                    "speed_scale": 1.0,
+                    "armor": 0.3,
+                    "kind": null
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "陨星坠落",
+                    "description": "延迟后砸下大范围高额伤害",
+                    "damage": 52,
+                    "cooldown": 18.0,
+                    "effect": "击退",
+                    "effect_turns": 0.6,
+                    "radius": 240.0
+                  }
+                ],
+                "hazard": {
+                  "interval": 6,
+                  "damage": 10
+                }
+              }
+            ]
           },
           "on_win": "p3-reveal",
           "on_lose": "p3-battle",
@@ -647,18 +1048,29 @@
                 {
                   "hero": "tech",
                   "count": 2,
-                  "mod": "生命 ×1.4"
+                  "mod": "生命 ×1.4",
+                  "hp_scale": 1.4,
+                  "damage_scale": 1.0,
+                  "speed_scale": 1.0,
+                  "armor": 0.0,
+                  "kind": null
                 }
               ],
               "skills": [
                 {
                   "name": "清扫脉冲",
                   "description": "环形脉冲，击退周围目标",
-                  "cooldown": 9,
                   "damage": 22,
-                  "effect": "击退"
+                  "cooldown": 9.0,
+                  "effect": "击退",
+                  "effect_turns": 0.5,
+                  "radius": 160.0
                 }
-              ]
+              ],
+              "hazard": {
+                "interval": 9,
+                "damage": 7
+              }
             },
             {
               "label": "波次 2",
@@ -668,23 +1080,36 @@
                 {
                   "hero": "volt2",
                   "count": 1,
-                  "mod": "生命 ×1.6"
+                  "mod": "生命 ×1.6",
+                  "hp_scale": 1.6,
+                  "damage_scale": 1.0,
+                  "speed_scale": 1.0,
+                  "armor": 0.0,
+                  "kind": null
                 },
                 {
                   "hero": "tech",
                   "count": 1,
-                  "mod": "远程压制"
+                  "mod": "远程压制",
+                  "hp_scale": 1.0,
+                  "damage_scale": 1.15,
+                  "speed_scale": 1.0,
+                  "armor": 0.0,
+                  "kind": null
                 }
               ],
               "skills": [
                 {
                   "name": "声浪压制",
                   "description": "持续音浪，减速并造成伤害",
-                  "cooldown": 12,
                   "damage": 28,
-                  "effect": "减速 3s"
+                  "cooldown": 12.0,
+                  "effect": "减速",
+                  "effect_turns": 3.0,
+                  "radius": 200.0
                 }
-              ]
+              ],
+              "hazard": null
             },
             {
               "label": "波次 3",
@@ -694,23 +1119,39 @@
                 {
                   "hero": "luna",
                   "count": 1,
-                  "mod": "生命 ×2.0 · 伤害 ×1.4"
+                  "mod": "生命 ×2.0 · 伤害 ×1.4",
+                  "hp_scale": 2.0,
+                  "damage_scale": 1.4,
+                  "speed_scale": 1.0,
+                  "armor": 0.0,
+                  "kind": null
                 },
                 {
                   "hero": "tech",
                   "count": 1,
-                  "mod": "护盾核心"
+                  "mod": "护盾核心",
+                  "hp_scale": 1.2,
+                  "damage_scale": 1.0,
+                  "speed_scale": 1.0,
+                  "armor": 0.3,
+                  "kind": null
                 }
               ],
               "skills": [
                 {
                   "name": "陨星坠落",
                   "description": "延迟后砸下大范围高额伤害",
-                  "cooldown": 18,
                   "damage": 52,
-                  "effect": "击退"
+                  "cooldown": 18.0,
+                  "effect": "击退",
+                  "effect_turns": 0.6,
+                  "radius": 240.0
                 }
-              ]
+              ],
+              "hazard": {
+                "interval": 6,
+                "damage": 10
+              }
             }
           ]
         },
@@ -836,7 +1277,67 @@
           "battle": {
             "hero": "volt",
             "target_waves": 2,
-            "map_theme": "gym"
+            "map_theme": "gym",
+            "waves": [
+              {
+                "label": "波次 1",
+                "note": "旧识 · 试探",
+                "event": "无特殊事件",
+                "enemies": [
+                  {
+                    "hero": "pipa",
+                    "count": 1,
+                    "mod": "控场",
+                    "hp_scale": 1.0,
+                    "damage_scale": 1.0,
+                    "speed_scale": 0.95,
+                    "armor": 0.0,
+                    "kind": null
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "弦音禁锢",
+                    "description": "禁锢目标并持续掉血",
+                    "damage": 16,
+                    "cooldown": 10.0,
+                    "effect": "禁锢",
+                    "effect_turns": 3.0,
+                    "radius": 220.0
+                  }
+                ],
+                "hazard": null
+              },
+              {
+                "label": "波次 2",
+                "note": "收账 · 压上",
+                "event": "围观人群散开，场地变窄",
+                "enemies": [
+                  {
+                    "hero": "jianghu",
+                    "count": 1,
+                    "mod": "生命 ×1.6 · 伤害 ×1.2",
+                    "hp_scale": 1.6,
+                    "damage_scale": 1.2,
+                    "speed_scale": 1.0,
+                    "armor": 0.0,
+                    "kind": null
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "一剑封喉",
+                    "description": "目标残血时斩杀概率大幅提升",
+                    "damage": 40,
+                    "cooldown": 14.0,
+                    "effect": "斩杀",
+                    "effect_turns": 0.0,
+                    "radius": 130.0
+                  }
+                ],
+                "hazard": null
+              }
+            ]
           },
           "on_win": "h1-reward",
           "on_lose": "h1-battle",
@@ -851,18 +1352,26 @@
                 {
                   "hero": "pipa",
                   "count": 1,
-                  "mod": "控场"
+                  "mod": "控场",
+                  "hp_scale": 1.0,
+                  "damage_scale": 1.0,
+                  "speed_scale": 0.95,
+                  "armor": 0.0,
+                  "kind": null
                 }
               ],
               "skills": [
                 {
                   "name": "弦音禁锢",
                   "description": "禁锢目标并持续掉血",
-                  "cooldown": 10,
                   "damage": 16,
-                  "effect": "禁锢 3s"
+                  "cooldown": 10.0,
+                  "effect": "禁锢",
+                  "effect_turns": 3.0,
+                  "radius": 220.0
                 }
-              ]
+              ],
+              "hazard": null
             },
             {
               "label": "波次 2",
@@ -872,18 +1381,26 @@
                 {
                   "hero": "jianghu",
                   "count": 1,
-                  "mod": "生命 ×1.6 · 伤害 ×1.2"
+                  "mod": "生命 ×1.6 · 伤害 ×1.2",
+                  "hp_scale": 1.6,
+                  "damage_scale": 1.2,
+                  "speed_scale": 1.0,
+                  "armor": 0.0,
+                  "kind": null
                 }
               ],
               "skills": [
                 {
                   "name": "一剑封喉",
                   "description": "目标残血时斩杀概率大幅提升",
-                  "cooldown": 14,
                   "damage": 40,
-                  "effect": "斩杀"
+                  "cooldown": 14.0,
+                  "effect": "斩杀",
+                  "effect_turns": 0.0,
+                  "radius": 130.0
                 }
-              ]
+              ],
+              "hazard": null
             }
           ]
         },

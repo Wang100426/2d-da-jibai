@@ -211,7 +211,7 @@
 | --- | --- | --- |
 | `dialogue` | 说话人 + 正文，打字机 24ms/字，点击 / 空格继续 | 已实现 |
 | `choice` | 分支按钮，记录选择，支持数字键 1-9 | 已实现 |
-| `battle` | 剧情战斗：声明目标波次，复用 `/battle` | 已实现 |
+| `battle` | 剧情战斗：按剧本波次刷指定敌人，复用 `/battle` | 已实现 |
 | `objective` | 任务目标清单，可勾选；`allow_skip` 控制未完成能否继续 | 部分实现（目标为手动勾选，尚无击杀/到达自动追踪） |
 | `reward` | 发放金币，服务端按 `reward_id` 幂等 | 已实现 |
 | `chapter_end` | 章节结束，标记完成 | 已实现 |
@@ -221,16 +221,48 @@
 **不复制战斗实现**，只通过参数与结果两条边连接：
 
 ```text
-/story?chapter=cyber-01
+/story?chapter=rc001-p0
    ↓ 点「开始战斗」
-/battle?hero=volt&story=cyber-01&node=c1-battle
-   ↓ 打到 target_waves 波清场（胜）/ 阵亡（负）
-/story?chapter=cyber-01&node=c1-battle&result=win|lose
+/battle?hero=volt&story=rc001-p0&node=p0-battle
+   ↓ 按剧本打完 target_waves 波（胜）/ 阵亡（负）
+/story?chapter=rc001-p0&node=p0-battle&result=win|lose
 ```
 
-- `app.py` 的 `/battle` 解析 `story` / `node`，注入 `window.STORY_BATTLE = { chapter, node, target_waves, hero, return_url }`
-- `map.ts` 只加了三处钩子：`finishRun()` 判负、`updateWaveSpawner()` 达标判胜、结果跳回剧情页；战斗本身、敌人、技能、AI 全部复用原有实现
+- `app.py` 的 `/battle` 解析 `story` / `node`，注入 `window.STORY_BATTLE = { chapter, node, target_waves, hero, return_url, map_theme, waves }`
+- `map.ts` 只加了几处钩子：`finishRun()` 判负、`updateWaveSpawner()` 达标判胜、结果跳回剧情页；敌人渲染、技能、AI、碰撞全部复用原有实现
 - 剧情战斗**不触发肉鸽金币结算**（`coinSettlementEnabled()` 排除），奖励改由 `reward` 节点发放
+- 剧情战斗**不弹肉鸽强化**：一波清完 2.2 秒后直接进下一波，强度只由装备与英雄决定
+- 剧情战斗**不叠加地图随机事件**，避免剧本事件与随机事件同时扣血
+
+### 波次配置：数值在 Python，文案在 locale
+
+`battle.waves` 是结构化数组，每项对应一波；**索引与 `locale/*.json` 的 `story.sections.<id>.nodes.<node>.waves` 一一对应**，`localized_chapter()` 把两边合并成同一份数据 —— 剧情页的预览和战斗里真正刷的怪因此永远一致。
+
+```python
+"battle": {
+    "hero": None, "target_waves": 2, "map_theme": "school",
+    "waves": [
+        {"enemies": [{"hero": "tech", "count": 2, "hp_scale": 1.0}],
+         "skills": [{"damage": 16, "cooldown": 8, "effect": "击退", "effect_turns": 0.4, "radius": 150}]},
+        {"enemies": [{"hero": "tech", "count": 1, "hp_scale": 1.6},
+                     {"hero": "moss", "count": 1, "hp_scale": 1.25, "armor": 0.2}],
+         "skills": [{"damage": 26, "cooldown": 12, "effect": "眩晕", "effect_turns": 1, "radius": 170}],
+         "hazard": {"interval": 7, "damage": 8}},
+    ],
+},
+```
+
+| 字段 | 含义 |
+| --- | --- |
+| `enemies[].hero` | 英雄 id，决定外观（配色 / 头像字 / 名字）与基础伤害 |
+| `enemies[].count` | 数量，1-8；一波合计最多 24 只 |
+| `enemies[].hp_scale` / `damage_scale` / `speed_scale` | 相对该英雄基础面板的倍率 |
+| `enemies[].armor` | 减伤 0-0.6，对应「装甲外壳 / 护盾」 |
+| `enemies[].kind` | 可选，`grunt` / `runner` / `brute`；不写则按英雄射程与防御自动判断 |
+| `skills[]` | 该波敌人的技能，`cooldown` 秒一次，玩家进入 `radius` 才释放 |
+| `hazard` | 场地效果：每 `interval` 秒对玩家造成 `damage`，可带 `effect` |
+
+技能 `effect` 支持 `眩晕` / `禁锢` / `减速` / `击退` / `斩杀`（残血时伤害递增）。数值展开与夹取逻辑在 `frontend/story_wave.ts`（纯函数，可单测）。
 
 ### 存档结构
 
@@ -241,12 +273,12 @@
   "story": {
     "version": 1,
     "chapters": {
-      "cyber-01": {
-        "node": "c1-battle",
-        "flags": { "battle:c1-battle": true, "scouted": true },
+      "rc001-p0": {
+        "node": "p0-battle",
+        "flags": { "battle:p0-battle": true, "scouted": true },
         "objectives": { "scout": true },
-        "choices": { "c1-pick": "careful" },
-        "claimed_rewards": ["cyber-01-clear"],
+        "choices": { "p0-choice": "ask" },
+        "claimed_rewards": ["rc001-p0-clear"],
         "completed": false,
         "updated_at": 1761300000.0
       }
@@ -270,10 +302,10 @@
 
 ### 新增章节
 
-1. `story_script.py` 的 `CHAPTERS` 追加一条：`id`、`category`、`hero`、`entry`、`nodes`
-2. 三份语言包的 `story.chapters.<id>` 补 `title`、`summary` 与每个节点的文案
+1. `story_script.py` 的 `CHAPTERS` 追加一条：`id`、`card`、`category`、`order`、`hero`、`entry`、`nodes`
+2. 三份语言包的 `story.sections.<id>` 补 `title`、`summary`、每个节点文案，以及战斗节点按索引对齐的 `waves` 文案
 3. 跑一次 `python -m py_compile story_script.py`，再 `npm run build:story` 让 `story.js` 生效
-4. 章节结构与跳转会在 Python 侧（`validate_chapter`）和前端（`StoryEngine` 构造时）各校验一遍
+4. 章节结构与跳转会在 Python 侧（`validate_chapter`，含波次数与 `target_waves` 一致性）和前端（`StoryEngine` 构造时）各校验一遍
 
 ### 测试
 
@@ -281,13 +313,14 @@
 npm run test:story
 ```
 
-分三段跑：
+分四段跑：
 
 - `tests/story_engine.test.cjs` —— **32 项** `node:test` 断言，跑纯逻辑引擎：节点跳转、分支记录、战斗胜负、失败重试、重复上报、存档恢复、旧存档迁移（缺字段 / 类型全错 / 结构不符）、已完成状态不被回退、奖励防重复、无效节点、缺配置、重复 id、分区解锁初始状态
+- `tests/story_wave.test.cjs` —— **14 项** `node:test` 断言，跑波次纯逻辑：按 count 展开、单组/单波上限、非法条目跳过、血量与攻速倍率、远程/近战/厚甲体型判定、攻击力与移速夹取、波次目标校正、技能归一化与轮转、场地效果合法性，以及**真实剧本每个战斗节点都能展开**
 - `tests/story_ui.test.cjs` —— **12 项** DOM stub 断言，真跑编译后的 `story.js`：赛博世界剧情的英雄选择器、英雄剧情的固定出战、未解锁英雄禁用、失败后的重试与退路、胜利推进并请求发奖、已完成分区直达结束页
 - `tests/story_choose.test.cjs` —— **10 项** DOM stub 断言，真跑编译后的 `choose_story.js`：卡数与分区行、锁定分区按钮禁用、解锁分区可点击并跳转、卡上的编号与通关进度
 
-三段都会先重新编译，避免测到旧产物。
+四段都会先重新编译，避免测到旧产物。
 
 ## 操作
 
@@ -758,7 +791,7 @@ A story is a directed graph: `entry` is the first node, and nodes link onward th
 | --- | --- | --- |
 | `dialogue` | Speaker + body, typed at 24ms per character; click or Space to continue | Implemented |
 | `choice` | Branch buttons, records the pick; number keys 1-9 work | Implemented |
-| `battle` | Battle scene: declares target waves, reuses `/battle` | Implemented |
+| `battle` | Battle scene: spawns the scripted waves, reuses `/battle` | Implemented |
 | `objective` | Goal checklist; `allow_skip` controls whether an incomplete list blocks progress | Partial (goals are toggled manually; no automatic kill/reach tracking yet) |
 | `reward` | Grants coins; the server deduplicates by `reward_id` | Implemented |
 | `chapter_end` | Ends the chapter and marks it complete | Implemented |
@@ -768,16 +801,48 @@ A story is a directed graph: `entry` is the first node, and nodes link onward th
 The battle implementation is **not duplicated** — only two edges connect the story to it:
 
 ```text
-/story?chapter=cyber-01
+/story?chapter=rc001-p0
    -> Start Battle
-/battle?hero=volt&story=cyber-01&node=c1-battle
+/battle?hero=volt&story=rc001-p0&node=p0-battle
    -> clear target_waves (win) / die (lose)
-/story?chapter=cyber-01&node=c1-battle&result=win|lose
+/story?chapter=rc001-p0&node=p0-battle&result=win|lose
 ```
 
-- `/battle` in `app.py` reads `story` / `node` and injects `window.STORY_BATTLE = { chapter, node, target_waves, hero, return_url }`
-- `map.ts` adds exactly three hooks: `finishRun()` for the loss, `updateWaveSpawner()` for the win, and the redirect back. Enemies, skills, AI and rendering are untouched
+- `/battle` in `app.py` reads `story` / `node` and injects `window.STORY_BATTLE = { chapter, node, target_waves, hero, return_url, map_theme, waves }`
+- `map.ts` adds only a handful of hooks around the existing battle loop: `finishRun()` for the loss, `updateWaveSpawner()` for the win and wave pacing, plus the redirect back. Enemy rendering, skills, AI and collision are untouched
 - Story battles **skip rogue coin settlement** (`coinSettlementEnabled()` excludes them); rewards come from `reward` nodes instead
+- Story battles **never show rogue upgrades**: a cleared wave waits 2.2s and rolls straight into the next one, so strength comes from heroes and equipment only
+- Story battles **do not stack random map events** on top of scripted wave events
+
+### Wave config: numbers in Python, text in locale
+
+`battle.waves` is a structured array — one entry per wave — and **its index lines up with `story.sections.<id>.nodes.<node>.waves` in `locale/*.json`**. `localized_chapter()` merges both sides, so the preview on the story page and the enemies actually spawned in battle come from one source.
+
+```python
+"battle": {
+    "hero": None, "target_waves": 2, "map_theme": "school",
+    "waves": [
+        {"enemies": [{"hero": "tech", "count": 2, "hp_scale": 1.0}],
+         "skills": [{"damage": 16, "cooldown": 8, "effect": "击退", "effect_turns": 0.4, "radius": 150}]},
+        {"enemies": [{"hero": "tech", "count": 1, "hp_scale": 1.6},
+                     {"hero": "moss", "count": 1, "hp_scale": 1.25, "armor": 0.2}],
+         "skills": [{"damage": 26, "cooldown": 12, "effect": "眩晕", "effect_turns": 1, "radius": 170}],
+         "hazard": {"interval": 7, "damage": 8}},
+    ],
+},
+```
+
+| Field | Meaning |
+| --- | --- |
+| `enemies[].hero` | Hero id; drives the look (palette / glyph / name) and base damage |
+| `enemies[].count` | 1-8 per group, at most 24 units per wave |
+| `enemies[].hp_scale` / `damage_scale` / `speed_scale` | Multipliers over that hero's base stats |
+| `enemies[].armor` | 0-0.6 damage reduction ("armoured shell / shield") |
+| `enemies[].kind` | Optional `grunt` / `runner` / `brute`; otherwise inferred from range and defense |
+| `skills[]` | Skills for that wave's enemies: one cast every `cooldown` seconds once the player is inside `radius` |
+| `hazard` | Arena effect: `damage` every `interval` seconds, optionally applying an `effect` |
+
+Skill `effect` supports `眩晕` (stun), `禁锢` (root), `减速` (slow), `击退` (knockback) and `斩杀` (scales up as your HP drops). Expansion and clamping live in `frontend/story_wave.ts` (pure functions, unit-tested).
 
 ### Save layout
 
@@ -788,12 +853,12 @@ Story progress lives in its own sub-structure of the game save, isolated from co
   "story": {
     "version": 1,
     "chapters": {
-      "cyber-01": {
-        "node": "c1-battle",
-        "flags": { "battle:c1-battle": true, "scouted": true },
+      "rc001-p0": {
+        "node": "p0-battle",
+        "flags": { "battle:p0-battle": true, "scouted": true },
         "objectives": { "scout": true },
-        "choices": { "c1-pick": "careful" },
-        "claimed_rewards": ["cyber-01-clear"],
+        "choices": { "p0-choice": "ask" },
+        "claimed_rewards": ["rc001-p0-clear"],
         "completed": false,
         "updated_at": 1761300000.0
       }
@@ -817,10 +882,10 @@ Story progress lives in its own sub-structure of the game save, isolated from co
 
 ### Adding a chapter
 
-1. Append an entry to `CHAPTERS` in `story_script.py`: `id`, `category`, `hero`, `entry`, `nodes`
-2. Add `story.chapters.<id>` to all three locale packs with `title`, `summary`, and each node's text
+1. Append an entry to `CHAPTERS` in `story_script.py`: `id`, `card`, `category`, `order`, `hero`, `entry`, `nodes`
+2. Add `story.sections.<id>` to all three locale packs with `title`, `summary`, node text, and index-aligned `waves` text for battle nodes
 3. Run `python -m py_compile story_script.py`, then `npm run build:story`
-4. Structure and transitions are validated twice — by `validate_chapter` in Python and by the `StoryEngine` constructor in the browser
+4. Structure and transitions are validated twice — by `validate_chapter` in Python (including wave count vs `target_waves`) and by the `StoryEngine` constructor in the browser
 
 ### Tests
 
@@ -828,13 +893,14 @@ Story progress lives in its own sub-structure of the game save, isolated from co
 npm run test:story
 ```
 
-Three stages:
+Four stages:
 
 - `tests/story_engine.test.cjs` — **32** `node:test` assertions against the pure engine: node transitions, branch recording, battle win/loss, retry after defeat, duplicate result reports, save restore, legacy-save migration (missing fields / wrong types / wrong shape), completed state never rolled back, reward dedupe, invalid nodes, missing config, duplicate ids
+- `tests/story_wave.test.cjs` — **14** `node:test` assertions against the wave logic: expansion by count, per-group and per-wave caps, invalid entries skipped, HP/damage multipliers, melee/ranged/armoured archetype selection, attack and speed clamping, target-wave correction, skill normalisation and rotation, hazard validity, and every real battle node expanding to at least one enemy
 - `tests/story_ui.test.cjs` — **12** DOM-stub assertions that execute the compiled `story.js`: hero picker for Cyber World stories, fixed fighter for Hero stories, locked heroes disabled, retry and exit after a loss, win advancing to the reward node and calling the reward endpoint, completed sections landing on the end card
 - `tests/story_choose.test.cjs` — **10** DOM-stub assertions that execute the compiled `choose_story.js`: card and section counts, locked sections disabled, unlocked sections clickable and navigating, card code and clear progress on the card
 
-All three recompile first so the tests never run against stale output.
+All four recompile first so the tests never run against stale output.
 
 ## Controls
 

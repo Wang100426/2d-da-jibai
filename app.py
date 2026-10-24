@@ -1437,14 +1437,28 @@ def battle():
     elif selected_id not in unlocked_hero_ids():
         # 未解锁的英雄不允许直接开打，先去商店。
         return redirect(url_for("shop"))
+    lang = request.args.get("lang", request.cookies.get("lang", "zh"))
     if story_chapter and story_node and story_node.get("type") == "battle":
-        battle_config = story_node.get("battle") or {}
+        # 用本地化后的章节：波次数值来自 story_script.py，技能名/波次文案来自 locale
+        localized_story = story_script.localized_chapter(story_chapter_id, lang, get_locale(lang))
+        localized_node = next(
+            (node for node in (localized_story or {}).get("nodes", []) if node["id"] == story_node_id),
+            None,
+        )
+        battle_config = (localized_node or story_node).get("battle") or {}
+        waves = battle_config.get("waves") or []
+        target_waves = max(1, int(battle_config.get("target_waves", 1)))
+        if waves:
+            # 有结构化波次时以真实波次数量为准，避免配置与判定脱节
+            target_waves = len(waves)
         story_context = {
             "chapter": story_chapter_id,
             "node": story_node_id,
-            "target_waves": max(1, int(battle_config.get("target_waves", 1))),
+            "target_waves": target_waves,
             "hero": story_chapter.get("hero"),
             "return_url": f"/story?chapter={story_chapter_id}&node={story_node_id}",
+            "map_theme": battle_config.get("map_theme"),
+            "waves": waves,
         }
 
     base_player = hero_by_id(selected_id)
@@ -1479,7 +1493,6 @@ def battle():
                 "energy": room_player["energy"],
                 "max_energy": room_player["max_energy"],
             }
-    lang = request.args.get("lang", request.cookies.get("lang", "zh"))
     player = next(hero for hero in localized_heroes(lang) if hero["id"] == player["id"])
     transition_map_keys = {
         "city": ("MAP_CITY", "MAP_EVENT_CITY"),

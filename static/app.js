@@ -1,4 +1,140 @@
 "use strict";
+/**
+ * 剧情战斗的波次配置：只放**纯数据与纯函数**。
+ *
+ * 为什么单独一个文件：
+ * - `map.ts` 是整页战斗脚本，无法在 Node 里直接跑；把「波次展开 / 敌人数值 /
+ *   技能归一化」抽成不依赖 DOM 的纯函数，才能写真正的单测。
+ * - 数值只来自 `story_script.py` 的结构化 waves，文案（波次名、技能名）由
+ *   `localized_chapter()` 从 `locale/*.json` 合并进来，这里只做兜底。
+ *
+ * 编译：`tsconfig.json` 把它和 `map.ts` 一起打进 `static/app.js`；
+ * `tsconfig.story-wave.json` 单独输出 `build/story_wave.js` 供测试使用。
+ */
+/** 上限用于挡住手改/脏数据：单波最多 8 只一组、合计 24 只。 */
+const STORY_WAVE_LIMITS = {
+    maxPerGroup: 8,
+    maxUnitsPerWave: 24,
+    maxWaves: 12,
+    minHp: 30,
+    maxHp: 6000,
+    minAttack: 3,
+    maxAttack: 150,
+    minSpeed: 26,
+    maxSpeed: 120,
+    minCooldown: 2,
+    maxCooldown: 60,
+    minRadius: 60,
+    maxRadius: 420,
+    minArmor: 0,
+    maxArmor: 0.6,
+};
+const STORY_ENEMY_BASE = {
+    grunt: { hp: 95, speed: 54, attackFactor: 0.75 },
+    runner: { hp: 66, speed: 84, attackFactor: 0.6 },
+    brute: { hp: 145, speed: 44, attackFactor: 1.0 },
+};
+function storyClamp(value, fallback, min, max) {
+    const number = typeof value === "number" ? value : Number(value);
+    const safe = Number.isFinite(number) ? number : fallback;
+    return Math.min(max, Math.max(min, safe));
+}
+/** 没有显式 kind 时按英雄轮廓推断：厚甲近战→重装，远程→杂兵，其余→快速。 */
+function storyEnemyKind(spec, hero) {
+    if (spec.kind === "grunt" || spec.kind === "runner" || spec.kind === "brute")
+        return spec.kind;
+    const defense = hero?.defense ?? 0;
+    const range = hero?.basic_range ?? 120;
+    if (defense >= 80)
+        return "brute";
+    if (range >= 200)
+        return "grunt";
+    if (range >= 150)
+        return "runner";
+    return "brute";
+}
+/** 敌人面板：基础值 × 波次倍率，并夹在安全范围内。 */
+function storyEnemyStats(spec, hero) {
+    const kind = storyEnemyKind(spec, hero);
+    const base = STORY_ENEMY_BASE[kind];
+    const hpScale = storyClamp(spec.hp_scale, 1, 0.2, 8);
+    const damageScale = storyClamp(spec.damage_scale, 1, 0.2, 5);
+    const speedScale = storyClamp(spec.speed_scale, 1, 0.4, 2.5);
+    const basicDamage = storyClamp(hero?.basic_damage, 12, 1, 100);
+    return {
+        kind,
+        hp: Math.round(storyClamp(base.hp * hpScale, base.hp, STORY_WAVE_LIMITS.minHp, STORY_WAVE_LIMITS.maxHp)),
+        attack: Math.round(storyClamp(basicDamage * base.attackFactor * damageScale, basicDamage, STORY_WAVE_LIMITS.minAttack, STORY_WAVE_LIMITS.maxAttack)),
+        speed: Math.round(storyClamp(base.speed * speedScale, base.speed, STORY_WAVE_LIMITS.minSpeed, STORY_WAVE_LIMITS.maxSpeed)),
+        armor: storyClamp(spec.armor, 0, STORY_WAVE_LIMITS.minArmor, STORY_WAVE_LIMITS.maxArmor),
+    };
+}
+/**
+ * 把一波里的「英雄 ×N」展开成逐只的生成队列。
+ * 非法条目直接跳过，不抛错：剧情配置写错不该让整场战斗白屏。
+ */
+function expandStoryWave(wave) {
+    const queue = [];
+    const enemies = Array.isArray(wave?.enemies) ? wave.enemies : [];
+    enemies.forEach((spec) => {
+        if (!spec || typeof spec.hero !== "string" || !spec.hero)
+            return;
+        const count = Math.round(storyClamp(spec.count, 1, 1, STORY_WAVE_LIMITS.maxPerGroup));
+        for (let i = 0; i < count; i += 1) {
+            if (queue.length >= STORY_WAVE_LIMITS.maxUnitsPerWave)
+                return;
+            queue.push({ ...spec, count: 1 });
+        }
+    });
+    return queue;
+}
+/** 实际生效的波次数：以真实波次为准，声明值只作为无波次配置时的兜底。 */
+function storyWaveTarget(waves, declared) {
+    const list = Array.isArray(waves) ? waves.filter((wave) => Array.isArray(wave?.enemies)) : [];
+    if (list.length > 0)
+        return Math.min(list.length, STORY_WAVE_LIMITS.maxWaves);
+    return Math.max(1, Math.min(STORY_WAVE_LIMITS.maxWaves, Math.round(storyClamp(declared, 1, 1, 99))));
+}
+/** 取第 index 波（1 起），越界时回落到最后一波。 */
+function storyWaveAt(waves, index) {
+    if (!Array.isArray(waves) || waves.length === 0)
+        return null;
+    const position = Math.min(waves.length, Math.max(1, Math.round(index))) - 1;
+    return waves[position] || null;
+}
+/** 技能归一化：缺省值、负值、离谱数值都在这里被夹住。 */
+function normalizeStorySkill(skill) {
+    return {
+        name: typeof skill?.name === "string" && skill.name ? skill.name : "",
+        damage: Math.round(storyClamp(skill?.damage, 0, 0, 200)),
+        cooldown: storyClamp(skill?.cooldown, 8, STORY_WAVE_LIMITS.minCooldown, STORY_WAVE_LIMITS.maxCooldown),
+        radius: storyClamp(skill?.radius, 150, STORY_WAVE_LIMITS.minRadius, STORY_WAVE_LIMITS.maxRadius),
+        effect: typeof skill?.effect === "string" ? skill.effect : "",
+        effectTurns: storyClamp(skill?.effect_turns, 0, 0, 10),
+    };
+}
+/** 第 index 只敌人拿到的技能（多技能时轮转）。 */
+function storySkillFor(wave, index) {
+    const skills = Array.isArray(wave?.skills) ? wave.skills.filter(Boolean) : [];
+    if (skills.length === 0)
+        return null;
+    return skills[Math.abs(Math.round(index)) % skills.length] || null;
+}
+/** 场地的周期伤害配置；缺字段或数值非法视为没有场地效果。 */
+function normalizeStoryHazard(hazard) {
+    if (!hazard)
+        return null;
+    const interval = storyClamp(hazard.interval, 0, 0, 120);
+    const damage = storyClamp(hazard.damage, 0, 0, 200);
+    if (interval <= 0 || damage <= 0)
+        return null;
+    return {
+        interval,
+        damage: Math.round(damage),
+        effect: typeof hazard.effect === "string" ? hazard.effect : "",
+        effect_turns: storyClamp(hazard.effect_turns, 0, 0, 10),
+    };
+}
 function requireElement(selector) {
     const element = document.querySelector(selector);
     if (!element)
@@ -24,6 +160,9 @@ const miniContext = requireContext(minimap);
 const config = getMapConfig();
 const locale = config.locale;
 const storyBattle = window.STORY_BATTLE || null;
+/** 剧情波次：非空时整场战斗按剧本刷怪，不再走肉鸽随机。 */
+const storyWaves = storyBattle && Array.isArray(storyBattle.waves) ? storyBattle.waves : [];
+const storyBattleTarget = storyBattle ? storyWaveTarget(storyWaves, storyBattle.target_waves) : 0;
 let storyBattleDone = false;
 /** 源语言是中文（zh）；en / ja 等目标语言都需要跑 patterns + phrases 片段替换。 */
 const translateByPattern = locale.code !== "zh";
@@ -196,6 +335,12 @@ let enemiesToSpawn = 0;
 let spawnTimer = 0;
 let breakTimer = 1.5;
 let randomEventTimer = 24 + Math.random() * 10;
+/* 剧情战斗的逐波状态：当前波待生成队列、当前波技能与场地效果。 */
+let storySpawnQueue = [];
+let storyWaveSkills = [];
+let storyWaveHazard = null;
+let storyHazardTimer = 0;
+let storySpawnSerial = 0;
 let randomEventWarning = 0;
 const trafficCars = [];
 const harpFields = [];
@@ -671,6 +816,30 @@ function updateWaveHud() {
         return;
     }
     const displayWave = waveState === "starting" ? wave + 1 : wave;
+    if (storyWaves.length > 0) {
+        const spec = storyWaveAt(storyWaves, displayWave);
+        const label = spec?.label || `第 ${displayWave} 波`;
+        const stateText = waveState === "active" ? "交战中" : waveState === "upgrade" ? "波次完成" : "集结中";
+        const title = `${label} · ${Math.min(displayWave, storyBattleTarget)}/${storyBattleTarget} · ${stateText}`;
+        if (waveTitle.textContent !== title)
+            waveTitle.textContent = localizeBattleText(title);
+        if (waveState === "active") {
+            const alive = enemies.filter((enemy) => enemy.hp > 0).length;
+            const counts = enemiesToSpawn > 0
+                ? tx(t("wave.on_field", { alive, incoming: enemiesToSpawn }))
+                : tx(t("wave.remaining", { alive }));
+            const detail = spec?.note || spec?.event || "";
+            const subtitle = detail ? `${detail} · ${counts}` : counts;
+            if (waveSubtitle.textContent !== subtitle)
+                waveSubtitle.textContent = localizeBattleText(subtitle);
+        }
+        else {
+            const subtitle = spec?.note || tx("敌人即将出现");
+            if (waveSubtitle.textContent !== subtitle)
+                waveSubtitle.textContent = localizeBattleText(subtitle);
+        }
+        return;
+    }
     const title = `第 ${displayWave} 波 · ${waveState === "active" ? "交战中" : waveState === "upgrade" ? "波次完成" : "集结中"}`;
     if (waveTitle.textContent !== title)
         waveTitle.textContent = localizeBattleText(title);
@@ -770,19 +939,11 @@ function startDuelRound() {
     updateDuelHud();
 }
 function spawnEnemyForWave() {
-    let x = player.x;
-    let y = player.y;
-    for (let attempt = 0; attempt < 60; attempt += 1) {
-        const angle = Math.random() * Math.PI * 2;
-        const distance = 340 + Math.random() * 260;
-        const candidateX = Math.max(35, Math.min(map.width - 35, player.x + Math.cos(angle) * distance));
-        const candidateY = Math.max(35, Math.min(map.height - 35, player.y + Math.sin(angle) * distance));
-        if (isSpawnPositionClear(candidateX, candidateY)) {
-            x = candidateX;
-            y = candidateY;
-            break;
-        }
+    if (storyWaves.length > 0) {
+        spawnStoryEnemy();
+        return;
     }
+    const { x, y } = pickSpawnPoint();
     const roll = Math.random();
     const kind = wave >= 3 && roll > 0.78 ? "brute" : wave >= 2 && roll > 0.5 ? "runner" : "grunt";
     const hpScale = 1 + (wave - 1) * 0.16;
@@ -802,9 +963,87 @@ function spawnEnemyForWave() {
         experienceAwarded: false,
     });
 }
+/** 找一个离玩家足够远、且不卡在障碍里的落点。 */
+function pickSpawnPoint() {
+    let x = player.x;
+    let y = player.y;
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 340 + Math.random() * 260;
+        const candidateX = Math.max(35, Math.min(map.width - 35, player.x + Math.cos(angle) * distance));
+        const candidateY = Math.max(35, Math.min(map.height - 35, player.y + Math.sin(angle) * distance));
+        if (isSpawnPositionClear(candidateX, candidateY)) {
+            x = candidateX;
+            y = candidateY;
+            break;
+        }
+    }
+    return { x, y };
+}
+/**
+ * 剧情敌人：按剧本指定的英雄 + 倍率生成。
+ * 外观走英雄配色与头像字（和玩家同一套 roster），数值走 story_wave.ts。
+ */
+function spawnStoryEnemy() {
+    const spec = storySpawnQueue.shift();
+    if (!spec)
+        return;
+    const { x, y } = pickSpawnPoint();
+    const entry = rosterById.get(spec.hero);
+    const stats = storyEnemyStats(spec, entry ? { ...entry.combat, defense: entry.defense } : undefined);
+    const serial = storySpawnSerial;
+    storySpawnSerial += 1;
+    const skills = storyWaveSkills.slice();
+    enemies.push({
+        id: `story-enemy-${++eventSerial}`,
+        x, y,
+        hp: stats.hp,
+        maxHp: stats.hp,
+        attackTimer: 0,
+        attack: stats.attack,
+        speed: stats.speed,
+        kind: stats.kind,
+        poisonDamage: 0,
+        poisonTimer: 0,
+        effects: {},
+        experienceAwarded: false,
+        storyUnit: true,
+        heroId: spec.hero,
+        accent: entry?.accent,
+        initial: entry?.initial || "?",
+        name: entry?.name || spec.hero,
+        defenseReduction: stats.armor,
+        storySkills: skills,
+        storySkillIndex: serial,
+        // 开局错开首次施法，避免同一帧整波同时放技能
+        skillTimer: 2.5 + (serial % Math.max(1, skills.length)) * 1.2,
+    });
+}
 function startWave() {
     wave += 1;
     waveState = "active";
+    if (storyWaves.length > 0) {
+        // 剧情战斗：按剧本生成这一波的敌人，不参与肉鸽的波次成长
+        if (wave > storyBattleTarget) {
+            finishStoryBattle("win");
+            return;
+        }
+        const spec = storyWaveAt(storyWaves, wave) || {};
+        storySpawnQueue = expandStoryWave(spec);
+        storyWaveSkills = Array.isArray(spec.skills) ? spec.skills.slice() : [];
+        storyWaveHazard = normalizeStoryHazard(spec.hazard);
+        storyHazardTimer = storyWaveHazard ? storyWaveHazard.interval : 0;
+        storySpawnSerial = 0;
+        enemiesToSpawn = storySpawnQueue.length;
+        spawnTimer = 0.5;
+        updateWaveHud();
+        const label = spec.label || `第 ${wave} 波`;
+        if (spec.event)
+            showToast(`${label} · ${spec.event}`, "warning");
+        else
+            showToast(label, "warning");
+        return;
+    }
     if (mapTheme === "airport")
         scheduleAirportFlightsForWave();
     enemiesToSpawn = Math.min(4 + wave * 2, 18);
@@ -856,6 +1095,21 @@ function updateWaveSpawner(dt) {
     }
     if (waveState !== "active")
         return;
+    // 剧情战斗的场地效果：按波次配置周期扣血（例如配电柜过载、冷却液泄漏）
+    if (storyWaves.length > 0 && storyWaveHazard) {
+        storyHazardTimer -= dt;
+        if (storyHazardTimer <= 0) {
+            storyHazardTimer = storyWaveHazard.interval;
+            if (applyPlayerDamage(storyWaveHazard.damage)) {
+                addFloatingText(player.x, player.y - 58, tx("场地"), "#ffb37a");
+                if (storyWaveHazard.effect) {
+                    applyStoryEffect(storyWaveHazard.effect, storyWaveHazard.effect_turns || 0);
+                }
+            }
+            if (runEnded)
+                return;
+        }
+    }
     spawnTimer -= dt;
     if (enemiesToSpawn > 0 && spawnTimer <= 0) {
         spawnEnemyForWave();
@@ -863,9 +1117,15 @@ function updateWaveSpawner(dt) {
         spawnTimer = Math.max(0.45, 1.25 - wave * 0.035);
     }
     if (enemiesToSpawn === 0 && enemies.every((enemy) => enemy.anesthetist || enemy.hp <= 0)) {
-        // 剧情战斗：清完目标波次即判胜，不弹肉鸽强化
-        if (storyBattle && wave >= storyBattle.target_waves) {
-            finishStoryBattle("win");
+        if (storyBattle) {
+            if (wave >= storyBattleTarget) {
+                finishStoryBattle("win");
+                return;
+            }
+            // 剧情战斗不给肉鸽强化：清场后短暂间歇，直接进下一波
+            waveState = "starting";
+            breakTimer = 2.2;
+            updateWaveHud();
             return;
         }
         showWaveUpgrade();
@@ -888,6 +1148,74 @@ function showToast(message, kind = "success") {
     toast.classList.add("visible");
     window.clearTimeout(toastTimer);
     toastTimer = window.setTimeout(() => toast.classList.remove("visible"), 2200);
+}
+/** 剧情战斗的负面效果（敌方技能 / 场地效果共用）。 */
+function applyStoryEffect(effect, turns, source) {
+    if (!effect)
+        return;
+    const seconds = Math.max(0.3, Math.min(10, turns || 1));
+    if (effect === "眩晕" || effect === "禁锢") {
+        statusEffects[effect] = Math.max(statusEffects[effect] || 0, seconds);
+        addFloatingText(player.x, player.y - 52, effect, "#ffd166");
+        return;
+    }
+    if (effect === "减速" || effect === "强力减速") {
+        statusEffects[effect] = Math.max(statusEffects[effect] || 0, seconds);
+        addFloatingText(player.x, player.y - 52, effect, "#8c9aff");
+        return;
+    }
+    if (effect === "击退") {
+        const originX = source?.x ?? player.x - facing.x * 40;
+        const originY = source?.y ?? player.y - facing.y * 40;
+        const dx = player.x - originX;
+        const dy = player.y - originY;
+        const length = Math.hypot(dx, dy) || 1;
+        const push = Math.min(90, 26 + seconds * 60);
+        player.x = Math.max(30, Math.min(map.width - 30, player.x + (dx / length) * push));
+        player.y = Math.max(30, Math.min(map.height - 30, player.y + (dy / length) * push));
+        addFloatingText(player.x, player.y - 52, effect, "#ffb37a");
+    }
+}
+/**
+ * 敌方剧情技能：玩家进入射程才真正释放；不在射程只做短间隔重试，
+ * 不会白吃一次完整冷却。
+ */
+function updateStoryEnemySkill(enemy, dt) {
+    const skills = enemy.storySkills;
+    if (!skills || skills.length === 0 || runEnded || skillIsPaused())
+        return;
+    if ((enemy.effects["眩晕"] || 0) > 0)
+        return;
+    enemy.skillTimer = Math.max(0, (enemy.skillTimer ?? 0) - dt);
+    if (enemy.skillTimer > 0)
+        return;
+    const index = Math.abs(enemy.storySkillIndex || 0) % skills.length;
+    enemy.storySkillIndex = index + 1;
+    const skill = normalizeStorySkill(skills[index]);
+    const distance = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+    if (distance > skill.radius) {
+        enemy.skillTimer = 0.6;
+        return;
+    }
+    enemy.skillTimer = skill.cooldown;
+    let damage = skill.damage;
+    if (skill.effect === "斩杀") {
+        // 残血时伤害递增，对应「对残血目标有极高斩杀概率」
+        const missing = 1 - playerState.hp / Math.max(1, playerState.maxHp);
+        damage = Math.round(damage * (1 + missing * 2));
+    }
+    skillVisuals.push({
+        type: "beam", x: enemy.x, y: enemy.y, targetX: player.x, targetY: player.y,
+        age: 0, duration: 0.24, color: "#ff8a5c",
+    });
+    if (skill.name) {
+        addFloatingText(enemy.x, enemy.y - 50, skill.name, "#ffd166");
+        showToast(`${enemy.name || ""} · ${skill.name}`, "warning");
+    }
+    if (!applyPlayerDamage(damage, enemy))
+        return;
+    if (skill.effect)
+        applyStoryEffect(skill.effect, skill.effectTurns, enemy);
 }
 /** 剧情战斗结束：带结果跳回剧情页，由剧情引擎决定下一节点。 */
 function finishStoryBattle(result) {
@@ -2115,6 +2443,50 @@ function drawPipaMinion(minion) {
 function drawEnemy(enemy) {
     if (enemy.hp <= 0)
         return;
+    if (enemy.storyUnit) {
+        // 剧情敌人：英雄配色 + 头像字，和花名册同一套视觉
+        const color = rosterPalette(enemy.heroId || "volt");
+        const size = enemy.kind === "brute" ? 24 : enemy.kind === "runner" ? 16 : 19;
+        context.save();
+        context.translate(enemy.x, enemy.y);
+        context.fillStyle = "#0009";
+        context.beginPath();
+        context.ellipse(2, size * 0.8, size + 3, size * 0.45, 0, 0, Math.PI * 2);
+        context.fill();
+        context.shadowColor = color.main;
+        context.shadowBlur = 16;
+        context.fillStyle = "#0a0f1c";
+        context.strokeStyle = color.main;
+        context.lineWidth = 3;
+        context.beginPath();
+        context.arc(0, 0, size, 0, Math.PI * 2);
+        context.fill();
+        context.stroke();
+        context.shadowBlur = 0;
+        context.fillStyle = color.light;
+        context.font = `bold ${Math.max(13, size * 0.95)}px sans-serif`;
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.fillText(enemy.initial || "?", 0, 1);
+        context.fillStyle = "#e8ecff";
+        context.font = "11px sans-serif";
+        context.fillText(enemy.name || "", 0, -size - 22);
+        context.fillStyle = "#10131e";
+        context.fillRect(-size, -size - 14, size * 2, 5);
+        context.fillStyle = color.main;
+        context.fillRect(-size, -size - 14, size * 2 * Math.max(0, enemy.hp / enemy.maxHp), 5);
+        if ((enemy.storySkills?.length || 0) > 0 && (enemy.skillTimer ?? 0) <= 0.001) {
+            // 技能就绪：外圈亮一档，玩家能预判
+            context.strokeStyle = "#ffd166";
+            context.lineWidth = 2;
+            context.beginPath();
+            context.arc(0, 0, size + 5, 0, Math.PI * 2);
+            context.stroke();
+        }
+        drawEffectIndicators(0, -size - 34, enemy.effects);
+        context.restore();
+        return;
+    }
     if (enemy.duelBot) {
         const color = rosterPalette(enemy.heroId || "volt");
         context.save();
@@ -5251,7 +5623,9 @@ function updateCombat(dt) {
         }
     });
     advanceSakuraEffects(dt);
-    updateRandomMapEvents(dt);
+    // 剧情战斗走剧本事件，不再叠加地图随机事件（避免同一波里两套意外伤害）
+    if (!storyBattle)
+        updateRandomMapEvents(dt);
     enemies.forEach((enemy) => {
         if (runEnded || skillIsPaused())
             return;
@@ -5323,6 +5697,8 @@ function updateCombat(dt) {
                 updateDuelBot(enemy, dt);
             return;
         }
+        if (enemy.storySkills && enemy.storySkills.length > 0)
+            updateStoryEnemySkill(enemy, dt);
         const target = getEnemyTarget(enemy);
         if (!target)
             return;
