@@ -12,3 +12,5 @@ desktop-server.spec
 .workbuddy/
 # 玩家存档（含无限金币测试存档）：不进版本库
 save/
+# 发行公司图标源素材（1.3 MB）。运行时用 static/gamecom.png 的压缩副本，源图不入库
+GameCom_Img.png
