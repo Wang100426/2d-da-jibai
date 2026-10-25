@@ -1,5 +1,46 @@
 # 更新日志 / Updates
 
+## 2.3.0
+
+### 中文
+
+- 新增**剧情模式**：模式选择页第 4 项进入，主页「开始游戏」跳到重现卡库。整条线是「重现卡 → 分区 → 记忆核心」，一张卡拆成若干段，**打完上一段才解锁下一段**。
+- 新增**重现卡 RC-001《城市之下》**，4 个分区：一张不存在的卡 / 零层站台 / 没有登记的人 / 记忆核心。
+- 新增**三张英雄剧情卡**，每张 3 段：RC-H01 拳王的旧账（霓虹拳王）、RC-H02 苔藓的根（苔藓守卫）、RC-H03 月蚀之夜（月蚀术士）。
+- 两类剧情的英雄规则不同：**赛博世界剧情**战斗前可自选英雄（未解锁的置灰）；**英雄剧情**锁定对应英雄，服务端强制。
+- 剧情页支持 **6 种节点**：对话（逐字打字机）、分支选择（数字键 1-9 可选）、战斗、任务目标、奖励、章节结束。支持跳过剧情直达下一个战斗节点。
+- **剧情战斗真的按剧本打**：每一波可以指定敌人英雄、数量、血量/伤害/移速倍率与护甲；敌方技能带冷却、伤害、范围与眩晕/禁锢/减速/击退/斩杀效果；场地危险效果按固定间隔扣血。
+- **剧情战斗锁地图**：`map_theme` 指定就打那张（竞技场/城市/医院/音乐厅/体育馆/机场/火车站/学校）；不写则默认 **1V1 竞技场**（1400×900、无建筑无道路、两个贴边补给）。剧情战斗不弹肉鸽强化、不结算肉鸽金币、不叠加地图随机事件。
+- **剧情进度独立存档**：节点、任务状态、剧情变量、选择记录、已领奖励分别保存；存档版本不符只丢弃剧情子结构，金币与英雄不受影响。奖励按 `reward_id` 幂等，重试或恢复存档都不会重复领取。
+- **战斗交接**：胜利回到剧情节点继续推进，失败可重试或退出到卡库；战斗页不再留在浏览器历史里，按返回不会重打同一场。
+- **剧情文案按卡模块化**：一张重现卡一个语言文件（`locale/story/<卡>.<语言>.json`），主语言包只留分类；三语齐全。
+
+### English
+
+- Added **Story Mode**: the fourth entry on the mode screen, with **Start Game** on the home screen leading to the replay card archive. The chain is **replay card → section → memory core** — a card splits into sections, and **each section unlocks only after the previous one is cleared**.
+- Added **replay card RC-001 "City Beneath"** with four sections: A Card That Doesn't Exist / Platform Zero / The Unregistered / Memory Core.
+- Added **three hero story cards** of three sections each: RC-H01 The Champion's Debt (Neon Champion), RC-H02 Roots of the Moss (Moss Guardian), RC-H03 Night of the Eclipse (Eclipse Mage).
+- The two story lines handle fighters differently: **Cyber World** stories let you pick any hero before a battle (locked ones greyed out), while **Hero** stories lock to their hero and the server enforces it.
+- Story pages support **six node types**: dialogue (typed out character by character), branching choices (number keys 1-9 work), battles, objectives, rewards, and chapter ends. Skipping jumps straight to the next battle node.
+- **Story battles actually follow the script**: each wave declares enemy heroes, counts, HP/damage/speed multipliers, and armour; enemy skills carry cooldowns, damage, radius, and stun/root/slow/knockback/execute effects; arena hazards tick damage on a fixed interval.
+- **Story battles lock their map**: `map_theme` picks the arena, city, hospital, music hall, gymnasium, airport, station, or school; omitting it defaults to the **1V1 arena** (1400×900, no buildings or roads, two edge pickups). Story battles never offer roguelike upgrades, never settle rogue coins, and never stack random map events.
+- **Story progress saves separately**: current node, objectives, flags, choice records, and claimed rewards are all persisted. A save with a mismatched version drops **only** the story sub-structure — coins and heroes stay intact. Rewards dedupe by `reward_id`, so retries and save restores never grant twice.
+- **Battle handoff**: a win returns to the story node and advances it, a loss offers retry or exit back to the archive. The battle page no longer stays in browser history, so pressing Back cannot replay the same fight.
+- **Story text is modular per card**: one language file per replay card (`locale/story/<card>.<lang>.json`), with the main packs keeping only categories. All three languages are complete.
+
+### 日本語
+
+- **ストーリーモード**を追加：モード選択画面の 4 番目から入り、ホームの「ゲーム開始」で再生カードアーカイブへ。流れは**再生カード → セクション → 記憶核心**で、カードは複数セクションに分かれ、**前のセクションをクリアしないと次が解放されません**。
+- **再生カード RC-001「都市の下」**を追加。4 セクション：存在しないカード / 零層ホーム / 未登録の人々 / 記憶核心。
+- **ヒーローストーリーカードを 3 枚**追加、各 3 セクション：RC-H01 チャンピオンの借り（ネオン・チャンピオン）、RC-H02 苔の根（モス・ガーディアン）、RC-H03 月蝕の夜（エクリプス・メイジ）。
+- 2 つのストーリー系統でヒーローの扱いが異なります：**サイバーワールド**は戦闘前にヒーローを自由に選択（未解放はグレー表示）、**ヒーローストーリー**は該当ヒーロー固定で、サーバー側でも強制されます。
+- ストーリーページは **6 種類のノード**に対応：会話（1 文字ずつのタイプ表示）、分岐選択（数字キー 1-9 も可）、戦闘、目標、報酬、チャプター終了。スキップで次の戦闘ノードまで飛べます。
+- **ストーリー戦は台本どおりに戦います**：ウェーブごとに敵ヒーロー、数、HP／攻撃／移動速度の倍率、アーマーを指定可能。敵スキルはクールダウン、ダメージ、範囲、スタン／拘束／減速／ノックバック／処刑の効果を持ち、環境ギミックは一定間隔でダメージを与えます。
+- **ストーリー戦はマップを固定**：`map_theme` でアリーナ／街／病院／音楽ホール／体育館／空港／駅／学校を指定。未指定なら **1V1 アリーナ**（1400×900、建物も道路もなし、端に 2 つだけ補給）になります。ストーリー戦ではローグライク強化が出ず、ローグのコインも精算されず、ランダムマップイベントも重なりません。
+- **ストーリー進行は独立して保存**：現在ノード、目標、フラグ、選択履歴、受領済み報酬を個別に保存。セーブのバージョンが違う場合は**ストーリー部分だけ**を破棄し、コインやヒーローはそのまま残ります。報酬は `reward_id` で重複排除するため、リトライやセーブ復元でも二重受領になりません。
+- **戦闘の受け渡し**：勝利するとストーリーノードに戻って進行、敗北時はリトライかアーカイブへ退出を選択。戦闘ページはブラウザ履歴に残らないため、戻るボタンで同じ戦闘を再プレイすることはありません。
+- **ストーリーテキストはカード単位でモジュール化**：再生カード 1 枚につき言語ファイル 1 つ（`locale/story/<カード>.<言語>.json`）。メインの言語パックには分類のみを残します。3 言語すべて完備。
+
 ## 2.1.0
 
 ### 中文
