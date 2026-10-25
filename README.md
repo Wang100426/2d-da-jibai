@@ -233,10 +233,30 @@
 - 剧情战斗**不触发肉鸽金币结算**（`coinSettlementEnabled()` 排除），奖励改由 `reward` 节点发放
 - 剧情战斗**不弹肉鸽强化**：一波清完 2.2 秒后直接进下一波，强度只由装备与英雄决定
 - 剧情战斗**不叠加地图随机事件**，避免剧本事件与随机事件同时扣血
+- 剧情战斗**地图锁定**：`battle.map_theme` 写哪张就打哪张；没写就是 1V1 竞技场（1400×900、无建筑无道路、只有两个贴边补给）
+
+### 剧情语言包：一张重现卡一个文件
+
+`locale/story/<卡编号>.<语言>.json`，三语各一份；主语言包 `locale/*.json` 只保留 `story.categories`。
+
+```
+locale/story/RC-001.zh.json   → { "id": "RC-001", "card": {...}, "sections": { "rc001-p0": {...}, ... } }
+locale/story/RC-001.en.json
+locale/story/RC-001.ja.json
+locale/story/RC-H01.zh.json   → 英雄剧情卡
+```
+
+`app.py` 启动时由 `load_story_modules()` 把目录下所有 `<卡>.<语言>.json` 合并回语言包的 `story` 段，所以 `story_script` 的读取接口完全没变。好处：
+
+- 新增剧本 = 丢 3 个文件，不用碰三份上千行的主语言包，也不会跟别人的卡产生合并冲突
+- 卡内 `sections` 独立，删卡 = 删 3 个文件
+- 文件损坏会带着文件名报错（`剧情语言包损坏：RC-001.zh.json`），不会静默变成空文案
+
+校验脚本 `tests/story_locale.test.cjs` 会盯着三语的节点键、选项数、波次敌人/技能数是否完全一致，避免「Q 位置显示成 E 的说明」这类错位。
 
 ### 波次配置：数值在 Python，文案在 locale
 
-`battle.waves` 是结构化数组，每项对应一波；**索引与 `locale/*.json` 的 `story.sections.<id>.nodes.<node>.waves` 一一对应**，`localized_chapter()` 把两边合并成同一份数据 —— 剧情页的预览和战斗里真正刷的怪因此永远一致。
+`battle.waves` 是结构化数组，每项对应一波；**索引与 `locale/story/<卡>.<语言>.json` 的 `sections.<id>.nodes.<node>.waves` 一一对应**，`localized_chapter()` 把两边合并成同一份数据 —— 剧情页的预览和战斗里真正刷的怪因此永远一致。
 
 ```python
 "battle": {
@@ -303,9 +323,10 @@
 ### 新增章节
 
 1. `story_script.py` 的 `CHAPTERS` 追加一条：`id`、`card`、`category`、`order`、`hero`、`entry`、`nodes`
-2. 三份语言包的 `story.sections.<id>` 补 `title`、`summary`、每个节点文案，以及战斗节点按索引对齐的 `waves` 文案
-3. 跑一次 `python -m py_compile story_script.py`，再 `npm run build:story` 让 `story.js` 生效
-4. 章节结构与跳转会在 Python 侧（`validate_chapter`，含波次数与 `target_waves` 一致性）和前端（`StoryEngine` 构造时）各校验一遍
+2. 新建 `locale/story/<卡编号>.zh.json` / `.en.json` / `.ja.json`：`card` 段放编号、标题、摘要、引言，`sections` 段放每个分区的 `title`、`summary` 和节点文案（战斗节点按索引对齐 `waves`）
+3. 战斗节点写 `battle.map_theme` 锁地图（`arena` / `city` / `hospital` / `music` / `gym` / `airport` / `station` / `school`）；不写就是 1V1 竞技场
+4. 跑一次 `python -m py_compile story_script.py`，再 `npm run build:story` 让 `story.js` 生效
+5. 章节结构与跳转会在 Python 侧（`validate_chapter`，含波次数、地图合法性、`target_waves` 一致性）和前端（`StoryEngine` 构造时）各校验一遍
 
 ### 测试
 
@@ -313,14 +334,15 @@
 npm run test:story
 ```
 
-分四段跑：
+分五段跑：
 
 - `tests/story_engine.test.cjs` —— **32 项** `node:test` 断言，跑纯逻辑引擎：节点跳转、分支记录、战斗胜负、失败重试、重复上报、存档恢复、旧存档迁移（缺字段 / 类型全错 / 结构不符）、已完成状态不被回退、奖励防重复、无效节点、缺配置、重复 id、分区解锁初始状态
 - `tests/story_wave.test.cjs` —— **14 项** `node:test` 断言，跑波次纯逻辑：按 count 展开、单组/单波上限、非法条目跳过、血量与攻速倍率、远程/近战/厚甲体型判定、攻击力与移速夹取、波次目标校正、技能归一化与轮转、场地效果合法性，以及**真实剧本每个战斗节点都能展开**
-- `tests/story_ui.test.cjs` —— **12 项** DOM stub 断言，真跑编译后的 `story.js`：赛博世界剧情的英雄选择器、英雄剧情的固定出战、未解锁英雄禁用、失败后的重试与退路、胜利推进并请求发奖、已完成分区直达结束页
+- `tests/story_locale.test.cjs` —— **7 项** `node:test` 断言，守模块化语言包：每卡三语齐全、分区与剧情配置一一对应、三语节点键与选项/波次数量一致、各类节点文案非空、卡面字段完整、分区没有放错卡、主语言包不再残留 `cards` / `sections`
+- `tests/story_ui.test.cjs` —— **13 项** DOM stub 断言，真跑编译后的 `story.js`：赛博世界剧情的英雄选择器、英雄剧情的固定出战、锁定地图标识、未解锁英雄禁用、失败后的重试与退路、胜利推进并请求发奖、已完成分区直达结束页
 - `tests/story_choose.test.cjs` —— **10 项** DOM stub 断言，真跑编译后的 `choose_story.js`：卡数与分区行、锁定分区按钮禁用、解锁分区可点击并跳转、卡上的编号与通关进度
 
-四段都会先重新编译，避免测到旧产物。
+五段都会先重新编译，避免测到旧产物。
 
 ## 操作
 
@@ -425,7 +447,8 @@ npm run dist:portable  # 便携版 → release-portable/
 │  └─ page-transition.js   站内跳转淡出过场
 ├─ templates/              Jinja2 模板（index / mode / select / battle / shop / codex / equipment / backpack / multiplayer / story / story_choose）
 ├─ tests/                  剧情引擎测试（node:test）与章节 fixture
-├─ locale/                 zh.json / en.json / ja.json
+├─ locale/                 主语言包 zh.json / en.json / ja.json（UI、英雄、战斗）
+│  └─ story/               剧情语言包：一张重现卡一个文件（<卡>.<语言>.json）
 ├─ save/profile.json       本地测试存档
 ├─ scripts/                build-backend.ps1 / clean-release.ps1
 └─ tsconfig*.json          每份入口一个独立配置
@@ -813,10 +836,30 @@ The battle implementation is **not duplicated** — only two edges connect the s
 - Story battles **skip rogue coin settlement** (`coinSettlementEnabled()` excludes them); rewards come from `reward` nodes instead
 - Story battles **never show rogue upgrades**: a cleared wave waits 2.2s and rolls straight into the next one, so strength comes from heroes and equipment only
 - Story battles **do not stack random map events** on top of scripted wave events
+- Story battle **maps are locked**: `battle.map_theme` picks the arena, and omitting it falls back to the 1V1 arena (1400×900, no buildings or roads, two pickups on the edges)
+
+### Story locale: one file per replay card
+
+`locale/story/<card-id>.<lang>.json`, one per language. The main `locale/*.json` files only keep `story.categories`.
+
+```
+locale/story/RC-001.zh.json   -> { "id": "RC-001", "card": {...}, "sections": { "rc001-p0": {...}, ... } }
+locale/story/RC-001.en.json
+locale/story/RC-001.ja.json
+locale/story/RC-H01.zh.json   -> hero-story card
+```
+
+At startup `load_story_modules()` in `app.py` merges every `<card>.<lang>.json` back into the pack's `story` section, so `story_script`'s read API is unchanged. Benefits:
+
+- Adding a story = drop in 3 files; no edits to the three 1000+ line main packs, no merge conflicts with someone else's card
+- Sections live with their card, so deleting a card is deleting 3 files
+- A broken file fails loudly with its filename (`剧情语言包损坏：RC-001.zh.json`) instead of silently turning into empty text
+
+`tests/story_locale.test.cjs` keeps the three languages aligned on node keys, option counts, and per-wave enemy/skill counts.
 
 ### Wave config: numbers in Python, text in locale
 
-`battle.waves` is a structured array — one entry per wave — and **its index lines up with `story.sections.<id>.nodes.<node>.waves` in `locale/*.json`**. `localized_chapter()` merges both sides, so the preview on the story page and the enemies actually spawned in battle come from one source.
+`battle.waves` is a structured array — one entry per wave — and **its index lines up with `sections.<id>.nodes.<node>.waves` in `locale/story/<card>.<lang>.json`**. `localized_chapter()` merges both sides, so the preview on the story page and the enemies actually spawned in battle come from one source.
 
 ```python
 "battle": {
@@ -883,9 +926,10 @@ Story progress lives in its own sub-structure of the game save, isolated from co
 ### Adding a chapter
 
 1. Append an entry to `CHAPTERS` in `story_script.py`: `id`, `card`, `category`, `order`, `hero`, `entry`, `nodes`
-2. Add `story.sections.<id>` to all three locale packs with `title`, `summary`, node text, and index-aligned `waves` text for battle nodes
-3. Run `python -m py_compile story_script.py`, then `npm run build:story`
-4. Structure and transitions are validated twice — by `validate_chapter` in Python (including wave count vs `target_waves`) and by the `StoryEngine` constructor in the browser
+2. Create `locale/story/<card-id>.zh.json`, `.en.json`, `.ja.json`: the `card` block holds code / title / summary / quote, and `sections` holds each section's `title`, `summary`, node text, and index-aligned `waves` text
+3. Lock a map on battle nodes with `battle.map_theme` (`arena` / `city` / `hospital` / `music` / `gym` / `airport` / `station` / `school`); omit it for the 1V1 arena
+4. Run `python -m py_compile story_script.py`, then `npm run build:story`
+5. Structure and transitions are validated twice — by `validate_chapter` in Python (wave count, map validity, `target_waves`) and by the `StoryEngine` constructor in the browser
 
 ### Tests
 
@@ -893,14 +937,15 @@ Story progress lives in its own sub-structure of the game save, isolated from co
 npm run test:story
 ```
 
-Four stages:
+Five stages:
 
 - `tests/story_engine.test.cjs` — **32** `node:test` assertions against the pure engine: node transitions, branch recording, battle win/loss, retry after defeat, duplicate result reports, save restore, legacy-save migration (missing fields / wrong types / wrong shape), completed state never rolled back, reward dedupe, invalid nodes, missing config, duplicate ids
 - `tests/story_wave.test.cjs` — **14** `node:test` assertions against the wave logic: expansion by count, per-group and per-wave caps, invalid entries skipped, HP/damage multipliers, melee/ranged/armoured archetype selection, attack and speed clamping, target-wave correction, skill normalisation and rotation, hazard validity, and every real battle node expanding to at least one enemy
-- `tests/story_ui.test.cjs` — **12** DOM-stub assertions that execute the compiled `story.js`: hero picker for Cyber World stories, fixed fighter for Hero stories, locked heroes disabled, retry and exit after a loss, win advancing to the reward node and calling the reward endpoint, completed sections landing on the end card
+- `tests/story_locale.test.cjs` — **7** `node:test` assertions guarding the modular packs: three languages per card, sections matching the script exactly, identical node keys and option/wave counts, non-empty text per node type, complete card metadata, sections filed under the right card, and no leftover `cards` / `sections` in the main packs
+- `tests/story_ui.test.cjs` — **13** DOM-stub assertions that execute the compiled `story.js`: hero picker for Cyber World stories, fixed fighter for Hero stories, locked-map badge, locked heroes disabled, retry and exit after a loss, win advancing to the reward node and calling the reward endpoint, completed sections landing on the end card
 - `tests/story_choose.test.cjs` — **10** DOM-stub assertions that execute the compiled `choose_story.js`: card and section counts, locked sections disabled, unlocked sections clickable and navigating, card code and clear progress on the card
 
-All four recompile first so the tests never run against stale output.
+All five recompile first so the tests never run against stale output.
 
 ## Controls
 
@@ -1005,7 +1050,8 @@ Save layout (`version: 2`):
 │  └─ page-transition.js   Fade-out transition for in-site navigation
 ├─ templates/              Jinja2 templates (index / mode / select / battle / shop / codex / equipment / backpack / multiplayer / story / story_choose)
 ├─ tests/                  Story engine tests (node:test) and chapter fixture
-├─ locale/                 zh.json / en.json / ja.json
+├─ locale/                 Main packs zh.json / en.json / ja.json (UI, heroes, combat)
+│  └─ story/               Story packs: one file per replay card (<card>.<lang>.json)
 ├─ save/profile.json       Local test save
 ├─ scripts/                build-backend.ps1 / clean-release.ps1
 └─ tsconfig*.json          One independent config per entry point

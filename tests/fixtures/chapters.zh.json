@@ -251,6 +251,8 @@
           "on_lose": "p0-battle",
           "title": "配电间",
           "brief": "维修机器人全部离线，但它们的动作没有停。清掉两波，才能继续查。",
+          "map_theme": "school",
+          "map_label": "赛博学校",
           "waves": [
             {
               "label": "波次 1",
@@ -511,6 +513,8 @@
           "on_lose": "p1-battle",
           "title": "无人安保",
           "brief": "安保系统没有名字，也不需要。打到它断电为止。",
+          "map_theme": "station",
+          "map_label": "霓虹火车站",
           "waves": [
             {
               "label": "波次 1",
@@ -786,6 +790,8 @@
           "on_lose": "p2-battle",
           "title": "封锁区",
           "brief": "安保部队守在这里十七年了。他们接到的最后一条命令是「不许任何人下去」。",
+          "map_theme": "gym",
+          "map_label": "赛博体育馆",
           "waves": [
             {
               "label": "波次 1",
@@ -1054,6 +1060,8 @@
           "on_lose": "p3-battle",
           "title": "最终防御",
           "brief": "防御系统是最后一道保险。它不认识你，只认识「不许读取」这条命令。",
+          "map_theme": "hospital",
+          "map_label": "赛博医院",
           "waves": [
             {
               "label": "波次 1",
@@ -1363,6 +1371,8 @@
           "on_lose": "h1-battle",
           "title": "旧账清算",
           "brief": "两波对手，都是老熟人。打完就散。",
+          "map_theme": "gym",
+          "map_label": "赛博体育馆",
           "waves": [
             {
               "label": "波次 1",

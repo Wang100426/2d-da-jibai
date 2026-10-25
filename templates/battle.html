@@ -150,6 +150,7 @@
       skills: {{ player.skills|tojson }},
       multiplayer: {{ multiplayer|tojson }},
       duel: {{ (game_mode == "duel" and not multiplayer)|tojson }},
+      arena: {{ arena|tojson }},
       defense: {{ defense|tojson }},
       equipmentBonuses: {{ equipment_bonuses|tojson }},
       locale: {{ locale_pack|tojson }}

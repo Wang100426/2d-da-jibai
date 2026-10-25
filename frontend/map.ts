@@ -41,6 +41,8 @@ interface MapConfig {
   skills: SkillConfig[];
   locale: LocalePackage;
   duel: boolean;
+  /** 剧情战斗使用 1V1 竞技场：1400×900、无建筑无道路（地图主题仍是 city 配色）。 */
+  arena?: boolean;
   defense: number;
   equipmentBonuses: Record<string, number>;
   multiplayer: {
@@ -656,13 +658,15 @@ function rosterCombat(heroId: string): HeroCombatProfile {
 
 type MapTheme = "city" | "hospital" | "music" | "gym" | "airport" | "station" | "school";
 const mapTheme = config.mapTheme;
-const map = { width: config.duel ? 1400 : 3200, height: config.duel ? 900 : 2400 };
+/** 1V1 竞技场：人机对抗与剧情战斗共用的小地图（只有配色沿用 city）。 */
+const arena = Boolean(config.arena);
+const map = { width: config.duel || arena ? 1400 : 3200, height: config.duel || arena ? 900 : 2400 };
 // Keep static geometry off the per-frame path; actors and map events remain dynamic.
 let staticMapLayer: HTMLCanvasElement | undefined;
 const equipmentBonuses = config.equipmentBonuses || {};
 const player = {
-  x: config.multiplayer?.x ?? (config.duel ? 430 : mapTheme === "airport" ? 1840 : 1600),
-  y: config.multiplayer?.y ?? (config.duel ? 450 : mapTheme === "airport" ? 1300 : 1200),
+  x: config.multiplayer?.x ?? (config.duel || arena ? 430 : mapTheme === "airport" ? 1840 : 1600),
+  y: config.multiplayer?.y ?? (config.duel || arena ? 450 : mapTheme === "airport" ? 1300 : 1200),
   radius: 19,
   speed: heroCombat.speed + (equipmentBonuses.speed || 0),
   invulnerable: false,
@@ -892,7 +896,11 @@ const skillProgress = new Map<string, SkillProgress>(
 );
 const statusEffects: Record<string, number> = {};
 const enemies: EnemyUnit[] = [];
-const supplies: Supply[] = config.duel ? [] : [
+const supplies: Supply[] = config.duel ? [] : arena ? [
+  // 竞技场较小，只留两个补给，位置贴着边缘，逼玩家跑位
+  { x: 1120, y: 220, type: "health", collected: false },
+  { x: 250, y: 680, type: "energy", collected: false },
+] : [
   { x: 1180, y: 700, type: "health", collected: false },
   { x: 2040, y: 1450, type: "energy", collected: false },
   { x: 2720, y: 720, type: "health", collected: false },
@@ -1201,7 +1209,7 @@ const airportRunways: AirportRunway[] = [
   };
 });
 
-const obstacles: Obstacle[] = config.duel
+const obstacles: Obstacle[] = config.duel || arena
   ? []
   : mapTheme === "station"
     ? stationObstacles
@@ -1213,7 +1221,7 @@ const obstacles: Obstacle[] = config.duel
               : mapTheme === "school" ? schoolObstacles
                 : cityObstacles,
     );
-const roads: Rectangle[] = config.duel || mapTheme === "airport" || mapTheme === "station" ? [] : mapTheme === "hospital"
+const roads: Rectangle[] = config.duel || arena || mapTheme === "airport" || mapTheme === "station" ? [] : mapTheme === "hospital"
   ? [
       { x: 0, y: 660 + Math.random() * 45, w: map.width, h: 150 },
       { x: 0, y: 1430 + Math.random() * 45, w: map.width, h: 155 },
@@ -6702,6 +6710,9 @@ if (config.duel) {
   mapMode.textContent = tx("人机对抗");
   startDuelRound();
   showToast(tx("人机对抗开始！先赢下 4 分获胜，SPACE 普攻，Q / E / R 释放技能。"));
+} else if (storyBattle) {
+  mapMode.textContent = arena ? t("story.tag_arena") : t("story.tag");
+  showToast(t("story.hint"));
 } else {
   mapMode.textContent = tx(
     mapTheme === "hospital" ? "赛博医院"

@@ -1,0 +1,77 @@
+{
+  "id": "RC-H01",
+  "card": {
+    "code": "RC-H01",
+    "title": "The Champion's Debt",
+    "summary": "Three years ago, in an underground match, Neon Champion owed someone a favor. Tonight someone came to collect.",
+    "quote": "The rule on this street is simple: a debt gets paid."
+  },
+  "sections": {
+    "hero-volt-01": {
+      "title": "Segment 1 · The Debt",
+      "summary": "Three years ago, in an underground match, Neon Champion owed someone a favor. Tonight someone came to collect.",
+      "nodes": {
+        "h1-intro": {
+          "speaker": "Neon Champion",
+          "text": "The rule on this street is simple: a debt gets paid. I know the people coming tonight."
+        },
+        "h1-battle": {
+          "title": "Settle the Debt",
+          "brief": "Two waves, both old acquaintances. Finish it and walk away.",
+          "waves": [
+            {
+              "label": "Wave 1",
+              "note": "Old friend · Probe",
+              "event": "No special event",
+              "enemies": [
+                {
+                  "hero": "pipa",
+                  "count": 1,
+                  "mod": "Controller"
+                }
+              ],
+              "skills": [
+                {
+                  "name": "String Root",
+                  "description": "Roots the target and drains health",
+                  "cooldown": 10,
+                  "damage": 16,
+                  "effect": "Root 3s"
+                }
+              ]
+            },
+            {
+              "label": "Wave 2",
+              "note": "Collection · All in",
+              "event": "The crowd backs off and the arena narrows",
+              "enemies": [
+                {
+                  "hero": "jianghu",
+                  "count": 1,
+                  "mod": "HP ×1.6 · DMG ×1.2"
+                }
+              ],
+              "skills": [
+                {
+                  "name": "One-Strike Execution",
+                  "description": "Execution chance spikes against low-health targets",
+                  "cooldown": 14,
+                  "damage": 40,
+                  "effect": "Execute"
+                }
+              ]
+            }
+          ]
+        },
+        "h1-reward": {
+          "title": "Debt Cleared",
+          "description": "They leave one line behind — \"don't keep me waiting next time\" — and walk into the rain."
+        },
+        "h1-end": {
+          "title": "Segment Complete",
+          "text": "The Champion rewraps his wrist guard. Half the street lights come back on. That is enough."
+        }
+      }
+    }
+  }
+}

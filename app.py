@@ -22,11 +22,46 @@ ROOM_PLAYER_TIMEOUT = 30
 MAP_THEMES = ("city", "hospital", "music", "gym", "airport", "station", "school")
 
 LOCALE_DIRECTORY = Path(__file__).resolve().parent / "locale"
+STORY_LOCALE_DIRECTORY = LOCALE_DIRECTORY / "story"
 ASSET_DIRECTORY = Path(__file__).resolve().parent / "assets"
+
+
+def load_story_modules(language, package):
+    """把 `locale/story/<卡编号>.<语言>.json` 合并回语言包的 `story` 段。
+
+    刻意做成「一张重现卡一个文件」：新增剧本只需要丢 3 个文件（中/英/日），
+    不用再去改三份上千行的主语言包，也不会因为合并冲突把别人的卡写坏。
+    主语言包只保留 `story.categories`（分类是全局的，不属于任何一张卡）。
+    """
+    story = package.setdefault("story", {})
+    story.setdefault("categories", {})
+    story.setdefault("cards", {})
+    story.setdefault("sections", {})
+    if not STORY_LOCALE_DIRECTORY.is_dir():
+        return package
+    for path in sorted(STORY_LOCALE_DIRECTORY.glob(f"*.{language}.json")):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as error:
+            raise ValueError(f"剧情语言包损坏：{path.name}") from error
+        if not isinstance(data, dict):
+            raise ValueError(f"剧情语言包结构错误：{path.name}")
+        card_id = data.get("id") or path.name.split(".")[0]
+        card = data.get("card")
+        if isinstance(card, dict):
+            story["cards"][card_id] = card
+        sections = data.get("sections")
+        if isinstance(sections, dict):
+            story["sections"].update(sections)
+    return package
+
+
 LOCALE_PACKAGES = {
     language: json.loads((LOCALE_DIRECTORY / f"{language}.json").read_text(encoding="utf-8"))
     for language in ("zh", "en", "ja")
 }
+for _language, _package in LOCALE_PACKAGES.items():
+    load_story_modules(_language, _package)
 
 
 def get_locale(language):
@@ -1469,8 +1504,21 @@ def battle():
     player_id = request.args.get("pid", "").strip()
     multiplayer_config = None
     game_mode = "duel" if request.args.get("mode") == "duel" else "rogue"
-    story_map = ((story_node.get("battle") if story_node else None) or {}).get("map_theme")
-    if story_map in MAP_THEMES:
+    story_battle_config = (
+        story_node.get("battle")
+        if story_node and story_node.get("type") == "battle"
+        else None
+    ) or {}
+    story_map = story_battle_config.get("map_theme")
+    # 剧情战斗锁地图：写了 map_theme 就用那张；没写（或写 arena / 写错）用 1V1 竞技场。
+    story_arena = False
+    if story_battle_config:
+        if story_map in MAP_THEMES:
+            map_theme = story_map
+        else:
+            story_arena = True
+            map_theme = "city"  # 竞技场复用城市配色，尺寸由前端 arena 标记控制
+    elif story_map in MAP_THEMES:
         map_theme = story_map
     else:
         map_theme = "city" if game_mode == "duel" else secrets.choice(MAP_THEMES[:-1] if room_id else MAP_THEMES)
@@ -1511,6 +1559,9 @@ def battle():
     locale_ui = get_locale(lang)["ui"]
     localized = {hero["id"]: hero for hero in localized_heroes(lang)}
     equipment_bonuses = player_save.calculate_equipment_bonuses()
+    transition_map_name = locale_ui[map_name_key]
+    if story_arena:
+        transition_map_name = locale_ui.get("STORY_ARENA_MAP", transition_map_name)
     return render_template(
         "battle.html",
         player=localized[player["id"]],
@@ -1520,8 +1571,9 @@ def battle():
         game_mode=game_mode,
         defense=base_defense,
         map_theme=map_theme,
+        arena=story_arena,
         story_context=story_context,
-        transition_map_name=locale_ui[map_name_key],
+        transition_map_name=transition_map_name,
         transition_event=locale_ui[map_event_key],
         equipment_bonuses=equipment_bonuses,
     )

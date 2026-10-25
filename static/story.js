@@ -542,6 +542,11 @@ function renderBattle(node) {
     wavesChip.className = "story-badge";
     wavesChip.textContent = `${str("targetWaves", "TARGET")} ${node.battle?.target_waves ?? 1}`;
     meta.append(wavesChip);
+    // 战斗地图是锁定的：剧情作者指定哪张就打哪张，没指定就是 1V1 竞技场
+    const mapChip = document.createElement("span");
+    mapChip.className = "story-badge story-badge-map";
+    mapChip.textContent = `${str("mapLocked", "ARENA")} · ${node.map_label || str("arena", "1V1 ARENA")}`;
+    meta.append(mapChip);
     section.append(meta);
     if (!lockedHero) {
         section.append(renderHeroPicker());

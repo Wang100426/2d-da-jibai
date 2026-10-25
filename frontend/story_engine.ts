@@ -53,6 +53,10 @@ interface StoryBattleNode extends StoryNodeBase {
   title?: string;
   brief?: string;
   waves?: unknown[];
+  /** 锁定战场的地图 id（arena / city / …），由后端按 battle.map_theme 规范化。 */
+  map_theme?: string;
+  /** 锁定战场的显示名，已按当前语言本地化。 */
+  map_label?: string;
   battle?: StoryBattleConfig;
   on_win?: string;
   on_lose?: string;

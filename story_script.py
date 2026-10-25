@@ -1,4 +1,4 @@
-"""剧情模式的数据层（结构与非文本配置；文本全在 locale/*.json）。
+"""剧情模式的数据层（结构与非文本配置；文本全在 locale/story/）。
 
 概念
 ----
@@ -8,10 +8,12 @@
 
 数据与执行的边界
 ----------------
-- 本文件只声明卡、分区、节点与跳转；文案一律走 `locale/<lang>.json` 的
-  `story.cards.*` 与 `story.sections.*`，由 `localized_chapter()` 合并。
+- 本文件只声明卡、分区、节点与跳转。文案一律走
+  `locale/story/<卡编号>.<语言>.json`（`card` + `sections` 两段），
+  由 `app.load_story_modules()` 合并进语言包，再由 `localized_chapter()` 对齐节点。
 - 执行逻辑在 `frontend/story_engine.ts`（纯逻辑，可单测）。
-- 战斗复用 `/battle`，只通过 `target_waves` 判胜负并回传结果。
+- 战斗复用 `/battle`，通过 `battle.waves` 刷指定敌人，按 `target_waves` 判胜负并回传结果。
+- 地图：`battle.map_theme` 写死就打那张；不写则用 1V1 竞技场（`arena`，1400×900）。
 
 节点类型（全部已实现）
 ----------------------
@@ -23,6 +25,21 @@ from copy import deepcopy
 
 # 剧情存档结构版本：结构变了就 +1，旧档会被保守丢弃（详见 player_save）。
 STORY_SAVE_VERSION = 1
+
+# 剧情战斗可以锁地图：写 `battle.map_theme` 就用那张；不写则默认 1V1 竞技场。
+STORY_ARENA_THEME = "arena"
+STORY_MAP_THEMES = ("arena", "city", "hospital", "music", "gym", "airport", "station", "school")
+# 地图 id → locale ui 的显示名键（arena 是剧情专属，跟 1V1 共用场地）
+MAP_LABEL_KEYS = {
+    "arena": "STORY_ARENA_MAP",
+    "city": "MAP_CITY",
+    "hospital": "MAP_HOSPITAL",
+    "music": "MAP_MUSIC",
+    "gym": "MAP_GYM",
+    "airport": "MAP_AIRPORT",
+    "station": "MAP_STATION",
+    "school": "MAP_SCHOOL",
+}
 
 # 剧情分类：赛博世界剧情 / 英雄剧情
 CATEGORIES = [
@@ -417,6 +434,12 @@ def validate_chapter(chapter: dict) -> list:
             battle = node.get("battle") or {}
             if not isinstance(battle.get("target_waves"), int) or battle["target_waves"] < 1:
                 problems.append(f"{chapter.get('id')}/{nid}: battle.target_waves 必须是正整数")
+            map_theme = battle.get("map_theme")
+            if map_theme is not None and map_theme not in STORY_MAP_THEMES:
+                problems.append(
+                    f"{chapter.get('id')}/{nid}: battle.map_theme '{map_theme}' 不是可用地图"
+                    f"（可选：{', '.join(STORY_MAP_THEMES)}）"
+                )
             problems.extend(_validate_battle_waves(chapter.get("id"), nid, battle))
         if ntype == "reward":
             if not node.get("reward_id"):
@@ -464,6 +487,11 @@ def localized_chapter(chapter_id: str, lang: str, locale_pack: dict):
             node["title"] = text.get("title", "")
             node["brief"] = text.get("brief", "")
             battle = node.setdefault("battle", {})
+            # 地图锁：写了就尊重，没写就是 1V1 竞技场（arena）
+            map_key = battle.get("map_theme") or STORY_ARENA_THEME
+            battle["map_theme"] = map_key
+            node["map_theme"] = map_key
+            node["map_label"] = (locale_pack.get("ui") or {}).get(MAP_LABEL_KEYS.get(map_key, ""), "")
             # 数值来自 Python、文案来自 locale；合并后预览与实战共用同一份波次
             node["waves"] = _merge_battle_waves(battle.get("waves"), text.get("waves"))
             if node["waves"]:

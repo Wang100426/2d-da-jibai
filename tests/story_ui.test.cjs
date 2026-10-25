@@ -69,6 +69,7 @@ function makeWindow(search, chapter, progress, heroes) {
       event: "战场事件", cooldown: "冷却", damage: "伤害", brief: "简报",
       startBattle: "开始战斗", retryBattle: "重试战斗", battleLost: "战斗失败，可以重试。",
       battleKicker: "剧情战斗", targetWaves: "目标波次", pickHero: "选择出战英雄",
+      mapLocked: "锁定战场", arena: "1V1 竞技场",
       fixedHero: "本场固定出战", backChoose: "返回剧情选择", continue: "继续",
       objectiveKicker: "任务目标", goalDone: "标记完成", goalUndo: "取消",
       objectiveBlocked: "完成全部目标后才能继续。", rewardKicker: "奖励",
@@ -149,6 +150,7 @@ picker = stage.find((n) => n.className === "story-hero-pick")[0];
 check("英雄剧情不渲染英雄选择器", !picker);
 const metaText = stage.find((n) => n.className === "story-battle-meta")[0].textContent;
 check("英雄剧情显示固定出战", metaText.includes("本场固定出战") && metaText.includes("霓虹拳王"), metaText);
+check("战斗节点标出锁定地图", metaText.includes("锁定战场") && metaText.includes("赛博体育馆"), metaText);
 
 // 3. 失败结果：显示重试 + 退出
 stage = boot(makeWindow("?chapter=rc001-p0&result=lose", cyber, { node: "p0-battle" }, heroList));
