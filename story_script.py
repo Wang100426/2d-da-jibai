@@ -452,6 +452,39 @@ def validate_chapter(chapter: dict) -> list:
     return problems
 
 
+def resolve_battle_map(battle, *, story_battle: bool, game_mode: str = "rogue",
+                       has_room: bool = False, chooser=None) -> dict:
+    """决定这一场战斗用哪张地图（纯函数，无 Flask 依赖，可直接单测）。
+
+    返回值：
+        {"map_theme": str, "arena": bool, "locked": bool, "invalid": bool}
+
+    - 剧情战斗：`battle.map_theme` 合法就锁那张；没写 / 写 `arena` / 写错 →
+      1V1 竞技场（`arena=True`，配色仍用 city）。写错时 `invalid=True` 方便排查。
+    - 非剧情战斗：保持原有随机逻辑；人机对抗固定 city。
+    """
+    themes = tuple(theme for theme in STORY_MAP_THEMES if theme != STORY_ARENA_THEME)
+    map_theme = battle.get("map_theme") if isinstance(battle, dict) else None
+    if story_battle:
+        if map_theme in themes:
+            return {"map_theme": map_theme, "arena": False, "locked": True, "invalid": False}
+        return {
+            "map_theme": "city",
+            "arena": True,
+            "locked": True,
+            "invalid": bool(map_theme and map_theme != STORY_ARENA_THEME),
+        }
+    if map_theme in themes:
+        return {"map_theme": map_theme, "arena": False, "locked": True, "invalid": False}
+    if game_mode == "duel":
+        return {"map_theme": "city", "arena": False, "locked": False, "invalid": False}
+    options = themes[:-1] if has_room else themes
+    picked = chooser(options) if chooser else options[0]
+    if picked not in options:
+        picked = options[0]
+    return {"map_theme": picked, "arena": False, "locked": False, "invalid": False}
+
+
 def localized_chapter(chapter_id: str, lang: str, locale_pack: dict):
     """把分区结构 + 当前语言的文案合并成前端可直接渲染的对象。"""
     chapter = chapter_by_id(chapter_id)
@@ -487,8 +520,9 @@ def localized_chapter(chapter_id: str, lang: str, locale_pack: dict):
             node["title"] = text.get("title", "")
             node["brief"] = text.get("brief", "")
             battle = node.setdefault("battle", {})
-            # 地图锁：写了就尊重，没写就是 1V1 竞技场（arena）
-            map_key = battle.get("map_theme") or STORY_ARENA_THEME
+            # 地图锁：合法 id 原样保留；没写 / arena / 写错都归一到竞技场
+            raw_map = battle.get("map_theme")
+            map_key = raw_map if raw_map in STORY_MAP_THEMES else STORY_ARENA_THEME
             battle["map_theme"] = map_key
             node["map_theme"] = map_key
             node["map_label"] = (locale_pack.get("ui") or {}).get(MAP_LABEL_KEYS.get(map_key, ""), "")

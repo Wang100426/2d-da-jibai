@@ -301,7 +301,8 @@
     "STORY_LOCKED": "LOCKED",
     "STORY_LOCKED_HINT": "Finish the previous section first",
     "STORY_ARENA_MAP": "1V1 ARENA",
-    "STORY_MAP_LOCKED": "LOCKED ARENA"
+    "STORY_MAP_LOCKED": "LOCKED ARENA",
+    "STORY_BATTLE_EVENT": "Story battle · no random map events"
   },
   "heroes": {
     "volt": {

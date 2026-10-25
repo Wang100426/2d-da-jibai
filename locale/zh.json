@@ -301,7 +301,8 @@
     "STORY_LOCKED": "未解锁",
     "STORY_LOCKED_HINT": "先完成上一段",
     "STORY_ARENA_MAP": "1V1 竞技场",
-    "STORY_MAP_LOCKED": "锁定战场"
+    "STORY_MAP_LOCKED": "锁定战场",
+    "STORY_BATTLE_EVENT": "剧情战斗 · 无随机地图事件"
   },
   "heroes": {
     "volt": {

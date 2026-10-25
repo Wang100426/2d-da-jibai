@@ -9,5 +9,5 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "files": ["frontend/story_wave.ts", "frontend/map.ts"]
+  "files": ["frontend/battle_space.ts", "frontend/story_wave.ts", "frontend/map.ts"]
 }

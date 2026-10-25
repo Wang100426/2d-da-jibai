@@ -233,7 +233,21 @@
 - 剧情战斗**不触发肉鸽金币结算**（`coinSettlementEnabled()` 排除），奖励改由 `reward` 节点发放
 - 剧情战斗**不弹肉鸽强化**：一波清完 2.2 秒后直接进下一波，强度只由装备与英雄决定
 - 剧情战斗**不叠加地图随机事件**，避免剧本事件与随机事件同时扣血
-- 剧情战斗**地图锁定**：`battle.map_theme` 写哪张就打哪张；没写就是 1V1 竞技场（1400×900、无建筑无道路、只有两个贴边补给）
+- 剧情战斗**地图锁定**：`battle.map_theme` 写哪张就打哪张；没写就是 1V1 竞技场
+- 剧情战斗**不跑随机地图事件**，过场页也显示「剧情战斗 · 无随机地图事件」，不会挂上该地图的随机事件文案
+
+**1V1 竞技场（剧情默认场地）**：
+
+| 项 | 值 |
+| --- | --- |
+| 尺寸 | 1400 × 900（普通地图 3200 × 2400） |
+| 玩家出生点 | (430, 450) |
+| 静态物件 | 无建筑、无道路，只有地面网格与竞技场圈 |
+| 补给 | 2 个：生命 (1120, 220) / 能量 (250, 680) |
+| 敌人出生 | 距玩家 340–600，夹在距边界 35 以内，且与存活敌人保持 70 以上间距 |
+
+尺寸、出生点、补给与建筑/道路开关由 `frontend/battle_space.ts` 的 `resolveBattleSpace()` 决定，
+`map.ts` 只消费结果；敌人出生点带随机性，仍在 `map.ts` 里算。
 
 ### 剧情语言包：一张重现卡一个文件
 
@@ -334,15 +348,17 @@ locale/story/RC-H01.zh.json   → 英雄剧情卡
 npm run test:story
 ```
 
-分五段跑：
+分七段跑：
 
 - `tests/story_engine.test.cjs` —— **32 项** `node:test` 断言，跑纯逻辑引擎：节点跳转、分支记录、战斗胜负、失败重试、重复上报、存档恢复、旧存档迁移（缺字段 / 类型全错 / 结构不符）、已完成状态不被回退、奖励防重复、无效节点、缺配置、重复 id、分区解锁初始状态
 - `tests/story_wave.test.cjs` —— **14 项** `node:test` 断言，跑波次纯逻辑：按 count 展开、单组/单波上限、非法条目跳过、血量与攻速倍率、远程/近战/厚甲体型判定、攻击力与移速夹取、波次目标校正、技能归一化与轮转、场地效果合法性，以及**真实剧本每个战斗节点都能展开**
 - `tests/story_locale.test.cjs` —— **7 项** `node:test` 断言，守模块化语言包：每卡三语齐全、分区与剧情配置一一对应、三语节点键与选项/波次数量一致、各类节点文案非空、卡面字段完整、分区没有放错卡、主语言包不再残留 `cards` / `sections`
+- `tests/battle_space.test.cjs` —— **8 项** `node:test` 断言，跑场地纯逻辑：竞技场 1400×900（人机对抗 / 剧情共用）、出生点 (430,450)、两个补给在界内且不压出生点、无建筑无道路、普通地图 3200×2400 与机场/火车站的道路规则、返回值不共享引用
+- `tests/story_map.test.cjs` —— **5 项** `node:test` 断言：默认/显式 `arena`、写错地图回落并标记 invalid、学校/火车站/体育馆/医院锁定、肉鸽与人机对抗不受影响；带 Flask 的 Python 可用时会真跑 `/battle` 路由，校验注入的 `mapTheme` / `arena` / `duel` 与过场文案
 - `tests/story_ui.test.cjs` —— **13 项** DOM stub 断言，真跑编译后的 `story.js`：赛博世界剧情的英雄选择器、英雄剧情的固定出战、锁定地图标识、未解锁英雄禁用、失败后的重试与退路、胜利推进并请求发奖、已完成分区直达结束页
 - `tests/story_choose.test.cjs` —— **10 项** DOM stub 断言，真跑编译后的 `choose_story.js`：卡数与分区行、锁定分区按钮禁用、解锁分区可点击并跳转、卡上的编号与通关进度
 
-五段都会先重新编译，避免测到旧产物。
+七段都会先重新编译，避免测到旧产物。
 
 ## 操作
 
@@ -439,6 +455,7 @@ npm run dist:portable  # 便携版 → release-portable/
 │  ├─ select.ts / codex.ts / shop.ts / save.ts
 │  ├─ multiplayer.ts / equipment.ts / backpack.ts / mode.ts
 │  ├─ story_engine.ts      剧情状态机（纯逻辑，可单测）
+│  ├─ story_wave.ts / battle_space.ts  波次数值 / 场地几何（纯逻辑，可单测）
 │  └─ story.ts / choose_story.ts   剧情执行页 / 剧情选择页
 ├─ static/                 编译产物 + 样式 + 图片
 │  ├─ app.js / select.js / …（tsc 生成，勿手改）
@@ -836,7 +853,21 @@ The battle implementation is **not duplicated** — only two edges connect the s
 - Story battles **skip rogue coin settlement** (`coinSettlementEnabled()` excludes them); rewards come from `reward` nodes instead
 - Story battles **never show rogue upgrades**: a cleared wave waits 2.2s and rolls straight into the next one, so strength comes from heroes and equipment only
 - Story battles **do not stack random map events** on top of scripted wave events
-- Story battle **maps are locked**: `battle.map_theme` picks the arena, and omitting it falls back to the 1V1 arena (1400×900, no buildings or roads, two pickups on the edges)
+- Story battle **maps are locked**: `battle.map_theme` picks the arena, and omitting it falls back to the 1V1 arena
+- Story battles **never run random map events**, and the transition screen shows "Story battle · no random map events" instead of the map's random-event blurb
+
+**1V1 arena (story default)**:
+
+| Item | Value |
+| --- | --- |
+| Size | 1400 × 900 (normal maps are 3200 × 2400) |
+| Player spawn | (430, 450) |
+| Static geometry | No buildings, no roads — only the floor grid and the arena ring |
+| Supplies | 2: health (1120, 220) / energy (250, 680) |
+| Enemy spawn | 340–600 away from the player, clamped 35 inside the border, at least 70 from other living enemies |
+
+Size, spawn, supplies and the obstacle/road switches come from `resolveBattleSpace()` in
+`frontend/battle_space.ts`; `map.ts` only consumes the result. Enemy spawn points stay random inside `map.ts`.
 
 ### Story locale: one file per replay card
 
@@ -937,15 +968,17 @@ Story progress lives in its own sub-structure of the game save, isolated from co
 npm run test:story
 ```
 
-Five stages:
+Seven stages:
 
 - `tests/story_engine.test.cjs` — **32** `node:test` assertions against the pure engine: node transitions, branch recording, battle win/loss, retry after defeat, duplicate result reports, save restore, legacy-save migration (missing fields / wrong types / wrong shape), completed state never rolled back, reward dedupe, invalid nodes, missing config, duplicate ids
 - `tests/story_wave.test.cjs` — **14** `node:test` assertions against the wave logic: expansion by count, per-group and per-wave caps, invalid entries skipped, HP/damage multipliers, melee/ranged/armoured archetype selection, attack and speed clamping, target-wave correction, skill normalisation and rotation, hazard validity, and every real battle node expanding to at least one enemy
 - `tests/story_locale.test.cjs` — **7** `node:test` assertions guarding the modular packs: three languages per card, sections matching the script exactly, identical node keys and option/wave counts, non-empty text per node type, complete card metadata, sections filed under the right card, and no leftover `cards` / `sections` in the main packs
+- `tests/battle_space.test.cjs` — **8** `node:test` assertions on the pure geometry: arena is 1400×900 (shared by duels and story battles), spawn (430,450), both supplies inside the border and clear of spawn, no buildings/roads, normal maps at 3200×2400 with airport/station road rules, and returned data not shared between calls
+- `tests/story_map.test.cjs` — **5** `node:test` assertions: default/explicit `arena`, invalid map falling back with an `invalid` flag, school/station/gym/hospital locks, and rogue/duel untouched; when a Flask-capable Python is available it also drives the real `/battle` route and checks the injected `mapTheme` / `arena` / `duel` plus transition copy
 - `tests/story_ui.test.cjs` — **13** DOM-stub assertions that execute the compiled `story.js`: hero picker for Cyber World stories, fixed fighter for Hero stories, locked-map badge, locked heroes disabled, retry and exit after a loss, win advancing to the reward node and calling the reward endpoint, completed sections landing on the end card
 - `tests/story_choose.test.cjs` — **10** DOM-stub assertions that execute the compiled `choose_story.js`: card and section counts, locked sections disabled, unlocked sections clickable and navigating, card code and clear progress on the card
 
-All five recompile first so the tests never run against stale output.
+All seven recompile first so the tests never run against stale output.
 
 ## Controls
 
@@ -1042,6 +1075,7 @@ Save layout (`version: 2`):
 │  ├─ select.ts / codex.ts / shop.ts / save.ts
 │  ├─ multiplayer.ts / equipment.ts / backpack.ts / mode.ts
 │  ├─ story_engine.ts      Story state machine (pure logic, unit-tested)
+│  ├─ story_wave.ts / battle_space.ts  Wave numbers / battlefield geometry (pure, unit-tested)
 │  └─ story.ts / choose_story.ts   Story runner / story select
 ├─ static/                 Compiled output + styles + images
 │  ├─ app.js / select.js / … (generated by tsc, do not edit)

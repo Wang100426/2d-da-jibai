@@ -301,7 +301,8 @@
     "STORY_LOCKED": "ロック中",
     "STORY_LOCKED_HINT": "前のセクションをクリアしてください",
     "STORY_ARENA_MAP": "1V1 アリーナ",
-    "STORY_MAP_LOCKED": "固定アリーナ"
+    "STORY_MAP_LOCKED": "固定アリーナ",
+    "STORY_BATTLE_EVENT": "ストーリー戦 · ランダムイベントなし"
   },
   "heroes": {
     "volt": {

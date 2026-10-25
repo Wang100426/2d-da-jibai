@@ -1504,24 +1504,17 @@ def battle():
     player_id = request.args.get("pid", "").strip()
     multiplayer_config = None
     game_mode = "duel" if request.args.get("mode") == "duel" else "rogue"
-    story_battle_config = (
-        story_node.get("battle")
-        if story_node and story_node.get("type") == "battle"
-        else None
-    ) or {}
-    story_map = story_battle_config.get("map_theme")
-    # 剧情战斗锁地图：写了 map_theme 就用那张；没写（或写 arena / 写错）用 1V1 竞技场。
-    story_arena = False
-    if story_battle_config:
-        if story_map in MAP_THEMES:
-            map_theme = story_map
-        else:
-            story_arena = True
-            map_theme = "city"  # 竞技场复用城市配色，尺寸由前端 arena 标记控制
-    elif story_map in MAP_THEMES:
-        map_theme = story_map
-    else:
-        map_theme = "city" if game_mode == "duel" else secrets.choice(MAP_THEMES[:-1] if room_id else MAP_THEMES)
+    is_story_battle = bool(story_node and story_node.get("type") == "battle")
+    story_battle_config = (story_node.get("battle") or {}) if is_story_battle else {}
+    resolved_map = story_script.resolve_battle_map(
+        story_battle_config,
+        story_battle=is_story_battle,
+        game_mode=game_mode,
+        has_room=bool(room_id),
+        chooser=secrets.choice,
+    )
+    map_theme = resolved_map["map_theme"]
+    story_arena = resolved_map["arena"]
     if room_id and player_id:
         with ROOMS_LOCK:
             room, room_player = find_room_player(room_id, player_id)
@@ -1560,6 +1553,10 @@ def battle():
     localized = {hero["id"]: hero for hero in localized_heroes(lang)}
     equipment_bonuses = player_save.calculate_equipment_bonuses()
     transition_map_name = locale_ui[map_name_key]
+    transition_event = locale_ui[map_event_key]
+    if is_story_battle:
+        # 剧情战斗不跑随机地图事件，别把该地图的事件文案挂到过场页上
+        transition_event = locale_ui.get("STORY_BATTLE_EVENT", transition_event)
     if story_arena:
         transition_map_name = locale_ui.get("STORY_ARENA_MAP", transition_map_name)
     return render_template(
@@ -1574,7 +1571,7 @@ def battle():
         arena=story_arena,
         story_context=story_context,
         transition_map_name=transition_map_name,
-        transition_event=locale_ui[map_event_key],
+        transition_event=transition_event,
         equipment_bonuses=equipment_bonuses,
     )
 
