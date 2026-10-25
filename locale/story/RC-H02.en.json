@@ -3,7 +3,7 @@
   "card": {
     "code": "RC-H02",
     "title": "Roots of the Moss",
-    "summary": "Dome Seven's power is cut, and the memory inside its soil is being drained. The Moss Guardian is back.",
+    "summary": "Dome Seven's power is cut and the memory in its soil is being drained. The Moss Guardian follows the roots down to a level the city map says doesn't exist — where more than three thousand deleted names are buried.",
     "quote": "Roots remember every rain — and who dug them up."
   },
   "sections": {
@@ -51,11 +51,7 @@
               "note": "Demolition · Entry",
               "event": "The sprinklers fail and the floor starts flooding",
               "enemies": [
-                {
-                  "hero": "tech",
-                  "count": 2,
-                  "mod": "HP ×1.1"
-                }
+                { "hero": "tech", "count": 2, "mod": "HP ×1.1" }
               ],
               "skills": [
                 {
@@ -72,16 +68,8 @@
               "note": "Roots · Backlash",
               "event": "The pump overloads; roots grind somewhere underground",
               "enemies": [
-                {
-                  "hero": "moss",
-                  "count": 1,
-                  "mod": "HP ×1.8 · Armor"
-                },
-                {
-                  "hero": "tech",
-                  "count": 1,
-                  "mod": "HP ×1.0 · DMG ×1.1"
-                }
+                { "hero": "moss", "count": 1, "mod": "HP ×1.8 · Armor" },
+                { "hero": "tech", "count": 1, "mod": "HP ×1.0 · DMG ×1.1" }
               ],
               "skills": [
                 {
@@ -104,8 +92,164 @@
           "description": "Skyvault struck Dome Seven from the demolition list. The reason field was left blank."
         },
         "m1-end": {
-          "title": "End of Chapter",
+          "title": "End of Segment 1",
           "text": "Some things don't need to be remembered. They grow back on their own."
+        }
+      }
+    },
+    "hero-moss-02": {
+      "title": "Segment 2 · Soil Memory",
+      "summary": "On the third night after the seed survived, roots split the floor and point underground — to a place the city map says doesn't exist.",
+      "nodes": {
+        "m2-intro": {
+          "speaker": "Narration",
+          "text": "The seed survived in bed three. On the third night, roots cracked the floor and drove straight down."
+        },
+        "m2-hero": {
+          "speaker": "Moss Guardian",
+          "text": "The roots are leading. They remember a road that no longer exists above ground."
+        },
+        "m2-choice": {
+          "prompt": "The roots fork at the vent shaft.",
+          "options": [
+            "Follow the roots down",
+            "Back the data up to the greenhouse first"
+          ]
+        },
+        "m2-root": {
+          "speaker": "Moss Guardian",
+          "text": "There are names down there. A lot of names. Pressed into the soil, not yet rotted."
+        },
+        "m2-battle": {
+          "title": "Beneath Level Zero",
+          "brief": "The old underground district's sweepers still patrol on a seventeen-year-old order.",
+          "waves": [
+            {
+              "label": "Wave 1",
+              "note": "Sweeping · Patrol",
+              "event": "Platform tubes flicker on bad contacts",
+              "enemies": [
+                { "hero": "tech", "count": 2, "mod": "HP ×1.2" }
+              ],
+              "skills": [
+                {
+                  "name": "Sweep Pulse",
+                  "description": "A ring pulse that knocks targets back",
+                  "cooldown": 9,
+                  "damage": 22,
+                  "effect": "Knockback"
+                }
+              ]
+            },
+            {
+              "label": "Wave 2",
+              "note": "Roots · Guards",
+              "event": "Extraction pipes burst; memory leaks out like fog",
+              "enemies": [
+                { "hero": "moss", "count": 1, "mod": "HP ×1.9 · Armor" },
+                { "hero": "tech", "count": 1, "mod": "HP ×1.1" }
+              ],
+              "skills": [
+                {
+                  "name": "Root Bind",
+                  "description": "Roots burst from the cracks and bind the target",
+                  "cooldown": 11,
+                  "damage": 24,
+                  "effect": "Root 2s"
+                }
+              ]
+            }
+          ]
+        },
+        "m2-after": {
+          "speaker": "Narration",
+          "text": "When the sweepers stopped, roots dragged a rusted nameplate out of a wall seam. It listed the residents from seventeen years ago; the last line was the Moss Guardian's own serial number."
+        },
+        "m2-reward": {
+          "title": "The Names Remain",
+          "description": "The soil memory holds over three thousand names. They were never destroyed, only buried."
+        },
+        "m2-end": {
+          "title": "End of Segment 2",
+          "text": "The Moss Guardian wiped the nameplate clean and put it back among the roots."
+        }
+      }
+    },
+    "hero-moss-03": {
+      "title": "Segment 3 · Regrow",
+      "summary": "Plant the names above ground, or let them stay buried?",
+      "nodes": {
+        "m3-intro": {
+          "speaker": "Narration",
+          "text": "By the time they reached the surface, dawn was breaking. A thin layer of green had already spread over Dome Seven's ruins."
+        },
+        "m3-hero": {
+          "speaker": "Moss Guardian",
+          "text": "These names need somewhere the sun can reach."
+        },
+        "m3-choice": {
+          "prompt": "The public green's gate is open; Skyvault's patrol hasn't arrived.",
+          "options": [
+            "Plant the memory in the public green",
+            "Bury them deeper"
+          ]
+        },
+        "m3-open": {
+          "speaker": "Moss Guardian",
+          "text": "Plant it, and everyone sees. Including the people who wanted them gone."
+        },
+        "m3-battle": {
+          "title": "The Gardener",
+          "brief": "Skyvault didn't send a demolition crew this time. They sent a gardener.",
+          "waves": [
+            {
+              "label": "Wave 1",
+              "note": "Lockdown · Green",
+              "event": "Auto-irrigation kicks in and the ground turns slick",
+              "enemies": [
+                { "hero": "tech", "count": 2, "mod": "HP ×1.4" }
+              ],
+              "skills": [
+                {
+                  "name": "Lockdown Pulse",
+                  "description": "Area pulse that slows on hit",
+                  "cooldown": 10,
+                  "damage": 24,
+                  "effect": "Slow 2s"
+                }
+              ]
+            },
+            {
+              "label": "Wave 2",
+              "note": "Gardener · Pruning",
+              "event": "A neat cutting sound rises from under the turf",
+              "enemies": [
+                { "hero": "moss", "count": 1, "mod": "HP ×2.2 · Armor · DMG ×1.2" },
+                { "hero": "tech", "count": 1, "mod": "HP ×1.2" }
+              ],
+              "skills": [
+                {
+                  "name": "Gardener's Shears",
+                  "description": "Massive execute chance on low-HP targets",
+                  "cooldown": 14,
+                  "damage": 38,
+                  "effect": "Execute"
+                }
+              ]
+            }
+          ]
+        },
+        "m3-after": {
+          "speaker": "Narration",
+          "text": "When the gardener fell, every root in the green shivered at once. The Moss Guardian knelt and pressed the first seed into the soil."
+        },
+        "m3-reward": {
+          "title": "Regrown",
+          "description": "The next day the public green had a patch of flowers nobody planted. The city report logged it as \"natural growth\"."
+        },
+        "m3-end": {
+          "title": "End of Segment 3",
+          "text": "Some names don't need a monument. They grow."
         }
       }
     }

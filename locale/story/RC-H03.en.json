@@ -3,7 +3,7 @@
   "card": {
     "code": "RC-H03",
     "title": "Night of the Eclipse",
-    "summary": "Seven minutes into the eclipse, the observatory's energy well starts draining moonlight. The Eclipse Mage realises what it's draining is memory.",
+    "summary": "Seven minutes into the eclipse, the observatory's energy well starts draining moonlight. The Eclipse Mage learns it's draining memory — and the bottom of the well holds everything the city deleted.",
     "quote": "The moon keeps nobody's secrets."
   },
   "sections": {
@@ -43,11 +43,7 @@
               "note": "Wellhead · Lockdown",
               "event": "The eclipse deepens; the edges of your vision go black",
               "enemies": [
-                {
-                  "hero": "tech",
-                  "count": 2,
-                  "mod": "HP ×1.2"
-                }
+                { "hero": "tech", "count": 2, "mod": "HP ×1.2" }
               ],
               "skills": [
                 {
@@ -64,16 +60,8 @@
               "note": "Moonshade · Same Source",
               "event": "Another her is projected from the wellhead, moving in perfect sync",
               "enemies": [
-                {
-                  "hero": "luna",
-                  "count": 1,
-                  "mod": "HP ×1.8 · DMG ×1.3"
-                },
-                {
-                  "hero": "tech",
-                  "count": 1,
-                  "mod": "HP ×1.1 · Armor"
-                }
+                { "hero": "luna", "count": 1, "mod": "HP ×1.8 · DMG ×1.3" },
+                { "hero": "tech", "count": 1, "mod": "HP ×1.1 · Armor" }
               ],
               "skills": [
                 {
@@ -96,8 +84,164 @@
           "description": "The observatory filed a report: equipment failure, no injuries. The report was not deleted."
         },
         "l1-end": {
-          "title": "End of Chapter",
+          "title": "End of Segment 1",
           "text": "She looked up at the moon one last time. Tonight it owed nobody anything."
+        }
+      }
+    },
+    "hero-luna-02": {
+      "title": "Segment 2 · The Borrowed Night",
+      "summary": "The memories the well drained have piled into a night with no exit, inside the city's dreams.",
+      "nodes": {
+        "l2-intro": {
+          "speaker": "Narration",
+          "text": "On the third night after the well went dark, the Eclipse Mage had a dream that was far too lucid. In it, the whole city repeated the same night."
+        },
+        "l2-hero": {
+          "speaker": "Eclipse Mage",
+          "text": "This isn't a dream. It's stolen memory with nowhere to go back to."
+        },
+        "l2-choice": {
+          "prompt": "A lamp burns in the middle of the dream, and someone waits beside it.",
+          "options": [
+            "Follow the light",
+            "Get the trapped people out first"
+          ]
+        },
+        "l2-follow": {
+          "speaker": "Eclipse Mage",
+          "text": "Someone sits under the lamp. When she looks up, her face is blurred — her memory isn't whole."
+        },
+        "l2-battle": {
+          "title": "Memory Wardens",
+          "brief": "The memory layer doesn't welcome the living. Its guards are stitched from other people's recollections.",
+          "waves": [
+            {
+              "label": "Wave 1",
+              "note": "Music Room · Echo",
+              "event": "Every melody repeats the same bar from seventeen years ago",
+              "enemies": [
+                { "hero": "pipa", "count": 1, "mod": "HP ×1.5" }
+              ],
+              "skills": [
+                {
+                  "name": "String Lock",
+                  "description": "Strings pin your feet and keep bleeding you",
+                  "cooldown": 10,
+                  "damage": 18,
+                  "effect": "Root 3s"
+                }
+              ]
+            },
+            {
+              "label": "Wave 2",
+              "note": "Echo · Layered",
+              "event": "The dream starts repeating; your steps arrive late",
+              "enemies": [
+                { "hero": "volt2", "count": 1, "mod": "HP ×1.8 · DMG ×1.2" },
+                { "hero": "tech", "count": 1, "mod": "HP ×1.2" }
+              ],
+              "skills": [
+                {
+                  "name": "Sound Suppression",
+                  "description": "Sustained sound waves that slow and damage",
+                  "cooldown": 12,
+                  "damage": 28,
+                  "effect": "Slow 3s"
+                }
+              ]
+            }
+          ]
+        },
+        "l2-after": {
+          "speaker": "Narration",
+          "text": "When the guards scattered, the blurred face finally cleared. She was the observatory's registrar, who should have clocked out seventeen years ago."
+        },
+        "l2-reward": {
+          "title": "One Lamp",
+          "description": "The dream's exit opened. But the lamp is still lit, which means someone hasn't left."
+        },
+        "l2-end": {
+          "title": "End of Segment 2",
+          "text": "The Eclipse Mage left last. She memorised where the lamp stands."
+        }
+      }
+    },
+    "hero-luna-03": {
+      "title": "Segment 3 · Moonfall",
+      "summary": "The bottom of the well holds the whole city's memory. Give it back, or burn it?",
+      "nodes": {
+        "l3-intro": {
+          "speaker": "Narration",
+          "text": "The observatory was sealed for three days. On the fourth, the Eclipse Mage went down to the well alone."
+        },
+        "l3-hero": {
+          "speaker": "Eclipse Mage",
+          "text": "Everything the city deleted is piled down here. Names, faces, things nobody said out loud."
+        },
+        "l3-choice": {
+          "prompt": "The console at the bottom shows one line: RELEASE / DESTROY.",
+          "options": [
+            "Give the memory back to the city",
+            "Burn it and let everyone start over"
+          ]
+        },
+        "l3-give": {
+          "speaker": "Eclipse Mage",
+          "text": "Give it back, and the city remembers what it did. Including the people who'd rather not."
+        },
+        "l3-battle": {
+          "title": "Moonfall",
+          "brief": "The last guard at the bottom is the shadow the moon left behind.",
+          "waves": [
+            {
+              "label": "Wave 1",
+              "note": "Wellhead · First Light",
+              "event": "The first daylight falls in and the shadows stretch",
+              "enemies": [
+                { "hero": "tech", "count": 2, "mod": "HP ×1.5" }
+              ],
+              "skills": [
+                {
+                  "name": "Well Sweep",
+                  "description": "Circular sweep that slows on hit",
+                  "cooldown": 9,
+                  "damage": 24,
+                  "effect": "Slow 2s"
+                }
+              ]
+            },
+            {
+              "label": "Wave 2",
+              "note": "Eclipse · The Source",
+              "event": "The shadow stops imitating. It starts moving a step early",
+              "enemies": [
+                { "hero": "luna", "count": 1, "mod": "HP ×2.2 · DMG ×1.4" },
+                { "hero": "tech", "count": 1, "mod": "HP ×1.3 · Armor" }
+              ],
+              "skills": [
+                {
+                  "name": "Moonshade Fall",
+                  "description": "A delayed, wide-area heavy strike",
+                  "cooldown": 14,
+                  "damage": 42,
+                  "effect": "Knockback"
+                }
+              ]
+            }
+          ]
+        },
+        "l3-after": {
+          "speaker": "Narration",
+          "text": "When the shadow scattered, the first daylight reached the bottom of the well. The Eclipse Mage pressed the key."
+        },
+        "l3-reward": {
+          "title": "Moonfall",
+          "description": "The next day, many people in the city remembered the same thing at once. The report called it mass delusion."
+        },
+        "l3-end": {
+          "title": "End of Segment 3",
+          "text": "She walked out of the observatory. The moon had set. The sky was bright."
         }
       }
     }

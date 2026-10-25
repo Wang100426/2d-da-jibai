@@ -211,6 +211,31 @@ RC001_SECTIONS = [
 ]
 
 # 英雄剧情：绑定英雄，暂为单段（不拆分区）
+def _wave(enemies, skills, hazard=None):
+    """英雄剧情的小工具：少写点重复的 dict 字面量。"""
+    wave = {"enemies": enemies, "skills": skills}
+    if hazard is not None:
+        wave["hazard"] = hazard
+    return wave
+
+
+def _enemy(hero, count=1, hp=1.0, dmg=1.0, speed=1.0, armor=0.0):
+    return {"hero": hero, "count": count, "hp_scale": hp,
+            "damage_scale": dmg, "speed_scale": speed, "armor": armor}
+
+
+def _skill(damage, cooldown, effect="", turns=0.0, radius=150):
+    return {"damage": damage, "cooldown": cooldown, "effect": effect,
+            "effect_turns": turns, "radius": radius}
+
+
+def _battle_node(node_id, hero, map_theme, waves, on_win):
+    return {"id": node_id, "type": "battle",
+            "battle": {"hero": hero, "target_waves": len(waves),
+                       "map_theme": map_theme, "waves": waves},
+            "on_win": on_win, "on_lose": node_id}
+
+
 HERO_SECTIONS = [
     # ── RC-H01 拳王的旧账（volt）────────────────────────────────────────────
     {
@@ -249,12 +274,66 @@ HERO_SECTIONS = [
             {"id": "h1-end", "type": "chapter_end", "next": None},
         ],
     },
+    {
+        "id": "hero-volt-02",
+        "card": "RC-H01",
+        "category": "hero",
+        "order": 1,
+        "hero": "volt",
+        "background": "home-background.png",
+        "entry": "h2-intro",
+        "nodes": [
+            {"id": "h2-intro", "type": "dialogue", "speaker_key": "narrator", "initial": "账", "accent": "narrator", "next": "h2-hero"},
+            {"id": "h2-hero", "type": "dialogue", "speaker_key": "hero", "initial": "拳", "accent": "volt",
+             "palette": {"main": "#ff4fa3", "light": "#ffd3e8", "dark": "#812354"}, "next": "h2-choice"},
+            {"id": "h2-choice", "type": "choice", "prompt_key": "prompt", "options": [
+                {"id": "ledger", "next": "h2-ledger"},
+                {"id": "boss", "next": "h2-battle"},
+            ]},
+            {"id": "h2-ledger", "type": "dialogue", "speaker_key": "narrator", "initial": "账", "accent": "narrator", "next": "h2-battle"},
+            _battle_node("h2-battle", "volt", "gym", [
+                _wave([_enemy("tech", 2, hp=1.2)], [_skill(20, 10, "眩晕", 1, 150)]),
+                _wave([_enemy("volt2", 1, hp=1.7), _enemy("tech", 1, hp=1.1, armor=0.2)],
+                      [_skill(26, 12, "减速", 3, 200)]),
+            ], "h2-after"),
+            {"id": "h2-after", "type": "dialogue", "speaker_key": "narrator", "initial": "账", "accent": "narrator", "next": "h2-reward"},
+            {"id": "h2-reward", "type": "reward", "reward_id": "hero-volt-02-clear", "coins": 170, "next": "h2-end"},
+            {"id": "h2-end", "type": "chapter_end", "next": None},
+        ],
+    },
+    {
+        "id": "hero-volt-03",
+        "card": "RC-H01",
+        "category": "hero",
+        "order": 2,
+        "hero": "volt",
+        "background": "home-background.png",
+        "entry": "h3-intro",
+        "nodes": [
+            {"id": "h3-intro", "type": "dialogue", "speaker_key": "narrator", "initial": "影", "accent": "narrator", "next": "h3-hero"},
+            {"id": "h3-hero", "type": "dialogue", "speaker_key": "hero", "initial": "拳", "accent": "volt",
+             "palette": {"main": "#ff4fa3", "light": "#ffd3e8", "dark": "#812354"}, "next": "h3-choice"},
+            {"id": "h3-choice", "type": "choice", "prompt_key": "prompt", "options": [
+                {"id": "stage", "next": "h3-stage"},
+                {"id": "flip", "next": "h3-battle"},
+            ]},
+            {"id": "h3-stage", "type": "dialogue", "speaker_key": "boss", "initial": "板", "accent": "boss",
+             "palette": {"main": "#ff9f4a", "light": "#ffe0bd", "dark": "#7a3d12"}, "next": "h3-battle"},
+            _battle_node("h3-battle", "volt", "gym", [
+                _wave([_enemy("tech", 2, hp=1.3)], [_skill(22, 9, "击退", 0.4, 160)]),
+                _wave([_enemy("volt", 1, hp=2.0, dmg=1.35)], [_skill(36, 13, "眩晕", 1, 130)]),
+            ], "h3-after"),
+            {"id": "h3-after", "type": "dialogue", "speaker_key": "narrator", "initial": "影", "accent": "narrator", "next": "h3-reward"},
+            {"id": "h3-reward", "type": "reward", "reward_id": "hero-volt-03-clear", "coins": 200, "next": "h3-end"},
+            {"id": "h3-end", "type": "chapter_end", "next": None},
+        ],
+    },
     # ── RC-H02 苔藓的根（moss）─────────────────────────────────────────────
     {
         "id": "hero-moss-01",
         "card": "RC-H02",
         "category": "hero",
-        "order": 1,
+        "order": 0,
         "hero": "moss",
         "background": "home-background.png",
         "entry": "m1-intro",
@@ -292,12 +371,68 @@ HERO_SECTIONS = [
             {"id": "m1-end", "type": "chapter_end", "next": None},
         ],
     },
+    {
+        "id": "hero-moss-02",
+        "card": "RC-H02",
+        "category": "hero",
+        "order": 1,
+        "hero": "moss",
+        "background": "home-background.png",
+        "entry": "m2-intro",
+        "nodes": [
+            {"id": "m2-intro", "type": "dialogue", "speaker_key": "narrator", "initial": "根", "accent": "narrator", "next": "m2-hero"},
+            {"id": "m2-hero", "type": "dialogue", "speaker_key": "hero", "initial": "苔", "accent": "moss",
+             "palette": {"main": "#b7ef55", "light": "#e9ffb7", "dark": "#426b2e"}, "next": "m2-choice"},
+            {"id": "m2-choice", "type": "choice", "prompt_key": "prompt", "options": [
+                {"id": "root", "next": "m2-root"},
+                {"id": "backup", "next": "m2-battle"},
+            ]},
+            {"id": "m2-root", "type": "dialogue", "speaker_key": "hero", "initial": "苔", "accent": "moss",
+             "palette": {"main": "#b7ef55", "light": "#e9ffb7", "dark": "#426b2e"}, "next": "m2-battle"},
+            _battle_node("m2-battle", "moss", "station", [
+                _wave([_enemy("tech", 2, hp=1.2)], [_skill(22, 9, "击退", 0.5, 160)]),
+                _wave([_enemy("moss", 1, hp=1.9, armor=0.35), _enemy("tech", 1, hp=1.1)],
+                      [_skill(24, 11, "禁锢", 2, 180)], {"interval": 8, "damage": 6}),
+            ], "m2-after"),
+            {"id": "m2-after", "type": "dialogue", "speaker_key": "narrator", "initial": "根", "accent": "narrator", "next": "m2-reward"},
+            {"id": "m2-reward", "type": "reward", "reward_id": "hero-moss-02-clear", "coins": 180, "next": "m2-end"},
+            {"id": "m2-end", "type": "chapter_end", "next": None},
+        ],
+    },
+    {
+        "id": "hero-moss-03",
+        "card": "RC-H02",
+        "category": "hero",
+        "order": 2,
+        "hero": "moss",
+        "background": "home-background.png",
+        "entry": "m3-intro",
+        "nodes": [
+            {"id": "m3-intro", "type": "dialogue", "speaker_key": "narrator", "initial": "芽", "accent": "narrator", "next": "m3-hero"},
+            {"id": "m3-hero", "type": "dialogue", "speaker_key": "hero", "initial": "苔", "accent": "moss",
+             "palette": {"main": "#b7ef55", "light": "#e9ffb7", "dark": "#426b2e"}, "next": "m3-choice"},
+            {"id": "m3-choice", "type": "choice", "prompt_key": "prompt", "options": [
+                {"id": "open", "next": "m3-open"},
+                {"id": "bury", "next": "m3-battle"},
+            ]},
+            {"id": "m3-open", "type": "dialogue", "speaker_key": "hero", "initial": "苔", "accent": "moss",
+             "palette": {"main": "#b7ef55", "light": "#e9ffb7", "dark": "#426b2e"}, "next": "m3-battle"},
+            _battle_node("m3-battle", "moss", "school", [
+                _wave([_enemy("tech", 2, hp=1.4)], [_skill(24, 10, "减速", 2, 180)]),
+                _wave([_enemy("moss", 1, hp=2.2, dmg=1.2, armor=0.4), _enemy("tech", 1, hp=1.2)],
+                      [_skill(38, 14, "斩杀", 0, 130)], {"interval": 7, "damage": 8}),
+            ], "m3-after"),
+            {"id": "m3-after", "type": "dialogue", "speaker_key": "narrator", "initial": "芽", "accent": "narrator", "next": "m3-reward"},
+            {"id": "m3-reward", "type": "reward", "reward_id": "hero-moss-03-clear", "coins": 220, "next": "m3-end"},
+            {"id": "m3-end", "type": "chapter_end", "next": None},
+        ],
+    },
     # ── RC-H03 月蚀之夜（luna）─────────────────────────────────────────────
     {
         "id": "hero-luna-01",
         "card": "RC-H03",
         "category": "hero",
-        "order": 2,
+        "order": 0,
         "hero": "luna",
         "background": "home-background.png",
         "entry": "l1-intro",
@@ -329,6 +464,62 @@ HERO_SECTIONS = [
             {"id": "l1-after", "type": "dialogue", "speaker_key": "narrator", "initial": "蚀", "accent": "narrator", "next": "l1-reward"},
             {"id": "l1-reward", "type": "reward", "reward_id": "hero-luna-01-clear", "coins": 180, "next": "l1-end"},
             {"id": "l1-end", "type": "chapter_end", "next": None},
+        ],
+    },
+    {
+        "id": "hero-luna-02",
+        "card": "RC-H03",
+        "category": "hero",
+        "order": 1,
+        "hero": "luna",
+        "background": "home-background.png",
+        "entry": "l2-intro",
+        "nodes": [
+            {"id": "l2-intro", "type": "dialogue", "speaker_key": "narrator", "initial": "梦", "accent": "narrator", "next": "l2-hero"},
+            {"id": "l2-hero", "type": "dialogue", "speaker_key": "hero", "initial": "月", "accent": "luna",
+             "palette": {"main": "#8c9aff", "light": "#e0e4ff", "dark": "#414f9e"}, "next": "l2-choice"},
+            {"id": "l2-choice", "type": "choice", "prompt_key": "prompt", "options": [
+                {"id": "follow", "next": "l2-follow"},
+                {"id": "save", "next": "l2-battle"},
+            ]},
+            {"id": "l2-follow", "type": "dialogue", "speaker_key": "hero", "initial": "月", "accent": "luna",
+             "palette": {"main": "#8c9aff", "light": "#e0e4ff", "dark": "#414f9e"}, "next": "l2-battle"},
+            _battle_node("l2-battle", "luna", "music", [
+                _wave([_enemy("pipa", 1, hp=1.5)], [_skill(18, 10, "禁锢", 3, 220)]),
+                _wave([_enemy("volt2", 1, hp=1.8, dmg=1.2), _enemy("tech", 1, hp=1.2)],
+                      [_skill(28, 12, "减速", 3, 200)]),
+            ], "l2-after"),
+            {"id": "l2-after", "type": "dialogue", "speaker_key": "narrator", "initial": "梦", "accent": "narrator", "next": "l2-reward"},
+            {"id": "l2-reward", "type": "reward", "reward_id": "hero-luna-02-clear", "coins": 200, "next": "l2-end"},
+            {"id": "l2-end", "type": "chapter_end", "next": None},
+        ],
+    },
+    {
+        "id": "hero-luna-03",
+        "card": "RC-H03",
+        "category": "hero",
+        "order": 2,
+        "hero": "luna",
+        "background": "home-background.png",
+        "entry": "l3-intro",
+        "nodes": [
+            {"id": "l3-intro", "type": "dialogue", "speaker_key": "narrator", "initial": "落", "accent": "narrator", "next": "l3-hero"},
+            {"id": "l3-hero", "type": "dialogue", "speaker_key": "hero", "initial": "月", "accent": "luna",
+             "palette": {"main": "#8c9aff", "light": "#e0e4ff", "dark": "#414f9e"}, "next": "l3-choice"},
+            {"id": "l3-choice", "type": "choice", "prompt_key": "prompt", "options": [
+                {"id": "give", "next": "l3-give"},
+                {"id": "burn", "next": "l3-battle"},
+            ]},
+            {"id": "l3-give", "type": "dialogue", "speaker_key": "hero", "initial": "月", "accent": "luna",
+             "palette": {"main": "#8c9aff", "light": "#e0e4ff", "dark": "#414f9e"}, "next": "l3-battle"},
+            _battle_node("l3-battle", "luna", "airport", [
+                _wave([_enemy("tech", 2, hp=1.5)], [_skill(24, 9, "减速", 2, 200)]),
+                _wave([_enemy("luna", 1, hp=2.2, dmg=1.4), _enemy("tech", 1, hp=1.3, armor=0.25)],
+                      [_skill(42, 14, "击退", 0.6, 240)], {"interval": 6, "damage": 9}),
+            ], "l3-after"),
+            {"id": "l3-after", "type": "dialogue", "speaker_key": "narrator", "initial": "落", "accent": "narrator", "next": "l3-reward"},
+            {"id": "l3-reward", "type": "reward", "reward_id": "hero-luna-03-clear", "coins": 240, "next": "l3-end"},
+            {"id": "l3-end", "type": "chapter_end", "next": None},
         ],
     },
 ]

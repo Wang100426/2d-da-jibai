@@ -104,16 +104,16 @@ tabs[0].click();
 cards = grid.find((n) => n._classes && n._classes.has("story-card"));
 rows = grid.find((n) => n._classes && n._classes.has("story-section"));
 check("切到全部后有四张卡", cards.length === 4, String(cards.length));
-check("全部视图共七行分区", rows.length === 7, String(rows.length));
+check("全部视图共十三行分区", rows.length === 13, String(rows.length));
 const heroCards = cards.filter((card) => /RC-H\d+/.test(card.textContent));
 check("三张英雄卡都在卡库里", heroCards.length === 3, String(heroCards.length));
 
 const lockedRows = rows.filter((r) => r._classes.has("locked"));
-check("RC-001 的后三段是锁定态", lockedRows.length === 3, String(lockedRows.length));
+check("RC-001 后三段 + 三张英雄卡各后两段是锁定态", lockedRows.length === 9, String(lockedRows.length));
 
 const buttons = grid.find((n) => n._classes && n._classes.has("story-section-enter"));
 const disabled = buttons.filter((b) => b.disabled);
-check("锁定分区的按钮被禁用", disabled.length === 3, String(disabled.length));
+check("锁定分区的按钮被禁用", disabled.length === 9, String(disabled.length));
 
 const openButton = buttons.find((b) => !b.disabled);
 check("解锁分区有可用按钮", Boolean(openButton));

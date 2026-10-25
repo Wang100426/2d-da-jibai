@@ -199,9 +199,9 @@
 | 重现卡 | 分区 |
 | --- | --- |
 | `RC-001` 城市之下 | 序幕 · 一张不存在的卡 / 第一幕 · 零层站台 / 第二幕 · 没有登记的人 / 终幕 · 记忆核心 |
-| `RC-H01` 拳王的旧账 | 第一段 · 旧账（霓虹拳王，赛博体育馆） |
-| `RC-H02` 苔藓的根 | 第一段 · 根（苔藓守卫，赛博医院） |
-| `RC-H03` 月蚀之夜 | 第一段 · 月蚀（月蚀术士，1V1 竞技场） |
+| `RC-H01` 拳王的旧账 | 第一段 · 旧账 / 第二段 · 铁笼之下 / 第三段 · 最后一场 |
+| `RC-H02` 苔藓的根 | 第一段 · 根 / 第二段 · 土壤记忆 / 第三段 · 重新生长 |
+| `RC-H03` 月蚀之夜 | 第一段 · 月蚀 / 第二段 · 被借走的夜 / 第三段 · 月落 |
 
 解锁规则写在 `story_script.section_locked()`，并且 `/story` 入口会再校验一次——手改 URL 跳不进被锁住的分区。
 
@@ -821,9 +821,9 @@ A card can be split into several **sections** that unlock **in order**: clearing
 | Card | Sections |
 | --- | --- |
 | `RC-001` City Beneath | Prologue · A Card That Doesn't Exist / Act I · Platform Zero / Act II · The Unregistered / Finale · Memory Core |
-| `RC-H01` The Champion's Debt | Segment 1 · The Debt (Neon Champion, Cyber Gymnasium) |
-| `RC-H02` Roots of the Moss | Segment 1 · Roots (Moss Guardian, Cyber Hospital) |
-| `RC-H03` Night of the Eclipse | Segment 1 · Eclipse (Eclipse Mage, 1V1 Arena) |
+| `RC-H01` The Champion's Debt | Segment 1 · The Debt / Segment 2 · Beneath the Cage / Segment 3 · The Last Match |
+| `RC-H02` Roots of the Moss | Segment 1 · Roots / Segment 2 · Soil Memory / Segment 3 · Regrow |
+| `RC-H03` Night of the Eclipse | Segment 1 · Eclipse / Segment 2 · The Borrowed Night / Segment 3 · Moonfall |
 
 The unlock rule lives in `story_script.section_locked()`, and `/story` re-checks it on entry, so editing the URL cannot open a locked section.
 

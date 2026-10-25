@@ -62,7 +62,7 @@
       "id": "RC-H01",
       "code": "RC-H01",
       "title": "拳王的旧账",
-      "summary": "三年前的一场地下赛，霓虹拳王欠了一个人情。今晚，收账的人带着一张旧照片来了。",
+      "summary": "三年前的一场地下赛，霓虹拳王欠了一个人情。今晚，收账的人带着一张旧照片来了；而账本最后一页写着，那场赛从一开始就是别人写好的。",
       "quote": "这条街的规矩很简单：欠了就得还。",
       "category": "hero",
       "sections": [
@@ -77,6 +77,30 @@
           "completed": false,
           "started": false,
           "entry": "h1-intro"
+        },
+        {
+          "id": "hero-volt-02",
+          "order": 1,
+          "title": "第二段 · 铁笼之下",
+          "summary": "账本摊在后台桌上。三年前那场赛，从头到尾都是别人写好的。",
+          "node_count": 8,
+          "hero": "volt",
+          "locked": true,
+          "completed": false,
+          "started": false,
+          "entry": "h2-intro"
+        },
+        {
+          "id": "hero-volt-03",
+          "order": 2,
+          "title": "第三段 · 最后一场",
+          "summary": "老板把最后一场办成了全城直播，对手是拳王自己留下的影子。",
+          "node_count": 8,
+          "hero": "volt",
+          "locked": true,
+          "completed": false,
+          "started": false,
+          "entry": "h3-intro"
         }
       ]
     },
@@ -84,13 +108,13 @@
       "id": "RC-H02",
       "code": "RC-H02",
       "title": "苔藓的根",
-      "summary": "穹顶七号温室的电源被切断，土壤里的记忆正在被抽走。苔藓守卫回来了。",
+      "summary": "穹顶七号温室的电源被切断，土壤里的记忆正在被抽走。苔藓守卫顺着根须一路挖到城市地图上不存在的地下，那里埋着三千多个被删除的名字。",
       "quote": "根记得每一场雨，也记得是谁把它们挖走的。",
       "category": "hero",
       "sections": [
         {
           "id": "hero-moss-01",
-          "order": 1,
+          "order": 0,
           "title": "第一段 · 根",
           "summary": "温室停电三天，藤蔓爬进了控制室。天穹的拆除队已经在门口了。",
           "node_count": 10,
@@ -99,6 +123,30 @@
           "completed": false,
           "started": false,
           "entry": "m1-intro"
+        },
+        {
+          "id": "hero-moss-02",
+          "order": 1,
+          "title": "第二段 · 土壤记忆",
+          "summary": "种子活下来的第三天夜里，根须顶开地板，指向城市地图上不存在的地下。",
+          "node_count": 8,
+          "hero": "moss",
+          "locked": true,
+          "completed": false,
+          "started": false,
+          "entry": "m2-intro"
+        },
+        {
+          "id": "hero-moss-03",
+          "order": 2,
+          "title": "第三段 · 重新生长",
+          "summary": "把名字种回地面，还是让它们继续埋在土里？",
+          "node_count": 8,
+          "hero": "moss",
+          "locked": true,
+          "completed": false,
+          "started": false,
+          "entry": "m3-intro"
         }
       ]
     },
@@ -106,13 +154,13 @@
       "id": "RC-H03",
       "code": "RC-H03",
       "title": "月蚀之夜",
-      "summary": "月蚀开始的第七分钟，天文台的能量井开始抽取月光。月蚀术士发现，被抽走的其实是记忆。",
+      "summary": "月蚀开始的第七分钟，天文台的能量井开始抽取月光。月蚀术士发现，被抽走的其实是记忆——而井底堆着整座城市被删掉的东西。",
       "quote": "月亮不会替任何人保守秘密。",
       "category": "hero",
       "sections": [
         {
           "id": "hero-luna-01",
-          "order": 2,
+          "order": 0,
           "title": "第一段 · 月蚀",
           "summary": "全城的灯暗了一格，天文台顶上亮起一口不该存在的井。",
           "node_count": 9,
@@ -121,6 +169,30 @@
           "completed": false,
           "started": false,
           "entry": "l1-intro"
+        },
+        {
+          "id": "hero-luna-02",
+          "order": 1,
+          "title": "第二段 · 被借走的夜",
+          "summary": "能量井抽走的记忆，在城市的梦里堆成一片没有出口的夜。",
+          "node_count": 8,
+          "hero": "luna",
+          "locked": true,
+          "completed": false,
+          "started": false,
+          "entry": "l2-intro"
+        },
+        {
+          "id": "hero-luna-03",
+          "order": 2,
+          "title": "第三段 · 月落",
+          "summary": "井底堆着整座城市的记忆。还回去，还是烧掉？",
+          "node_count": 8,
+          "hero": "luna",
+          "locked": true,
+          "completed": false,
+          "started": false,
+          "entry": "l3-intro"
         }
       ]
     }
@@ -1561,7 +1633,7 @@
           "id": "h1-end",
           "type": "chapter_end",
           "next": null,
-          "title": "本章结束",
+          "title": "第一段结束",
           "text": "拳王把护腕重新缠好。街口的灯亮了一半，够了。"
         }
       ],
@@ -1572,10 +1644,503 @@
       "category_name": "英雄剧情"
     },
     {
+      "id": "hero-volt-02",
+      "card": "RC-H01",
+      "category": "hero",
+      "order": 1,
+      "hero": "volt",
+      "background": "home-background.png",
+      "entry": "h2-intro",
+      "nodes": [
+        {
+          "id": "h2-intro",
+          "type": "dialogue",
+          "speaker_key": "narrator",
+          "initial": "账",
+          "accent": "narrator",
+          "next": "h2-hero",
+          "speaker": "旁白",
+          "text": "铁笼收场后，后台的灯还亮着。桌上摊着一本旧账本，纸角被雨水泡得发皱。"
+        },
+        {
+          "id": "h2-hero",
+          "type": "dialogue",
+          "speaker_key": "hero",
+          "initial": "拳",
+          "accent": "volt",
+          "palette": {
+            "main": "#ff4fa3",
+            "light": "#ffd3e8",
+            "dark": "#812354"
+          },
+          "next": "h2-choice",
+          "speaker": "霓虹拳王",
+          "text": "三年前那场赛，我一直以为是我赢了。现在有人告诉我，那一拳是别人让我打的。"
+        },
+        {
+          "id": "h2-choice",
+          "type": "choice",
+          "prompt_key": "prompt",
+          "options": [
+            {
+              "id": "ledger",
+              "next": "h2-ledger",
+              "label": "先看完账本"
+            },
+            {
+              "id": "boss",
+              "next": "h2-battle",
+              "label": "直接去问老板"
+            }
+          ],
+          "prompt": "账本翻到最后一页，门外传来脚步声。"
+        },
+        {
+          "id": "h2-ledger",
+          "type": "dialogue",
+          "speaker_key": "narrator",
+          "initial": "账",
+          "accent": "narrator",
+          "next": "h2-battle",
+          "speaker": "旁白",
+          "text": "最后一页写着：拳王胜，赔率一比七，收款人——拳场老板。日期正是三年前那晚。"
+        },
+        {
+          "id": "h2-battle",
+          "type": "battle",
+          "battle": {
+            "hero": "volt",
+            "target_waves": 2,
+            "map_theme": "gym",
+            "waves": [
+              {
+                "label": "波次 1",
+                "note": "保镖 · 封门",
+                "event": "后台的灯被一盏盏关掉",
+                "enemies": [
+                  {
+                    "hero": "tech",
+                    "count": 2,
+                    "mod": "生命 ×1.2",
+                    "hp_scale": 1.2,
+                    "damage_scale": 1.0,
+                    "speed_scale": 1.0,
+                    "armor": 0.0,
+                    "kind": null
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "电击棍",
+                    "description": "近身连击，最后一击眩晕",
+                    "damage": 20,
+                    "cooldown": 10.0,
+                    "effect": "眩晕",
+                    "effect_text": "眩晕 1s",
+                    "effect_turns": 1.0,
+                    "radius": 150.0
+                  }
+                ],
+                "hazard": null
+              },
+              {
+                "label": "波次 2",
+                "note": "改造拳手 · 压上",
+                "event": "铁笼外传来下注的吆喝声",
+                "enemies": [
+                  {
+                    "hero": "volt2",
+                    "count": 1,
+                    "mod": "生命 ×1.7",
+                    "hp_scale": 1.7,
+                    "damage_scale": 1.0,
+                    "speed_scale": 1.0,
+                    "armor": 0.0,
+                    "kind": null
+                  },
+                  {
+                    "hero": "tech",
+                    "count": 1,
+                    "mod": "生命 ×1.1 · 护甲",
+                    "hp_scale": 1.1,
+                    "damage_scale": 1.0,
+                    "speed_scale": 1.0,
+                    "armor": 0.2,
+                    "kind": null
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "音浪压制",
+                    "description": "持续音浪，减速并造成伤害",
+                    "damage": 26,
+                    "cooldown": 12.0,
+                    "effect": "减速",
+                    "effect_text": "减速 3s",
+                    "effect_turns": 3.0,
+                    "radius": 200.0
+                  }
+                ],
+                "hazard": null
+              }
+            ]
+          },
+          "on_win": "h2-after",
+          "on_lose": "h2-battle",
+          "title": "后台清场",
+          "brief": "老板不打算解释，他带了人来。",
+          "map_theme": "gym",
+          "map_label": "赛博体育馆",
+          "waves": [
+            {
+              "label": "波次 1",
+              "note": "保镖 · 封门",
+              "event": "后台的灯被一盏盏关掉",
+              "enemies": [
+                {
+                  "hero": "tech",
+                  "count": 2,
+                  "mod": "生命 ×1.2",
+                  "hp_scale": 1.2,
+                  "damage_scale": 1.0,
+                  "speed_scale": 1.0,
+                  "armor": 0.0,
+                  "kind": null
+                }
+              ],
+              "skills": [
+                {
+                  "name": "电击棍",
+                  "description": "近身连击，最后一击眩晕",
+                  "damage": 20,
+                  "cooldown": 10.0,
+                  "effect": "眩晕",
+                  "effect_text": "眩晕 1s",
+                  "effect_turns": 1.0,
+                  "radius": 150.0
+                }
+              ],
+              "hazard": null
+            },
+            {
+              "label": "波次 2",
+              "note": "改造拳手 · 压上",
+              "event": "铁笼外传来下注的吆喝声",
+              "enemies": [
+                {
+                  "hero": "volt2",
+                  "count": 1,
+                  "mod": "生命 ×1.7",
+                  "hp_scale": 1.7,
+                  "damage_scale": 1.0,
+                  "speed_scale": 1.0,
+                  "armor": 0.0,
+                  "kind": null
+                },
+                {
+                  "hero": "tech",
+                  "count": 1,
+                  "mod": "生命 ×1.1 · 护甲",
+                  "hp_scale": 1.1,
+                  "damage_scale": 1.0,
+                  "speed_scale": 1.0,
+                  "armor": 0.2,
+                  "kind": null
+                }
+              ],
+              "skills": [
+                {
+                  "name": "音浪压制",
+                  "description": "持续音浪，减速并造成伤害",
+                  "damage": 26,
+                  "cooldown": 12.0,
+                  "effect": "减速",
+                  "effect_text": "减速 3s",
+                  "effect_turns": 3.0,
+                  "radius": 200.0
+                }
+              ],
+              "hazard": null
+            }
+          ]
+        },
+        {
+          "id": "h2-after",
+          "type": "dialogue",
+          "speaker_key": "narrator",
+          "initial": "账",
+          "accent": "narrator",
+          "next": "h2-reward",
+          "speaker": "旁白",
+          "text": "老板从后门走了，只留下一句「下周还有一场」。账本被拳王收进怀里，纸角更皱了。"
+        },
+        {
+          "id": "h2-reward",
+          "type": "reward",
+          "reward_id": "hero-volt-02-clear",
+          "coins": 170,
+          "next": "h2-end",
+          "title": "账本到手",
+          "description": "三年前的赛不是他赢的。但今晚这些人，是他自己打退的。"
+        },
+        {
+          "id": "h2-end",
+          "type": "chapter_end",
+          "next": null,
+          "title": "第二段结束",
+          "text": "雨又开始下了。铁笼的灯，这次全灭了。"
+        }
+      ],
+      "title": "第二段 · 铁笼之下",
+      "summary": "账本摊在后台桌上。三年前那场赛，从头到尾都是别人写好的。",
+      "card_code": "RC-H01",
+      "card_title": "拳王的旧账",
+      "category_name": "英雄剧情"
+    },
+    {
+      "id": "hero-volt-03",
+      "card": "RC-H01",
+      "category": "hero",
+      "order": 2,
+      "hero": "volt",
+      "background": "home-background.png",
+      "entry": "h3-intro",
+      "nodes": [
+        {
+          "id": "h3-intro",
+          "type": "dialogue",
+          "speaker_key": "narrator",
+          "initial": "影",
+          "accent": "narrator",
+          "next": "h3-hero",
+          "speaker": "旁白",
+          "text": "一周后，铁笼重新开灯。海报上只有一个名字：霓虹拳王，对战——霓虹拳王。"
+        },
+        {
+          "id": "h3-hero",
+          "type": "dialogue",
+          "speaker_key": "hero",
+          "initial": "拳",
+          "accent": "volt",
+          "palette": {
+            "main": "#ff4fa3",
+            "light": "#ffd3e8",
+            "dark": "#812354"
+          },
+          "next": "h3-choice",
+          "speaker": "霓虹拳王",
+          "text": "他们找了个和我打法一模一样的人。连出拳前的停顿都学去了。"
+        },
+        {
+          "id": "h3-choice",
+          "type": "choice",
+          "prompt_key": "prompt",
+          "options": [
+            {
+              "id": "stage",
+              "next": "h3-stage",
+              "label": "上台，打完最后一场"
+            },
+            {
+              "id": "flip",
+              "next": "h3-battle",
+              "label": "掀了这张赌桌"
+            }
+          ],
+          "prompt": "观众已经开始下注。"
+        },
+        {
+          "id": "h3-stage",
+          "type": "dialogue",
+          "speaker_key": "boss",
+          "initial": "板",
+          "accent": "boss",
+          "palette": {
+            "main": "#ff9f4a",
+            "light": "#ffe0bd",
+            "dark": "#7a3d12"
+          },
+          "next": "h3-battle",
+          "speaker": "拳场老板",
+          "text": "「规则很简单，」老板在扩音器里说，「打赢你自己，账就一笔勾销。」"
+        },
+        {
+          "id": "h3-battle",
+          "type": "battle",
+          "battle": {
+            "hero": "volt",
+            "target_waves": 2,
+            "map_theme": "gym",
+            "waves": [
+              {
+                "label": "波次 1",
+                "note": "清场 · 保镖",
+                "event": "看台的灯全部打开，没有死角",
+                "enemies": [
+                  {
+                    "hero": "tech",
+                    "count": 2,
+                    "mod": "生命 ×1.3",
+                    "hp_scale": 1.3,
+                    "damage_scale": 1.0,
+                    "speed_scale": 1.0,
+                    "armor": 0.0,
+                    "kind": null
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "镇场扫射",
+                    "description": "环形扫射，击退周围目标",
+                    "damage": 22,
+                    "cooldown": 9.0,
+                    "effect": "击退",
+                    "effect_text": "击退",
+                    "effect_turns": 0.4,
+                    "radius": 160.0
+                  }
+                ],
+                "hazard": null
+              },
+              {
+                "label": "波次 2",
+                "note": "影子 · 同源",
+                "event": "影子模仿了拳王的每一次呼吸",
+                "enemies": [
+                  {
+                    "hero": "volt",
+                    "count": 1,
+                    "mod": "生命 ×2.0 · 伤害 ×1.35",
+                    "hp_scale": 2.0,
+                    "damage_scale": 1.35,
+                    "speed_scale": 1.0,
+                    "armor": 0.0,
+                    "kind": null
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "霓虹重拳",
+                    "description": "蓄力一拳，命中后眩晕",
+                    "damage": 36,
+                    "cooldown": 13.0,
+                    "effect": "眩晕",
+                    "effect_text": "眩晕 1s",
+                    "effect_turns": 1.0,
+                    "radius": 130.0
+                  }
+                ],
+                "hazard": null
+              }
+            ]
+          },
+          "on_win": "h3-after",
+          "on_lose": "h3-battle",
+          "title": "最后一场",
+          "brief": "影子、保镖，还有那个躲在后面的老板。",
+          "map_theme": "gym",
+          "map_label": "赛博体育馆",
+          "waves": [
+            {
+              "label": "波次 1",
+              "note": "清场 · 保镖",
+              "event": "看台的灯全部打开，没有死角",
+              "enemies": [
+                {
+                  "hero": "tech",
+                  "count": 2,
+                  "mod": "生命 ×1.3",
+                  "hp_scale": 1.3,
+                  "damage_scale": 1.0,
+                  "speed_scale": 1.0,
+                  "armor": 0.0,
+                  "kind": null
+                }
+              ],
+              "skills": [
+                {
+                  "name": "镇场扫射",
+                  "description": "环形扫射，击退周围目标",
+                  "damage": 22,
+                  "cooldown": 9.0,
+                  "effect": "击退",
+                  "effect_text": "击退",
+                  "effect_turns": 0.4,
+                  "radius": 160.0
+                }
+              ],
+              "hazard": null
+            },
+            {
+              "label": "波次 2",
+              "note": "影子 · 同源",
+              "event": "影子模仿了拳王的每一次呼吸",
+              "enemies": [
+                {
+                  "hero": "volt",
+                  "count": 1,
+                  "mod": "生命 ×2.0 · 伤害 ×1.35",
+                  "hp_scale": 2.0,
+                  "damage_scale": 1.35,
+                  "speed_scale": 1.0,
+                  "armor": 0.0,
+                  "kind": null
+                }
+              ],
+              "skills": [
+                {
+                  "name": "霓虹重拳",
+                  "description": "蓄力一拳，命中后眩晕",
+                  "damage": 36,
+                  "cooldown": 13.0,
+                  "effect": "眩晕",
+                  "effect_text": "眩晕 1s",
+                  "effect_turns": 1.0,
+                  "radius": 130.0
+                }
+              ],
+              "hazard": null
+            }
+          ]
+        },
+        {
+          "id": "h3-after",
+          "type": "dialogue",
+          "speaker_key": "narrator",
+          "initial": "影",
+          "accent": "narrator",
+          "next": "h3-reward",
+          "speaker": "旁白",
+          "text": "影子倒下时，看台安静得可怕。老板从后门溜走，账本被拳王扔进了铁笼中央的火盆。"
+        },
+        {
+          "id": "h3-reward",
+          "type": "reward",
+          "reward_id": "hero-volt-03-clear",
+          "coins": 200,
+          "next": "h3-end",
+          "title": "账清了",
+          "description": "没有赢家，也没有输家。铁笼从此不再开灯。"
+        },
+        {
+          "id": "h3-end",
+          "type": "chapter_end",
+          "next": null,
+          "title": "第三段结束",
+          "text": "拳王走出拳场。街口的灯全亮了，他第一次觉得有点刺眼。"
+        }
+      ],
+      "title": "第三段 · 最后一场",
+      "summary": "老板把最后一场办成了全城直播，对手是拳王自己留下的影子。",
+      "card_code": "RC-H01",
+      "card_title": "拳王的旧账",
+      "category_name": "英雄剧情"
+    },
+    {
       "id": "hero-moss-01",
       "card": "RC-H02",
       "category": "hero",
-      "order": 1,
+      "order": 0,
       "hero": "moss",
       "background": "home-background.png",
       "entry": "m1-intro",
@@ -1861,7 +2426,7 @@
           "id": "m1-end",
           "type": "chapter_end",
           "next": null,
-          "title": "本章结束",
+          "title": "第一段结束",
           "text": "有些东西不需要被记住。它们自己会长出来。"
         }
       ],
@@ -1872,10 +2437,540 @@
       "category_name": "英雄剧情"
     },
     {
+      "id": "hero-moss-02",
+      "card": "RC-H02",
+      "category": "hero",
+      "order": 1,
+      "hero": "moss",
+      "background": "home-background.png",
+      "entry": "m2-intro",
+      "nodes": [
+        {
+          "id": "m2-intro",
+          "type": "dialogue",
+          "speaker_key": "narrator",
+          "initial": "根",
+          "accent": "narrator",
+          "next": "m2-hero",
+          "speaker": "旁白",
+          "text": "种子在三号苗床活了下来。第三天夜里，根须顶开地板，一路往地下钻。"
+        },
+        {
+          "id": "m2-hero",
+          "type": "dialogue",
+          "speaker_key": "hero",
+          "initial": "苔",
+          "accent": "moss",
+          "palette": {
+            "main": "#b7ef55",
+            "light": "#e9ffb7",
+            "dark": "#426b2e"
+          },
+          "next": "m2-choice",
+          "speaker": "苔藓守卫",
+          "text": "根在带路。它记得一条地面上已经没有的路。"
+        },
+        {
+          "id": "m2-choice",
+          "type": "choice",
+          "prompt_key": "prompt",
+          "options": [
+            {
+              "id": "root",
+              "next": "m2-root",
+              "label": "跟着根走下去"
+            },
+            {
+              "id": "backup",
+              "next": "m2-battle",
+              "label": "先把数据备份到温室"
+            }
+          ],
+          "prompt": "根须在通风井口分成两股。"
+        },
+        {
+          "id": "m2-root",
+          "type": "dialogue",
+          "speaker_key": "hero",
+          "initial": "苔",
+          "accent": "moss",
+          "palette": {
+            "main": "#b7ef55",
+            "light": "#e9ffb7",
+            "dark": "#426b2e"
+          },
+          "next": "m2-battle",
+          "speaker": "苔藓守卫",
+          "text": "下面有名字。很多名字。它们被压在土里，还没烂。"
+        },
+        {
+          "id": "m2-battle",
+          "type": "battle",
+          "battle": {
+            "hero": "moss",
+            "target_waves": 2,
+            "map_theme": "station",
+            "waves": [
+              {
+                "label": "波次 1",
+                "note": "清扫 · 巡逻",
+                "event": "站台灯管接触不良，忽明忽暗",
+                "enemies": [
+                  {
+                    "hero": "tech",
+                    "count": 2,
+                    "mod": "生命 ×1.2",
+                    "hp_scale": 1.2,
+                    "damage_scale": 1.0,
+                    "speed_scale": 1.0,
+                    "armor": 0.0,
+                    "kind": null
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "清扫脉冲",
+                    "description": "环形脉冲，击退周围目标",
+                    "damage": 22,
+                    "cooldown": 9.0,
+                    "effect": "击退",
+                    "effect_text": "击退",
+                    "effect_turns": 0.5,
+                    "radius": 160.0
+                  }
+                ],
+                "hazard": null
+              },
+              {
+                "label": "波次 2",
+                "note": "根须 · 守卫",
+                "event": "抽取管道破裂，记忆像雾一样漏出来",
+                "enemies": [
+                  {
+                    "hero": "moss",
+                    "count": 1,
+                    "mod": "生命 ×1.9 · 护甲",
+                    "hp_scale": 1.9,
+                    "damage_scale": 1.0,
+                    "speed_scale": 1.0,
+                    "armor": 0.35,
+                    "kind": null
+                  },
+                  {
+                    "hero": "tech",
+                    "count": 1,
+                    "mod": "生命 ×1.1",
+                    "hp_scale": 1.1,
+                    "damage_scale": 1.0,
+                    "speed_scale": 1.0,
+                    "armor": 0.0,
+                    "kind": null
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "根须缠绕",
+                    "description": "根系从墙缝钻出，缠住目标",
+                    "damage": 24,
+                    "cooldown": 11.0,
+                    "effect": "禁锢",
+                    "effect_text": "禁锢 2s",
+                    "effect_turns": 2.0,
+                    "radius": 180.0
+                  }
+                ],
+                "hazard": {
+                  "interval": 8,
+                  "damage": 6
+                }
+              }
+            ]
+          },
+          "on_win": "m2-after",
+          "on_lose": "m2-battle",
+          "title": "零层之下",
+          "brief": "地下旧区的清扫机还在按十七年前的指令巡逻。",
+          "map_theme": "station",
+          "map_label": "霓虹火车站",
+          "waves": [
+            {
+              "label": "波次 1",
+              "note": "清扫 · 巡逻",
+              "event": "站台灯管接触不良，忽明忽暗",
+              "enemies": [
+                {
+                  "hero": "tech",
+                  "count": 2,
+                  "mod": "生命 ×1.2",
+                  "hp_scale": 1.2,
+                  "damage_scale": 1.0,
+                  "speed_scale": 1.0,
+                  "armor": 0.0,
+                  "kind": null
+                }
+              ],
+              "skills": [
+                {
+                  "name": "清扫脉冲",
+                  "description": "环形脉冲，击退周围目标",
+                  "damage": 22,
+                  "cooldown": 9.0,
+                  "effect": "击退",
+                  "effect_text": "击退",
+                  "effect_turns": 0.5,
+                  "radius": 160.0
+                }
+              ],
+              "hazard": null
+            },
+            {
+              "label": "波次 2",
+              "note": "根须 · 守卫",
+              "event": "抽取管道破裂，记忆像雾一样漏出来",
+              "enemies": [
+                {
+                  "hero": "moss",
+                  "count": 1,
+                  "mod": "生命 ×1.9 · 护甲",
+                  "hp_scale": 1.9,
+                  "damage_scale": 1.0,
+                  "speed_scale": 1.0,
+                  "armor": 0.35,
+                  "kind": null
+                },
+                {
+                  "hero": "tech",
+                  "count": 1,
+                  "mod": "生命 ×1.1",
+                  "hp_scale": 1.1,
+                  "damage_scale": 1.0,
+                  "speed_scale": 1.0,
+                  "armor": 0.0,
+                  "kind": null
+                }
+              ],
+              "skills": [
+                {
+                  "name": "根须缠绕",
+                  "description": "根系从墙缝钻出，缠住目标",
+                  "damage": 24,
+                  "cooldown": 11.0,
+                  "effect": "禁锢",
+                  "effect_text": "禁锢 2s",
+                  "effect_turns": 2.0,
+                  "radius": 180.0
+                }
+              ],
+              "hazard": {
+                "interval": 8,
+                "damage": 6
+              }
+            }
+          ]
+        },
+        {
+          "id": "m2-after",
+          "type": "dialogue",
+          "speaker_key": "narrator",
+          "initial": "根",
+          "accent": "narrator",
+          "next": "m2-reward",
+          "speaker": "旁白",
+          "text": "清扫机停下后，根须从墙缝里拖出一块锈掉的铭牌。上面刻着十七年前的居民名单，最后一行是苔藓守卫自己的编号。"
+        },
+        {
+          "id": "m2-reward",
+          "type": "reward",
+          "reward_id": "hero-moss-02-clear",
+          "coins": 180,
+          "next": "m2-end",
+          "title": "名字还在",
+          "description": "土壤记忆里存着三千多个名字。它们没有被销毁，只是被埋了。"
+        },
+        {
+          "id": "m2-end",
+          "type": "chapter_end",
+          "next": null,
+          "title": "第二段结束",
+          "text": "苔藓守卫把铭牌擦干净，放回根须之间。"
+        }
+      ],
+      "title": "第二段 · 土壤记忆",
+      "summary": "种子活下来的第三天夜里，根须顶开地板，指向城市地图上不存在的地下。",
+      "card_code": "RC-H02",
+      "card_title": "苔藓的根",
+      "category_name": "英雄剧情"
+    },
+    {
+      "id": "hero-moss-03",
+      "card": "RC-H02",
+      "category": "hero",
+      "order": 2,
+      "hero": "moss",
+      "background": "home-background.png",
+      "entry": "m3-intro",
+      "nodes": [
+        {
+          "id": "m3-intro",
+          "type": "dialogue",
+          "speaker_key": "narrator",
+          "initial": "芽",
+          "accent": "narrator",
+          "next": "m3-hero",
+          "speaker": "旁白",
+          "text": "回到地面时，天刚亮。穹顶七号的废墟上，已经长出一层薄薄的绿。"
+        },
+        {
+          "id": "m3-hero",
+          "type": "dialogue",
+          "speaker_key": "hero",
+          "initial": "苔",
+          "accent": "moss",
+          "palette": {
+            "main": "#b7ef55",
+            "light": "#e9ffb7",
+            "dark": "#426b2e"
+          },
+          "next": "m3-choice",
+          "speaker": "苔藓守卫",
+          "text": "这些名字需要一个能晒到太阳的地方。"
+        },
+        {
+          "id": "m3-choice",
+          "type": "choice",
+          "prompt_key": "prompt",
+          "options": [
+            {
+              "id": "open",
+              "next": "m3-open",
+              "label": "把记忆种进公共绿地"
+            },
+            {
+              "id": "bury",
+              "next": "m3-battle",
+              "label": "把它们埋回更深的地方"
+            }
+          ],
+          "prompt": "城市公共绿地的闸门开着，天穹的巡逻机还没到。"
+        },
+        {
+          "id": "m3-open",
+          "type": "dialogue",
+          "speaker_key": "hero",
+          "initial": "苔",
+          "accent": "moss",
+          "palette": {
+            "main": "#b7ef55",
+            "light": "#e9ffb7",
+            "dark": "#426b2e"
+          },
+          "next": "m3-battle",
+          "speaker": "苔藓守卫",
+          "text": "种下去，所有人都会看见。包括那些想让它们消失的人。"
+        },
+        {
+          "id": "m3-battle",
+          "type": "battle",
+          "battle": {
+            "hero": "moss",
+            "target_waves": 2,
+            "map_theme": "school",
+            "waves": [
+              {
+                "label": "波次 1",
+                "note": "封锁 · 绿地",
+                "event": "自动灌溉启动，地面变得湿滑",
+                "enemies": [
+                  {
+                    "hero": "tech",
+                    "count": 2,
+                    "mod": "生命 ×1.4",
+                    "hp_scale": 1.4,
+                    "damage_scale": 1.0,
+                    "speed_scale": 1.0,
+                    "armor": 0.0,
+                    "kind": null
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "封锁脉冲",
+                    "description": "范围脉冲，命中后减速",
+                    "damage": 24,
+                    "cooldown": 10.0,
+                    "effect": "减速",
+                    "effect_text": "减速 2s",
+                    "effect_turns": 2.0,
+                    "radius": 180.0
+                  }
+                ],
+                "hazard": null
+              },
+              {
+                "label": "波次 2",
+                "note": "园丁 · 修剪",
+                "event": "草皮下传来整齐的切割声",
+                "enemies": [
+                  {
+                    "hero": "moss",
+                    "count": 1,
+                    "mod": "生命 ×2.2 · 护甲 · 伤害 ×1.2",
+                    "hp_scale": 2.2,
+                    "damage_scale": 1.2,
+                    "speed_scale": 1.0,
+                    "armor": 0.4,
+                    "kind": null
+                  },
+                  {
+                    "hero": "tech",
+                    "count": 1,
+                    "mod": "生命 ×1.2",
+                    "hp_scale": 1.2,
+                    "damage_scale": 1.0,
+                    "speed_scale": 1.0,
+                    "armor": 0.0,
+                    "kind": null
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "园丁之剪",
+                    "description": "对残血目标有极高斩杀概率",
+                    "damage": 38,
+                    "cooldown": 14.0,
+                    "effect": "斩杀",
+                    "effect_text": "斩杀",
+                    "effect_turns": 0.0,
+                    "radius": 130.0
+                  }
+                ],
+                "hazard": {
+                  "interval": 7,
+                  "damage": 8
+                }
+              }
+            ]
+          },
+          "on_win": "m3-after",
+          "on_lose": "m3-battle",
+          "title": "园丁",
+          "brief": "天穹派来的不是拆除队了，是「园丁」。",
+          "map_theme": "school",
+          "map_label": "赛博学校",
+          "waves": [
+            {
+              "label": "波次 1",
+              "note": "封锁 · 绿地",
+              "event": "自动灌溉启动，地面变得湿滑",
+              "enemies": [
+                {
+                  "hero": "tech",
+                  "count": 2,
+                  "mod": "生命 ×1.4",
+                  "hp_scale": 1.4,
+                  "damage_scale": 1.0,
+                  "speed_scale": 1.0,
+                  "armor": 0.0,
+                  "kind": null
+                }
+              ],
+              "skills": [
+                {
+                  "name": "封锁脉冲",
+                  "description": "范围脉冲，命中后减速",
+                  "damage": 24,
+                  "cooldown": 10.0,
+                  "effect": "减速",
+                  "effect_text": "减速 2s",
+                  "effect_turns": 2.0,
+                  "radius": 180.0
+                }
+              ],
+              "hazard": null
+            },
+            {
+              "label": "波次 2",
+              "note": "园丁 · 修剪",
+              "event": "草皮下传来整齐的切割声",
+              "enemies": [
+                {
+                  "hero": "moss",
+                  "count": 1,
+                  "mod": "生命 ×2.2 · 护甲 · 伤害 ×1.2",
+                  "hp_scale": 2.2,
+                  "damage_scale": 1.2,
+                  "speed_scale": 1.0,
+                  "armor": 0.4,
+                  "kind": null
+                },
+                {
+                  "hero": "tech",
+                  "count": 1,
+                  "mod": "生命 ×1.2",
+                  "hp_scale": 1.2,
+                  "damage_scale": 1.0,
+                  "speed_scale": 1.0,
+                  "armor": 0.0,
+                  "kind": null
+                }
+              ],
+              "skills": [
+                {
+                  "name": "园丁之剪",
+                  "description": "对残血目标有极高斩杀概率",
+                  "damage": 38,
+                  "cooldown": 14.0,
+                  "effect": "斩杀",
+                  "effect_text": "斩杀",
+                  "effect_turns": 0.0,
+                  "radius": 130.0
+                }
+              ],
+              "hazard": {
+                "interval": 7,
+                "damage": 8
+              }
+            }
+          ]
+        },
+        {
+          "id": "m3-after",
+          "type": "dialogue",
+          "speaker_key": "narrator",
+          "initial": "芽",
+          "accent": "narrator",
+          "next": "m3-reward",
+          "speaker": "旁白",
+          "text": "园丁倒下时，整片绿地的根须同时抖了一下。苔藓守卫蹲下来，把第一颗种子按进土里。"
+        },
+        {
+          "id": "m3-reward",
+          "type": "reward",
+          "reward_id": "hero-moss-03-clear",
+          "coins": 220,
+          "next": "m3-end",
+          "title": "重新生长",
+          "description": "第二天，公共绿地多了一片没人种过的花。城市报告里，它被记为「自然生长」。"
+        },
+        {
+          "id": "m3-end",
+          "type": "chapter_end",
+          "next": null,
+          "title": "第三段结束",
+          "text": "有些名字不需要刻在碑上。它们会长出来。"
+        }
+      ],
+      "title": "第三段 · 重新生长",
+      "summary": "把名字种回地面，还是让它们继续埋在土里？",
+      "card_code": "RC-H02",
+      "card_title": "苔藓的根",
+      "category_name": "英雄剧情"
+    },
+    {
       "id": "hero-luna-01",
       "card": "RC-H03",
       "category": "hero",
-      "order": 2,
+      "order": 0,
       "hero": "luna",
       "background": "home-background.png",
       "entry": "l1-intro",
@@ -2141,12 +3236,536 @@
           "id": "l1-end",
           "type": "chapter_end",
           "next": null,
-          "title": "本章结束",
+          "title": "第一段结束",
           "text": "她抬头看了最后一眼月亮。今晚它没有亏欠任何人。"
         }
       ],
       "title": "第一段 · 月蚀",
       "summary": "全城的灯暗了一格，天文台顶上亮起一口不该存在的井。",
+      "card_code": "RC-H03",
+      "card_title": "月蚀之夜",
+      "category_name": "英雄剧情"
+    },
+    {
+      "id": "hero-luna-02",
+      "card": "RC-H03",
+      "category": "hero",
+      "order": 1,
+      "hero": "luna",
+      "background": "home-background.png",
+      "entry": "l2-intro",
+      "nodes": [
+        {
+          "id": "l2-intro",
+          "type": "dialogue",
+          "speaker_key": "narrator",
+          "initial": "梦",
+          "accent": "narrator",
+          "next": "l2-hero",
+          "speaker": "旁白",
+          "text": "井熄灭后的第三晚，月蚀术士做了一个太清醒的梦。梦里整座城市都在重复同一个夜晚。"
+        },
+        {
+          "id": "l2-hero",
+          "type": "dialogue",
+          "speaker_key": "hero",
+          "initial": "月",
+          "accent": "luna",
+          "palette": {
+            "main": "#8c9aff",
+            "light": "#e0e4ff",
+            "dark": "#414f9e"
+          },
+          "next": "l2-choice",
+          "speaker": "月蚀术士",
+          "text": "这不是梦。是被抽走的记忆，找不到回去的路。"
+        },
+        {
+          "id": "l2-choice",
+          "type": "choice",
+          "prompt_key": "prompt",
+          "options": [
+            {
+              "id": "follow",
+              "next": "l2-follow",
+              "label": "追着灯走"
+            },
+            {
+              "id": "save",
+              "next": "l2-battle",
+              "label": "先带被困的人出去"
+            }
+          ],
+          "prompt": "梦的中央亮着一盏灯，旁边有人在等人。"
+        },
+        {
+          "id": "l2-follow",
+          "type": "dialogue",
+          "speaker_key": "hero",
+          "initial": "月",
+          "accent": "luna",
+          "palette": {
+            "main": "#8c9aff",
+            "light": "#e0e4ff",
+            "dark": "#414f9e"
+          },
+          "next": "l2-battle",
+          "speaker": "月蚀术士",
+          "text": "灯下坐着一个人。她抬头的时候，脸是模糊的——因为她的记忆已经不完整了。"
+        },
+        {
+          "id": "l2-battle",
+          "type": "battle",
+          "battle": {
+            "hero": "luna",
+            "target_waves": 2,
+            "map_theme": "music",
+            "waves": [
+              {
+                "label": "波次 1",
+                "note": "琴房 · 回声",
+                "event": "每一段旋律都在重复十七年前的同一小节",
+                "enemies": [
+                  {
+                    "hero": "pipa",
+                    "count": 1,
+                    "mod": "生命 ×1.5",
+                    "hp_scale": 1.5,
+                    "damage_scale": 1.0,
+                    "speed_scale": 1.0,
+                    "armor": 0.0,
+                    "kind": null
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "弦音禁锢",
+                    "description": "琴弦锁住脚步，持续掉血",
+                    "damage": 18,
+                    "cooldown": 10.0,
+                    "effect": "禁锢",
+                    "effect_text": "禁锢 3s",
+                    "effect_turns": 3.0,
+                    "radius": 220.0
+                  }
+                ],
+                "hazard": null
+              },
+              {
+                "label": "波次 2",
+                "note": "回声 · 叠层",
+                "event": "梦开始重复，脚步出现延迟",
+                "enemies": [
+                  {
+                    "hero": "volt2",
+                    "count": 1,
+                    "mod": "生命 ×1.8 · 伤害 ×1.2",
+                    "hp_scale": 1.8,
+                    "damage_scale": 1.2,
+                    "speed_scale": 1.0,
+                    "armor": 0.0,
+                    "kind": null
+                  },
+                  {
+                    "hero": "tech",
+                    "count": 1,
+                    "mod": "生命 ×1.2",
+                    "hp_scale": 1.2,
+                    "damage_scale": 1.0,
+                    "speed_scale": 1.0,
+                    "armor": 0.0,
+                    "kind": null
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "声浪压制",
+                    "description": "持续音浪，减速并造成伤害",
+                    "damage": 28,
+                    "cooldown": 12.0,
+                    "effect": "减速",
+                    "effect_text": "减速 3s",
+                    "effect_turns": 3.0,
+                    "radius": 200.0
+                  }
+                ],
+                "hazard": null
+              }
+            ]
+          },
+          "on_win": "l2-after",
+          "on_lose": "l2-battle",
+          "title": "记忆守卫",
+          "brief": "记忆层不欢迎活人。守卫是别人的回忆拼起来的。",
+          "map_theme": "music",
+          "map_label": "赛博琴房",
+          "waves": [
+            {
+              "label": "波次 1",
+              "note": "琴房 · 回声",
+              "event": "每一段旋律都在重复十七年前的同一小节",
+              "enemies": [
+                {
+                  "hero": "pipa",
+                  "count": 1,
+                  "mod": "生命 ×1.5",
+                  "hp_scale": 1.5,
+                  "damage_scale": 1.0,
+                  "speed_scale": 1.0,
+                  "armor": 0.0,
+                  "kind": null
+                }
+              ],
+              "skills": [
+                {
+                  "name": "弦音禁锢",
+                  "description": "琴弦锁住脚步，持续掉血",
+                  "damage": 18,
+                  "cooldown": 10.0,
+                  "effect": "禁锢",
+                  "effect_text": "禁锢 3s",
+                  "effect_turns": 3.0,
+                  "radius": 220.0
+                }
+              ],
+              "hazard": null
+            },
+            {
+              "label": "波次 2",
+              "note": "回声 · 叠层",
+              "event": "梦开始重复，脚步出现延迟",
+              "enemies": [
+                {
+                  "hero": "volt2",
+                  "count": 1,
+                  "mod": "生命 ×1.8 · 伤害 ×1.2",
+                  "hp_scale": 1.8,
+                  "damage_scale": 1.2,
+                  "speed_scale": 1.0,
+                  "armor": 0.0,
+                  "kind": null
+                },
+                {
+                  "hero": "tech",
+                  "count": 1,
+                  "mod": "生命 ×1.2",
+                  "hp_scale": 1.2,
+                  "damage_scale": 1.0,
+                  "speed_scale": 1.0,
+                  "armor": 0.0,
+                  "kind": null
+                }
+              ],
+              "skills": [
+                {
+                  "name": "声浪压制",
+                  "description": "持续音浪，减速并造成伤害",
+                  "damage": 28,
+                  "cooldown": 12.0,
+                  "effect": "减速",
+                  "effect_text": "减速 3s",
+                  "effect_turns": 3.0,
+                  "radius": 200.0
+                }
+              ],
+              "hazard": null
+            }
+          ]
+        },
+        {
+          "id": "l2-after",
+          "type": "dialogue",
+          "speaker_key": "narrator",
+          "initial": "梦",
+          "accent": "narrator",
+          "next": "l2-reward",
+          "speaker": "旁白",
+          "text": "守卫散开时，那张模糊的脸终于清楚了。她是天文台的记录员，十七年前就该下班了。"
+        },
+        {
+          "id": "l2-reward",
+          "type": "reward",
+          "reward_id": "hero-luna-02-clear",
+          "coins": 200,
+          "next": "l2-end",
+          "title": "一盏灯",
+          "description": "梦的出口打开了。但灯还亮着，说明还有人没走出去。"
+        },
+        {
+          "id": "l2-end",
+          "type": "chapter_end",
+          "next": null,
+          "title": "第二段结束",
+          "text": "月蚀术士最后一个离开。她记住了那盏灯的位置。"
+        }
+      ],
+      "title": "第二段 · 被借走的夜",
+      "summary": "能量井抽走的记忆，在城市的梦里堆成一片没有出口的夜。",
+      "card_code": "RC-H03",
+      "card_title": "月蚀之夜",
+      "category_name": "英雄剧情"
+    },
+    {
+      "id": "hero-luna-03",
+      "card": "RC-H03",
+      "category": "hero",
+      "order": 2,
+      "hero": "luna",
+      "background": "home-background.png",
+      "entry": "l3-intro",
+      "nodes": [
+        {
+          "id": "l3-intro",
+          "type": "dialogue",
+          "speaker_key": "narrator",
+          "initial": "落",
+          "accent": "narrator",
+          "next": "l3-hero",
+          "speaker": "旁白",
+          "text": "天文台封了三天。第四天，月蚀术士独自下到井底。"
+        },
+        {
+          "id": "l3-hero",
+          "type": "dialogue",
+          "speaker_key": "hero",
+          "initial": "月",
+          "accent": "luna",
+          "palette": {
+            "main": "#8c9aff",
+            "light": "#e0e4ff",
+            "dark": "#414f9e"
+          },
+          "next": "l3-choice",
+          "speaker": "月蚀术士",
+          "text": "这里堆着整座城市被删掉的东西。名字、脸、没说出口的话。"
+        },
+        {
+          "id": "l3-choice",
+          "type": "choice",
+          "prompt_key": "prompt",
+          "options": [
+            {
+              "id": "give",
+              "next": "l3-give",
+              "label": "把记忆还给城市"
+            },
+            {
+              "id": "burn",
+              "next": "l3-battle",
+              "label": "烧掉，让所有人重新开始"
+            }
+          ],
+          "prompt": "井底的控制台只亮着一行字：释放 / 销毁。"
+        },
+        {
+          "id": "l3-give",
+          "type": "dialogue",
+          "speaker_key": "hero",
+          "initial": "月",
+          "accent": "luna",
+          "palette": {
+            "main": "#8c9aff",
+            "light": "#e0e4ff",
+            "dark": "#414f9e"
+          },
+          "next": "l3-battle",
+          "speaker": "月蚀术士",
+          "text": "还回去，城市会想起自己做过什么。包括那些不想被想起的人。"
+        },
+        {
+          "id": "l3-battle",
+          "type": "battle",
+          "battle": {
+            "hero": "luna",
+            "target_waves": 2,
+            "map_theme": "airport",
+            "waves": [
+              {
+                "label": "波次 1",
+                "note": "井口 · 天光",
+                "event": "第一缕天光落下来，影子开始变长",
+                "enemies": [
+                  {
+                    "hero": "tech",
+                    "count": 2,
+                    "mod": "生命 ×1.5",
+                    "hp_scale": 1.5,
+                    "damage_scale": 1.0,
+                    "speed_scale": 1.0,
+                    "armor": 0.0,
+                    "kind": null
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "月井扫射",
+                    "description": "环形扫射，命中后减速",
+                    "damage": 24,
+                    "cooldown": 9.0,
+                    "effect": "减速",
+                    "effect_text": "减速 2s",
+                    "effect_turns": 2.0,
+                    "radius": 200.0
+                  }
+                ],
+                "hazard": null
+              },
+              {
+                "label": "波次 2",
+                "note": "月蚀 · 本体",
+                "event": "影子不再模仿，它开始提前一步",
+                "enemies": [
+                  {
+                    "hero": "luna",
+                    "count": 1,
+                    "mod": "生命 ×2.2 · 伤害 ×1.4",
+                    "hp_scale": 2.2,
+                    "damage_scale": 1.4,
+                    "speed_scale": 1.0,
+                    "armor": 0.0,
+                    "kind": null
+                  },
+                  {
+                    "hero": "tech",
+                    "count": 1,
+                    "mod": "生命 ×1.3 · 护甲",
+                    "hp_scale": 1.3,
+                    "damage_scale": 1.0,
+                    "speed_scale": 1.0,
+                    "armor": 0.25,
+                    "kind": null
+                  }
+                ],
+                "skills": [
+                  {
+                    "name": "月影坠落",
+                    "description": "延迟后砸下大范围高额伤害",
+                    "damage": 42,
+                    "cooldown": 14.0,
+                    "effect": "击退",
+                    "effect_text": "击退",
+                    "effect_turns": 0.6,
+                    "radius": 240.0
+                  }
+                ],
+                "hazard": {
+                  "interval": 6,
+                  "damage": 9
+                }
+              }
+            ]
+          },
+          "on_win": "l3-after",
+          "on_lose": "l3-battle",
+          "title": "月落",
+          "brief": "井底最后一个守卫，是月亮留下的影子。",
+          "map_theme": "airport",
+          "map_label": "赛博机场",
+          "waves": [
+            {
+              "label": "波次 1",
+              "note": "井口 · 天光",
+              "event": "第一缕天光落下来，影子开始变长",
+              "enemies": [
+                {
+                  "hero": "tech",
+                  "count": 2,
+                  "mod": "生命 ×1.5",
+                  "hp_scale": 1.5,
+                  "damage_scale": 1.0,
+                  "speed_scale": 1.0,
+                  "armor": 0.0,
+                  "kind": null
+                }
+              ],
+              "skills": [
+                {
+                  "name": "月井扫射",
+                  "description": "环形扫射，命中后减速",
+                  "damage": 24,
+                  "cooldown": 9.0,
+                  "effect": "减速",
+                  "effect_text": "减速 2s",
+                  "effect_turns": 2.0,
+                  "radius": 200.0
+                }
+              ],
+              "hazard": null
+            },
+            {
+              "label": "波次 2",
+              "note": "月蚀 · 本体",
+              "event": "影子不再模仿，它开始提前一步",
+              "enemies": [
+                {
+                  "hero": "luna",
+                  "count": 1,
+                  "mod": "生命 ×2.2 · 伤害 ×1.4",
+                  "hp_scale": 2.2,
+                  "damage_scale": 1.4,
+                  "speed_scale": 1.0,
+                  "armor": 0.0,
+                  "kind": null
+                },
+                {
+                  "hero": "tech",
+                  "count": 1,
+                  "mod": "生命 ×1.3 · 护甲",
+                  "hp_scale": 1.3,
+                  "damage_scale": 1.0,
+                  "speed_scale": 1.0,
+                  "armor": 0.25,
+                  "kind": null
+                }
+              ],
+              "skills": [
+                {
+                  "name": "月影坠落",
+                  "description": "延迟后砸下大范围高额伤害",
+                  "damage": 42,
+                  "cooldown": 14.0,
+                  "effect": "击退",
+                  "effect_text": "击退",
+                  "effect_turns": 0.6,
+                  "radius": 240.0
+                }
+              ],
+              "hazard": {
+                "interval": 6,
+                "damage": 9
+              }
+            }
+          ]
+        },
+        {
+          "id": "l3-after",
+          "type": "dialogue",
+          "speaker_key": "narrator",
+          "initial": "落",
+          "accent": "narrator",
+          "next": "l3-reward",
+          "speaker": "旁白",
+          "text": "影子散尽时，井口透进第一缕天光。月蚀术士按下了那个键。"
+        },
+        {
+          "id": "l3-reward",
+          "type": "reward",
+          "reward_id": "hero-luna-03-clear",
+          "coins": 240,
+          "next": "l3-end",
+          "title": "月落",
+          "description": "第二天，城市里有很多人同时想起了同一件事。报告称：集体错觉。"
+        },
+        {
+          "id": "l3-end",
+          "type": "chapter_end",
+          "next": null,
+          "title": "第三段结束",
+          "text": "她走出天文台。月亮已经落下去了，天很亮。"
+        }
+      ],
+      "title": "第三段 · 月落",
+      "summary": "井底堆着整座城市的记忆。还回去，还是烧掉？",
       "card_code": "RC-H03",
       "card_title": "月蚀之夜",
       "category_name": "英雄剧情"
