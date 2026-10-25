@@ -1,0 +1,113 @@
+{
+  "id": "RC-H02",
+  "card": {
+    "code": "RC-H02",
+    "title": "Roots of the Moss",
+    "summary": "Dome Seven's power is cut, and the memory inside its soil is being drained. The Moss Guardian is back.",
+    "quote": "Roots remember every rain — and who dug them up."
+  },
+  "sections": {
+    "hero-moss-01": {
+      "title": "Segment 1 · Roots",
+      "summary": "Three days without power, and vines have crawled into the control room. The demolition crew is already at the gate.",
+      "nodes": {
+        "m1-intro": {
+          "speaker": "Narration",
+          "text": "Dome Seven has been dark for three days. Vines climbed through the vents into the control room and covered the last screen still glowing."
+        },
+        "m1-hero": {
+          "speaker": "Moss Guardian",
+          "text": "Every inch of soil here remembers me. Right now it's screaming."
+        },
+        "m1-choice": {
+          "prompt": "Only two keys on the console still work.",
+          "options": [
+            "Go to bed three first",
+            "Pull the extraction log"
+          ]
+        },
+        "m1-seed": {
+          "speaker": "Moss Guardian",
+          "text": "The seeds are still here. Crushed under a collapsed rack, but alive."
+        },
+        "m1-log": {
+          "speaker": "Skyvault",
+          "text": "Log: soil-memory extraction at 87%. The purpose field reads — \"city memory backup\"."
+        },
+        "m1-objective": {
+          "title": "Save the Greenhouse",
+          "description": "Get back what matters before the roots die for good.",
+          "goals": [
+            "Recover the seeds from bed three",
+            "Cut power to the memory extraction pump"
+          ]
+        },
+        "m1-battle": {
+          "title": "Demolition Crew",
+          "brief": "Skyvault's people aren't here to negotiate. They brought wrenches.",
+          "waves": [
+            {
+              "label": "Wave 1",
+              "note": "Demolition · Entry",
+              "event": "The sprinklers fail and the floor starts flooding",
+              "enemies": [
+                {
+                  "hero": "tech",
+                  "count": 2,
+                  "mod": "HP ×1.1"
+                }
+              ],
+              "skills": [
+                {
+                  "name": "Demolition Pulse",
+                  "description": "A hydraulic arm slams down and shoves everyone back",
+                  "cooldown": 9,
+                  "damage": 18,
+                  "effect": "Knockback"
+                }
+              ]
+            },
+            {
+              "label": "Wave 2",
+              "note": "Roots · Backlash",
+              "event": "The pump overloads; roots grind somewhere underground",
+              "enemies": [
+                {
+                  "hero": "moss",
+                  "count": 1,
+                  "mod": "HP ×1.8 · Armor"
+                },
+                {
+                  "hero": "tech",
+                  "count": 1,
+                  "mod": "HP ×1.0 · DMG ×1.1"
+                }
+              ],
+              "skills": [
+                {
+                  "name": "Root Bind",
+                  "description": "Roots break the surface and wrap the target",
+                  "cooldown": 11,
+                  "damage": 22,
+                  "effect": "Root 2s"
+                }
+              ]
+            }
+          ]
+        },
+        "m1-after": {
+          "speaker": "Narration",
+          "text": "When the pump stopped, the greenhouse went quiet enough to hear a seed crack open. The Moss Guardian buried it back in bed three and said nothing."
+        },
+        "m1-reward": {
+          "title": "The Roots Remain",
+          "description": "Skyvault struck Dome Seven from the demolition list. The reason field was left blank."
+        },
+        "m1-end": {
+          "title": "End of Chapter",
+          "text": "Some things don't need to be remembered. They grow back on their own."
+        }
+      }
+    }
+  }
+}

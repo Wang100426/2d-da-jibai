@@ -98,13 +98,15 @@ check("默认只显示第一个分类的卡", cards.length === 1, String(cards.l
 let rows = grid.find((n) => n._classes && n._classes.has("story-section"));
 check("RC-001 渲染出四个分区", rows.length === 4, String(rows.length));
 
-// 切到「全部」应显示两张卡
+// 切到「全部」应显示四张卡（RC-001 + 三张英雄卡）
 const tabs = ids["story-tabs"].find((n) => n._classes && n._classes.has("story-tab"));
 tabs[0].click();
 cards = grid.find((n) => n._classes && n._classes.has("story-card"));
 rows = grid.find((n) => n._classes && n._classes.has("story-section"));
-check("切到全部后有两张卡", cards.length === 2, String(cards.length));
-check("全部视图共五行分区", rows.length === 5, String(rows.length));
+check("切到全部后有四张卡", cards.length === 4, String(cards.length));
+check("全部视图共七行分区", rows.length === 7, String(rows.length));
+const heroCards = cards.filter((card) => /RC-H\d+/.test(card.textContent));
+check("三张英雄卡都在卡库里", heroCards.length === 3, String(heroCards.length));
 
 const lockedRows = rows.filter((r) => r._classes.has("locked"));
 check("RC-001 的后三段是锁定态", lockedRows.length === 3, String(lockedRows.length));

@@ -199,7 +199,9 @@
 | 重现卡 | 分区 |
 | --- | --- |
 | `RC-001` 城市之下 | 序幕 · 一张不存在的卡 / 第一幕 · 零层站台 / 第二幕 · 没有登记的人 / 终幕 · 记忆核心 |
-| `RC-H01` 拳王的旧账 | 第一段 · 旧账 |
+| `RC-H01` 拳王的旧账 | 第一段 · 旧账（霓虹拳王，赛博体育馆） |
+| `RC-H02` 苔藓的根 | 第一段 · 根（苔藓守卫，赛博医院） |
+| `RC-H03` 月蚀之夜 | 第一段 · 月蚀（月蚀术士，1V1 竞技场） |
 
 解锁规则写在 `story_script.section_locked()`，并且 `/story` 入口会再校验一次——手改 URL 跳不进被锁住的分区。
 
@@ -355,8 +357,8 @@ npm run test:story
 - `tests/story_locale.test.cjs` —— **7 项** `node:test` 断言，守模块化语言包：每卡三语齐全、分区与剧情配置一一对应、三语节点键与选项/波次数量一致、各类节点文案非空、卡面字段完整、分区没有放错卡、主语言包不再残留 `cards` / `sections`
 - `tests/battle_space.test.cjs` —— **8 项** `node:test` 断言，跑场地纯逻辑：竞技场 1400×900（人机对抗 / 剧情共用）、出生点 (430,450)、两个补给在界内且不压出生点、无建筑无道路、普通地图 3200×2400 与机场/火车站的道路规则、返回值不共享引用
 - `tests/story_map.test.cjs` —— **5 项** `node:test` 断言：默认/显式 `arena`、写错地图回落并标记 invalid、学校/火车站/体育馆/医院锁定、肉鸽与人机对抗不受影响；带 Flask 的 Python 可用时会真跑 `/battle` 路由，校验注入的 `mapTheme` / `arena` / `duel` 与过场文案
-- `tests/story_ui.test.cjs` —— **13 项** DOM stub 断言，真跑编译后的 `story.js`：赛博世界剧情的英雄选择器、英雄剧情的固定出战、锁定地图标识、未解锁英雄禁用、失败后的重试与退路、胜利推进并请求发奖、已完成分区直达结束页
-- `tests/story_choose.test.cjs` —— **10 项** DOM stub 断言，真跑编译后的 `choose_story.js`：卡数与分区行、锁定分区按钮禁用、解锁分区可点击并跳转、卡上的编号与通关进度
+- `tests/story_ui.test.cjs` —— **19 项** DOM stub 断言，真跑编译后的 `story.js`：赛博世界剧情的英雄选择器、英雄剧情的固定出战、锁定地图标识、未解锁英雄禁用、失败后的重试与退路、胜利推进并请求发奖、已完成分区直达结束页
+- `tests/story_choose.test.cjs` —— **11 项** DOM stub 断言，真跑编译后的 `choose_story.js`：卡数与分区行、锁定分区按钮禁用、解锁分区可点击并跳转、卡上的编号与通关进度
 
 七段都会先重新编译，避免测到旧产物。
 
@@ -819,7 +821,9 @@ A card can be split into several **sections** that unlock **in order**: clearing
 | Card | Sections |
 | --- | --- |
 | `RC-001` City Beneath | Prologue · A Card That Doesn't Exist / Act I · Platform Zero / Act II · The Unregistered / Finale · Memory Core |
-| `RC-H01` The Champion's Debt | Segment 1 · The Debt |
+| `RC-H01` The Champion's Debt | Segment 1 · The Debt (Neon Champion, Cyber Gymnasium) |
+| `RC-H02` Roots of the Moss | Segment 1 · Roots (Moss Guardian, Cyber Hospital) |
+| `RC-H03` Night of the Eclipse | Segment 1 · Eclipse (Eclipse Mage, 1V1 Arena) |
 
 The unlock rule lives in `story_script.section_locked()`, and `/story` re-checks it on entry, so editing the URL cannot open a locked section.
 
@@ -975,8 +979,8 @@ Seven stages:
 - `tests/story_locale.test.cjs` — **7** `node:test` assertions guarding the modular packs: three languages per card, sections matching the script exactly, identical node keys and option/wave counts, non-empty text per node type, complete card metadata, sections filed under the right card, and no leftover `cards` / `sections` in the main packs
 - `tests/battle_space.test.cjs` — **8** `node:test` assertions on the pure geometry: arena is 1400×900 (shared by duels and story battles), spawn (430,450), both supplies inside the border and clear of spawn, no buildings/roads, normal maps at 3200×2400 with airport/station road rules, and returned data not shared between calls
 - `tests/story_map.test.cjs` — **5** `node:test` assertions: default/explicit `arena`, invalid map falling back with an `invalid` flag, school/station/gym/hospital locks, and rogue/duel untouched; when a Flask-capable Python is available it also drives the real `/battle` route and checks the injected `mapTheme` / `arena` / `duel` plus transition copy
-- `tests/story_ui.test.cjs` — **13** DOM-stub assertions that execute the compiled `story.js`: hero picker for Cyber World stories, fixed fighter for Hero stories, locked-map badge, locked heroes disabled, retry and exit after a loss, win advancing to the reward node and calling the reward endpoint, completed sections landing on the end card
-- `tests/story_choose.test.cjs` — **10** DOM-stub assertions that execute the compiled `choose_story.js`: card and section counts, locked sections disabled, unlocked sections clickable and navigating, card code and clear progress on the card
+- `tests/story_ui.test.cjs` — **19** DOM-stub assertions that execute the compiled `story.js`: hero picker for Cyber World stories, fixed fighter for Hero stories, locked-map badge, locked heroes disabled, retry and exit after a loss, win advancing to the reward node and calling the reward endpoint, completed sections landing on the end card
+- `tests/story_choose.test.cjs` — **11** DOM-stub assertions that execute the compiled `choose_story.js`: card and section counts, locked sections disabled, unlocked sections clickable and navigating, card code and clear progress on the card
 
 All seven recompile first so the tests never run against stale output.
 

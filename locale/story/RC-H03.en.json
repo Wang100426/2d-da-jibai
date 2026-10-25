@@ -1,0 +1,105 @@
+{
+  "id": "RC-H03",
+  "card": {
+    "code": "RC-H03",
+    "title": "Night of the Eclipse",
+    "summary": "Seven minutes into the eclipse, the observatory's energy well starts draining moonlight. The Eclipse Mage realises what it's draining is memory.",
+    "quote": "The moon keeps nobody's secrets."
+  },
+  "sections": {
+    "hero-luna-01": {
+      "title": "Segment 1 · Eclipse",
+      "summary": "Every light in the city drops a notch, and a well that shouldn't exist lights up on the observatory roof.",
+      "nodes": {
+        "l1-intro": {
+          "speaker": "Narration",
+          "text": "Seven minutes into the eclipse, the observatory's energy well lit up. Every light in the city dimmed at the same moment."
+        },
+        "l1-hero": {
+          "speaker": "Eclipse Mage",
+          "text": "They're stealing the moon. Or rather, stealing everything the moonlight falls on."
+        },
+        "l1-choice": {
+          "prompt": "The console offers two options. Neither lists the consequences.",
+          "options": [
+            "Shut the well down",
+            "Take control of the well"
+          ]
+        },
+        "l1-shut": {
+          "speaker": "Eclipse Mage",
+          "text": "Shut it down and nobody takes another memory tonight. The price is that the whole district goes dark with it."
+        },
+        "l1-take": {
+          "speaker": "Voice from the Well",
+          "text": "\"Clever. Take it, and you'll see everything they deleted from everyone.\" — The voice comes from the well. It also comes from her own throat."
+        },
+        "l1-battle": {
+          "title": "The Well",
+          "brief": "The guards aren't human. The last one is her.",
+          "waves": [
+            {
+              "label": "Wave 1",
+              "note": "Wellhead · Lockdown",
+              "event": "The eclipse deepens; the edges of your vision go black",
+              "enemies": [
+                {
+                  "hero": "tech",
+                  "count": 2,
+                  "mod": "HP ×1.2"
+                }
+              ],
+              "skills": [
+                {
+                  "name": "Suppression Sweep",
+                  "description": "A circular sweep that slows whatever it hits",
+                  "cooldown": 9,
+                  "damage": 20,
+                  "effect": "Slow 2s"
+                }
+              ]
+            },
+            {
+              "label": "Wave 2",
+              "note": "Moonshade · Same Source",
+              "event": "Another her is projected from the wellhead, moving in perfect sync",
+              "enemies": [
+                {
+                  "hero": "luna",
+                  "count": 1,
+                  "mod": "HP ×1.8 · DMG ×1.3"
+                },
+                {
+                  "hero": "tech",
+                  "count": 1,
+                  "mod": "HP ×1.1 · Armor"
+                }
+              ],
+              "skills": [
+                {
+                  "name": "Moonshade Fall",
+                  "description": "A delayed, wide-area heavy strike",
+                  "cooldown": 13,
+                  "damage": 34,
+                  "effect": "Knockback"
+                }
+              ]
+            }
+          ]
+        },
+        "l1-after": {
+          "speaker": "Narration",
+          "text": "When the moonshade scattered, only a thin film of light was left in the well. The city lit back up as if nothing had happened."
+        },
+        "l1-reward": {
+          "title": "The Well, Extinguished",
+          "description": "The observatory filed a report: equipment failure, no injuries. The report was not deleted."
+        },
+        "l1-end": {
+          "title": "End of Chapter",
+          "text": "She looked up at the moon one last time. Tonight it owed nobody anything."
+        }
+      }
+    }
+  }
+}

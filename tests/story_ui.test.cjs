@@ -123,6 +123,7 @@ function boot(win) {
 const heroList = [
   { id: "volt", name: "霓虹拳王", initial: "拳", palette: { main: "#ff4fa3", light: "#ffd3e8", dark: "#812354" }, locked: false, price: 0 },
   { id: "moss", name: "苔藓守卫", initial: "苔", palette: { main: "#b7ef55", light: "#e9ffb7", dark: "#263b2d" }, locked: false, price: 0 },
+  { id: "luna", name: "月蚀术士", initial: "月", palette: { main: "#8c9aff", light: "#e0e4ff", dark: "#414f9e" }, locked: false, price: 0 },
   { id: "jianghu", name: "江湖客", initial: "江", palette: { main: "#ffd98e", light: "#fff6d8", dark: "#7a4a12" }, locked: true, price: 1000 },
 ];
 
@@ -140,7 +141,7 @@ let stage = boot(makeWindow("?chapter=rc001-p0", cyber, { node: "p0-battle" }, h
 let picker = stage.find((n) => n.className === "story-hero-pick")[0];
 check("赛博世界剧情渲染英雄选择器", Boolean(picker));
 let options = stage.find((n) => n._classes && n._classes.has("story-hero-option"));
-check("选择器列出全部英雄", options.length === 3, String(options.length));
+check("选择器列出全部英雄", options.length === 4, String(options.length));
 check("未解锁英雄被禁用", options.filter((o) => o.disabled).length === 1);
 check("默认选中第一个可用英雄", options[0]._classes.has("selected"), options[0].className);
 
@@ -151,6 +152,19 @@ check("英雄剧情不渲染英雄选择器", !picker);
 const metaText = stage.find((n) => n.className === "story-battle-meta")[0].textContent;
 check("英雄剧情显示固定出战", metaText.includes("本场固定出战") && metaText.includes("霓虹拳王"), metaText);
 check("战斗节点标出锁定地图", metaText.includes("锁定战场") && metaText.includes("赛博体育馆"), metaText);
+
+// 2b. 另外两张英雄剧情：同样固定出战 + 锁地图
+for (const [chapterId, nodeId, heroName, mapLabel] of [
+  ["hero-moss-01", "m1-battle", "苔藓守卫", "赛博医院"],
+  ["hero-luna-01", "l1-battle", "月蚀术士", "1V1 竞技场"],
+]) {
+  const chapter = sections.find((s) => s.id === chapterId);
+  const run = boot(makeWindow(`?chapter=${chapterId}`, chapter, { node: nodeId }, heroList));
+  const meta = run.find((n) => n.className === "story-battle-meta")[0].textContent;
+  check(`${heroName}剧情固定出战`, meta.includes("本场固定出战") && meta.includes(heroName), meta);
+  check(`${heroName}剧情锁定地图`, meta.includes(mapLabel), meta);
+  check(`${heroName}剧情不渲染英雄选择器`, !run.find((n) => n.className === "story-hero-pick")[0]);
+}
 
 // 3. 失败结果：显示重试 + 退出
 stage = boot(makeWindow("?chapter=rc001-p0&result=lose", cyber, { node: "p0-battle" }, heroList));

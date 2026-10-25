@@ -3,37 +3,56 @@
   "card": {
     "code": "RC-H01",
     "title": "The Champion's Debt",
-    "summary": "Three years ago, in an underground match, Neon Champion owed someone a favor. Tonight someone came to collect.",
-    "quote": "The rule on this street is simple: a debt gets paid."
+    "summary": "Three years ago a back-alley bout left Neon Champion owing a favour. Tonight the collector arrives with an old photograph.",
+    "quote": "The rule on this street is simple: debts get paid."
   },
   "sections": {
     "hero-volt-01": {
       "title": "Segment 1 · The Debt",
-      "summary": "Three years ago, in an underground match, Neon Champion owed someone a favor. Tonight someone came to collect.",
+      "summary": "A rainy night, half the cage lights dead. The match that never finished three years ago is about to be settled.",
       "nodes": {
         "h1-intro": {
+          "speaker": "Narration",
+          "text": "It rained all night. Only half the lights in the cage were on, and half the stands were empty — everyone had heard who was coming."
+        },
+        "h1-hero": {
           "speaker": "Neon Champion",
-          "text": "The rule on this street is simple: a debt gets paid. I know the people coming tonight."
+          "text": "The rule on this street is simple: debts get paid. I know the one who's coming tonight."
+        },
+        "h1-choice": {
+          "prompt": "She stands at the edge of the cage. She doesn't step in.",
+          "options": [
+            "Let her finish",
+            "Put the gloves on"
+          ]
+        },
+        "h1-talk": {
+          "speaker": "Pipa Girl",
+          "text": "She isn't here for money. Three years ago the man you let walk out saved a whole street. She came to tell you he's still alive."
+        },
+        "h1-glove": {
+          "speaker": "Neon Champion",
+          "text": "Once the gloves are on, words stop working. But some debts were always meant to be settled with fists."
         },
         "h1-battle": {
-          "title": "Settle the Debt",
-          "brief": "Two waves, both old acquaintances. Finish it and walk away.",
+          "title": "Settling the Debt",
+          "brief": "Two waves, both old acquaintances. Then it's over.",
           "waves": [
             {
               "label": "Wave 1",
-              "note": "Old friend · Probe",
-              "event": "No special event",
+              "note": "Old Friend · Probing",
+              "event": "Rain outside the cage drowns out footsteps",
               "enemies": [
                 {
                   "hero": "pipa",
                   "count": 1,
-                  "mod": "Controller"
+                  "mod": "Control"
                 }
               ],
               "skills": [
                 {
-                  "name": "String Root",
-                  "description": "Roots the target and drains health",
+                  "name": "String Lock",
+                  "description": "Strings pin your feet and keep bleeding you",
                   "cooldown": 10,
                   "damage": 16,
                   "effect": "Root 3s"
@@ -42,8 +61,8 @@
             },
             {
               "label": "Wave 2",
-              "note": "Collection · All in",
-              "event": "The crowd backs off and the arena narrows",
+              "note": "Collection · Pressing",
+              "event": "The crowd backs away; the ring gets smaller",
               "enemies": [
                 {
                   "hero": "jianghu",
@@ -53,8 +72,8 @@
               ],
               "skills": [
                 {
-                  "name": "One-Strike Execution",
-                  "description": "Execution chance spikes against low-health targets",
+                  "name": "Throat Cut",
+                  "description": "Massive execute chance on low-HP targets",
                   "cooldown": 14,
                   "damage": 40,
                   "effect": "Execute"
@@ -63,13 +82,17 @@
             }
           ]
         },
+        "h1-after": {
+          "speaker": "Narration",
+          "text": "When the last one fell, the rain stopped. She left the photograph at the edge of the cage: the Champion three years ago, surrounded by a crowd laughing too loudly."
+        },
         "h1-reward": {
-          "title": "Debt Cleared",
-          "description": "They leave one line behind — \"don't keep me waiting next time\" — and walk into the rain."
+          "title": "Favour Repaid",
+          "description": "She throws back a \"don't keep me waiting next time\" and walks into the rain."
         },
         "h1-end": {
-          "title": "Segment Complete",
-          "text": "The Champion rewraps his wrist guard. Half the street lights come back on. That is enough."
+          "title": "End of Chapter",
+          "text": "The Champion rewraps his wrist. Half the streetlights are on. That's enough."
         }
       }
     }
