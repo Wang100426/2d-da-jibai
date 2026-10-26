@@ -1,5 +1,40 @@
 # 更新日志 / Updates
 
+## 2.3.1
+
+### 中文
+
+- **江湖客 E 技能重做**：从「剑客之刃」改为 **剑雨** —— 向面朝方向推出一道宽 200 的剑气波，沿路径推进 420，经过的敌人受到 30 点伤害（同一道剑雨对同一目标只结算一次）。剑气不阻挡移动，可以穿建筑。
+- 剑雨 2 阶：宽度 200 → 300；3 阶：剑气落地后**保留 3 秒**，对进入落点的敌人持续造成伤害并减速。
+- 新增落剑动画：一排剑沿着剑气波从天而降、插地停一瞬再淡出。
+- **联机大厅大幅简化**：只要昵称和「创建」「加入」两个按钮。点加入展开房间码输入，不再有公开房间列表。
+- **选英雄移到房间里**：进房后可以随便换英雄，未解锁的仍然置灰；换英雄会重置准备状态。
+- **新增 30 秒准备阶段**：房主点「开始」后进入读秒，房间显示倒计时；玩家选好英雄点「准备」，**全员就绪立即开打**，30 秒到点也会自动开始（用各自当前选的英雄，不会被挂机的人拖住）。
+- 准备阶段掉人退回大厅，不会对着空气读秒。
+- **联机肉鸽不再能攻击队友**：之前所有远程玩家都被当成 PvP 目标，普攻和指向技能会锁队友。现在前后端双层拦截 —— 前端不再收集队友为目标，服务端也会丢弃一切玩家之间的伤害包。
+
+### English
+
+- **Jianghu's E skill is remade**: Swordsman's Edge becomes **Sword Rain** — a 200-wide blade wave pushed along your facing direction, travelling 420 units and dealing 30 damage to enemies in its path (one hit per enemy per wave). The wave ignores buildings and does not block movement.
+- Sword Rain tier 2: width 200 → 300. Tier 3: the blades **linger for 3 seconds after landing**, continuously damaging and slowing enemies that enter the impact zone.
+- New falling-blade animation: a row of swords drops from above along the wave, sticks in the ground for a beat, then fades.
+- **The LAN lobby is much simpler**: just a nickname plus **Create** and **Join**. Pressing Join reveals the room-code field, and the public room list is gone.
+- **Hero selection moved inside the room**: switch freely after joining, with locked heroes still greyed out; switching resets your ready state.
+- **New 30-second prep phase**: pressing Start as host begins a countdown shown in the room. Pick a hero, ready up, and **the battle begins the moment everyone is ready** — or automatically when the 30 seconds run out, using whatever each player has selected, so one idle player cannot stall the room.
+- If the room drops to one player during prep it falls back to the lobby instead of counting down at nothing.
+- **Friendly fire is gone from co-op runs**: previously every remote player counted as a PvP target, so basic attacks and targeted skills locked onto teammates. Both layers now block it — the client stops collecting teammates as targets, and the server discards every player-to-player damage packet.
+
+### 日本語
+
+- **江湖客の E スキルを刷新**：「剣客の刃」を **剣雨** に変更。向いている方向へ幅 200 の剣気の波を放ち、420 まで進み、経路上の敵に 30 ダメージ（同じ敵は 1 回の波で 1 度だけ）。波は移動を妨げず、建物も貫通します。
+- 剣雨 2 段階：幅 200 → 300。3 段階：剣が着地後 **3 秒間残り**、着地点に入った敵に継続ダメージと減速を与えます。
+- 剣が降ってくる演出を追加：波に沿って剣が次々と降り、地面に刺さってから消えます。
+- **LAN ロビーを大幅に簡略化**：ニックネームと **「作成」「参加」** の 2 ボタンだけ。「参加」を押すとルームコード入力が展開され、公開ルーム一覧は廃止しました。
+- **ヒーロー選択をルーム内へ移動**：入室後は自由に変更でき、未解放のものはグレー表示のまま。変更すると準備状態は解除されます。
+- **30 秒の準備フェーズを追加**：ホストが「開始」を押すとカウントダウンが始まり、ルームに残り時間が表示されます。ヒーローを選んで「準備」を押し、**全員そろえば即開始**、30 秒経過でも自動開始（各自が選んでいるヒーローで開始するため、放置プレイヤーに足止めされません）。
+- 準備中に人数が 1 人になった場合はロビーへ戻ります。
+- **協力プレイでフレンドリーファイアを廃止**：以前は全てのリモートプレイヤーが PvP 対象だったため、通常攻撃や対象指定スキルが味方にロックしていました。現在はクライアントとサーバーの両方で遮断します。
+
 ## 2.3.0
 
 ### 中文

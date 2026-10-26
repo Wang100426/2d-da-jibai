@@ -26,17 +26,27 @@ function getElement(id) {
 const nameInput = getElement("player-name");
 const heroSelect = getElement("hero-select");
 const codeInput = getElement("room-code");
-const roomList = getElement("room-list");
+const joinRow = getElement("join-row");
+const entryPanel = getElement("mp-entry");
 const waitingRoom = getElement("waiting-room");
+const waitingPlayers = getElement("waiting-players");
+const waitingMessage = getElement("waiting-message");
+const prepBanner = getElement("mp-prep");
+const prepCountdown = getElement("prep-countdown");
+const readyButton = getElement("ready-toggle");
+const startButton = getElement("start-game");
 const toast = getElement("mp-toast");
 const lanAddresses = getElement("lan-addresses");
 const storageKey = "2d-da-jibai-lobby";
 let playerId = "";
 let currentRoomId = "";
 let isHost = false;
+let myReady = false;
 let roomPollTimer = 0;
-let roomListTimer = 0;
 let toastTimer = 0;
+let jumping = false;
+/** 上一帧看到的英雄，避免轮询把玩家的选择覆盖掉。 */
+let heroDirty = false;
 try {
     nameInput.value = localStorage.getItem("2d-da-jibai-name") || "";
     const stored = JSON.parse(localStorage.getItem(storageKey) || "null");
@@ -90,80 +100,95 @@ function currentName() {
 function saveMembership() {
     localStorage.setItem(storageKey, JSON.stringify({ playerId, roomId: currentRoomId }));
 }
+function stopPolling() {
+    window.clearInterval(roomPollTimer);
+    roomPollTimer = 0;
+}
 function clearMembership() {
     playerId = "";
     currentRoomId = "";
     isHost = false;
+    myReady = false;
     localStorage.removeItem(storageKey);
-    window.clearInterval(roomPollTimer);
+    stopPolling();
     waitingRoom.hidden = true;
+    entryPanel.hidden = false;
+    joinRow.hidden = true;
+    getElement("join-toggle").setAttribute("aria-expanded", "false");
 }
 function escapeHtml(value) {
     const element = document.createElement("span");
     element.textContent = value;
     return element.innerHTML;
 }
-function renderRooms(rooms) {
-    if (!rooms.length) {
-        roomList.innerHTML = `<p class="empty-state">${tx("暂时没有等待中的房间，创建一个吧。")}</p>`;
-        return;
-    }
-    roomList.innerHTML = rooms.map((room) => {
-        const full = room.count >= room.capacity;
-        const disabled = full || room.status !== "waiting";
-        return `<article class="room-row">
-      <div class="room-code">${escapeHtml(room.room_id)}</div>
-      <div class="room-summary"><b>${locale.lobby.room_name.replace("{name}", escapeHtml(room.host_name))}</b><small>${room.count}/${room.capacity} ${tx("人")} · ${escapeHtml(room.players.join(locale.lobby.player_separator))}</small></div>
-      <button type="button" data-join="${escapeHtml(room.room_id)}" ${disabled ? "disabled" : ""}>${disabled ? tx("不可加入") : tx("加入")}</button>
-    </article>`;
-    }).join("");
-    roomList.querySelectorAll("[data-join]").forEach((button) => {
-        button.addEventListener("click", () => joinRoom(button.dataset.join || ""));
-    });
-}
-async function refreshRooms() {
-    try {
-        const result = await api("");
-        renderRooms(result.rooms || []);
-    }
-    catch (error) {
-        roomList.innerHTML = `<p class="empty-state error">${escapeHtml(localizeLobbyText(error instanceof Error ? error.message : tx("房间列表加载失败")))}</p>`;
-    }
-}
-function showRoom(room) {
-    currentRoomId = room.room_id;
-    isHost = room.host_id === playerId;
-    getElement("current-room-code").textContent = room.room_id;
-    const players = getElement("waiting-players");
-    players.innerHTML = room.players.map((player, index) => {
+function renderPlayers(room) {
+    waitingPlayers.innerHTML = room.players.map((player, index) => {
         const hero = MP_HEROES.find((item) => item.id === player.hero_id);
-        const host = player.player_id === room.host_id;
         const palette = hero?.palette;
         const paletteStyle = palette
             ? ` style="--hero-main:${escapeHtml(palette.main)};--hero-light:${escapeHtml(palette.light)};--hero-dark:${escapeHtml(palette.dark)}"`
             : "";
-        return `<div class="waiting-player">
+        const isSelf = player.player_id === playerId;
+        const isRoomHost = player.player_id === room.host_id;
+        const state = room.status === "waiting"
+            ? ""
+            : player.ready
+                ? `<em class="player-state ready">${escapeHtml(tx("已准备"))}</em>`
+                : `<em class="player-state">${escapeHtml(tx("未准备"))}</em>`;
+        return `<div class="waiting-player${player.ready ? " is-ready" : ""}">
       <span class="lobby-avatar ${escapeHtml(hero?.accent || player.accent)}"${paletteStyle}>${escapeHtml(hero?.initial || player.initial)}</span>
-      <span><b>${escapeHtml(player.name)}${player.player_id === playerId ? locale.lobby.you : ""}</b><small>${escapeHtml(hero?.name || player.hero_name)}${host ? locale.lobby.host : ""}</small></span>
-      <i>PLAYER 0${index + 1}</i>
+      <span><b>${escapeHtml(player.name)}${isSelf ? locale.lobby.you : ""}</b><small>${escapeHtml(hero?.name || player.hero_name)}${isRoomHost ? locale.lobby.host : ""}</small></span>
+      ${state}<i>PLAYER 0${index + 1}</i>
     </div>`;
     }).join("");
-    const startButton = getElement("start-game");
-    startButton.hidden = !isHost;
-    startButton.disabled = room.players.length < 2;
-    getElement("waiting-message").textContent = room.players.length < 2
-        ? tx("至少需要 2 名玩家，分享房间码邀请朋友加入。")
-        : isHost ? tx("玩家已就绪，房主可以开始探索。") : tx("等待房主开始游戏…");
+}
+function showRoom(room) {
+    currentRoomId = room.room_id;
+    isHost = room.host_id === playerId;
+    const self = room.players.find((item) => item.player_id === playerId);
+    myReady = Boolean(self?.ready);
+    getElement("current-room-code").textContent = room.room_id;
+    entryPanel.hidden = true;
     waitingRoom.hidden = false;
     saveMembership();
+    renderPlayers(room);
+    // 英雄选择：不要用轮询结果覆盖玩家正在改的值
+    if (self && !heroDirty) {
+        const available = MP_HEROES.some((hero) => hero.id === self.hero_id);
+        if (available)
+            heroSelect.value = self.hero_id;
+    }
+    heroDirty = false;
+    heroSelect.disabled = room.status === "playing";
+    const preparing = room.status === "preparing";
+    prepBanner.hidden = !preparing;
+    if (preparing)
+        prepCountdown.textContent = String(Math.max(0, Math.ceil(room.prep_remaining)));
+    readyButton.hidden = !preparing;
+    readyButton.textContent = myReady ? tx("取消准备") : tx("准备");
+    readyButton.classList.toggle("is-ready", myReady);
+    startButton.hidden = !isHost || preparing;
+    startButton.disabled = room.players.length < 2;
+    if (preparing) {
+        waitingMessage.textContent = myReady ? tx("已准备，等待其他玩家…") : tx("选好英雄后点准备。");
+    }
+    else if (room.players.length < 2) {
+        waitingMessage.textContent = tx("至少需要 2 名玩家，把房间码发给朋友。");
+    }
+    else {
+        waitingMessage.textContent = isHost ? tx("全员到齐后点「开始」。") : tx("等待房主开始…");
+    }
     if (room.status === "playing") {
-        const self = room.players.find((item) => item.player_id === playerId);
         const heroId = self?.hero_id || heroSelect.value;
-        window.location.href = `/battle?hero=${encodeURIComponent(heroId)}&room=${encodeURIComponent(room.room_id)}&pid=${encodeURIComponent(playerId)}`;
+        if (!jumping) {
+            jumping = true;
+            stopPolling();
+            window.location.replace(`/battle?hero=${encodeURIComponent(heroId)}&room=${encodeURIComponent(room.room_id)}&pid=${encodeURIComponent(playerId)}`);
+        }
     }
 }
 async function pollRoom() {
-    if (!currentRoomId || !playerId)
+    if (!currentRoomId || !playerId || jumping)
         return;
     try {
         const result = await api(`/${encodeURIComponent(currentRoomId)}`);
@@ -173,43 +198,73 @@ async function pollRoom() {
     catch (error) {
         clearMembership();
         showToast(error instanceof Error ? error.message : tx("房间已关闭，请重新加入。"), true);
-        await refreshRooms();
     }
+}
+function startPolling() {
+    stopPolling();
+    roomPollTimer = window.setInterval(() => void pollRoom(), 900);
+}
+async function enterRoom(result) {
+    playerId = result.player_id || "";
+    if (!result.room || !playerId)
+        throw new Error(tx("服务器没有返回房间信息。"));
+    jumping = false;
+    showRoom(result.room);
+    startPolling();
 }
 async function createRoom() {
     try {
-        const result = await api("", { name: currentName(), hero_id: heroSelect.value });
-        playerId = result.player_id || "";
-        if (!result.room || !playerId)
-            throw new Error(tx("服务器没有返回房间信息。"));
-        showRoom(result.room);
-        window.clearInterval(roomPollTimer);
-        roomPollTimer = window.setInterval(() => void pollRoom(), 1200);
-        await refreshRooms();
+        await enterRoom(await api("", { name: currentName() }));
     }
     catch (error) {
         showToast(error instanceof Error ? error.message : tx("创建房间失败。"), true);
     }
 }
 async function joinRoom(roomId) {
+    if (!roomId) {
+        showToast(tx("请输入房间码。"), true);
+        codeInput.focus();
+        return;
+    }
     try {
-        const result = await api("/join", { room_id: roomId, name: currentName(), hero_id: heroSelect.value });
-        playerId = result.player_id || "";
-        if (!result.room || !playerId)
-            throw new Error(tx("服务器没有返回房间信息。"));
-        showRoom(result.room);
-        window.clearInterval(roomPollTimer);
-        roomPollTimer = window.setInterval(() => void pollRoom(), 1200);
-        await refreshRooms();
+        await enterRoom(await api("/join", { room_id: roomId, name: currentName() }));
     }
     catch (error) {
         showToast(error instanceof Error ? error.message : tx("加入房间失败。"), true);
     }
 }
-async function startGame() {
+async function changeHero(heroId) {
+    if (!currentRoomId || !playerId)
+        return;
+    heroDirty = true;
     try {
-        await api(`/${encodeURIComponent(currentRoomId)}/start`, { player_id: playerId });
-        await pollRoom();
+        const result = await api(`/${encodeURIComponent(currentRoomId)}/hero`, { player_id: playerId, hero_id: heroId });
+        if (result.room)
+            showRoom(result.room);
+    }
+    catch (error) {
+        showToast(error instanceof Error ? error.message : tx("切换英雄失败。"), true);
+    }
+}
+async function toggleReady() {
+    if (!currentRoomId || !playerId)
+        return;
+    try {
+        const result = await api(`/${encodeURIComponent(currentRoomId)}/ready`, { player_id: playerId, ready: !myReady });
+        if (result.room)
+            showRoom(result.room);
+    }
+    catch (error) {
+        showToast(error instanceof Error ? error.message : tx("准备状态更新失败。"), true);
+    }
+}
+async function startGame() {
+    if (!currentRoomId || !playerId)
+        return;
+    try {
+        const result = await api(`/${encodeURIComponent(currentRoomId)}/start`, { player_id: playerId });
+        if (result.room)
+            showRoom(result.room);
     }
     catch (error) {
         showToast(error instanceof Error ? error.message : tx("无法开始游戏。"), true);
@@ -225,21 +280,26 @@ async function leaveRoom() {
         }
     }
     clearMembership();
-    await refreshRooms();
 }
 getElement("create-room").addEventListener("click", () => void createRoom());
-getElement("join-room").addEventListener("click", () => void joinRoom(codeInput.value.trim()));
-getElement("refresh-rooms").addEventListener("click", () => void refreshRooms());
-getElement("start-game").addEventListener("click", () => void startGame());
+getElement("join-toggle").addEventListener("click", () => {
+    const open = joinRow.hidden;
+    joinRow.hidden = !open;
+    getElement("join-toggle").setAttribute("aria-expanded", String(open));
+    if (open)
+        codeInput.focus();
+});
+getElement("join-room").addEventListener("click", () => void joinRoom(codeInput.value.trim().toUpperCase()));
 getElement("leave-room").addEventListener("click", () => void leaveRoom());
+readyButton.addEventListener("click", () => void toggleReady());
+startButton.addEventListener("click", () => void startGame());
+heroSelect.addEventListener("change", () => void changeHero(heroSelect.value));
 codeInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter")
-        void joinRoom(codeInput.value.trim());
+        void joinRoom(codeInput.value.trim().toUpperCase());
 });
-void refreshRooms();
 void showLanAddresses();
-roomListTimer = window.setInterval(() => void refreshRooms(), 3500);
 if (currentRoomId && playerId) {
     void pollRoom();
-    roomPollTimer = window.setInterval(() => void pollRoom(), 1200);
+    startPolling();
 }

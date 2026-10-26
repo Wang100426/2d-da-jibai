@@ -126,6 +126,36 @@ interface JianghuDash {
   lastTarget?: EnemyUnit;
 }
 
+/** 剑雨（江湖客 E）：沿朝向推出的一道剑气波；3 阶会落地保留一段时间。 */
+interface JianghuRain {
+  id: number;
+  /** 飞行方向（单位向量）。 */
+  dirX: number;
+  dirY: number;
+  /** 施放时玩家所在位置，波前 = 起点 + 方向 × 已推进距离。 */
+  startX: number;
+  startY: number;
+  /** 已推进距离与总射程。 */
+  travelled: number;
+  range: number;
+  speed: number;
+  /** 波宽：垂直于飞行方向的判定半宽。 */
+  halfWidth: number;
+  damage: number;
+  /** 落地后保留秒数（0 = 不保留）。 */
+  linger: number;
+  lingerLeft: number;
+  /** 减速持续秒数。 */
+  slow: number;
+  /** 飞行阶段已命中的敌人，避免同一波反复打同一个目标。 */
+  hitOutbound: Set<string>;
+  /** 落地区域的持续结算计时。 */
+  tickTimer: number;
+  /** 视觉：距下一次生成落剑的计时。 */
+  swordTimer: number;
+  landed: boolean;
+}
+
 interface TabletVolley {
   x: number;
   y: number;
@@ -187,10 +217,12 @@ interface SkillConfig {
   dash_interval?: number;
   dash_max?: number;
   dash_stun?: number;
-  /** 江湖客·剑客之刃：强化普攻次数、伤害倍率（1.2 = +20%）、吸血比例。 */
-  blade_charges?: number;
-  blade_damage_scale?: number;
-  blade_lifesteal?: number;
+  /** 江湖客·剑雨：剑气波宽度、飞行距离、速度、落地保留秒数与减速时长。 */
+  rain_width?: number;
+  rain_range?: number;
+  rain_speed?: number;
+  rain_linger?: number;
+  rain_slow?: number;
   /** 江湖客·御剑飞行：持续时长、移速倍率（1.5 = +50%）、闪避加成。 */
   flight_duration?: number;
   flight_speed_scale?: number;
@@ -471,7 +503,7 @@ interface FloatingText {
 }
 
 interface SkillVisual {
-  type: "lightning" | "beam" | "aura" | "meteor" | "impact" | "wave" | "disc";
+  type: "lightning" | "beam" | "aura" | "meteor" | "impact" | "wave" | "disc" | "sword";
   x: number;
   y: number;
   targetX: number;
@@ -660,6 +692,12 @@ type MapTheme = "city" | "hospital" | "music" | "gym" | "airport" | "station" | 
 const mapTheme = config.mapTheme;
 /** 1V1 竞技场：人机对抗与剧情战斗共用的小地图（只有配色沿用 city）。 */
 const arena = Boolean(config.arena);
+/**
+ * 局域网联机目前只有协作肉鸽，`remotePlayers` 里全是队友。
+ * 队友之间不结算伤害：所有 PvP 目标收集与攻击上报都走这个开关。
+ * （人机对抗的对手是本地 AI，不经过 remotePlayers。）
+ */
+const friendlyFire = false;
 /** 地图尺寸 / 出生点 / 补给 / 静态物件全部由纯函数决定，方便单测。 */
 const battleSpace = resolveBattleSpace({ duel: config.duel, arena, mapTheme });
 const map = { width: battleSpace.width, height: battleSpace.height };
@@ -777,13 +815,12 @@ let empoweredCountsAsSkill = false;
 let empoweredFrenzyTurns = 0;
 
 /* ---------- 江湖客（jianghu） ---------- */
-/** 剑客之刃：剩余强化普攻次数、伤害倍率、吸血比例。 */
-let bladeCharges = 0;
-let bladeDamageScale = 1.2;
-let bladeLifesteal = 0.1;
 let jianghuDashSerial = 0;
 /** 侠客行：进行中的位移链。 */
 let jianghuDash: JianghuDash | undefined;
+/** 剑雨：飞行中与落地后仍在结算的剑气波。 */
+let jianghuRains: JianghuRain[] = [];
+let jianghuRainSerial = 0;
 
 /* ---------- 滑板小子（skater） ---------- */
 /** 当前移速加成倍数（被动每次普攻 +0.5%，永久叠加）。 */
@@ -3845,6 +3882,28 @@ function drawSkillVisuals(): void {
       context.beginPath();
       context.arc(visual.x, visual.y, radius * 0.72, 0, Math.PI * 2);
       context.stroke();
+    } else if (visual.type === "sword") {
+      // 剑雨：一把剑从半空落下，插在地上停一会儿再淡出
+      const drop = Math.min(1, progress / 0.28);
+      const fall = 1 - drop;
+      const shrink = progress > 0.82 ? Math.max(0, 1 - (progress - 0.82) / 0.18) : 1;
+      const length = 26 * shrink;
+      if (length > 0.6) {
+        context.translate(visual.x, visual.y - 46 * fall);
+        context.rotate(0.42);
+        context.shadowColor = visual.color;
+        context.shadowBlur = 12;
+        context.fillStyle = visual.color;
+        // 剑身
+        context.fillRect(-1.5, -length, 3, length);
+        // 护手与剑柄
+        context.fillRect(-5.5, -length - 4, 11, 4);
+        context.fillRect(-1.4, -length - 10, 2.8, 6);
+        // 剑尖高光
+        context.fillStyle = "#ffffff";
+        context.globalAlpha = alpha * 0.8;
+        context.fillRect(-0.7, -length, 1.4, length * 0.55);
+      }
     } else if (visual.type === "disc") {
       // 追踪唱片：旋转的圆盘
       const size = (visual.radius || 24) * (1 - progress * 0.3);
@@ -4565,6 +4624,7 @@ function nearestEnemy(maxRange: number): EnemyUnit | undefined {
 }
 
 function remotePlayersInRange(maxRange: number): RemotePlayer[] {
+  if (!friendlyFire) return [];
   return [...remotePlayers.values()].filter((remote) =>
     remote.hp > 0 && Math.hypot(player.x - remote.x, player.y - remote.y) <= maxRange);
 }
@@ -4575,7 +4635,7 @@ function queuePvpAttack(
   skillId?: string,
   castId?: string,
 ): void {
-  if (!config.multiplayer || playerActionsLocked() || (!targets.length && kind !== "skill")) return;
+  if (!config.multiplayer || !friendlyFire || playerActionsLocked() || (!targets.length && kind !== "skill")) return;
   if (kind === "skill" && skillId) {
     for (let index = pendingPvpAttacks.length - 1; index >= 0; index -= 1) {
       const pending = pendingPvpAttacks[index];
@@ -4595,7 +4655,7 @@ function queuePvpAction(
   skillId?: string,
   castId?: string,
 ): void {
-  if (!config.multiplayer) return;
+  if (!config.multiplayer || !friendlyFire) return;
   const targetIds = [...new Set(targets.map((target) => target.player_id))];
   pendingPvpAttacks.push({
     id: `${config.multiplayer.player_id}-${Date.now()}-${attackSequence++}`,
@@ -4607,11 +4667,13 @@ function queuePvpAction(
 }
 
 function nearbyPvpTargets(x: number, y: number, radius: number): RemotePlayer[] {
+  if (!friendlyFire) return [];
   return [...remotePlayers.values()].filter((remote) =>
     remote.hp > 0 && Math.hypot(remote.x - x, remote.y - y) <= radius);
 }
 
 function nearestRemoteAt(x: number, y: number, range: number): RemotePlayer | undefined {
+  if (!friendlyFire) return undefined;
   return [...remotePlayers.values()]
     .filter((remote) => remote.hp > 0 && Math.hypot(remote.x - x, remote.y - y) <= range)
     .sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))[0];
@@ -5166,7 +5228,7 @@ function jianghuFlightSpeedScale(): number {
   return jianghuFlightSkill()?.flight_speed_scale || 1.5;
 }
 
-/** 定点治疗：剑客之刃的吸血走这里，和被动吸血分开结算。 */
+/** 定点治疗：按固定数值回血（吸血类效果走这里，和被动吸血分开结算）。 */
 function healPlayer(amount: number): number {
   const restored = Math.min(playerState.maxHp - playerState.hp, Math.max(0, Math.floor(amount)));
   if (restored <= 0) return 0;
@@ -5275,20 +5337,133 @@ function castXiaKeXing(skill: SkillConfig): void {
   addFloatingText(player.x, player.y - 40, t("float.jianghu_dash"), "#ffd98e");
 }
 
-/** 剑客之刃（E）：强化接下来 3 次普攻，增伤并附带吸血。 */
-function castJianghuBlade(skill: SkillConfig): void {
-  bladeCharges = Math.max(1, Math.round(skill.blade_charges || 3));
-  bladeDamageScale = skill.blade_damage_scale || 1.2;
-  bladeLifesteal = skill.blade_lifesteal || 0.1;
+/** 剑雨（E）：向面朝方向推出一道剑气波，宽度内的敌人受到中等伤害；3 阶落地后继续伤人并减速。 */
+function castJianghuSwordRain(skill: SkillConfig): void {
+  const dirX = facing.x || 1;
+  const dirY = facing.y || 0;
+  const halfWidth = Math.max(40, (skill.rain_width || 200) / 2);
+  jianghuRains.push({
+    id: ++jianghuRainSerial,
+    dirX,
+    dirY,
+    startX: player.x,
+    startY: player.y,
+    travelled: 0,
+    range: Math.max(80, skill.rain_range || 420),
+    speed: Math.max(120, skill.rain_speed || 620),
+    halfWidth,
+    damage: skill.damage,
+    linger: Math.max(0, skill.rain_linger || 0),
+    lingerLeft: 0,
+    slow: Math.max(0, skill.rain_slow || 0),
+    hitOutbound: new Set<string>(),
+    tickTimer: 0,
+    swordTimer: 0,
+    landed: false,
+  });
   addSkillVisual(skill);
-  addFloatingText(player.x, player.y - 38, t("float.jianghu_blade_ready", { charges: bladeCharges }), "#ffd98e");
-  showToast(t("skill.jianghu_blade", {
-    name: skill.name,
-    charges: bladeCharges,
-    percent: Math.round((bladeDamageScale - 1) * 100),
-    lifesteal: Math.round(bladeLifesteal * 100),
-  }));
-  updateSkillButtons();
+  addFloatingText(player.x, player.y - 38, t("float.jianghu_sword_rain"), "#ffd98e");
+  showToast(t("skill.jianghu_sword_rain", { name: skill.name, width: Math.round(halfWidth * 2) }));
+}
+
+/** 敌人相对剑雨起点的「沿方向投影 / 垂直偏移」。 */
+function rainOffsets(rain: JianghuRain, x: number, y: number): { along: number; aside: number } {
+  const dx = x - rain.startX;
+  const dy = y - rain.startY;
+  return {
+    along: dx * rain.dirX + dy * rain.dirY,
+    aside: Math.abs(dx * -rain.dirY + dy * rain.dirX),
+  };
+}
+
+/** 在剑雨波前那一带撒几把落剑。 */
+function spawnRainSwords(rain: JianghuRain, atAlong: number, count: number, duration: number): void {
+  for (let i = 0; i < count; i += 1) {
+    const aside = (Math.random() * 2 - 1) * rain.halfWidth * 0.92;
+    const along = atAlong + (Math.random() * 2 - 1) * 22;
+    skillVisuals.push({
+      type: "sword",
+      x: rain.startX + rain.dirX * along - rain.dirY * aside,
+      y: rain.startY + rain.dirY * along + rain.dirX * aside,
+      targetX: 0,
+      targetY: 0,
+      age: 0,
+      duration,
+      color: "#ffe9b0",
+    });
+  }
+}
+
+function damageRainVictims(rain: JianghuRain, minAlong: number, maxAlong: number, bucket?: Set<string>, scale = 1): number {
+  let hits = 0;
+  enemies.forEach((enemy, index) => {
+    if (enemy.hp <= 0) return;
+    const key = enemy.id || `rain-${rain.id}-${index}`;
+    if (bucket?.has(key)) return;
+    const { along, aside } = rainOffsets(rain, enemy.x, enemy.y);
+    if (along < minAlong || along > maxAlong) return;
+    if (aside > rain.halfWidth) return;
+    bucket?.add(key);
+    hitEnemy(enemy, Math.round(rain.damage * scale));
+    spawnImpact(enemy.x, enemy.y, "#ffd98e");
+    hits += 1;
+  });
+  return hits;
+}
+
+function advanceJianghuRain(dt: number): void {
+  if (!jianghuRains.length) return;
+  for (let index = jianghuRains.length - 1; index >= 0; index -= 1) {
+    const rain = jianghuRains[index];
+    rain.swordTimer -= dt;
+    if (!rain.landed) {
+      rain.travelled = Math.min(rain.range, rain.travelled + rain.speed * dt);
+      // 已扫过的整条路径都判定（靠 hitOutbound 去重，不会重复伤害）
+      damageRainVictims(rain, 0, rain.travelled, rain.hitOutbound);
+      if (rain.swordTimer <= 0) {
+        rain.swordTimer = 0.06;
+        spawnRainSwords(rain, rain.travelled, 2, 0.42);
+      }
+      if (rain.travelled >= rain.range) {
+        rain.landed = true;
+        rain.lingerLeft = rain.linger;
+        rain.tickTimer = 0;
+        spawnImpact(rain.startX + rain.dirX * rain.range, rain.startY + rain.dirY * rain.range, "#ffe9b0");
+        if (rain.linger <= 0) {
+          jianghuRains.splice(index, 1);
+          continue;
+        }
+      }
+    } else {
+      // 落地：矩形区域持续伤人，并按间隔刷新减速
+      rain.lingerLeft = Math.max(0, rain.lingerLeft - dt);
+      rain.tickTimer -= dt;
+      if (rain.tickTimer <= 0) {
+        // 落地区域按 60% 伤害每隔 0.6 秒结算一次，避免 3 阶比大招还猛
+        rain.tickTimer = 0.6;
+        const hits = damageRainVictims(rain, rain.range - 90, rain.range + 30, undefined, 0.6);
+        if (rain.slow > 0) {
+          enemies.forEach((enemy) => {
+            if (enemy.hp <= 0) return;
+            const { along, aside } = rainOffsets(rain, enemy.x, enemy.y);
+            if (along < rain.range - 90 || along > rain.range + 30) return;
+            if (aside > rain.halfWidth) return;
+            enemy.effects["减速"] = Math.max(enemy.effects["减速"] || 0, rain.slow);
+          });
+        }
+        if (hits > 0) spawnImpact(
+          rain.startX + rain.dirX * rain.range,
+          rain.startY + rain.dirY * rain.range,
+          "#ffd98e",
+        );
+      }
+      if (rain.swordTimer <= 0) {
+        rain.swordTimer = 0.34;
+        spawnRainSwords(rain, rain.range, 1, 0.9);
+      }
+      if (rain.lingerLeft <= 0) jianghuRains.splice(index, 1);
+    }
+  }
 }
 
 /** 御剑飞行（R）：短时间提升移速与闪避。 */
@@ -5827,8 +6002,9 @@ function castSkill(index: number): void {
     castSakuraSong(skill);
   } else if (skill.action === "jianghu_xia_ke_xing") {
     castXiaKeXing(skill);
-  } else if (skill.action === "jianghu_blade") {
-    castJianghuBlade(skill);
+  } else if (skill.action === "jianghu_sword_rain") {
+    castJianghuSwordRain(skill);
+    queuePvpAttack("skill", [], skill.id);
   } else if (skill.action === "jianghu_flight") {
     castJianghuFlight(skill);
   } else if (skill.action === "skater_smash") {
@@ -5915,8 +6091,6 @@ function basicAttack(): boolean {
   const baseEmpoweredDamage = isResonanceEmpower
     ? heroCombat.basic_damage * (empoweredSkill?.empower_damage_scale || 1.5)
     : empoweredSkill?.empowered_damage || 34;
-  // 剑客之刃：强化期间每次普攻额外增伤，命中后按造成的伤害吸血
-  const bladeStrike = bladeCharges > 0;
   let damage = wasEmpowered
     ? Math.round(baseEmpoweredDamage + playerState.equipmentAttackBonus)
     : heroCombat.basic_damage + playerState.equipmentAttackBonus;
@@ -5924,7 +6098,6 @@ function basicAttack(): boolean {
   if (heroPassive.id === "skater_momentum") {
     damage += Math.round(heroCombat.basic_damage * (skaterSpeedMultiplier - 1));
   }
-  if (bladeStrike) damage = Math.round(damage * bladeDamageScale);
   if (heroCombat.basic_beam && !wasEmpowered) {
     skillVisuals.push({
       type: "beam", x: player.x, y: player.y, targetX: target.x, targetY: target.y,
@@ -5961,19 +6134,11 @@ function basicAttack(): boolean {
     }
   }
   playerState.energy = Math.min(playerState.maxEnergy, playerState.energy + 5);
-  if (bladeStrike) {
-    // 剑客之刃：消耗一层强化，按实际造成的伤害吸血
-    bladeCharges = Math.max(0, bladeCharges - 1);
-    const healed = healPlayer(basicDealt * bladeLifesteal);
-    showToast(t("skill.jianghu_blade_hit", { damage: basicDealt, heal: healed }));
-    updateSkillButtons();
-  } else {
-    showToast(wasEmpowered
-      ? (isResonanceEmpower
-        ? t("skill.volt2_empowered_hit", { damage })
-        : t("skill.empowered_hit", { damage }))
-      : heroCombat.basic_hit_message.replace("{damage}", String(damage)));
-  }
+  showToast(wasEmpowered
+    ? (isResonanceEmpower
+      ? t("skill.volt2_empowered_hit", { damage })
+      : t("skill.empowered_hit", { damage }))
+    : heroCombat.basic_hit_message.replace("{damage}", String(damage)));
   onPlayerBasicAttack();
   updateHud();
   return true;
@@ -6052,10 +6217,8 @@ function updateSkillButtons(): void {
     if (!skill) return;
     const remaining = skillCooldowns.get(skill.id) || 0;
     const label = button.querySelector<HTMLElement>(".skill-cooldown");
-    // 剑客之刃：有强化层数时优先显示剩余次数，而不是冷却
-    const charges = skill.action === "jianghu_blade" ? bladeCharges : 0;
-    const active = remaining > 0 || charges > 0;
-    const cooldownText = charges > 0 ? `×${charges}` : remaining > 0 ? `${remaining.toFixed(1)}s` : "";
+    const active = remaining > 0;
+    const cooldownText = remaining > 0 ? `${remaining.toFixed(1)}s` : "";
     if (label && label.textContent !== cooldownText) label.textContent = cooldownText;
     if (button.classList.contains("cooling") !== active) button.classList.toggle("cooling", active);
     const lowEnergy = playerState.energy < skill.cost;
@@ -6169,6 +6332,7 @@ function updateCombat(dt: number): void {
     }
   });
   advanceSakuraEffects(dt);
+  advanceJianghuRain(dt);
   // 剧情战斗走剧本事件，不再叠加地图随机事件（避免同一波里两套意外伤害）
   if (!storyBattle) updateRandomMapEvents(dt);
   enemies.forEach((enemy) => {

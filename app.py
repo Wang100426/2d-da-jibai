@@ -18,6 +18,13 @@ ROOMS = {}
 ROOMS_LOCK = threading.RLock()
 ROOM_CAPACITY = 8
 ROOM_PLAYER_TIMEOUT = 30
+# 房主点「开始」后的准备时间：期间可以换英雄并点准备，全员就绪或读秒结束即开战。
+ROOM_PREP_SECONDS = 30
+# 联机目前只有协作肉鸽：玩家之间的伤害结算一律关闭，队友攻击直接丢弃。
+# 将来要做 PvP 联机时把它改成 True 即可（前端 friendlyFire 同步打开）。
+MP_FRIENDLY_FIRE = False
+# 进房不选英雄时的占位英雄（免费，永远解锁，保证快照里有完整配色与名字）。
+DEFAULT_ROOM_HERO = "volt"
 # 最后一个主题（school）不参与联机房间随机；新增主题请插在它前面。
 MAP_THEMES = ("city", "hospital", "music", "gym", "airport", "station", "school")
 
@@ -450,10 +457,10 @@ HEROES = [
              "dash_interval": 0.5, "dash_max": 5, "dash_distance": 130,
              "tier_effects": {2: {"label": "侠客行每次位移攻击额外造成 0.5 秒眩晕", "patch": {"dash_stun": {"add": 0.5, "base": 0}}},
                               3: {"label": "位移间隔缩短至 0.25 秒 · 位移次数提升到 10 次", "patch": {"dash_interval": {"set": 0.25}, "dash_max": {"set": 10}}}}},
-            {"id": "jianghu-blade", "name": "剑客之刃", "description": "强化接下来 3 次普攻 · 伤害提升并吸血", "kind": "小技能", "target": "self", "action": "jianghu_blade", "cost": 25, "cooldown": 9, "damage": 0, "effect": "", "effect_turns": 0,
-             "blade_charges": 3, "blade_damage_scale": 1.2, "blade_lifesteal": 0.1,
-             "tier_effects": {2: {"label": "剑客之刃普攻伤害加成 20% → 40%", "patch": {"blade_damage_scale": {"add": 0.2}}},
-                              3: {"label": "剑客之刃吸血 10% → 25%", "patch": {"blade_lifesteal": {"set": 0.25}}}}},
+            {"id": "jianghu-sword-rain", "name": "剑雨", "description": "向面朝方向推出剑雨 · 宽幅剑气造成中等伤害", "kind": "小技能", "target": "self", "action": "jianghu_sword_rain", "cost": 25, "cooldown": 9, "damage": 30, "effect": "", "effect_turns": 0,
+             "rain_width": 200, "rain_range": 420, "rain_speed": 620, "rain_linger": 0, "rain_slow": 0,
+             "tier_effects": {2: {"label": "剑雨宽度 200 → 300", "patch": {"rain_width": {"set": 300}}},
+                              3: {"label": "剑落地后保留 3 秒，对经过的敌人造成伤害和减速", "patch": {"rain_linger": {"set": 3}, "rain_slow": {"set": 2}}}}},
             {"id": "jianghu-flight", "name": "御剑飞行", "description": "短时间内速度与闪避大幅提升", "kind": "小技能", "target": "self", "action": "jianghu_flight", "cost": 30, "cooldown": 12, "damage": 0, "effect": "", "effect_turns": 0,
              "flight_duration": 3, "flight_speed_scale": 1.5, "flight_dodge": 0.5,
              "tier_effects": {2: {"label": "御剑飞行持续时间 3 秒 → 5 秒", "patch": {"flight_duration": {"set": 5}}},
@@ -1021,7 +1028,8 @@ def map_codex():
 
 
 def public_player(player):
-    hero = hero_by_id(player["hero_id"])
+    # 准备阶段允许先占位再选英雄，这里兜底成免费英雄，避免快照炸掉
+    hero = hero_by_id(player.get("hero_id") or DEFAULT_ROOM_HERO)
     effects = {
         name: max(0, round(expires_at - time.time(), 2))
         for name, expires_at in player["effects"].items()
@@ -1034,6 +1042,7 @@ def public_player(player):
         "hero_name": hero["name"],
         "initial": hero["initial"],
         "accent": hero["accent"],
+        "ready": bool(player.get("ready")),
         "x": player["x"],
         "y": player["y"],
         "hp": player["hp"],
@@ -1060,6 +1069,9 @@ def active_effect(player, name, now):
 
 
 def apply_player_attack(room, attacker, attack, now):
+    # 协作模式：队友之间不结算伤害，任何玩家攻击包都在这里被丢弃。
+    if not MP_FRIENDLY_FIRE:
+        return
     if not isinstance(attack, dict):
         return
     attack_id = str(attack.get("id", ""))[:80]
@@ -1196,11 +1208,35 @@ def apply_player_attack(room, attacker, attack, now):
             attacker["hp"] = max(0, attacker["hp"] - thorns)
 
 
-def room_snapshot(room):
+def advance_room_status(room, now=None):
+    """推进准备阶段：全员就绪、或 30 秒读秒结束，就进入战斗。
+
+    读秒超时也会开战，用的是玩家当前选的英雄（没改过就是占位的免费英雄），
+    这样房主不会被一个挂机的人拖死。
+    """
+    now = time.time() if now is None else now
+    if room["status"] != "preparing":
+        return
+    everyone_ready = bool(room["players"]) and all(
+        player.get("ready") for player in room["players"].values()
+    )
+    expired = now >= room.get("prep_deadline", 0)
+    if everyone_ready or expired:
+        room["status"] = "playing"
+        room.pop("prep_deadline", None)
+
+
+def room_snapshot(room, now=None):
+    now = time.time() if now is None else now
+    advance_room_status(room, now)
+    prep_remaining = 0
+    if room["status"] == "preparing":
+        prep_remaining = max(0, round(room.get("prep_deadline", now) - now, 1))
     return {
         "room_id": room["room_id"],
         "host_id": room["host_id"],
         "status": room["status"],
+        "prep_remaining": prep_remaining,
         "players": [public_player(player) for player in room["players"].values()],
         "capacity": ROOM_CAPACITY,
     }
@@ -1213,6 +1249,15 @@ def find_room_player(room_id, player_id):
     return room, room["players"].get(player_id)
 
 
+def demote_if_too_few(room):
+    """准备阶段掉到 1 人时退回大厅，别让房主对着空气读秒。"""
+    if room["status"] == "preparing" and len(room["players"]) < 2:
+        room["status"] = "waiting"
+        room.pop("prep_deadline", None)
+        for player in room["players"].values():
+            player["ready"] = False
+
+
 def cleanup_rooms():
     now = time.time()
     for room_id, room in list(ROOMS.items()):
@@ -1221,10 +1266,22 @@ def cleanup_rooms():
                 room["players"].pop(player_id, None)
         if not room["players"]:
             ROOMS.pop(room_id, None)
-        elif room["host_id"] not in room["players"]:
+            continue
+        if room["host_id"] not in room["players"]:
             room["host_id"] = next(iter(room["players"]))
-        if room["status"] == "waiting" and len(room["players"]) == 1:
-            room["status"] = "waiting"
+        demote_if_too_few(room)
+
+
+def resolve_room_hero(hero_id):
+    """房间里的英雄：允许先留空（用占位免费英雄），写死的 id 必须存在且已解锁。"""
+    candidate = str(hero_id or "").strip()
+    if not candidate:
+        return DEFAULT_ROOM_HERO, None
+    if candidate not in {hero["id"] for hero in HEROES}:
+        return None, "请选择有效英雄。"
+    if candidate not in unlocked_hero_ids():
+        return None, "该英雄尚未解锁，请先到商店购买。"
+    return candidate, None
 
 
 def error_response(message, status=400):
@@ -1285,13 +1342,11 @@ def list_multiplayer_rooms():
 def create_multiplayer_room():
     body = request.get_json(silent=True) or {}
     name = str(body.get("name", "")).strip()[:20]
-    hero_id = str(body.get("hero_id", ""))
     if not name:
         return error_response("请先输入昵称。")
-    if hero_id not in {hero["id"] for hero in HEROES}:
-        return error_response("请选择有效英雄。")
-    if hero_id not in unlocked_hero_ids():
-        return error_response("该英雄尚未解锁，请先到商店购买。")
+    hero_id, hero_error = resolve_room_hero(body.get("hero_id"))
+    if hero_error:
+        return error_response(hero_error)
     with ROOMS_LOCK:
         cleanup_rooms()
         room_id = secrets.token_hex(3).upper()
@@ -1300,6 +1355,7 @@ def create_multiplayer_room():
             "player_id": player_id,
             "name": name,
             "hero_id": hero_id,
+            "ready": False,
             "x": 1600,
             "y": 1200,
             "hp": 100,
@@ -1326,13 +1382,11 @@ def join_multiplayer_room():
     body = request.get_json(silent=True) or {}
     room_id = str(body.get("room_id", "")).strip().upper()
     name = str(body.get("name", "")).strip()[:20]
-    hero_id = str(body.get("hero_id", ""))
     if not name:
         return error_response("请先输入昵称。")
-    if hero_id not in {hero["id"] for hero in HEROES}:
-        return error_response("请选择有效英雄。")
-    if hero_id not in unlocked_hero_ids():
-        return error_response("该英雄尚未解锁，请先到商店购买。")
+    hero_id, hero_error = resolve_room_hero(body.get("hero_id"))
+    if hero_error:
+        return error_response(hero_error)
     with ROOMS_LOCK:
         cleanup_rooms()
         room = ROOMS.get(room_id)
@@ -1346,11 +1400,12 @@ def join_multiplayer_room():
         slot = len(room["players"])
         spawn_points = [(1600, 1200), (1650, 1200), (1600, 1250), (1650, 1250),
                         (1550, 1200), (1600, 1150), (1700, 1200), (1600, 1300)]
-        x, y = spawn_points[slot]
+        x, y = spawn_points[slot % len(spawn_points)]
         room["players"][player_id] = {
             "player_id": player_id,
             "name": name,
             "hero_id": hero_id,
+            "ready": False,
             "x": x,
             "y": y,
             "hp": 100,
@@ -1392,8 +1447,58 @@ def start_multiplayer_room(room_id):
             return error_response("只有房主可以开始游戏。", 403)
         if len(room["players"]) < 2:
             return error_response("至少需要两名玩家才能开始。", 409)
-        room["status"] = "playing"
+        if room["status"] != "waiting":
+            return error_response("房间已经在准备或进行中。", 409)
+        # 进入 30 秒准备期：这段时间选英雄、点准备，全员就绪就提前开打
+        room["status"] = "preparing"
+        room["prep_deadline"] = time.time() + ROOM_PREP_SECONDS
+        for member in room["players"].values():
+            member["ready"] = False
         return jsonify({"ok": True, "room": room_snapshot(room)})
+
+
+@app.post("/api/mp/rooms/<room_id>/hero")
+def set_multiplayer_hero(room_id):
+    """准备阶段换英雄：换完要重新点准备。"""
+    body = request.get_json(silent=True) or {}
+    player_id = str(body.get("player_id", ""))
+    hero_id, hero_error = resolve_room_hero(body.get("hero_id"))
+    if hero_error:
+        return error_response(hero_error)
+    with ROOMS_LOCK:
+        cleanup_rooms()
+        room, player = find_room_player(room_id, player_id)
+        if room is None or player is None:
+            return error_response("你已离开房间，请重新加入。", 404)
+        if room["status"] == "playing":
+            return error_response("战斗已经开始，无法更换英雄。", 409)
+        player["hero_id"] = hero_id
+        player["ready"] = False
+        # 换英雄视为重新整备：血量与状态重置，不带伤开打
+        player["hp"] = player["max_hp"]
+        player["shield"] = 0
+        player["effects"] = {}
+        player["energy"] = player["max_energy"]
+        return jsonify({"ok": True, "player_id": player_id, "room": room_snapshot(room)})
+
+
+@app.post("/api/mp/rooms/<room_id>/ready")
+def set_multiplayer_ready(room_id):
+    body = request.get_json(silent=True) or {}
+    player_id = str(body.get("player_id", ""))
+    ready = bool(body.get("ready", True))
+    with ROOMS_LOCK:
+        cleanup_rooms()
+        room, player = find_room_player(room_id, player_id)
+        if room is None or player is None:
+            return error_response("你已离开房间，请重新加入。", 404)
+        if room["status"] == "waiting":
+            return error_response("房主还没开始，暂时不需要准备。", 409)
+        if room["status"] == "playing":
+            return error_response("战斗已经开始。", 409)
+        player["ready"] = ready
+        player["last_seen"] = time.time()
+        return jsonify({"ok": True, "player_id": player_id, "room": room_snapshot(room)})
 
 
 @app.post("/api/mp/rooms/<room_id>/leave")
@@ -1405,8 +1510,10 @@ def leave_multiplayer_room(room_id):
             room["players"].pop(player["player_id"], None)
             if not room["players"]:
                 ROOMS.pop(room["room_id"], None)
-            elif room["host_id"] == player["player_id"]:
-                room["host_id"] = next(iter(room["players"]))
+            else:
+                if room["host_id"] == player["player_id"]:
+                    room["host_id"] = next(iter(room["players"]))
+                demote_if_too_few(room)
         return jsonify({"ok": True})
 
 

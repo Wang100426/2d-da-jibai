@@ -1,6 +1,6 @@
 {
   "name": "2d-da-jibai",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "2D大击败 - 赛博风肉鸽竞技场",
   "main": "electron/main.cjs",
   "author": "2D大击败",
@@ -36,7 +36,9 @@
     "test:story-locale": "node --test tests/story_locale.test.cjs",
     "build:battle-space": "tsc -p tsconfig.battle-space.json",
     "test:battle-space": "npm run build:battle-space && node --test tests/battle_space.test.cjs",
-    "test:story-map": "node --test tests/story_map.test.cjs"
+    "test:story-map": "node --test tests/story_map.test.cjs",
+    "test:multiplayer": "npm run build:lobby && node tests/multiplayer_lobby.test.cjs",
+    "test:all": "npm run test:story && npm run test:multiplayer"
   },
   "devDependencies": {
     "electron": "^44.4.5",

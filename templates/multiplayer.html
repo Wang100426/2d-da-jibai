@@ -19,36 +19,51 @@
       <h1>{{ tr("LAN") }}</h1>
       <p>{{ tr("MP_INTRO") }}</p>
     </section>
-    <section class="mp-layout">
-      <div class="mp-panel">
-        <h2>{{ tr("JOIN_LOBBY") }}</h2>
-        <label class="mp-label" for="player-name">{{ tr("NICKNAME") }}</label>
-        <input id="player-name" maxlength="20" placeholder="{{ tr('NICKNAME_PLACEHOLDER') }}" autocomplete="nickname">
-        <label class="mp-label" for="hero-select">{{ tr("CHOOSE_HERO") }}</label>
-        <select id="hero-select">
-          {% for hero in heroes %}
-          <option value="{{ hero.id }}" {% if hero.locked %}disabled{% endif %}>{{ hero.name }} · {{ hero.class_name }}{% if hero.locked %} · {{ tr("SHOP_LOCKED") }} ◈ {{ hero.price }}{% endif %}</option>
-          {% endfor %}
-        </select>
+
+    <section class="mp-panel mp-entry" id="mp-entry">
+      <h2>{{ tr("JOIN_LOBBY") }}</h2>
+      <label class="mp-label" for="player-name">{{ tr("NICKNAME") }}</label>
+      <input id="player-name" maxlength="20" placeholder="{{ tr('NICKNAME_PLACEHOLDER') }}" autocomplete="nickname">
+      <div class="mp-choice-row">
         <button class="mp-primary" id="create-room" type="button">{{ tr("CREATE_ROOM") }}</button>
-        <div class="mp-divider"><span>{{ tr("OR_ROOM_CODE") }}</span></div>
-        <div class="join-row"><input id="room-code" maxlength="6" placeholder="{{ tr('ROOM_CODE_PLACEHOLDER') }}"><button id="join-room" type="button">{{ tr("JOIN") }}</button></div>
-        <p class="mp-note">{{ tr("ROOM_CODE_NOTE") }}</p>
-        <div class="lan-address-panel">
-          <b>{{ tr("LAN_ADDRESS") }}</b>
-          <span id="lan-addresses">{{ tr("LOADING_LAN") }}</span>
-          <small>{{ tr("LAN_HELP") }}</small>
-        </div>
+        <button class="mp-primary mp-alt" id="join-toggle" type="button" aria-expanded="false">{{ tr("JOIN") }}</button>
       </div>
-      <div class="mp-panel room-panel">
-        <div class="panel-title"><h2>{{ tr("PUBLIC_ROOMS") }}</h2><button class="refresh-button" id="refresh-rooms" type="button">{{ tr("REFRESH") }}</button></div>
-        <div id="room-list" class="room-list"><p class="empty-state">{{ tr("SEARCHING_ROOMS") }}</p></div>
+      <div class="mp-join-row" id="join-row" hidden>
+        <input id="room-code" maxlength="6" placeholder="{{ tr('ROOM_CODE_PLACEHOLDER') }}">
+        <button id="join-room" type="button">{{ tr("MP_ENTER_ROOM") }}</button>
+      </div>
+      <div class="lan-address-panel">
+        <b>{{ tr("LAN_ADDRESS") }}</b>
+        <span id="lan-addresses">{{ tr("LOADING_LAN") }}</span>
+        <small>{{ tr("LAN_HELP") }}</small>
       </div>
     </section>
+
     <section class="mp-panel waiting-panel" id="waiting-room" hidden>
-      <div class="panel-title"><div><p class="eyebrow">{{ tr("ROOM_LOBBY") }}</p><h2>{{ tr("ROOM") }} <strong id="current-room-code"></strong></h2></div><button class="leave-button" id="leave-room" type="button">{{ tr("LEAVE_ROOM") }}</button></div>
+      <div class="panel-title">
+        <div><p class="eyebrow">{{ tr("ROOM_LOBBY") }}</p><h2>{{ tr("ROOM") }} <strong id="current-room-code"></strong></h2></div>
+        <button class="leave-button" id="leave-room" type="button">{{ tr("LEAVE_ROOM") }}</button>
+      </div>
+      <div class="mp-prep" id="mp-prep" hidden>
+        <b id="prep-countdown">30</b>
+        <span>{{ tr("MP_PREP_HINT") }}</span>
+      </div>
       <div class="waiting-players" id="waiting-players"></div>
-      <div class="waiting-footer"><p id="waiting-message">{{ tr("WAITING_PLAYERS") }}</p><button class="mp-primary start-button" id="start-game" type="button" disabled>{{ tr("START_GAME") }}</button></div>
+      <div class="mp-room-actions">
+        <div class="mp-hero-picker">
+          <label class="mp-label" for="hero-select">{{ tr("MP_HERO_PICK") }}</label>
+          <select id="hero-select">
+            {% for hero in heroes %}
+            <option value="{{ hero.id }}" {% if hero.locked %}disabled{% endif %}>{{ hero.name }} · {{ hero.class_name }}{% if hero.locked %} · {{ tr("SHOP_LOCKED") }} ◈ {{ hero.price }}{% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mp-room-buttons">
+          <button class="mp-primary" id="ready-toggle" type="button" hidden>{{ tr("MP_READY") }}</button>
+          <button class="mp-primary" id="start-game" type="button" hidden>{{ tr("START_GAME") }}</button>
+        </div>
+      </div>
+      <p class="mp-room-hint" id="waiting-message">{{ tr("WAITING_PLAYERS") }}</p>
     </section>
   </main>
   <div class="mp-toast" id="mp-toast" role="status" aria-live="polite"></div>

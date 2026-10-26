@@ -8,7 +8,7 @@
 
 《2D大击败》是一款赛博风 2D 战斗竞技场游戏，技术栈为 **Flask + 原生 HTML/CSS/TypeScript**，桌面版用 **Electron** 封装、**PyInstaller** 打包后端。选择英雄，在霓虹废墟中迎战敌潮、挑战 AI，或与局域网好友并肩作战。
 
-游戏支持中文 / English / 日本語三种界面，英文名为 **2DFight Arena**，日文名为 **2D大撃破**。当前版本 **2.3.0**。
+游戏支持中文 / English / 日本語三种界面，英文名为 **2DFight Arena**，日文名为 **2D大撃破**。当前版本 **2.3.1**。
 
 ## 目录
 
@@ -40,7 +40,7 @@
 
 - **单机肉鸽**：挑战不断增强的敌潮，每波结束后选择战斗强化。击败敌人可获得技能经验，升级时可强化英雄技能；战斗支持暂停。
 - **人机对抗**：与 AI 一对一较量，先赢得四分获胜。每回合结束后可选择强化，十秒后开始下一回合。
-- **局域网联机**：创建或加入房间，与同一局域网的玩家共同战斗。玩家位置、玩家间攻击伤害、生命、能量和控制效果由 Flask 房间服务同步。
+- **局域网联机**：填昵称后「创建」或「加入」（输入房间码）。进房后选英雄，房主点开始进入 **30 秒准备阶段**，全员就绪立即开战。玩家位置、生命与能量由 Flask 房间服务同步；协作模式下**队友之间不结算伤害**。
 - **模式选择页**（`/mode`）：主页左侧的方形入口进入，与选人页同款的侧栏 + 详情布局，右下角「选定」后返回主页。「开始游戏」会按你选的模式跳转：肉鸽 → 选人，联机 → 大厅，人机 → 人机选人。
 - **战场过渡页**：使用全屏战场概览图，展示地图和特殊事件，左下角显示出战角色；淡入淡出与右下角加载动画持续 5 秒。
 
@@ -119,7 +119,7 @@
 | 键 | 技能 | 效果 | 2 阶 | 3 阶 |
 | --- | --- | --- | --- | --- |
 | Q | 侠客行 | 无敌，每 0.5 秒向半径 300 内最近的敌人位移并攻击一次，最多 5 次；不连续命中同一敌人；范围内没敌人立即停止并按位移次数返还冷却 | 每次位移额外眩晕 0.5 秒 | 间隔 0.25 秒、最多 10 次 |
-| E | 剑客之刃 | 强化接下来 3 次普攻，伤害 +20% 并吸血 10% | 增伤 → 40% | 吸血 → 25% |
+| E | 剑雨 | 向面朝方向推出一道宽 200 的剑气波，推进 420，路径上的敌人受 30 点伤害（同一道波对同一目标只结算一次） | 宽度 200 → 300 | 剑气落地保留 3 秒，持续伤害并减速 |
 | R | 御剑飞行 | 3 秒内移速 +50%、闪避 +50% | 3 秒 → 5 秒 | 移速 +50% → +100% |
 
 **电音人**（远程，300）
@@ -630,7 +630,7 @@ npm run dist:portable  # 便携版 → release-portable/
 
 2DFight Arena is a cyberpunk 2D combat arena built with **Flask + plain HTML/CSS/TypeScript**. The desktop build wraps it in **Electron** with a **PyInstaller**-packaged backend. Pick a hero, fight through neon ruins, challenge an AI opponent, or battle alongside friends over a local network.
 
-The interface ships in Chinese, English, and Japanese (2D大撃破). Current version: **2.3.0**.
+The interface ships in Chinese, English, and Japanese (2D大撃破). Current version: **2.3.1**.
 
 ## Contents
 
@@ -662,7 +662,7 @@ The interface ships in Chinese, English, and Japanese (2D大撃破). Current ver
 
 - **Roguelike**: survive escalating waves and choose a combat upgrade after each wave. Kills grant skill experience, and leveling up improves a hero skill. Runs can be paused.
 - **AI duel**: fight an AI opponent one-on-one; the first to win four rounds takes the match. Pick an upgrade between rounds; the next round starts after ten seconds.
-- **LAN multiplayer**: create or join a room and play with people on the same network. The Flask room service synchronizes positions, PvP damage, health, energy, and crowd control.
+- **LAN multiplayer**: enter a nickname, then **Create** or **Join** with a room code. Pick your hero inside the room; the host starts a **30-second prep phase** and the battle begins as soon as everyone is ready. The Flask room service synchronizes positions, health and energy — **teammates never damage each other** in co-op.
 - **Mode selection page** (`/mode`): opened from the square card on the left of the home screen. It reuses the hero-select sidebar + detail layout, and **Confirm** saves your choice and returns home. **Start Game** then routes accordingly: roguelike → hero select, LAN → lobby, AI duel → duel select.
 - **Battle transition**: a full-screen arena overview shows the map and its special event, with the chosen fighter in the lower-left and a loading animation for 5 seconds.
 
@@ -741,7 +741,7 @@ Lunar Expansion drops the extra meteor on an enemy **inside cast range that is n
 | Key | Skill | Effect | Tier 2 | Tier 3 |
 | --- | --- | --- | --- | --- |
 | Q | Knight-Errant Song | Invulnerable; dash to the nearest enemy within 300 every 0.5s for up to 5 strikes; never hits the same enemy twice in a row; stops immediately when nothing is in range and refunds cooldown proportionally | Each dash also stuns for 0.5s | Interval 0.25s, up to 10 dashes |
-| E | Swordsman's Edge | Empower the next 3 basic attacks with +20% damage and 10% lifesteal | +20% → +40% | Lifesteal 10% → 25% |
+| E | Sword Rain | Push a 200-wide blade wave forward, travelling 420 and dealing 30 damage along its path (one hit per enemy per wave) | Width 200 → 300 | Blades linger 3s after landing, damaging and slowing |
 | R | Sword Flight | +50% speed and +50% dodge for 3s | 3s → 5s | Speed +50% → +100% |
 
 **DJ Volt** (ranged, 300)

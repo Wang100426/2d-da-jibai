@@ -302,7 +302,11 @@
     "STORY_LOCKED_HINT": "Finish the previous section first",
     "STORY_ARENA_MAP": "1V1 ARENA",
     "STORY_MAP_LOCKED": "LOCKED ARENA",
-    "STORY_BATTLE_EVENT": "Story battle · no random map events"
+    "STORY_BATTLE_EVENT": "Story battle · no random map events",
+    "MP_ENTER_ROOM": "ENTER",
+    "MP_PREP_HINT": "s until the battle starts · pick a hero, then ready up",
+    "MP_READY": "READY",
+    "MP_HERO_PICK": "YOUR FIGHTER"
   },
   "heroes": {
     "volt": {
@@ -571,11 +575,11 @@
           "description": "Invulnerable dash chain · strikes the nearest enemy",
           "detail_description": "Become invulnerable, then every 0.5s dash to the nearest enemy within 300 and strike them, up to 5 times; he never strikes the same enemy twice in a row unless it is the only one left in range. If nothing is in range he stops at once and refunds the unused dashes to the cooldown proportionally (no dash at all clears the cooldown)."
         },
-        "jianghu-blade": {
-          "name": "Swordsman's Edge",
-          "kind": "Skill",
-          "description": "Empower your next 3 basic attacks · bonus damage and lifesteal",
-          "detail_description": "Your next 3 basic attacks deal +20% damage and each heals for 10% of the damage dealt."
+        "jianghu-sword-rain": {
+          "name": "Sword Rain",
+          "kind": "小技能",
+          "description": "Push out a blade wave · 200 wide, hits everything in its path",
+          "detail_description": "Pushes a 200-wide sword rain along your facing direction, travelling 420 units. Enemies caught in it take 30 damage. Each enemy is hit once per wave."
         },
         "jianghu-flight": {
           "name": "Sword Flight",
@@ -1429,12 +1433,9 @@
       "skill.jianghu_xia_ke_xing": "{name} begins: invulnerable dash chain, up to {max} dashes {interval}s apart.",
       "skill.jianghu_xia_ke_xing_stop": "{name} ends: {used} dashes landed, {refund}% cooldown refunded.",
       "skill.jianghu_xia_ke_xing_empty": "{name}: nothing in range, cooldown cleared.",
-      "skill.jianghu_blade": "{name} is active: your next {charges} basic attacks deal +{percent}% damage and heal for {lifesteal}% of damage dealt.",
-      "skill.jianghu_blade_hit": "Swordsman's Edge hits for {damage} damage and heals {heal}.",
       "skill.jianghu_flight": "{name} is active: +{speed}% movement speed and +{dodge}% dodge for {seconds}s.",
       "float.execute": "EXECUTED!",
       "float.jianghu_dash": "Knight-Errant Song",
-      "float.jianghu_blade_ready": "Swordsman's Edge ×{charges}",
       "float.jianghu_flight": "Sword Flight",
       "float.jianghu_empty": "No target",
       "reward.run_gain": "This run earned {coins} coins (total {total}).",
@@ -1452,6 +1453,8 @@
       "float.skater_slam": "Slam",
       "float.bball_reload": "Reloading",
       "float.bball_empty": "Mag Empty",
+      "skill.jianghu_sword_rain": "{name} unleashed: {width} wide, the blade wave cuts everything along its path.",
+      "float.jianghu_sword_rain": "Sword Rain",
       "pause_stats.wave": "Wave",
       "pause_stats.kills": "Kills (run)",
       "pause_stats.passive_kills": "Kills (passive)",
@@ -1471,20 +1474,20 @@
   },
   "lobby": {
     "messages": {
-      "请先输入昵称。": "Enter a player name first.",
-      "请选择有效英雄。": "Select a valid fighter.",
-      "房间已关闭，请重新加入。": "The room has closed. Please rejoin.",
-      "服务器没有返回房间信息。": "The server did not return room details.",
+      "请先输入昵称。": "Enter a nickname first.",
+      "请选择有效英雄。": "Pick a valid hero.",
+      "房间已关闭，请重新加入。": "The room closed. Please join again.",
+      "服务器没有返回房间信息。": "The server did not return room data.",
       "创建房间失败。": "Could not create the room.",
       "加入房间失败。": "Could not join the room.",
-      "无法开始游戏。": "Could not start the match.",
+      "无法开始游戏。": "Could not start the game.",
       "房间列表加载失败": "Could not load the room list.",
-      "房间不存在或已关闭。": "The room does not exist or has closed.",
-      "该房间已经开始游戏。": "The match in this room has already started.",
+      "房间不存在或已关闭。": "The room does not exist or has been closed.",
+      "该房间已经开始游戏。": "That room has already started.",
       "房间人数已满。": "The room is full.",
-      "你已离开房间，请重新加入。": "You left the room. Please rejoin.",
-      "只有房主可以开始游戏。": "Only the host can start the match.",
-      "至少需要两名玩家才能开始。": "At least two players are required to start.",
+      "你已离开房间，请重新加入。": "You left the room. Please join again.",
+      "只有房主可以开始游戏。": "Only the host can start the game.",
+      "至少需要两名玩家才能开始。": "You need at least two players to start.",
       "玩家坐标无效。": "Invalid player coordinates.",
       "玩家坐标超出地图范围。": "Player coordinates are outside the map.",
       "房间已关闭或你已掉线。": "The room has closed or you disconnected.",
@@ -1494,14 +1497,31 @@
       "加入": "JOIN",
       "房主": "HOST",
       "你": "YOU",
-      "无法获取局域网地址。": "Could not detect the local network address.",
-      "未检测到局域网地址，请确认设备已连接网络。": "No local network address found. Check your network connection.",
-      "局域网地址获取失败。": "Could not fetch the local network address.",
+      "无法获取局域网地址。": "Could not read the LAN address.",
+      "未检测到局域网地址，请确认设备已连接网络。": "No LAN address found. Check your network connection.",
+      "局域网地址获取失败。": "Failed to read the LAN address.",
       "至少需要 2 名玩家，分享房间码邀请朋友加入。": "At least 2 players are required. Share the room code with a friend.",
       "玩家已就绪，房主可以开始探索。": "Players are ready. The host can start the match.",
       "等待房主开始游戏…": "Waiting for the host to start…",
       "请求失败": "Request failed",
-      "人": "players"
+      "人": "players",
+      "准备": "READY",
+      "取消准备": "CANCEL READY",
+      "已准备": "READY",
+      "未准备": "WAITING",
+      "已准备，等待其他玩家…": "Ready — waiting for the others…",
+      "选好英雄后点准备。": "Pick your fighter, then ready up.",
+      "至少需要 2 名玩家，把房间码发给朋友。": "You need at least 2 players. Share the room code with a friend.",
+      "全员到齐后点「开始」。": "Press Start once everyone is in.",
+      "等待房主开始…": "Waiting for the host to start…",
+      "请输入房间码。": "Enter a room code first.",
+      "切换英雄失败。": "Could not switch hero.",
+      "准备状态更新失败。": "Could not update ready state.",
+      "房主还没开始，暂时不需要准备。": "The host has not started yet.",
+      "房间已经在准备或进行中。": "The room is already preparing or in progress.",
+      "战斗已经开始，无法更换英雄。": "The battle has started; you cannot switch heroes.",
+      "战斗已经开始。": "The battle has already started.",
+      "该英雄尚未解锁，请先到商店购买。": "That hero is still locked. Buy it in the shop first."
     },
     "patterns": [
       [
@@ -1567,8 +1587,6 @@
     "樱花之歌触碰敌人时同时施加樱花风暴": "Sakura Song also casts Sakura Storm on touched enemies",
     "侠客行每次位移攻击额外造成 0.5 秒眩晕": "Knight-Errant Song dashes also stun for 0.5s",
     "位移间隔缩短至 0.25 秒 · 位移次数提升到 10 次": "Dash interval down to 0.25s · up to 10 dashes",
-    "剑客之刃普攻伤害加成 20% → 40%": "Swordsman's Edge damage bonus 20% → 40%",
-    "剑客之刃吸血 10% → 25%": "Swordsman's Edge lifesteal 10% → 25%",
     "御剑飞行持续时间 3 秒 → 5 秒": "Sword Flight duration 3s → 5s",
     "御剑飞行速度提升 50% → 100%": "Sword Flight speed bonus 50% → 100%",
     "回旋镖飞行距离 350 → 500": "Boomerang range 350 → 500",
@@ -1582,7 +1600,9 @@
     "眩晕 +1 秒": "Stun +1s",
     "连续进行 2 次冲刺和攻击": "Perform 2 consecutive dashes and attacks",
     "篮球发射速度 5/秒 → 10/秒": "Basketball fire rate 5/sec → 10/sec",
-    "时长 +2 秒且普攻无视距离（不无视建筑）": "Duration +2s and basic attacks ignore range (not buildings)"
+    "时长 +2 秒且普攻无视距离（不无视建筑）": "Duration +2s and basic attacks ignore range (not buildings)",
+    "剑雨宽度 200 → 300": "Sword Rain width 200 → 300",
+    "剑落地后保留 3 秒，对经过的敌人造成伤害和减速": "Blades linger for 3s after landing, damaging and slowing enemies that pass through"
   },
   "story": {
     "categories": {

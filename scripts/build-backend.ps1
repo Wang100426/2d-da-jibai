@@ -1,4 +1,7 @@
 $ErrorActionPreference = "Stop"
+# PowerShell 5.1 里 $LASTEXITCODE 在第一次调用原生命令前可能未定义，
+# 此时 `$LASTEXITCODE -ne 0` 会被判成真而误报失败。先显式归零。
+$LASTEXITCODE = 0
 $root = Split-Path -Parent $PSScriptRoot
 $venv = Join-Path $root ".venv-packaging"
 $python = Join-Path $venv "Scripts\python.exe"
