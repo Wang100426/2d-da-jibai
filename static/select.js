@@ -44,15 +44,10 @@ function stopVoice() {
     voiceButton.classList.remove("playing");
     voiceLabel.textContent = voicePlayLabel;
 }
-function toggleVoice(hero) {
+/** 播放某个英雄的展示语音（自动停掉上一条）。 */
+function playVoice(hero) {
     if (!hero.voice)
         return;
-    // 正在播同一个英雄的语音 → 再点一次就是停止
-    if (voiceHeroId === hero.id && voiceAudio && !voiceAudio.paused) {
-        stopVoice();
-        voiceHeroId = "";
-        return;
-    }
     stopVoice();
     voiceHeroId = hero.id;
     const audio = new Audio(`/static/voices/${encodeURIComponent(hero.voice)}`);
@@ -71,10 +66,22 @@ function toggleVoice(hero) {
     });
     voiceButton.classList.add("playing");
     voiceLabel.textContent = voiceStopLabel;
+    // 浏览器可能因为没有用户手势拒绝播放，静默回退成「试听语音」即可
     const started = audio.play();
     if (started && typeof started.catch === "function") {
         void started.catch(() => stopVoice());
     }
+}
+function toggleVoice(hero) {
+    if (!hero.voice)
+        return;
+    // 正在播同一个英雄的语音 → 再点一次就是停止
+    if (voiceHeroId === hero.id && voiceAudio && !voiceAudio.paused) {
+        stopVoice();
+        voiceHeroId = "";
+        return;
+    }
+    playVoice(hero);
 }
 function renderStats(hero) {
     stats.replaceChildren();
@@ -133,7 +140,7 @@ function applyPalette(element, palette) {
     element.style.setProperty("--hero-light", palette.light);
     element.style.setProperty("--hero-dark", palette.dark);
 }
-function selectHero(heroId) {
+function selectHero(heroId, autoPlayVoice = false) {
     const index = heroes.findIndex((hero) => hero.id === heroId);
     const hero = heroes[index];
     if (!hero)
@@ -169,9 +176,12 @@ function selectHero(heroId) {
     renderSkills(hero);
     // 只有配了语音的英雄才显示试听按钮
     voiceButton.hidden = !hero.voice;
+    // 点侧栏选英雄 = 用户手势，直接放语音；首屏进入不自动播（会被浏览器拦，也容易吓人）
+    if (autoPlayVoice && hero.voice)
+        playVoice(hero);
 }
 choices.forEach((choice) => {
-    choice.addEventListener("click", () => selectHero(choice.dataset.heroId || ""));
+    choice.addEventListener("click", () => selectHero(choice.dataset.heroId || "", true));
 });
 voiceButton.addEventListener("click", () => {
     const hero = heroes.find((item) => item.id === activeHeroId);

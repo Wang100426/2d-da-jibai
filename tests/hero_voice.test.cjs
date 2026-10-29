@@ -68,13 +68,15 @@ const techBtn = new El("button");
 techBtn.dataset.heroId = "tech";
 const pipaBtn = new El("button");
 pipaBtn.dataset.heroId = "pipa";
+const lunaBtn = new El("button");
+lunaBtn.dataset.heroId = "luna";
 const voltBtn = new El("button");
 voltBtn.dataset.heroId = "volt";
 
 const documentStub = {
   hidden: false,
   getElementById: (id) => ids[id] || null,
-  querySelectorAll: (sel) => (sel === "[data-hero-id]" ? [techBtn, pipaBtn, voltBtn] : []),
+  querySelectorAll: (sel) => (sel === "[data-hero-id]" ? [techBtn, pipaBtn, lunaBtn, voltBtn] : []),
   createElement: (tag) => new El(tag),
   addEventListener(type, fn) { this._ev = this._ev || {}; this._ev[type] = fn; },
   body: new El("body"),
@@ -124,7 +126,12 @@ const sandbox = {
   getComputedStyle: () => ({ getPropertyValue: () => "" }),
 };
 sandbox.window = {
-  HERO_SELECTION: [hero("tech", "tech.mp3"), hero("pipa", "pipa.mp3"), hero("volt", "")],
+  HERO_SELECTION: [
+    hero("tech", "tech.mp3"),
+    hero("pipa", "pipa.mp3"),
+    hero("luna", "luna.mp3"),
+    hero("volt", ""),
+  ],
   GAME_MODE: "rogue",
   SELECT_TIER_LABELS: {},
   document: documentStub,
@@ -136,53 +143,59 @@ sandbox.globalThis = sandbox;
   vm.runInContext(code, sandbox);
   await new Promise((r) => setImmediate(r));
 
-  // 默认选中第一个（tech，有语音）
+  // 首屏：默认选中 tech，但**不应该**自动出声（没有用户手势）
+  check("首屏不自动播放", audios.length === 0, String(audios.length));
   check("默认英雄有语音时按钮可见", ids["voice-play"].hidden === false);
   check("初始文案是「试听语音」", ids["voice-label"].textContent === "试听语音");
 
-  // 播放
-  ids["voice-play"].click();
+  // 点侧栏的英雄 → 自动播放
+  pipaBtn.click();
   await new Promise((r) => setImmediate(r));
-  check("点击后创建了 Audio", audios.length === 1, String(audios.length));
-  check("音源指向 static/voices", audios[0].src === "/static/voices/tech.mp3", audios[0].src);
-  check("开始播放", audios[0].paused === false);
-  check("按钮进入播放态", ids["voice-play"].classList.contains("playing"));
-  check("文案切成「停止播放」", ids["voice-label"].textContent === "停止播放");
+  check("点击英雄自动播放", audios.length === 1 && audios[0].paused === false, String(audios.length));
+  check("自动播放音源正确", audios[0].src === "/static/voices/pipa.mp3", audios[0].src);
+  check("自动播放进入播放态", ids["voice-play"].classList.contains("playing"));
+  check("自动播放文案切成「停止播放」", ids["voice-label"].textContent === "停止播放");
 
-  // 再点一次 → 停止
+  // 播放中切到另一个有语音的英雄 → 掐断上一条并播新的
+  const first = audios[0];
+  lunaBtn.click();
+  await new Promise((r) => setImmediate(r));
+  check("切英雄掐断上一条", first.paused === true);
+  check("切过去后播新的", audios.length === 2 && audios[1].src === "/static/voices/luna.mp3", String(audios.length));
+
+  // 再点当前英雄 → 重播（先停再播）
+  lunaBtn.click();
+  await new Promise((r) => setImmediate(r));
+  check("重复点同一英雄会重播", audios.length === 3 && audios[2].src === "/static/voices/luna.mp3", String(audios.length));
+  check("重播时上一条已停", audios[1].paused === true);
+
+  // 按钮：播放中点一次 = 停止
   ids["voice-play"].click();
-  check("再点一次暂停", audios[0].paused === true);
+  check("播放中点按钮暂停", audios[2].paused === true);
   check("按钮退出播放态", ids["voice-play"].classList.contains("playing") === false);
   check("文案切回「试听语音」", ids["voice-label"].textContent === "试听语音");
 
-  // 播放中切英雄 → 掐断
+  // 按钮：静止时点一次 = 重新播放当前英雄
   ids["voice-play"].click();
   await new Promise((r) => setImmediate(r));
-  const playing = audios[audios.length - 1];
-  pipaBtn.click();
-  check("切到另一个有语音的英雄会先停掉上一条", playing.paused === true);
-  check("切到 pipa 后按钮仍然可见", ids["voice-play"].hidden === false);
-
-  // 播放 pipa
-  ids["voice-play"].click();
-  await new Promise((r) => setImmediate(r));
-  const pipaAudio = audios[audios.length - 1];
-  check("pipa 音源正确", pipaAudio.src === "/static/voices/pipa.mp3", pipaAudio.src);
+  check("静止时点按钮重播", audios.length === 4 && audios[3].src === "/static/voices/luna.mp3", String(audios.length));
 
   // 播完自动复位
-  pipaAudio.emit("ended");
+  audios[3].emit("ended");
   check("播放结束自动复位文案", ids["voice-label"].textContent === "试听语音");
   check("播放结束移除播放态", ids["voice-play"].classList.contains("playing") === false);
 
-  // 无语音英雄 → 按钮隐藏
+  // 点击无语音英雄 → 不产生音频，按钮隐藏
   voltBtn.click();
+  await new Promise((r) => setImmediate(r));
+  check("无语音英雄不播放", audios.length === 4, String(audios.length));
   check("无语音英雄隐藏按钮", ids["voice-play"].hidden === true);
 
   // 页面隐藏就停
   techBtn.click();
-  ids["voice-play"].click();
   await new Promise((r) => setImmediate(r));
   const last = audios[audios.length - 1];
+  check("重新点有语音英雄会播", last.paused === false);
   documentStub.hidden = true;
   documentStub._ev["visibilitychange"]();
   check("切到后台会停止播放", last.paused === true);

@@ -220,6 +220,7 @@ HEROES = [
         "tagline": "在安全距离外，把整片夜空砸下来。",
         "initial": "蚀",
         "accent": "blue",
+        "voice": "luna.mp3",
         "palette": {"main": "#8c9aff", "light": "#e0e4ff", "dark": "#414f9e"},
         "stats": {"攻击": 88, "防御": 48, "机动": 79},
         "combat": {
