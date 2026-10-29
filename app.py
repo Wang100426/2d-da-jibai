@@ -261,6 +261,8 @@ HEROES = [
         "tagline": "用平板、残影和三段冲刺接管战场。",
         "initial": "科",
         "accent": "tech",
+        # 该英雄的展示语音（相对 static/voices/）；没有就留空，选人页不显示试听按钮
+        "voice": "tech.mp3",
         "palette": {"main": "#438dff", "light": "#e1eeff", "dark": "#183c88"},
         "stats": {"攻击": 84, "防御": 58, "机动": 90},
         "combat": {
@@ -301,6 +303,7 @@ HEROES = [
         "tagline": "弦起阳春，埋伏四方，狂舞收场。",
         "initial": "琵",
         "accent": "pipa",
+        "voice": "pipa.mp3",
         "palette": {"main": "#f1b95b", "light": "#fff0b8", "dark": "#80552a"},
         "stats": {"攻击": 78, "防御": 66, "机动": 72},
         "combat": {
@@ -612,6 +615,7 @@ def hero_roster(language="zh"):
             "defense": hero["stats"]["防御"],
             "combat": combat,
             "passive": passive,
+            "voice": hero.get("voice", ""),
         })
     return roster
 
@@ -782,7 +786,12 @@ def api_story_reset():
 def select_hero():
     game_mode = "duel" if request.args.get("mode") == "duel" else "rogue"
     heroes = localized_heroes(request.args.get("lang", request.cookies.get("lang", "zh")))
-    default_hero = next((hero for hero in heroes if not hero["locked"]), heroes[0])
+    # ?hero= 指定默认展示谁（分享链接、语音试听等场景用），没指定就选第一个解锁的
+    requested_id = request.args.get("hero", "").strip()
+    default_hero = (
+        next((hero for hero in heroes if hero["id"] == requested_id), None)
+        or next((hero for hero in heroes if not hero["locked"]), heroes[0])
+    )
     return render_template(
         "select.html",
         heroes=heroes,

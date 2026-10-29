@@ -306,7 +306,9 @@
     "MP_ENTER_ROOM": "ENTER",
     "MP_PREP_HINT": "s until the battle starts · pick a hero, then ready up",
     "MP_READY": "READY",
-    "MP_HERO_PICK": "YOUR FIGHTER"
+    "MP_HERO_PICK": "YOUR FIGHTER",
+    "VOICE_PLAY": "PLAY VOICE",
+    "VOICE_STOP": "STOP"
   },
   "heroes": {
     "volt": {

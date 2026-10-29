@@ -306,7 +306,9 @@
     "MP_ENTER_ROOM": "进入",
     "MP_PREP_HINT": "秒后自动开始 · 选好英雄后点准备",
     "MP_READY": "准备",
-    "MP_HERO_PICK": "出战英雄"
+    "MP_HERO_PICK": "出战英雄",
+    "VOICE_PLAY": "试听语音",
+    "VOICE_STOP": "停止播放"
   },
   "heroes": {
     "volt": {

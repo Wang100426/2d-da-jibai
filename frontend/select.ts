@@ -29,6 +29,8 @@ interface SelectionHero {
   skills: SelectionSkill[];
   price: number;
   locked: boolean;
+  /** 展示语音的文件名（相对 static/voices/）；没有就留空。 */
+  voice?: string;
 }
 
 function requireSelectionElement<T extends HTMLElement>(id: string): T {
@@ -60,6 +62,56 @@ const enterBattle = requireSelectionElement<HTMLAnchorElement>("enter-battle");
 const enterShop = requireSelectionElement<HTMLAnchorElement>("enter-shop");
 const lockedBanner = requireSelectionElement<HTMLDivElement>("detail-locked");
 const lockedPrice = requireSelectionElement<HTMLElement>("detail-locked-price");
+const voiceButton = requireSelectionElement<HTMLButtonElement>("voice-play");
+const voiceLabel = requireSelectionElement<HTMLElement>("voice-label");
+
+const voicePlayLabel = voiceButton.dataset.playLabel || "试听语音";
+const voiceStopLabel = voiceButton.dataset.stopLabel || "停止播放";
+/** 当前正在播放的语音；同一时间只允许一条。 */
+let voiceAudio: HTMLAudioElement | null = null;
+let voiceHeroId = "";
+let activeHeroId = "";
+
+function stopVoice(): void {
+  if (voiceAudio) {
+    voiceAudio.pause();
+    voiceAudio.currentTime = 0;
+    voiceAudio = null;
+  }
+  voiceButton.classList.remove("playing");
+  voiceLabel.textContent = voicePlayLabel;
+}
+
+function toggleVoice(hero: SelectionHero): void {
+  if (!hero.voice) return;
+  // 正在播同一个英雄的语音 → 再点一次就是停止
+  if (voiceHeroId === hero.id && voiceAudio && !voiceAudio.paused) {
+    stopVoice();
+    voiceHeroId = "";
+    return;
+  }
+  stopVoice();
+  voiceHeroId = hero.id;
+  const audio = new Audio(`/static/voices/${encodeURIComponent(hero.voice)}`);
+  voiceAudio = audio;
+  audio.addEventListener("ended", () => {
+    if (voiceAudio === audio) {
+      voiceAudio = null;
+      voiceHeroId = "";
+      voiceButton.classList.remove("playing");
+      voiceLabel.textContent = voicePlayLabel;
+    }
+  });
+  audio.addEventListener("error", () => {
+    if (voiceAudio === audio) stopVoice();
+  });
+  voiceButton.classList.add("playing");
+  voiceLabel.textContent = voiceStopLabel;
+  const started = audio.play();
+  if (started && typeof started.catch === "function") {
+    void started.catch(() => stopVoice());
+  }
+}
 
 function renderStats(hero: SelectionHero): void {
   stats.replaceChildren();
@@ -127,6 +179,10 @@ function selectHero(heroId: string): void {
   const index = heroes.findIndex((hero) => hero.id === heroId);
   const hero = heroes[index];
   if (!hero) return;
+  // 切英雄先掐掉上一条语音，别让两段叠在一起
+  stopVoice();
+  voiceHeroId = "";
+  activeHeroId = hero.id;
   choices.forEach((choice) => {
     const selected = choice.dataset.heroId === hero.id;
     choice.classList.toggle("selected", selected);
@@ -152,10 +208,22 @@ function selectHero(heroId: string): void {
   enterShop.hidden = !locked;
   renderStats(hero);
   renderSkills(hero);
+  // 只有配了语音的英雄才显示试听按钮
+  voiceButton.hidden = !hero.voice;
 }
 
 choices.forEach((choice) => {
   choice.addEventListener("click", () => selectHero(choice.dataset.heroId || ""));
+});
+
+voiceButton.addEventListener("click", () => {
+  const hero = heroes.find((item) => item.id === activeHeroId);
+  if (hero) toggleVoice(hero);
+});
+
+// 页面切到后台时停掉，别在别的标签页里继续放
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) stopVoice();
 });
 
 selectHero(choices.find((choice) => choice.classList.contains("selected"))?.dataset.heroId || heroes[0].id);

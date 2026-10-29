@@ -71,6 +71,12 @@
             <p class="eyebrow" id="detail-class">{{ default_hero.class_name }}</p>
             <h2 id="detail-name">{{ default_hero.name }}</h2>
             <p id="detail-tagline">{{ default_hero.tagline }}</p>
+            <button class="voice-play" id="voice-play" type="button" hidden
+                    data-play-label="{{ tr('VOICE_PLAY') }}" data-stop-label="{{ tr('VOICE_STOP') }}">
+              <span class="voice-icon" aria-hidden="true"><i></i></span>
+              <b id="voice-label">{{ tr("VOICE_PLAY") }}</b>
+              <em class="voice-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></em>
+            </button>
             <div class="detail-stats" id="detail-stats">
               {% for key, value in default_hero.stats.items() %}
               <div class="detail-stat">
