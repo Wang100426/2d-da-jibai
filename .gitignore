@@ -14,3 +14,5 @@ desktop-server.spec
 save/
 # 发行公司图标源素材（1.3 MB）。运行时用 static/gamecom.png 的压缩副本，源图不入库
 GameCom_Img.png
+# 本地跑服务/构建时的临时日志
+*.log
