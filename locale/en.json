@@ -308,7 +308,9 @@
     "MP_READY": "READY",
     "MP_HERO_PICK": "YOUR FIGHTER",
     "VOICE_PLAY": "PLAY VOICE",
-    "VOICE_STOP": "STOP"
+    "VOICE_STOP": "STOP",
+    "AUDIO_ON": "VOICE ON",
+    "AUDIO_OFF": "MUTED"
   },
   "heroes": {
     "volt": {

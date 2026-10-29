@@ -346,6 +346,19 @@ button:disabled{transform:none}
 .language-switch-options button small{color:#8c94a9;font:10px 'Chakra Petch',sans-serif}
 .language-switch-options button[aria-selected="true"] b{color:var(--cyan)}
 .select-top-actions{position:fixed;z-index:12;top:14px;right:clamp(20px,4vw,64px);display:flex;align-items:center;gap:10px}
+
+/* 全局静音开关：喇叭图标，静音时切开一道斜线 */
+.audio-toggle{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 12px;background:#0d1524;border:1px solid #2f3a55;color:#cfe6ff;font:11px 'Chakra Petch',inherit;letter-spacing:.8px;cursor:pointer;transition:border-color .16s,background .16s,color .16s}
+.audio-toggle:hover{border-color:var(--cyan);background:#131f33}
+.audio-toggle:active{transform:scale(.97)}
+.audio-toggle svg{width:17px;height:17px;flex:none;display:block}
+.audio-toggle .audio-speaker{fill:currentColor}
+.audio-toggle .audio-wave{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round}
+.audio-toggle .audio-slash{display:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round}
+.audio-toggle.muted{color:#79839b;border-color:#28304a}
+.audio-toggle.muted .audio-wave{display:none}
+.audio-toggle.muted .audio-slash{display:block}
+@media(max-width:760px){.audio-toggle .audio-toggle-text{display:none}.audio-toggle{padding:0 9px}}
 @media(max-width:760px){.language-switch-current{height:30px;padding:0 9px;font-size:10px}.language-switch-options{min-width:150px}}
 .topbar-actions{display:flex;align-items:center;gap:16px}
 .camp-transition{position:fixed;z-index:20;inset:0;overflow:hidden;background:#050814;opacity:0;visibility:hidden;pointer-events:none}

@@ -16,6 +16,17 @@
       <b data-coin-balance>{{ "∞" if profile.infinite_coins else "{:,}".format(profile.coins) }}</b>
       <small>{{ tr("SHOP") }}</small>
     </a>
+    <button class="audio-toggle" type="button" data-audio-toggle
+            data-label-audible="{{ tr('AUDIO_ON') }}" data-label-muted="{{ tr('AUDIO_OFF') }}"
+            aria-pressed="false" aria-label="{{ tr('AUDIO_ON') }}" title="{{ tr('AUDIO_ON') }}">
+      <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" focusable="false">
+        <path class="audio-speaker" d="M3.5 9.5h3.2L12 5.2v13.6L6.7 14.5H3.5z"/>
+        <path class="audio-wave audio-wave-near" d="M15.4 9a4.2 4.2 0 0 1 0 6"/>
+        <path class="audio-wave audio-wave-far" d="M18 6.6a7.6 7.6 0 0 1 0 10.8"/>
+        <path class="audio-slash" d="M4.6 4.6l14.8 14.8"/>
+      </svg>
+      <span class="audio-toggle-text">{{ tr("AUDIO_ON") }}</span>
+    </button>
     <div class="language-switch" data-language-switch></div>
   </div>
 
@@ -127,6 +138,7 @@
     window.GAME_MODE = {{ game_mode|tojson }};
     window.SELECT_TIER_LABELS = {{ {"2": tr("TIER_TAG", n=2), "3": tr("TIER_TAG", n=3)}|tojson }};
   </script>
+  <script src="{{ url_for('static', filename='audio.js') }}"></script>
   <script src="{{ url_for('static', filename='select.js') }}"></script>
   <script src="{{ url_for('static', filename='language.js') }}"></script>
   <script src="{{ url_for('static', filename='page-transition.js') }}" defer></script>

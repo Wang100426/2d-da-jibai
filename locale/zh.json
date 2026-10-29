@@ -308,7 +308,9 @@
     "MP_READY": "准备",
     "MP_HERO_PICK": "出战英雄",
     "VOICE_PLAY": "试听语音",
-    "VOICE_STOP": "停止播放"
+    "VOICE_STOP": "停止播放",
+    "AUDIO_ON": "语音开",
+    "AUDIO_OFF": "已静音"
   },
   "heroes": {
     "volt": {

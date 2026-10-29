@@ -67,34 +67,56 @@ const voiceLabel = requireSelectionElement<HTMLElement>("voice-label");
 
 const voicePlayLabel = voiceButton.dataset.playLabel || "试听语音";
 const voiceStopLabel = voiceButton.dataset.stopLabel || "停止播放";
+/** 全局音频开关（static/audio.js）；没加载到时退化成自己 new Audio。 */
+interface GameAudioApi {
+  play(src: string): HTMLAudioElement | null;
+  stop(): void;
+  isMuted(): boolean;
+}
+const gameAudio = (window as Window & Partial<{ GameAudio: GameAudioApi }>).GameAudio;
 /** 当前正在播放的语音；同一时间只允许一条。 */
 let voiceAudio: HTMLAudioElement | null = null;
 let voiceHeroId = "";
 let activeHeroId = "";
 
+function resetVoiceButton(): void {
+  voiceButton.classList.remove("playing");
+  voiceLabel.textContent = voicePlayLabel;
+}
+
 function stopVoice(): void {
+  if (gameAudio) gameAudio.stop();
   if (voiceAudio) {
     voiceAudio.pause();
     voiceAudio.currentTime = 0;
     voiceAudio = null;
   }
-  voiceButton.classList.remove("playing");
-  voiceLabel.textContent = voicePlayLabel;
+  resetVoiceButton();
 }
 
 /** 播放某个英雄的展示语音（自动停掉上一条）。 */
 function playVoice(hero: SelectionHero): void {
   if (!hero.voice) return;
-  stopVoice();
+  // 静音时直接不播，也不进播放态
+  if (gameAudio && gameAudio.isMuted()) {
+    voiceHeroId = "";
+    stopVoice();
+    return;
+  }
   voiceHeroId = hero.id;
-  const audio = new Audio(`/static/voices/${encodeURIComponent(hero.voice)}`);
+  const url = `/static/voices/${encodeURIComponent(hero.voice)}`;
+  const audio = gameAudio ? gameAudio.play(url) : new Audio(url);
+  if (!audio) {
+    voiceHeroId = "";
+    resetVoiceButton();
+    return;
+  }
   voiceAudio = audio;
   audio.addEventListener("ended", () => {
     if (voiceAudio === audio) {
       voiceAudio = null;
       voiceHeroId = "";
-      voiceButton.classList.remove("playing");
-      voiceLabel.textContent = voicePlayLabel;
+      resetVoiceButton();
     }
   });
   audio.addEventListener("error", () => {
@@ -102,10 +124,12 @@ function playVoice(hero: SelectionHero): void {
   });
   voiceButton.classList.add("playing");
   voiceLabel.textContent = voiceStopLabel;
-  // 浏览器可能因为没有用户手势拒绝播放，静默回退成「试听语音」即可
-  const started = audio.play();
-  if (started && typeof started.catch === "function") {
-    void started.catch(() => stopVoice());
+  if (!gameAudio) {
+    // 没有全局音频层时自己播；被浏览器拒绝就静默回退
+    const started = audio.play();
+    if (started && typeof started.catch === "function") {
+      void started.catch(() => stopVoice());
+    }
   }
 }
 
@@ -233,6 +257,13 @@ voiceButton.addEventListener("click", () => {
 // 页面切到后台时停掉，别在别的标签页里继续放
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) stopVoice();
+});
+
+// 全局静音（或别处主动停播）时，把试听按钮一起复位
+document.addEventListener("gameaudio:stop", () => {
+  voiceAudio = null;
+  voiceHeroId = "";
+  resetVoiceButton();
 });
 
 selectHero(choices.find((choice) => choice.classList.contains("selected"))?.dataset.heroId || heroes[0].id);

@@ -31,33 +31,49 @@ const voiceButton = requireSelectionElement("voice-play");
 const voiceLabel = requireSelectionElement("voice-label");
 const voicePlayLabel = voiceButton.dataset.playLabel || "试听语音";
 const voiceStopLabel = voiceButton.dataset.stopLabel || "停止播放";
+const gameAudio = window.GameAudio;
 /** 当前正在播放的语音；同一时间只允许一条。 */
 let voiceAudio = null;
 let voiceHeroId = "";
 let activeHeroId = "";
+function resetVoiceButton() {
+    voiceButton.classList.remove("playing");
+    voiceLabel.textContent = voicePlayLabel;
+}
 function stopVoice() {
+    if (gameAudio)
+        gameAudio.stop();
     if (voiceAudio) {
         voiceAudio.pause();
         voiceAudio.currentTime = 0;
         voiceAudio = null;
     }
-    voiceButton.classList.remove("playing");
-    voiceLabel.textContent = voicePlayLabel;
+    resetVoiceButton();
 }
 /** 播放某个英雄的展示语音（自动停掉上一条）。 */
 function playVoice(hero) {
     if (!hero.voice)
         return;
-    stopVoice();
+    // 静音时直接不播，也不进播放态
+    if (gameAudio && gameAudio.isMuted()) {
+        voiceHeroId = "";
+        stopVoice();
+        return;
+    }
     voiceHeroId = hero.id;
-    const audio = new Audio(`/static/voices/${encodeURIComponent(hero.voice)}`);
+    const url = `/static/voices/${encodeURIComponent(hero.voice)}`;
+    const audio = gameAudio ? gameAudio.play(url) : new Audio(url);
+    if (!audio) {
+        voiceHeroId = "";
+        resetVoiceButton();
+        return;
+    }
     voiceAudio = audio;
     audio.addEventListener("ended", () => {
         if (voiceAudio === audio) {
             voiceAudio = null;
             voiceHeroId = "";
-            voiceButton.classList.remove("playing");
-            voiceLabel.textContent = voicePlayLabel;
+            resetVoiceButton();
         }
     });
     audio.addEventListener("error", () => {
@@ -66,10 +82,12 @@ function playVoice(hero) {
     });
     voiceButton.classList.add("playing");
     voiceLabel.textContent = voiceStopLabel;
-    // 浏览器可能因为没有用户手势拒绝播放，静默回退成「试听语音」即可
-    const started = audio.play();
-    if (started && typeof started.catch === "function") {
-        void started.catch(() => stopVoice());
+    if (!gameAudio) {
+        // 没有全局音频层时自己播；被浏览器拒绝就静默回退
+        const started = audio.play();
+        if (started && typeof started.catch === "function") {
+            void started.catch(() => stopVoice());
+        }
     }
 }
 function toggleVoice(hero) {
@@ -192,5 +210,11 @@ voiceButton.addEventListener("click", () => {
 document.addEventListener("visibilitychange", () => {
     if (document.hidden)
         stopVoice();
+});
+// 全局静音（或别处主动停播）时，把试听按钮一起复位
+document.addEventListener("gameaudio:stop", () => {
+    voiceAudio = null;
+    voiceHeroId = "";
+    resetVoiceButton();
 });
 selectHero(choices.find((choice) => choice.classList.contains("selected"))?.dataset.heroId || heroes[0].id);

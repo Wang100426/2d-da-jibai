@@ -39,7 +39,8 @@
     "test:story-map": "node --test tests/story_map.test.cjs",
     "test:multiplayer": "npm run build:lobby && node tests/multiplayer_lobby.test.cjs",
     "test:all": "npm run test:story && npm run test:multiplayer && npm run test:voice",
-    "test:voice": "npm run build:select && node tests/hero_voice.test.cjs"
+    "test:voice": "npm run build:select && node tests/hero_voice.test.cjs && node tests/audio_toggle.test.cjs",
+    "test:audio": "node tests/audio_toggle.test.cjs"
   },
   "devDependencies": {
     "electron": "^44.4.5",

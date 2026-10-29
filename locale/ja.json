@@ -308,7 +308,9 @@
     "MP_READY": "準備",
     "MP_HERO_PICK": "出撃ヒーロー",
     "VOICE_PLAY": "ボイスを再生",
-    "VOICE_STOP": "停止"
+    "VOICE_STOP": "停止",
+    "AUDIO_ON": "ボイスON",
+    "AUDIO_OFF": "ミュート中"
   },
   "heroes": {
     "volt": {

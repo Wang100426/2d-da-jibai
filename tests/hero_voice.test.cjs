@@ -113,6 +113,10 @@ const hero = (id, voice) => ({
   voice,
 });
 
+/** 全局静音开关（static/audio.js）的替身：静音时 play 返回 null。 */
+let audioMuted = false;
+let audioStopCalls = 0;
+
 const code = fs.readFileSync(path.join("static", "select.js"), "utf8");
 const sandbox = {
   console,
@@ -135,6 +139,16 @@ sandbox.window = {
   GAME_MODE: "rogue",
   SELECT_TIER_LABELS: {},
   document: documentStub,
+  GameAudio: {
+    play(src) {
+      if (audioMuted) return null;
+      const audio = new FakeAudio(src);
+      audio.play();
+      return audio;
+    },
+    stop() { audioStopCalls += 1; },
+    isMuted() { return audioMuted; },
+  },
 };
 sandbox.globalThis = sandbox;
 
@@ -199,6 +213,23 @@ sandbox.globalThis = sandbox;
   documentStub.hidden = true;
   documentStub._ev["visibilitychange"]();
   check("切到后台会停止播放", last.paused === true);
+
+  // 全局静音：点英雄不出声，按钮也不进播放态
+  audioMuted = true;
+  const beforeMute = audios.length;
+  pipaBtn.click();
+  await new Promise((r) => setImmediate(r));
+  check("静音时点英雄不产生音频", audios.length === beforeMute, String(audios.length));
+  check("静音时按钮不进播放态", ids["voice-play"].classList.contains("playing") === false);
+  check("静音时文案保持「试听语音」", ids["voice-label"].textContent === "试听语音");
+  check("静音时按钮仍然可见（还能取消静音后再听）", ids["voice-play"].hidden === false);
+  check("静音时也调用了全局 stop", audioStopCalls > 0, String(audioStopCalls));
+
+  // 取消静音后恢复
+  audioMuted = false;
+  lunaBtn.click();
+  await new Promise((r) => setImmediate(r));
+  check("取消静音后又能播", audios.length === beforeMute + 1 && audios[audios.length - 1].paused === false);
 
   console.log(`\n${passed} checks passed`);
 })();
