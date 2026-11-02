@@ -628,6 +628,48 @@
         }
       }
     },
+    "dual_tone": {
+      "name": "Twin-Tone Musician",
+      "class_name": "Dual-Form Controller",
+      "tagline": "One string stills the heart; the next changes the tide.",
+      "initial": "T",
+      "stats": ["Attack", "Defense", "Mobility"],
+      "forms": {"guqin": "Guqin", "harp": "Harp"},
+      "passive": {
+        "name": "Twin Strings",
+        "description": "Switches between Guqin and Harp forms. Guqin continuously slows enemies within 250 by 35%; Harp grants 30% movement speed. Q's Resonance suspends the passive, then switches to the other form when the empowered state ends."
+      },
+      "skills": {
+        "dual-tone-ult": {
+          "name": "Twin-Tone Resonance",
+          "kind": "Ultimate",
+          "description": "Empowered state · switches form when it ends",
+          "detail_description": "Enter an empowered state for 5 seconds. The passive is suspended, movement speed increases by 15%, and enemies within 300 are slowed by 25%. E and R gain empowered effects. When the duration ends, switch to the other form."
+        },
+        "dual-tone-e": {
+          "name": "Beyond the Seven Strings",
+          "kind": "Skill",
+          "description": "Guqin links enemies; Harp sends three sound waves",
+          "detail_description": "Guqin: link up to 7 nearest enemies within basic-attack range; after 1 second, pull them close, deal 60 damage, and stun them for 1 second. Harp: emit 3 waves around you, each dealing 14 damage. Enemies hit by at least 3 waves take 28 bonus damage and are stunned for 1 second.",
+          "forms": {
+            "guqin": {"name": "Beyond the Seven Strings", "description": "Link up to 7 nearest enemies in attack range · pull, damage, and stun after 1s"},
+            "harp": {"name": "Noble Tone", "description": "Emit 3 waves around you · enemies hit 3 times take bonus damage and are stunned"},
+            "ultimate": {"name": "Sound · Lure", "description": "Pull all nearby enemies · emit 7 waves and stun for 2s"}
+          }
+        },
+        "dual-tone-r": {
+          "name": "Dream of the Bamboo Grove",
+          "kind": "Skill",
+          "description": "Guqin slows all and heals; Harp plays in place and knocks back",
+          "detail_description": "Guqin: immediately slow all enemies by 60% for 3 seconds and restore 3 health every 0.5 seconds. Harp: remain still and play for 3 seconds, dealing 6 damage and knocking back enemies within 250 every 0.4 seconds; restore health equal to 50% of damage dealt.",
+          "forms": {
+            "guqin": {"name": "Dream of the Bamboo Grove", "description": "Slow all enemies by 60% for 3s · slowly restore health"},
+            "harp": {"name": "Sweet Chord", "description": "Play in place for 3s · knock back nearby enemies, deal damage, and heal"},
+            "ultimate": {"name": "Sound · Startle", "description": "Damage and slow all enemies by 90% · knock back those within twice attack range"}
+          }
+        }
+      }
+    },
     "bball": {
       "name": "Basketball Boy",
       "class_name": "Court Shooter",
@@ -1318,6 +1360,10 @@
       "禁锢": "Root",
       "减速": "Slow",
       "强力减速": "Heavy slow",
+      "双音减速25": "25% slow",
+      "双音减速35": "35% slow",
+      "双音减速60": "60% slow",
+      "双音减速90": "90% slow",
       "荆棘护甲": "Thorn armor",
       "中毒": "Poison",
       "月影护盾": "Moon shield",
@@ -1358,6 +1404,18 @@
       "skill.pipa_yangchun": "{name} hits {hits} enemies, rooting them for {seconds}s and restoring {healed} health.",
       "skill.pipa_yangchun_miss": "{name} found no enemies within {range}.",
       "skill.pipa_shimian": "{name} summons {count} minions that hunt down enemies.",
+      "dual_tone.form_changed": "Resonance ends. Switched to {form} form.",
+      "dual_tone.form_label": "Form: {form}",
+      "dual_tone.ultimate_start": "Twin-Tone Resonance: empowered for {seconds}s; form changes when it ends.",
+      "dual_tone.e_miss": "Beyond the Seven Strings missed: no enemies in basic-attack range.",
+      "dual_tone.guqin_link": "Linked {count} enemies; pulling and stunning in {seconds}s.",
+      "dual_tone.guqin_strike": "Seven-String Resonance: pulled and hit {hits} enemies.",
+      "dual_tone.harp_waves": "Noble Tone: releasing {count} sound waves.",
+      "dual_tone.play_song": "Sweet Chord: playing in place for {seconds}s.",
+      "dual_tone.global_song": "Dream of the Bamboo Grove: all enemies slowed for {seconds}s.",
+      "dual_tone.ultimate_e": "Sound · Lure: pulled {hits} nearby enemies and released seven waves.",
+      "dual_tone.ultimate_r": "Sound · Startle: knocked back enemies within {radius}; all enemies are slowed and damaged.",
+      "float.dual_tone_ult": "Twin-Tone Resonance",
       "basic.out_of_range": "Basic attack missed: get within {range} to attack.",
       "basic.pvp_strike": "Attacking {name}; the server validates range and syncs damage.",
       "basic.rate_duel": "{rate}/sec",
@@ -1606,7 +1664,13 @@
     "篮球发射速度 5/秒 → 10/秒": "Basketball fire rate 5/sec → 10/sec",
     "时长 +2 秒且普攻无视距离（不无视建筑）": "Duration +2s and basic attacks ignore range (not buildings)",
     "剑雨宽度 200 → 300": "Sword Rain width 200 → 300",
-    "剑落地后保留 3 秒，对经过的敌人造成伤害和减速": "Blades linger for 3s after landing, damaging and slowing enemies that pass through"
+    "剑落地后保留 3 秒，对经过的敌人造成伤害和减速": "Blades linger for 3s after landing, damaging and slowing enemies that pass through",
+    "琴瑟共鸣持续时间 5 → 10 秒": "Twin-Tone Resonance duration 5s → 10s",
+    "强化期间伤害 +30%": "Damage +30% while empowered",
+    "七弦之上与高贵之音的眩晕时间 +1 秒": "+1s stun for Beyond the Seven Strings and Noble Tone",
+    "古琴链接目标 7 → 10；竖琴音波 3 → 5": "Guqin links 7 → 10 targets; Harp waves 3 → 5",
+    "竹林之梦与甜蜜和弦持续时间 3 → 5 秒": "Dream of the Bamboo Grove and Sweet Chord duration 3s → 5s",
+    "竹林之梦持续伤害；甜蜜和弦吸血比例 50% → 100%": "Dream of the Bamboo Grove deals damage; Sweet Chord lifesteal 50% → 100%"
   },
   "story": {
     "categories": {

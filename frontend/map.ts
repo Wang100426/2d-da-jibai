@@ -8,7 +8,13 @@ interface LocalePackage {
     initial: string;
     stats: string[];
     passive: { name: string; description: string };
-    skills: Record<string, { name: string; description: string; kind: string }>;
+    skills: Record<string, {
+      name: string;
+      description: string;
+      kind: string;
+      forms?: Record<string, { name: string; description: string }>;
+    }>;
+    forms?: { guqin: string; harp: string };
   }>;
   upgrades: Record<string, { name: string; description: string }>;
   battle: {
@@ -169,6 +175,7 @@ interface TabletVolley {
 interface SkillConfig {
   id: string;
   name: string;
+  description?: string;
   kind: string;
   target: "enemy" | "self";
   cost: number;
@@ -252,6 +259,26 @@ interface SkillConfig {
   shooter_duration?: number;
   shooter_fire_rate?: number;
   shooter_ignore_range?: number;
+  ultimate_duration?: number;
+  ultimate_slow_radius?: number;
+  ultimate_slow_ratio?: number;
+  ultimate_damage_scale?: number;
+  ultimate_e_radius?: number;
+  link_delay?: number;
+  link_pull_distance?: number;
+  harp_wave_count?: number;
+  harp_wave_damage?: number;
+  harp_wave_bonus_damage?: number;
+  harp_wave_radius?: number;
+  global_duration?: number;
+  global_heal_per_tick?: number;
+  global_damage_per_tick?: number;
+  global_slow_ratio?: number;
+  play_duration?: number;
+  play_interval?: number;
+  play_damage?: number;
+  play_knockback?: number;
+  play_heal_ratio?: number;
 }
 
 interface TierPatch {
@@ -424,6 +451,35 @@ interface HarpField {
   y: number;
   age: number;
   tickTimer: number;
+}
+
+interface DualToneLink {
+  targets: EnemyUnit[];
+  elapsed: number;
+  skill: SkillConfig;
+}
+
+interface DualToneWaves {
+  age: number;
+  nextPulse: number;
+  sent: number;
+  total: number;
+  mode: "harp" | "ultimate";
+  skill: SkillConfig;
+  hits: Map<EnemyUnit, number>;
+}
+
+interface DualTonePlay {
+  remaining: number;
+  tickTimer: number;
+  skill: SkillConfig;
+}
+
+interface DualToneGlobalSong {
+  remaining: number;
+  tickTimer: number;
+  skill: SkillConfig;
+  ultimate: boolean;
 }
 
 interface GymRusher extends EnemyUnit {
@@ -934,6 +990,12 @@ const skillProgress = new Map<string, SkillProgress>(
   config.skills.map((skill) => [skill.id, { tier: 1, minorUpgrades: 0 }]),
 );
 const statusEffects: Record<string, number> = {};
+let dualToneForm: "guqin" | "harp" = "guqin";
+let dualToneUltimateRemaining = 0;
+let dualToneLink: DualToneLink | undefined;
+let dualToneWaves: DualToneWaves | undefined;
+let dualTonePlay: DualTonePlay | undefined;
+let dualToneGlobalSong: DualToneGlobalSong | undefined;
 const enemies: EnemyUnit[] = [];
 const supplies: Supply[] = battleSpace.supplies.map((supply) => ({ ...supply, collected: false }));
 const floatingTexts: FloatingText[] = [];
@@ -1024,8 +1086,24 @@ function hasPlayerEffect(effect: string): boolean {
   return (statusEffects[effect] || 0) > 0;
 }
 
+function enemySlowMultiplier(enemy: EnemyUnit, regularSlowMultiplier = 0.45): number {
+  const normalSlow = enemy.effects["强力减速"] ? 0.4
+    : enemy.effects["减速"] ? regularSlowMultiplier : 1;
+  const dualToneRatio = [25, 35, 60, 90].reduce(
+    (strongest, ratio) => enemy.effects[`双音减速${ratio}`] ? Math.max(strongest, ratio / 100) : strongest,
+    0,
+  );
+  return Math.min(normalSlow, 1 - dualToneRatio);
+}
+
+function applyDualToneSlow(enemy: EnemyUnit, ratio: number, duration: number): void {
+  const effect = `双音减速${Math.round(ratio * 100)}`;
+  enemy.effects[effect] = Math.max(enemy.effects[effect] || 0, duration);
+}
+
 function playerMovementLocked(): boolean {
-  return hasPlayerEffect("眩晕") || hasPlayerEffect("禁锢") || hasPlayerEffect("狂舞");
+  return hasPlayerEffect("眩晕") || hasPlayerEffect("禁锢") || hasPlayerEffect("狂舞") ||
+    !!dualTonePlay;
 }
 
 function playerActionsLocked(): boolean {
@@ -1957,12 +2035,16 @@ function updateHud(): void {
     lastHudEnergy = energy;
   }
   lootCountLabel.textContent = `${lootCollected}`;
-  combatTraitsLabel.textContent = t("hud.traits", {
+  const traits = t("hud.traits", {
     speed: playerState.attackSpeed.toFixed(1),
     defense: Math.round(playerState.damageReduction * 100),
     lifesteal: Math.round(playerState.lifesteal * 100),
     dodge: Math.round(playerState.dodgeChance * 100),
   });
+  const formName = locale.heroes[config.heroId]?.forms?.[dualToneForm];
+  combatTraitsLabel.textContent = isDualToneHero() && formName
+    ? `${traits} · ${t("dual_tone.form_label", { form: formName })}`
+    : traits;
   skillExperienceBar.style.width = `${skillExperience / skillExperienceThreshold * 100}%`;
   skillExperienceLabel.textContent = `Lv.${skillExperienceLevel} · ${skillExperience} / ${skillExperienceThreshold}`;
   skillButtons.forEach((button, index) => {
@@ -3406,7 +3488,7 @@ function updateGymRushers(dt: number): void {
       rusher.vy = Math.sin(angle) * speed;
       rusher.targetId = target.id;
     }
-    const slowMultiplier = rusher.effects["强力减速"] ? 0.4 : rusher.effects["减速"] ? 0.45 : 1;
+    const slowMultiplier = enemySlowMultiplier(rusher);
     const movementMultiplier = rusher.effects["眩晕"] || rusher.effects["禁锢"] ? 0 : slowMultiplier;
     rusher.x += rusher.vx * dt * movementMultiplier;
     rusher.y += rusher.vy * dt * movementMultiplier;
@@ -4372,6 +4454,9 @@ function hitEnemy(enemy: EnemyUnit, damage: number, effect = "", effectTurns = 0
     damage * playerState.damageMultiplier * frenzyDamageScale(enemy)
       * (1 - (enemy.defenseReduction || 0)),
   ));
+  if (isDualToneHero() && dualToneUltimateRemaining > 0) {
+    damage = Math.round(damage * (config.skills[0]?.ultimate_damage_scale || 1));
+  }
   const executed = rollExecute(enemy);
   if (executed) damage = Math.max(damage, enemy.hp);
   const actualDamage = Math.min(enemy.hp, damage);
@@ -4483,7 +4568,7 @@ function updateDuelBot(bot: EnemyUnit, dt: number): void {
     if (distance > preferredDistance + 24) direction = 1;
     else if (attackRange > 150 && distance < preferredDistance - 35) direction = -0.55;
     if (direction !== 0) {
-      const speed = bot.speed * (bot.effects["减速"] ? 0.5 : 1) * dt * direction;
+      const speed = bot.speed * enemySlowMultiplier(bot, 0.5) * dt * direction;
       bot.x = Math.max(38, Math.min(map.width - 38, bot.x + (player.x - bot.x) / distance * speed));
       bot.y = Math.max(38, Math.min(map.height - 38, bot.y + (player.y - bot.y) / distance * speed));
     }
@@ -5215,6 +5300,275 @@ function advanceSakuraEffects(dt: number): void {
   advanceSakuraFestival(dt);
   advanceSakuraStorms(dt);
   advanceSakuraSong(dt);
+}
+
+/* ---------- 双音琴师：双形态与共鸣技能 ---------- */
+function isDualToneHero(): boolean {
+  return heroPassive.id === "dual_tone_forms";
+}
+
+function dualToneSpeedMultiplier(): number {
+  if (!isDualToneHero()) return 1;
+  if (dualToneUltimateRemaining > 0) return 1.15;
+  return dualToneForm === "harp" ? 1.3 : 1;
+}
+
+function updateDualToneSkillLabels(form: "guqin" | "harp" | "ultimate"): void {
+  const translation = locale.heroes[config.heroId];
+  config.skills.forEach((skill) => {
+    const variant = translation?.skills[skill.id]?.forms?.[form];
+    if (!variant) return;
+    skill.name = variant.name;
+    skill.description = variant.description;
+    const index = config.skills.indexOf(skill);
+    const button = skillButtons[index];
+    const name = button?.querySelector<HTMLElement>("b");
+    const description = button?.querySelector<HTMLElement>("small");
+    if (name) name.textContent = variant.name;
+    if (description) description.textContent = variant.description;
+  });
+  updateHud();
+}
+
+function setDualToneForm(form: "guqin" | "harp"): void {
+  dualToneForm = form;
+  updateDualToneSkillLabels(form);
+}
+
+function advanceDualToneEffects(dt: number): void {
+  if (!isDualToneHero()) return;
+  if (dualToneUltimateRemaining > 0) {
+    dualToneUltimateRemaining = Math.max(0, dualToneUltimateRemaining - dt);
+    if (dualToneUltimateRemaining === 0) {
+      setDualToneForm(dualToneForm === "guqin" ? "harp" : "guqin");
+      showToast(t("dual_tone.form_changed", {
+        form: locale.heroes[config.heroId]?.forms?.[dualToneForm] || dualToneForm,
+      }));
+      addFloatingText(player.x, player.y - 44, t("dual_tone.form_label", {
+        form: locale.heroes[config.heroId]?.forms?.[dualToneForm] || dualToneForm,
+      }), heroColors.main);
+    }
+  }
+  const ultimate = dualToneUltimateRemaining > 0;
+  const slowRadius = ultimate
+    ? config.skills[0]?.ultimate_slow_radius || 300
+    : heroCombat.basic_range;
+  const slowRatio = ultimate
+    ? config.skills[0]?.ultimate_slow_ratio || 0.25
+    : dualToneForm === "guqin" ? 0.35 : 0;
+  if (slowRatio <= 0) return;
+  enemies.forEach((enemy) => {
+    if (enemy.hp <= 0 || enemy.friendlySummon || distanceTo(enemy.x, enemy.y) > slowRadius) return;
+    applyDualToneSlow(enemy, slowRatio, 0.16);
+  });
+}
+
+function startDualToneUltimate(skill: SkillConfig): void {
+  dualToneUltimateRemaining = skill.ultimate_duration || 5;
+  updateDualToneSkillLabels("ultimate");
+  addSkillVisual(skill);
+  skillVisuals.push({
+    type: "aura", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
+    age: 0, duration: 0.8, color: "#d9caff", radius: skill.ultimate_slow_radius || 300,
+  });
+  addFloatingText(player.x, player.y - 40, t("float.dual_tone_ult"), "#e6ddff");
+  showToast(t("dual_tone.ultimate_start", { seconds: dualToneUltimateRemaining }));
+}
+
+function castDualToneE(skill: SkillConfig): void {
+  if (dualToneUltimateRemaining > 0) {
+    const radius = skill.ultimate_e_radius || 420;
+    const victims = enemies.filter((enemy) =>
+      enemy.hp > 0 && distanceTo(enemy.x, enemy.y) <= radius && !enemy.friendlySummon);
+    victims.forEach((enemy) => {
+      const distance = distanceTo(enemy.x, enemy.y);
+      const stopDistance = skill.link_pull_distance || 70;
+      if (distance > stopDistance) {
+        const dx = (player.x - enemy.x) / distance;
+        const dy = (player.y - enemy.y) / distance;
+        const step = Math.max(0, distance - stopDistance);
+        const nextX = enemy.x + dx * step;
+        const nextY = enemy.y + dy * step;
+        if (!isEnemyPositionBlocked(nextX, nextY, 18)) {
+          enemy.x = nextX;
+          enemy.y = nextY;
+        }
+      }
+    });
+    dualToneWaves = {
+      age: 0, nextPulse: 0, sent: 0, total: 7, mode: "ultimate", skill, hits: new Map(),
+    };
+    showToast(t("dual_tone.ultimate_e", { hits: victims.length }));
+    return;
+  }
+  if (dualToneForm === "guqin") {
+    const victims = enemies
+      .filter((enemy) => enemy.hp > 0 && !enemy.friendlySummon && distanceTo(enemy.x, enemy.y) <= heroCombat.basic_range)
+      .sort((left, right) => distanceTo(left.x, left.y) - distanceTo(right.x, right.y))
+      .slice(0, skill.target_count || 7);
+    if (!victims.length) {
+      showToast(t("dual_tone.e_miss"), "warning");
+      return;
+    }
+    dualToneLink = { targets: victims, elapsed: 0, skill };
+    victims.forEach((enemy) => {
+      skillVisuals.push({
+        type: "beam", x: player.x, y: player.y, targetX: enemy.x, targetY: enemy.y,
+        age: 0, duration: skill.link_delay || 1, color: "#b9a7ff",
+      });
+    });
+    showToast(t("dual_tone.guqin_link", { count: victims.length, seconds: skill.link_delay || 1 }));
+    return;
+  }
+  dualToneWaves = {
+    age: 0, nextPulse: 0, sent: 0, total: skill.harp_wave_count || 3, mode: "harp", skill, hits: new Map(),
+  };
+  showToast(t("dual_tone.harp_waves", { count: skill.harp_wave_count || 3 }));
+}
+
+function castDualToneR(skill: SkillConfig): void {
+  if (dualToneUltimateRemaining > 0) {
+    const radius = heroCombat.basic_range * 2;
+    enemies.forEach((enemy) => {
+      if (enemy.hp <= 0 || enemy.friendlySummon) return;
+      applyDualToneSlow(enemy, 0.9, dualToneUltimateRemaining);
+      if (distanceTo(enemy.x, enemy.y) <= radius) knockbackEnemy(enemy, 120);
+    });
+    dualToneGlobalSong = {
+      remaining: dualToneUltimateRemaining, tickTimer: 0, skill, ultimate: true,
+    };
+    showToast(t("dual_tone.ultimate_r", { radius }));
+    return;
+  }
+  if (dualToneForm === "guqin") {
+    const duration = skill.global_duration || 3;
+    dualToneGlobalSong = { remaining: duration, tickTimer: 0, skill, ultimate: false };
+    enemies.forEach((enemy) => {
+      if (enemy.hp > 0 && !enemy.friendlySummon) {
+        applyDualToneSlow(enemy, skill.global_slow_ratio || 0.6, duration);
+      }
+    });
+    showToast(t("dual_tone.global_song", { seconds: duration }));
+    return;
+  }
+  const duration = skill.play_duration || 3;
+  dualTonePlay = { remaining: duration, tickTimer: 0, skill };
+  showToast(t("dual_tone.play_song", { seconds: duration }));
+}
+
+function advanceDualToneLink(dt: number): void {
+  const link = dualToneLink;
+  if (!link) return;
+  link.elapsed += dt;
+  if (link.elapsed < (link.skill.link_delay || 1)) return;
+  dualToneLink = undefined;
+  let hits = 0;
+  link.targets.forEach((enemy) => {
+    if (enemy.hp <= 0) return;
+    const distance = distanceTo(enemy.x, enemy.y);
+    const stopDistance = link.skill.link_pull_distance || 70;
+    if (distance > stopDistance) {
+      const step = distance - stopDistance;
+      const nextX = enemy.x + (player.x - enemy.x) / distance * step;
+      const nextY = enemy.y + (player.y - enemy.y) / distance * step;
+      if (!isEnemyPositionBlocked(nextX, nextY, 18)) {
+        enemy.x = nextX;
+        enemy.y = nextY;
+      }
+    }
+    hitEnemy(enemy, link.skill.damage, "眩晕", link.skill.effect_turns);
+    hits += 1;
+  });
+  skillVisuals.push({
+    type: "aura", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
+    age: 0, duration: 0.7, color: "#b9a7ff", radius: 150,
+  });
+  showToast(t("dual_tone.guqin_strike", { hits }));
+}
+
+function advanceDualToneWaves(dt: number): void {
+  const waves = dualToneWaves;
+  if (!waves) return;
+  waves.age += dt;
+  const interval = waves.mode === "ultimate" ? 0.18 : 0.3;
+  while (waves.sent < waves.total && waves.age >= waves.nextPulse) {
+    waves.sent += 1;
+    waves.nextPulse += interval;
+    const radius = waves.mode === "ultimate"
+      ? waves.skill.ultimate_e_radius || 420
+      : waves.skill.harp_wave_radius || 250;
+    const damage = waves.mode === "ultimate"
+      ? Math.max(1, Math.round(waves.skill.damage / 3))
+      : waves.skill.harp_wave_damage || 14;
+    enemies.forEach((enemy) => {
+      if (enemy.hp <= 0 || enemy.friendlySummon || distanceTo(enemy.x, enemy.y) > radius) return;
+      const count = (waves.hits.get(enemy) || 0) + 1;
+      waves.hits.set(enemy, count);
+      hitEnemy(enemy, damage);
+      if (waves.mode === "ultimate" && count === 1) {
+        enemy.effects["眩晕"] = Math.max(enemy.effects["眩晕"] || 0, 2);
+      }
+      skillVisuals.push({
+        type: "wave", x: enemy.x, y: enemy.y, targetX: enemy.x, targetY: enemy.y,
+        age: 0, duration: 0.25, color: "#d9caff", radius: 46,
+      });
+    });
+    skillVisuals.push({
+      type: "aura", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
+      age: 0, duration: 0.35, color: "#b9a7ff", radius,
+    });
+  }
+  if (waves.sent < waves.total) return;
+  if (waves.mode === "harp") {
+    waves.hits.forEach((count, enemy) => {
+      if (count < 3 || enemy.hp <= 0) return;
+      hitEnemy(enemy, waves.skill.harp_wave_bonus_damage || 28, "眩晕", waves.skill.effect_turns);
+    });
+  }
+  dualToneWaves = undefined;
+}
+
+function advanceDualToneSongs(dt: number): void {
+  if (dualToneGlobalSong) {
+    const song = dualToneGlobalSong;
+    song.remaining = Math.max(0, song.remaining - dt);
+    song.tickTimer -= dt;
+    while (song.tickTimer <= 0 && song.remaining > 0) {
+      song.tickTimer += 0.5;
+      const ultimate = song.ultimate && dualToneUltimateRemaining > 0;
+      enemies.forEach((enemy) => {
+        if (enemy.hp <= 0 || enemy.friendlySummon) return;
+        if (ultimate) {
+          applyDualToneSlow(enemy, 0.9, 0.6);
+          hitEnemy(enemy, 6);
+        } else if (!song.ultimate && dualToneForm === "guqin") {
+          applyDualToneSlow(enemy, song.skill.global_slow_ratio || 0.6, song.remaining);
+          if (song.skill.global_damage_per_tick) hitEnemy(enemy, song.skill.global_damage_per_tick);
+        }
+      });
+      if (!song.ultimate && dualToneForm === "guqin") healPlayer(song.skill.global_heal_per_tick || 3);
+    }
+    if (song.remaining <= 0 || song.ultimate && dualToneUltimateRemaining <= 0) {
+      dualToneGlobalSong = undefined;
+    }
+  }
+  if (dualTonePlay) {
+    const play = dualTonePlay;
+    play.remaining = Math.max(0, play.remaining - dt);
+    play.tickTimer -= dt;
+    while (play.tickTimer <= 0 && play.remaining > 0) {
+      play.tickTimer += play.skill.play_interval || 0.4;
+      let dealt = 0;
+      enemies.forEach((enemy) => {
+        if (enemy.hp <= 0 || enemy.friendlySummon || distanceTo(enemy.x, enemy.y) > (play.skill.radius || 250)) return;
+        const damage = hitEnemy(enemy, play.skill.play_damage || 6);
+        dealt += damage;
+        knockbackEnemy(enemy, play.skill.play_knockback || 38);
+      });
+      healPlayer(dealt * (play.skill.play_heal_ratio || 0.5));
+    }
+    if (play.remaining <= 0) dualTonePlay = undefined;
+  }
 }
 
 /* ---------- 江湖客 · 技能 ---------- */
@@ -6019,6 +6373,12 @@ function castSkill(index: number): void {
     castBballShooter(skill);
   } else if (skill.action === "bball_crossover") {
     castBballCrossover(skill);
+  } else if (skill.action === "dual_tone_ult") {
+    startDualToneUltimate(skill);
+  } else if (skill.action === "dual_tone_e") {
+    castDualToneE(skill);
+  } else if (skill.action === "dual_tone_r") {
+    castDualToneR(skill);
   } else if (skill.target === "self") {
     addSkillVisual(skill);
     const duration = Math.max(3, skill.effect_turns * 3);
@@ -6331,6 +6691,10 @@ function updateCombat(dt: number): void {
       }
     }
   });
+  advanceDualToneEffects(dt);
+  advanceDualToneLink(dt);
+  advanceDualToneWaves(dt);
+  advanceDualToneSongs(dt);
   advanceSakuraEffects(dt);
   advanceJianghuRain(dt);
   // 剧情战斗走剧本事件，不再叠加地图随机事件（避免同一波里两套意外伤害）
@@ -6399,7 +6763,7 @@ function updateCombat(dt: number): void {
     const distance = Math.hypot(target.x - enemy.x, target.y - enemy.y);
     const attackRange = enemy.anesthetist ? 54 : enemy.kind === "brute" ? 70 : 48;
     if (distance > attackRange && !enemy.effects["禁锢"] && !enemy.effects["眩晕"]) {
-      const speed = enemy.speed * (enemy.effects["强力减速"] ? 0.4 : enemy.effects["减速"] ? 0.45 : 1) *
+      const speed = enemy.speed * enemySlowMultiplier(enemy) *
         (schoolClassDuration > 0 ? 0.4 : 1) * dt;
       moveEnemyToward(enemy, target, speed, dt);
     }
@@ -6734,6 +7098,7 @@ function drawFrame(timestamp: number): void {
     }
     const movementSpeed =
       player.speed *
+      dualToneSpeedMultiplier() *
       ((statusEffects["加速"] || 0) > 0 ? 1.45 : 1) *
       (sakuraSong && sakuraSong.remaining > 0 ? 1.5 : 1) *
       jianghuFlightSpeedScale() *
@@ -6876,6 +7241,7 @@ resumeRunButton?.addEventListener("click", togglePause);
 bindCoinSettlement();
 
 updateHud();
+if (isDualToneHero()) setDualToneForm("guqin");
 if (config.multiplayer) {
   mapMode.textContent = tx(t("mp.room_tag", { room: config.multiplayer.room_id }));
   peerList.hidden = false;
