@@ -1,5 +1,25 @@
 # 更新日志 / Updates
 
+## 2.4.1
+
+### 中文
+
+- 优化近期新增英雄的技能动画：江湖客剑气与剑雨、滑板小子的滑板轨迹、篮球少年的篮球技能，以及双音琴师的音波、链接与形态特效。
+- 篮球少年普攻新增清晰的篮球飞行动画，适用于普通敌人与联机对战目标。
+- 双音琴师古琴、竖琴和强化状态使用不同颜色呈现，强化技能与形态效果更易辨识。
+
+### English
+
+- Improved skill animations for recently added heroes: Jianghu's sword effects, Skater Kid's board trails, Basketball Boy's basketball skills, and Twin-Tone Musician's sound waves, links, and form effects.
+- Basketball Boy's basic attacks now visibly launch a basketball, both against regular enemies and in multiplayer duels.
+- Twin-Tone Musician's Guqin, Harp, and empowered states now use distinct colors for clearer visual feedback.
+
+### 日本語
+
+- 最近追加されたヒーローのスキル演出を改善しました。江湖客の剣技、スケーターのボード軌跡、バスケットボール少年のスキル、双音琴師の音波・リンク・形態エフェクトを強化しました。
+- バスケットボール少年の通常攻撃で、通常の敵とオンライン対戦相手の両方にボールを発射する演出を追加しました。
+- 双音琴師の古琴・ハープ・強化状態を異なる色で表示し、形態をより判別しやすくしました。
+
 ## 2.4.0
 
 ### 中文

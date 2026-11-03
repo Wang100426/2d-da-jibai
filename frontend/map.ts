@@ -36,7 +36,6 @@ interface LocalePackage {
     host: string;
   };
 }
-
 interface MapConfig {
   heroId: string;
   name: string;
@@ -559,7 +558,8 @@ interface FloatingText {
 }
 
 interface SkillVisual {
-  type: "lightning" | "beam" | "aura" | "meteor" | "impact" | "wave" | "disc" | "sword";
+  type: "lightning" | "beam" | "aura" | "meteor" | "impact" | "wave" | "disc" | "sword"
+    | "ring" | "trail" | "note" | "board" | "link" | "slash" | "ball";
   x: number;
   y: number;
   targetX: number;
@@ -568,6 +568,25 @@ interface SkillVisual {
   duration: number;
   color: string;
   radius?: number;
+  angle?: number;
+  count?: number;
+}
+
+interface SkaterBoomerang {
+  x: number;
+  y: number;
+  startX: number;
+  startY: number;
+  directionX: number;
+  directionY: number;
+  range: number;
+  speed: number;
+  progress: number;
+  phase: "out" | "back";
+  skill: SkillConfig;
+  outboundVictims: Set<EnemyUnit>;
+  returnVictims: Set<EnemyUnit>;
+  originalSpeed: number;
 }
 
 /** 音浪冲击的飞行体。命中建筑会自爆，3 阶改为穿过建筑并在命中 2 个敌人后自爆。 */
@@ -884,11 +903,13 @@ let skaterSpeedMultiplier = 1;
 /** 滑板能飞状态。 */
 let skaterFlight: {
   timer: number;
+  effectTimer: number;
   baseSpeed: number;
   jumpPending: boolean;
   jumpTimer: number;
   slamStun: number;
 } | undefined;
+let skaterBoomerang: SkaterBoomerang | undefined;
 
 let wave = 0;
 let waveState: "starting" | "active" | "upgrade" = "starting";
@@ -996,6 +1017,7 @@ let dualToneLink: DualToneLink | undefined;
 let dualToneWaves: DualToneWaves | undefined;
 let dualTonePlay: DualTonePlay | undefined;
 let dualToneGlobalSong: DualToneGlobalSong | undefined;
+let dualToneFormPulseTimer = 0;
 const enemies: EnemyUnit[] = [];
 const supplies: Supply[] = battleSpace.supplies.map((supply) => ({ ...supply, collected: false }));
 const floatingTexts: FloatingText[] = [];
@@ -4004,8 +4026,153 @@ function drawSkillVisuals(): void {
       context.beginPath();
       context.arc(0, 0, size * 0.34, 0, Math.PI * 2);
       context.fill();
+    } else if (visual.type === "ring") {
+      const radius = (visual.radius || 120) * (0.25 + 0.75 * progress);
+      context.shadowColor = visual.color;
+      context.shadowBlur = 22;
+      context.strokeStyle = visual.color;
+      context.lineWidth = 9 * (1 - progress * 0.72);
+      context.beginPath();
+      context.arc(visual.x, visual.y, radius, 0, Math.PI * 2);
+      context.stroke();
+      context.strokeStyle = "#ffffff";
+      context.lineWidth = 2 * (1 - progress);
+      context.beginPath();
+      context.arc(visual.x, visual.y, radius * 0.88, 0, Math.PI * 2);
+      context.stroke();
+    } else if (visual.type === "trail") {
+      const dx = visual.targetX - visual.x;
+      const dy = visual.targetY - visual.y;
+      const length = Math.hypot(dx, dy) || 1;
+      const normalX = -dy / length;
+      const normalY = dx / length;
+      const taper = Math.sin(progress * Math.PI) * (visual.radius || 24);
+      context.shadowColor = visual.color;
+      context.shadowBlur = 18;
+      context.strokeStyle = visual.color;
+      context.lineWidth = Math.max(2, taper);
+      context.beginPath();
+      context.moveTo(visual.x, visual.y);
+      context.quadraticCurveTo(
+        (visual.x + visual.targetX) / 2 + normalX * 18,
+        (visual.y + visual.targetY) / 2 + normalY * 18,
+        visual.targetX, visual.targetY,
+      );
+      context.stroke();
+      context.strokeStyle = "#ffffff";
+      context.lineWidth = Math.max(1, taper * 0.22);
+      context.stroke();
+      for (let spark = 1; spark <= 3; spark += 1) {
+        const ratio = Math.max(0, progress - spark * 0.08);
+        context.globalAlpha = alpha * (1 - spark * 0.2);
+        context.fillStyle = visual.color;
+        context.beginPath();
+        context.arc(
+          visual.x + dx * ratio,
+          visual.y + dy * ratio,
+          Math.max(1, 5 - spark),
+          0, Math.PI * 2,
+        );
+        context.fill();
+      }
+    } else if (visual.type === "note") {
+      const floatY = Math.sin(progress * Math.PI * 2) * 9;
+      context.translate(visual.x, visual.y - progress * 48 + floatY);
+      context.rotate((visual.angle || 0) + progress * 0.35);
+      context.shadowColor = visual.color;
+      context.shadowBlur = 18;
+      context.fillStyle = visual.color;
+      context.font = `bold ${Math.max(18, visual.radius || 30)}px serif`;
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.fillText(progress > 0.5 ? "♫" : "♪", 0, 0);
+      context.fillStyle = "#ffffff";
+      context.font = "bold 12px sans-serif";
+      context.fillText("✦", 0, -18);
+    } else if (visual.type === "board") {
+      const size = visual.radius || 38;
+      context.translate(visual.x, visual.y);
+      context.rotate((visual.angle || 0) + progress * Math.PI * 1.8);
+      context.shadowColor = visual.color;
+      context.shadowBlur = 18;
+      context.fillStyle = "#171522";
+      context.strokeStyle = visual.color;
+      context.lineWidth = 3;
+      context.beginPath();
+      context.roundRect(-size * 0.28, -size, size * 0.56, size * 2, size * 0.24);
+      context.fill();
+      context.stroke();
+      context.fillStyle = "#fff1d8";
+      context.fillRect(-size * 0.12, -size * 0.68, size * 0.24, size * 1.36);
+      context.fillStyle = visual.color;
+      [-0.62, 0.62].forEach((wheelY) => {
+        context.beginPath();
+        context.arc(0, size * wheelY, size * 0.42, 0, Math.PI * 2);
+        context.fill();
+      });
+    } else if (visual.type === "link") {
+      const dx = visual.targetX - visual.x;
+      const dy = visual.targetY - visual.y;
+      const length = Math.hypot(dx, dy) || 1;
+      const normalX = -dy / length;
+      const normalY = dx / length;
+      const sway = Math.sin(progress * Math.PI * 8) * 14;
+      context.shadowColor = visual.color;
+      context.shadowBlur = 16;
+      context.strokeStyle = visual.color;
+      context.lineWidth = 4;
+      context.beginPath();
+      context.moveTo(visual.x, visual.y);
+      context.quadraticCurveTo(
+        (visual.x + visual.targetX) / 2 + normalX * sway,
+        (visual.y + visual.targetY) / 2 + normalY * sway,
+        visual.targetX, visual.targetY,
+      );
+      context.stroke();
+      context.setLineDash([8, 8]);
+      context.lineDashOffset = -progress * 32;
+      context.strokeStyle = "#ffffff";
+      context.lineWidth = 1.5;
+      context.stroke();
+      context.setLineDash([]);
+    } else if (visual.type === "slash") {
+      const radius = (visual.radius || 60) * (0.65 + progress * 0.35);
+      context.translate(visual.x, visual.y);
+      context.rotate(visual.angle || 0);
+      context.shadowColor = visual.color;
+      context.shadowBlur = 22;
+      context.strokeStyle = visual.color;
+      context.lineWidth = 13 * (1 - progress * 0.7);
+      context.beginPath();
+      context.arc(0, 0, radius, -1.05 + progress * 0.35, 1.05 + progress * 0.35);
+      context.stroke();
+      context.strokeStyle = "#fff8db";
+      context.lineWidth = 3;
+      context.stroke();
+    } else if (visual.type === "ball") {
+      const x = visual.x + (visual.targetX - visual.x) * progress;
+      const y = visual.y + (visual.targetY - visual.y) * progress - Math.sin(progress * Math.PI) * 35;
+      const size = visual.radius || 12;
+      context.translate(x, y);
+      context.rotate(progress * Math.PI * 5);
+      context.shadowColor = visual.color;
+      context.shadowBlur = 12;
+      context.fillStyle = "#f36a30";
+      context.strokeStyle = "#ffe0a6";
+      context.lineWidth = 2;
+      context.beginPath();
+      context.arc(0, 0, size, 0, Math.PI * 2);
+      context.fill();
+      context.stroke();
+      context.beginPath();
+      context.moveTo(-size, 0);
+      context.lineTo(size, 0);
+      context.moveTo(0, -size);
+      context.lineTo(0, size);
+      context.stroke();
     }
-    if (visual.type !== "aura" && visual.type !== "impact" && visual.type !== "disc") {
+    const customVisual = ["ring", "trail", "note", "board", "link", "slash", "ball"].includes(visual.type);
+    if (!customVisual && visual.type !== "aura" && visual.type !== "impact" && visual.type !== "disc") {
       const radius = visual.type === "lightning" ? 20 + progress * 46 : 12 + progress * 36;
       context.strokeStyle = visual.color;
       context.lineWidth = Math.max(1, 5 * (1 - progress));
@@ -4013,7 +4180,9 @@ function drawSkillVisuals(): void {
       context.arc(visual.targetX, visual.targetY, radius, 0, Math.PI * 2);
       context.stroke();
     } else {
-      const radius = 24 + progress * 42;
+      const radius = visual.radius
+        ? visual.radius * (0.22 + progress * 0.78)
+        : 24 + progress * 42;
       context.shadowColor = visual.color;
       context.shadowBlur = 20;
       context.strokeStyle = visual.color;
@@ -5313,6 +5482,11 @@ function dualToneSpeedMultiplier(): number {
   return dualToneForm === "harp" ? 1.3 : 1;
 }
 
+function dualToneColor(): string {
+  if (dualToneUltimateRemaining > 0) return "#ffe7a3";
+  return dualToneForm === "guqin" ? "#69d8ff" : "#e477ff";
+}
+
 function updateDualToneSkillLabels(form: "guqin" | "harp" | "ultimate"): void {
   const translation = locale.heroes[config.heroId];
   config.skills.forEach((skill) => {
@@ -5356,6 +5530,20 @@ function advanceDualToneEffects(dt: number): void {
   const slowRatio = ultimate
     ? config.skills[0]?.ultimate_slow_ratio || 0.25
     : dualToneForm === "guqin" ? 0.35 : 0;
+  dualToneFormPulseTimer -= dt;
+  if (dualToneFormPulseTimer <= 0) {
+    dualToneFormPulseTimer = 0.42;
+    skillVisuals.push({
+      type: "ring", x: player.x, y: player.y, targetX: 0, targetY: 0,
+      age: 0, duration: 0.38, color: dualToneColor(), radius: 64,
+    });
+    if (dualToneForm === "harp" && !ultimate) {
+      skillVisuals.push({
+        type: "note", x: player.x + (Math.random() - 0.5) * 48, y: player.y - 20,
+        targetX: 0, targetY: 0, age: 0, duration: 0.55, color: dualToneColor(), radius: 24,
+      });
+    }
+  }
   if (slowRatio <= 0) return;
   enemies.forEach((enemy) => {
     if (enemy.hp <= 0 || enemy.friendlySummon || distanceTo(enemy.x, enemy.y) > slowRadius) return;
@@ -5369,9 +5557,13 @@ function startDualToneUltimate(skill: SkillConfig): void {
   addSkillVisual(skill);
   skillVisuals.push({
     type: "aura", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
-    age: 0, duration: 0.8, color: "#d9caff", radius: skill.ultimate_slow_radius || 300,
+    age: 0, duration: 0.8, color: dualToneColor(), radius: skill.ultimate_slow_radius || 300,
   });
-  addFloatingText(player.x, player.y - 40, t("float.dual_tone_ult"), "#e6ddff");
+  skillVisuals.push({
+    type: "ring", x: player.x, y: player.y, targetX: 0, targetY: 0,
+    age: 0, duration: 0.72, color: dualToneColor(), radius: skill.ultimate_slow_radius || 300,
+  });
+  addFloatingText(player.x, player.y - 40, t("float.dual_tone_ult"), dualToneColor());
   showToast(t("dual_tone.ultimate_start", { seconds: dualToneUltimateRemaining }));
 }
 
@@ -5413,8 +5605,8 @@ function castDualToneE(skill: SkillConfig): void {
     dualToneLink = { targets: victims, elapsed: 0, skill };
     victims.forEach((enemy) => {
       skillVisuals.push({
-        type: "beam", x: player.x, y: player.y, targetX: enemy.x, targetY: enemy.y,
-        age: 0, duration: skill.link_delay || 1, color: "#b9a7ff",
+        type: "link", x: player.x, y: player.y, targetX: enemy.x, targetY: enemy.y,
+        age: 0, duration: skill.link_delay || 1, color: dualToneColor(),
       });
     });
     showToast(t("dual_tone.guqin_link", { count: victims.length, seconds: skill.link_delay || 1 }));
@@ -5423,6 +5615,10 @@ function castDualToneE(skill: SkillConfig): void {
   dualToneWaves = {
     age: 0, nextPulse: 0, sent: 0, total: skill.harp_wave_count || 3, mode: "harp", skill, hits: new Map(),
   };
+  skillVisuals.push({
+    type: "ring", x: player.x, y: player.y, targetX: 0, targetY: 0,
+    age: 0, duration: 0.45, color: dualToneColor(), radius: skill.harp_wave_radius || 250,
+  });
   showToast(t("dual_tone.harp_waves", { count: skill.harp_wave_count || 3 }));
 }
 
@@ -5437,6 +5633,10 @@ function castDualToneR(skill: SkillConfig): void {
     dualToneGlobalSong = {
       remaining: dualToneUltimateRemaining, tickTimer: 0, skill, ultimate: true,
     };
+    skillVisuals.push({
+      type: "ring", x: player.x, y: player.y, targetX: 0, targetY: 0,
+      age: 0, duration: 0.5, color: dualToneColor(), radius,
+    });
     showToast(t("dual_tone.ultimate_r", { radius }));
     return;
   }
@@ -5448,11 +5648,19 @@ function castDualToneR(skill: SkillConfig): void {
         applyDualToneSlow(enemy, skill.global_slow_ratio || 0.6, duration);
       }
     });
+    skillVisuals.push({
+      type: "ring", x: player.x, y: player.y, targetX: 0, targetY: 0,
+      age: 0, duration: 0.6, color: dualToneColor(), radius: 300,
+    });
     showToast(t("dual_tone.global_song", { seconds: duration }));
     return;
   }
   const duration = skill.play_duration || 3;
   dualTonePlay = { remaining: duration, tickTimer: 0, skill };
+  skillVisuals.push({
+    type: "ring", x: player.x, y: player.y, targetX: 0, targetY: 0,
+    age: 0, duration: 0.48, color: dualToneColor(), radius: skill.radius || 250,
+  });
   showToast(t("dual_tone.play_song", { seconds: duration }));
 }
 
@@ -5481,7 +5689,11 @@ function advanceDualToneLink(dt: number): void {
   });
   skillVisuals.push({
     type: "aura", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
-    age: 0, duration: 0.7, color: "#b9a7ff", radius: 150,
+    age: 0, duration: 0.7, color: dualToneColor(), radius: 150,
+  });
+  skillVisuals.push({
+    type: "slash", x: player.x, y: player.y, targetX: 0, targetY: 0,
+    age: 0, duration: 0.32, color: dualToneColor(), radius: 100, angle: -0.5,
   });
   showToast(t("dual_tone.guqin_strike", { hits }));
 }
@@ -5510,12 +5722,12 @@ function advanceDualToneWaves(dt: number): void {
       }
       skillVisuals.push({
         type: "wave", x: enemy.x, y: enemy.y, targetX: enemy.x, targetY: enemy.y,
-        age: 0, duration: 0.25, color: "#d9caff", radius: 46,
+        age: 0, duration: 0.25, color: dualToneColor(), radius: 46,
       });
     });
     skillVisuals.push({
-      type: "aura", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
-      age: 0, duration: 0.35, color: "#b9a7ff", radius,
+      type: "ring", x: player.x, y: player.y, targetX: 0, targetY: 0,
+      age: 0, duration: 0.38, color: dualToneColor(), radius,
     });
   }
   if (waves.sent < waves.total) return;
@@ -5546,7 +5758,18 @@ function advanceDualToneSongs(dt: number): void {
           if (song.skill.global_damage_per_tick) hitEnemy(enemy, song.skill.global_damage_per_tick);
         }
       });
-      if (!song.ultimate && dualToneForm === "guqin") healPlayer(song.skill.global_heal_per_tick || 3);
+      if (!song.ultimate && dualToneForm === "guqin") {
+        healPlayer(song.skill.global_heal_per_tick || 3);
+        skillVisuals.push({
+          type: "note", x: player.x + (Math.random() - 0.5) * 54, y: player.y - 26,
+          targetX: 0, targetY: 0, age: 0, duration: 0.54, color: dualToneColor(), radius: 22,
+        });
+      } else if (song.ultimate) {
+        skillVisuals.push({
+          type: "ring", x: player.x, y: player.y, targetX: 0, targetY: 0,
+          age: 0, duration: 0.38, color: dualToneColor(), radius: 320,
+        });
+      }
     }
     if (song.remaining <= 0 || song.ultimate && dualToneUltimateRemaining <= 0) {
       dualToneGlobalSong = undefined;
@@ -5564,6 +5787,14 @@ function advanceDualToneSongs(dt: number): void {
         const damage = hitEnemy(enemy, play.skill.play_damage || 6);
         dealt += damage;
         knockbackEnemy(enemy, play.skill.play_knockback || 38);
+        skillVisuals.push({
+          type: "note", x: enemy.x, y: enemy.y - 20, targetX: 0, targetY: 0,
+          age: 0, duration: 0.44, color: dualToneColor(), radius: 25,
+        });
+        skillVisuals.push({
+          type: "ring", x: enemy.x, y: enemy.y, targetX: 0, targetY: 0,
+          age: 0, duration: 0.28, color: dualToneColor(), radius: 42,
+        });
       });
       healPlayer(dealt * (play.skill.play_heal_ratio || 0.5));
     }
@@ -5642,8 +5873,12 @@ function jianghuDashStep(dash: JianghuDash): void {
   const destinationY = target.y - Math.sin(angle) * stop;
   movePlayerToward(destinationX, destinationY, Math.hypot(destinationX - player.x, destinationY - player.y) + 1);
   skillVisuals.push({
-    type: "beam", x: startX, y: startY, targetX: player.x, targetY: player.y,
-    age: 0, duration: 0.22, color: "#ffd98e",
+    type: "trail", x: startX, y: startY, targetX: player.x, targetY: player.y,
+    age: 0, duration: 0.34, color: "#ffd98e", radius: 34,
+  });
+  skillVisuals.push({
+    type: "slash", x: target.x, y: target.y, targetX: target.x, targetY: target.y,
+    age: 0, duration: 0.28, color: "#fff2c7", radius: 48, angle,
   });
   addFloatingText(target.x, target.y - 50, t("float.jianghu_dash"), "#ffd98e");
   hitEnemy(target, dash.damage);
@@ -5772,6 +6007,12 @@ function advanceJianghuRain(dt: number): void {
     rain.swordTimer -= dt;
     if (!rain.landed) {
       rain.travelled = Math.min(rain.range, rain.travelled + rain.speed * dt);
+      const frontX = rain.startX + rain.dirX * rain.travelled;
+      const frontY = rain.startY + rain.dirY * rain.travelled;
+      skillVisuals.push({
+        type: "slash", x: frontX, y: frontY, targetX: frontX, targetY: frontY,
+        age: 0, duration: 0.16, color: "#ffe9b0", radius: rain.halfWidth, angle: Math.atan2(rain.dirY, rain.dirX),
+      });
       // 已扫过的整条路径都判定（靠 hitOutbound 去重，不会重复伤害）
       damageRainVictims(rain, 0, rain.travelled, rain.hitOutbound);
       if (rain.swordTimer <= 0) {
@@ -5782,6 +6023,10 @@ function advanceJianghuRain(dt: number): void {
         rain.landed = true;
         rain.lingerLeft = rain.linger;
         rain.tickTimer = 0;
+        skillVisuals.push({
+          type: "ring", x: frontX, y: frontY, targetX: frontX, targetY: frontY,
+          age: 0, duration: 0.48, color: "#ffd98e", radius: rain.halfWidth * 1.8,
+        });
         spawnImpact(rain.startX + rain.dirX * rain.range, rain.startY + rain.dirY * rain.range, "#ffe9b0");
         if (rain.linger <= 0) {
           jianghuRains.splice(index, 1);
@@ -5796,6 +6041,13 @@ function advanceJianghuRain(dt: number): void {
         // 落地区域按 60% 伤害每隔 0.6 秒结算一次，避免 3 阶比大招还猛
         rain.tickTimer = 0.6;
         const hits = damageRainVictims(rain, rain.range - 90, rain.range + 30, undefined, 0.6);
+        skillVisuals.push({
+          type: "ring",
+          x: rain.startX + rain.dirX * rain.range,
+          y: rain.startY + rain.dirY * rain.range,
+          targetX: 0, targetY: 0, age: 0, duration: 0.38, color: "#ffe9b0",
+          radius: rain.halfWidth * 1.7,
+        });
         if (rain.slow > 0) {
           enemies.forEach((enemy) => {
             if (enemy.hp <= 0) return;
@@ -5825,6 +6077,14 @@ function castJianghuFlight(skill: SkillConfig): void {
   const duration = Math.max(1, skill.flight_duration || 3);
   statusEffects["御剑飞行"] = duration;
   addSkillVisual(skill);
+  skillVisuals.push({
+    type: "ring", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
+    age: 0, duration: 0.72, color: "#a9e7ff", radius: 100,
+  });
+  skillVisuals.push({
+    type: "note", x: player.x - 20, y: player.y - 20, targetX: 0, targetY: 0,
+    age: 0, duration: 0.9, color: "#d7f5ff", radius: 30,
+  });
   addFloatingText(player.x, player.y - 38, t("float.jianghu_flight"), "#a9e7ff");
   showToast(t("skill.jianghu_flight", {
     name: skill.name,
@@ -5843,6 +6103,18 @@ function castSkaterSmash(skill: SkillConfig): void {
   victims.forEach((enemy) => {
     hitEnemy(enemy, skill.damage, "减速", skill.effect_turns);
     enemy.speed *= (1 - slowRatio);
+    skillVisuals.push({
+      type: "trail", x: player.x, y: player.y - 42, targetX: enemy.x, targetY: enemy.y,
+      age: 0, duration: 0.24, color: "#ffb15c", radius: 24,
+    });
+  });
+  skillVisuals.push({
+    type: "board", x: player.x, y: player.y - 16, targetX: 0, targetY: 0,
+    age: 0, duration: 0.42, color: "#ff8a00", radius: 30, angle: -0.8,
+  });
+  skillVisuals.push({
+    type: "ring", x: player.x, y: player.y, targetX: 0, targetY: 0,
+    age: 0, duration: 0.48, color: "#ff8a00", radius,
   });
   addSkillVisual(skill);
   showToast(t("skill.skater_smash", { hits: victims.length }));
@@ -5854,12 +6126,21 @@ function castSkaterFlight(skill: SkillConfig): void {
   const speedRatio = skill.flight_speed_ratio || 0.3;
   skaterFlight = {
     timer: duration,
+    effectTimer: 0,
     baseSpeed: player.speed,
     jumpPending: false,
     jumpTimer: 0,
     slamStun: skill.slam_stun_turns || 0,
   };
   player.speed *= (1 + speedRatio);
+  skillVisuals.push({
+    type: "ring", x: player.x, y: player.y, targetX: 0, targetY: 0,
+    age: 0, duration: 0.65, color: "#ff8a00", radius: 82,
+  });
+  skillVisuals.push({
+    type: "board", x: player.x, y: player.y - 36, targetX: 0, targetY: 0,
+    age: 0, duration: 0.8, color: "#ffb15c", radius: 26, angle: 0.2,
+  });
   addSkillVisual(skill);
   addFloatingText(player.x, player.y - 40, t("float.skater_flight"), "#ff8a00");
   showToast(t("skill.skater_flight_start", {
@@ -5876,6 +6157,14 @@ function startSkaterJump(): void {
   skaterFlight.jumpTimer = 1;
   player.speed *= 1.2;
   player.invulnerable = true;
+  skillVisuals.push({
+    type: "trail", x: player.x, y: player.y + 20, targetX: player.x, targetY: player.y - 110,
+    age: 0, duration: 0.48, color: "#ffd39a", radius: 42,
+  });
+  skillVisuals.push({
+    type: "board", x: player.x, y: player.y - 90, targetX: 0, targetY: 0,
+    age: 0, duration: 0.9, color: "#ff8a00", radius: 34, angle: -0.3,
+  });
   addFloatingText(player.x, player.y - 50, "无敌起跳", "#ff8a00");
 }
 
@@ -5889,6 +6178,14 @@ function performSkaterSlam(): void {
   victims.forEach((enemy) => {
     hitEnemy(enemy, damage, stun > 0 ? "眩晕" : "", stun);
     knockbackEnemy(enemy, 160);
+    skillVisuals.push({
+      type: "slash", x: enemy.x, y: enemy.y, targetX: enemy.x, targetY: enemy.y,
+      age: 0, duration: 0.3, color: "#ffc46b", radius: 46, angle: -0.6,
+    });
+  });
+  skillVisuals.push({
+    type: "ring", x: player.x, y: player.y, targetX: 0, targetY: 0,
+    age: 0, duration: 0.6, color: "#ff8a00", radius,
   });
   addFloatingText(player.x, player.y - 40, t("float.skater_slam"), "#ff8a00");
   showToast(t("skill.skater_flight_slam", { hits: victims.length }));
@@ -5905,67 +6202,33 @@ function endSkaterFlight(): void {
 
 /** 炫酷滑板（Q）：向前投出穿透建筑的回旋镖并返回。 */
 function castSkaterBoomerang(skill: SkillConfig): void {
+  if (skaterBoomerang) return;
   const range = skill.boomerang_range || 350;
   const speed = skill.boomerang_speed || 350;
   const selfSlow = skill.boomerang_self_slow === undefined ? 0.3 : skill.boomerang_self_slow;
   const extraTargets = skill.boomerang_extra_targets || 0;
-  const flightTime = range / speed;
-  const hitRadius = skill.radius || 70;
-  // 去程与回程各自独立判定：站在路径上的敌人来回各吃一次伤害。
-  const outboundVictims: EnemyUnit[] = [];
-  const returnVictims: EnemyUnit[] = [];
-  // 必须用滑板当前坐标判定，不能用 distanceTo()（那是「玩家到敌人」的距离）。
-  const collectVictims = (cx: number, cy: number, bucket: EnemyUnit[]): void => {
-    enemies.forEach((enemy) => {
-      if (enemy.hp <= 0 || bucket.includes(enemy)) return;
-      if (Math.hypot(enemy.x - cx, enemy.y - cy) > hitRadius) return;
-      bucket.push(enemy);
-      hitEnemy(enemy, skill.damage, skill.effect, skill.effect_turns);
-    });
+  skaterBoomerang = {
+    x: player.x,
+    y: player.y,
+    startX: player.x,
+    startY: player.y,
+    directionX: facing.x || 1,
+    directionY: facing.y || 0,
+    range,
+    speed,
+    progress: 0,
+    phase: "out",
+    skill,
+    outboundVictims: new Set(),
+    returnVictims: new Set(),
+    originalSpeed: player.speed,
   };
-  const startX = player.x;
-  const startY = player.y;
-  const dirX = facing.x || 1;
-  const dirY = facing.y || 0;
-  const originalSpeed = player.speed;
-  player.speed *= (1 - selfSlow);
+  player.speed *= 1 - selfSlow;
   addSkillVisual(skill);
-  // 飞出
-  let elapsed = 0;
-  const projectileId = ++attackSequence;
-  const flyOut = setInterval(() => {
-    elapsed += 0.05;
-    const progress = Math.min(1, elapsed / flightTime);
-    const px = startX + dirX * range * progress;
-    const py = startY + dirY * range * progress;
-    collectVictims(px, py, outboundVictims);
-    skillVisuals.push({
-      type: "beam", x: px, y: py, targetX: px + dirX * 20, targetY: py + dirY * 20,
-      age: 0, duration: 0.15, color: "#ff8a00",
-    });
-    if (progress >= 1) {
-      clearInterval(flyOut);
-      // 返回
-      let elapsedBack = 0;
-      const flyBack = setInterval(() => {
-        elapsedBack += 0.05;
-        const progressBack = Math.min(1, elapsedBack / flightTime);
-        const px2 = startX + dirX * range * (1 - progressBack);
-        const py2 = startY + dirY * range * (1 - progressBack);
-        collectVictims(px2, py2, returnVictims);
-        skillVisuals.push({
-          type: "beam", x: px2, y: py2, targetX: px2 - dirX * 20, targetY: py2 - dirY * 20,
-          age: 0, duration: 0.15, color: "#ff8a00",
-        });
-        if (progressBack >= 1) {
-          clearInterval(flyBack);
-          player.speed = originalSpeed;
-          const hitCount = new Set([...outboundVictims, ...returnVictims]).size;
-          showToast(t("skill.skater_boomerang", { hits: hitCount }));
-        }
-      }, 50);
-    }
-  }, 50);
+  skillVisuals.push({
+    type: "ring", x: player.x, y: player.y, targetX: 0, targetY: 0,
+    age: 0, duration: 0.4, color: "#ff8a00", radius: 88,
+  });
   // 3 阶：向最近 2 个敌人额外发射追踪滑板
   if (extraTargets > 0) {
     enemies
@@ -5975,11 +6238,58 @@ function castSkaterBoomerang(skill: SkillConfig): void {
       .forEach((enemy) => {
         hitEnemy(enemy, skill.damage, skill.effect, skill.effect_turns);
         skillVisuals.push({
-          type: "beam", x: player.x, y: player.y, targetX: enemy.x, targetY: enemy.y,
-          age: 0, duration: 0.3, color: "#ff8a00",
+          type: "board", x: enemy.x, y: enemy.y - 36, targetX: 0, targetY: 0,
+          age: 0, duration: 0.38, color: "#ff8a00", radius: 25, angle: -0.5,
+        });
+        skillVisuals.push({
+          type: "trail", x: player.x, y: player.y, targetX: enemy.x, targetY: enemy.y,
+          age: 0, duration: 0.32, color: "#ffb15c", radius: 18,
         });
       });
   }
+}
+
+function advanceSkaterBoomerang(dt: number): void {
+  const board = skaterBoomerang;
+  if (!board) return;
+  board.progress = Math.min(1, board.progress + board.speed * dt / board.range);
+  const distance = board.range * (board.phase === "out" ? board.progress : 1 - board.progress);
+  board.x = board.startX + board.directionX * distance;
+  board.y = board.startY + board.directionY * distance;
+  const victims = board.phase === "out" ? board.outboundVictims : board.returnVictims;
+  enemies.forEach((enemy) => {
+    if (enemy.hp <= 0 || victims.has(enemy)) return;
+    if (Math.hypot(enemy.x - board.x, enemy.y - board.y) > (board.skill.radius || 70)) return;
+    victims.add(enemy);
+    hitEnemy(enemy, board.skill.damage, board.skill.effect, board.skill.effect_turns);
+    skillVisuals.push({
+      type: "slash", x: enemy.x, y: enemy.y, targetX: enemy.x, targetY: enemy.y,
+      age: 0, duration: 0.28, color: "#ffc46b", radius: 42, angle: Math.atan2(board.directionY, board.directionX),
+    });
+  });
+  skillVisuals.push({
+    type: "trail",
+    x: board.x - board.directionX * 34,
+    y: board.y - board.directionY * 34,
+    targetX: board.x + board.directionX * 14,
+    targetY: board.y + board.directionY * 14,
+    age: 0, duration: 0.2, color: "#ff8a00", radius: 25,
+  });
+  skillVisuals.push({
+    type: "board", x: board.x, y: board.y, targetX: 0, targetY: 0,
+    age: 0, duration: 0.12, color: "#ff8a00", radius: 24,
+    angle: Math.atan2(board.directionY, board.directionX) + Math.PI / 2,
+  });
+  if (board.progress < 1) return;
+  if (board.phase === "out") {
+    board.phase = "back";
+    board.progress = 0;
+    return;
+  }
+  player.speed = board.originalSpeed;
+  const hitCount = new Set([...board.outboundVictims, ...board.returnVictims]).size;
+  showToast(t("skill.skater_boomerang", { hits: hitCount }));
+  skaterBoomerang = undefined;
 }
 
 /* ---------- 篮球少年（bball）技能 ---------- */
@@ -5998,12 +6308,22 @@ function castBballLayup(skill: SkillConfig): void {
     player.invulnerable = true;
     const travelled = movePlayerToward(startX + dirX * range, startY + dirY * range, range);
     skillVisuals.push({
-      type: "beam", x: startX, y: startY, targetX: player.x, targetY: player.y,
-      age: 0, duration: 0.35, color: "#ff6b35",
+      type: "trail", x: startX, y: startY, targetX: player.x, targetY: player.y,
+      age: 0, duration: 0.42, color: "#ff6b35", radius: 38,
+    });
+    skillVisuals.push({
+      type: "ball", x: startX, y: startY, targetX: player.x, targetY: player.y,
+      age: 0, duration: 0.42, color: "#ffb06d", radius: 15,
     });
     const victims = enemies.filter((enemy) =>
       enemy.hp > 0 && Math.hypot(enemy.x - player.x, enemy.y - player.y) <= (skill.radius || 90));
-    victims.forEach((enemy) => hitEnemy(enemy, skill.damage, skill.effect, skill.effect_turns));
+    victims.forEach((enemy) => {
+      hitEnemy(enemy, skill.damage, skill.effect, skill.effect_turns);
+      skillVisuals.push({
+        type: "ring", x: enemy.x, y: enemy.y, targetX: 0, targetY: 0,
+        age: 0, duration: 0.36, color: "#ffb15c", radius: 68,
+      });
+    });
     performed += 1;
     if (performed < charges) {
       setTimeout(doDash, duration * 500);
@@ -6023,6 +6343,18 @@ function castBballShooter(skill: SkillConfig): void {
   bballShooterTimer = duration;
   bballShooterFireRate = skill.shooter_fire_rate || 5;
   bballIgnoreRange = (skill.shooter_ignore_range || 0) > 0;
+  skillVisuals.push({
+    type: "ring", x: player.x, y: player.y, targetX: 0, targetY: 0,
+    age: 0, duration: 0.6, color: "#ff6b35", radius: 90,
+  });
+  skillVisuals.push({
+    type: "ball", x: player.x, y: player.y, targetX: player.x + 82, targetY: player.y - 20,
+    age: 0, duration: 0.55, color: "#ffb15c", radius: 14,
+  });
+  skillVisuals.push({
+    type: "ball", x: player.x, y: player.y, targetX: player.x - 78, targetY: player.y + 26,
+    age: 0, duration: 0.55, color: "#ffb15c", radius: 11,
+  });
   addSkillVisual(skill);
   showToast(t("skill.bball_shooter", { seconds: duration }));
 }
@@ -6049,8 +6381,12 @@ function castBballCrossover(skill: SkillConfig): void {
         player.x = target.x;
         player.y = target.y;
         skillVisuals.push({
-          type: "beam", x: startX, y: startY, targetX: player.x, targetY: player.y,
-          age: 0, duration: 0.25, color: "#ff6b35",
+          type: "trail", x: startX, y: startY, targetX: player.x, targetY: player.y,
+          age: 0, duration: 0.34, color: "#ff6b35", radius: 30,
+        });
+        skillVisuals.push({
+          type: "ball", x: startX, y: startY, targetX: player.x, targetY: player.y,
+          age: 0, duration: 0.3, color: "#ffb15c", radius: 14,
         });
         hitTargets.push(target);
       }, index * stepInterval * 1000);
@@ -6058,7 +6394,13 @@ function castBballCrossover(skill: SkillConfig): void {
   }
   setTimeout(() => {
     player.invulnerable = originalInvulnerable;
-    hitTargets.forEach((enemy) => hitEnemy(enemy, skill.damage, stun > 0 ? "眩晕" : "", stun));
+    hitTargets.forEach((enemy) => {
+      hitEnemy(enemy, skill.damage, stun > 0 ? "眩晕" : "", stun);
+      skillVisuals.push({
+        type: "ring", x: enemy.x, y: enemy.y, targetX: 0, targetY: 0,
+        age: 0, duration: 0.42, color: "#ff6b35", radius: 84,
+      });
+    });
     showToast(t("skill.bball_crossover", { targets: hitTargets.length }));
   }, (duration + delay) * 1000);
   addSkillVisual(skill);
@@ -6421,6 +6763,12 @@ function basicAttack(): boolean {
   const target = nearestEnemy(range);
   const remoteTarget = nearestRemoteAt(player.x, player.y, range);
   if (remoteTarget && (!target || distanceTo(remoteTarget.x, remoteTarget.y) < distanceTo(target.x, target.y))) {
+    if (heroPassive.id === "bball_magazine") {
+      skillVisuals.push({
+        type: "ball", x: player.x, y: player.y, targetX: remoteTarget.x, targetY: remoteTarget.y,
+        age: 0, duration: 0.22, color: "#ff8a5b", radius: 11,
+      });
+    }
     basicAttackTimer = getBasicAttackCooldown();
     queuePvpAttack("basic", [remoteTarget]);
     skillVisuals.push({
@@ -6444,6 +6792,12 @@ function basicAttack(): boolean {
     if (bballMagazine <= 0) bballReloadTimer = 1.5;
   }
   const wasEmpowered = empoweredAttack;
+  if (heroPassive.id === "bball_magazine") {
+    skillVisuals.push({
+      type: "ball", x: player.x, y: player.y, targetX: target.x, targetY: target.y,
+      age: 0, duration: 0.22, color: "#ff8a5b", radius: 11,
+    });
+  }
   // 霓虹拳王用 empower_attack，电音人用 volt2_empower，两者的强化普攻结算方式不同
   const empoweredSkill = config.skills.find((skill) =>
     skill.action === "empower_attack" || skill.action === "volt2_empower");
@@ -6461,7 +6815,8 @@ function basicAttack(): boolean {
   if (heroCombat.basic_beam && !wasEmpowered) {
     skillVisuals.push({
       type: "beam", x: player.x, y: player.y, targetX: target.x, targetY: target.y,
-      age: 0, duration: heroCombat.basic_beam.duration, color: heroCombat.basic_beam.color,
+      age: 0, duration: heroCombat.basic_beam.duration,
+      color: isDualToneHero() ? dualToneColor() : heroCombat.basic_beam.color,
     });
   }
   // 电音人的强化普攻自带狂舞，并且 3 阶起计入被动层数
@@ -6610,6 +6965,7 @@ function updateCombat(dt: number): void {
   advanceDiscVolley(dt);
   advanceSoundWaves(dt);
   advanceHomingDiscs(dt);
+  advanceSkaterBoomerang(dt);
   if (skillIsPaused()) return;
   if (!playerMovementLocked()) advanceAfterimageDash(dt);
   if (skillIsPaused()) return;
@@ -6644,6 +7000,23 @@ function updateCombat(dt: number): void {
   // 滑板小子：滑板能飞计时
   if (skaterFlight) {
     skaterFlight.timer = Math.max(0, skaterFlight.timer - dt);
+    skaterFlight.effectTimer -= dt;
+    if (skaterFlight.effectTimer <= 0) {
+      skaterFlight.effectTimer = 0.3;
+      skillVisuals.push({
+        type: "board", x: player.x, y: player.y - 36, targetX: 0, targetY: 0,
+        age: 0, duration: 0.3, color: "#ff8a00", radius: 21,
+        angle: Math.atan2(facing.y, facing.x) + Math.PI / 2,
+      });
+      skillVisuals.push({
+        type: "trail",
+        x: player.x - facing.x * 32,
+        y: player.y - facing.y * 32,
+        targetX: player.x,
+        targetY: player.y,
+        age: 0, duration: 0.26, color: "#ffb15c", radius: 20,
+      });
+    }
     if (skaterFlight.jumpPending) {
       skaterFlight.jumpTimer = Math.max(0, skaterFlight.jumpTimer - dt);
       if (skaterFlight.jumpTimer <= 0) {
