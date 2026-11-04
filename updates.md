@@ -1,5 +1,25 @@
 # 更新日志 / Updates
 
+## 2.5.0
+
+### 中文
+
+- **剧情重现卡库改版**：以主机、显示器和文件浏览器呈现剧情；可展开侧栏切换赛博世界／英雄剧情卡片，拖动或点击插入，使用主机弹出键更换卡片。
+- 新增双音琴师英雄剧情重现卡 **RC-H04《失落的终章》**，共三个分区，支持中文、英语和日语。
+- **联机大厅整合**：统一提供人机 1V1、局域网 1V1 联机对抗和联机合作肉鸽入口；对抗房限两人，服务器结算玩家攻击与胜负，合作模式继续禁止队友伤害。
+
+### English
+
+- **Redesigned the story archive** as a computer with a monitor and file-browser display. Expand the side drawer to switch between Cyber World and Hero story cards, then click or drag a card into the drive; use the eject control to swap cards.
+- Added **RC-H04, “The Lost Finale,”** a three-section Twin-Tone Musician hero story localized in Chinese, English, and Japanese.
+- **Unified the multiplayer lobby** with AI 1v1, LAN 1v1 duels, and co-op roguelike modes. Duel rooms are capped at two players, with attacks and results settled by the server; co-op continues to block friendly fire.
+
+### 日本語
+
+- **ストーリーアーカイブを刷新**し、モニターとファイルブラウザーを備えたコンピューター画面にしました。サイドドロワーでサイバーワールド／ヒーローストーリーのカードを切り替え、クリックまたはドラッグで挿入し、イジェクトボタンで交換できます。
+- 双音琴師のヒーローストーリー **RC-H04「失われたフィナーレ」**を追加しました。全3セクションで、中国語・英語・日本語に対応しています。
+- **マルチプレイロビーを統合**し、AI 1対1、LAN 1対1対戦、協力ローグライクを選べるようにしました。対戦ルームは2人までで、攻撃と勝敗はサーバーが処理し、協力プレイでは引き続き味方への攻撃を無効にします。
+
 ## 2.4.1
 
 ### 中文

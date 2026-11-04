@@ -37,9 +37,11 @@ const readyButton = getElement("ready-toggle");
 const startButton = getElement("start-game");
 const toast = getElement("mp-toast");
 const lanAddresses = getElement("lan-addresses");
+const modeButtons = [...document.querySelectorAll("[data-lobby-mode]")];
 const storageKey = "2d-da-jibai-lobby";
 let playerId = "";
 let currentRoomId = "";
+let selectedMode = MP_INITIAL_MODE === "duel" ? "duel" : "rogue";
 let isHost = false;
 let myReady = false;
 let roomPollTimer = 0;
@@ -72,8 +74,12 @@ async function api(path, body) {
         body: body ? JSON.stringify(body) : undefined,
     });
     const result = await response.json();
-    if (!response.ok || !result.ok)
-        throw new Error(result.error || tx(`请求失败 (${response.status})`));
+    if (!response.ok || !result.ok) {
+        const message = result.error === "房间模式不匹配，请选择相同的联机模式。"
+            ? MP_STRINGS.mismatch
+            : result.error || tx(`请求失败 (${response.status})`);
+        throw new Error(message);
+    }
     return result;
 }
 async function showLanAddresses() {
@@ -144,10 +150,12 @@ function renderPlayers(room) {
 }
 function showRoom(room) {
     currentRoomId = room.room_id;
+    selectedMode = room.mode;
     isHost = room.host_id === playerId;
     const self = room.players.find((item) => item.player_id === playerId);
     myReady = Boolean(self?.ready);
     getElement("current-room-code").textContent = room.room_id;
+    getElement("room-mode-label").textContent = `${MP_STRINGS.roomMode} · ${room.mode === "duel" ? MP_STRINGS.duel : MP_STRINGS.rogue}`;
     entryPanel.hidden = true;
     waitingRoom.hidden = false;
     saveMembership();
@@ -178,12 +186,13 @@ function showRoom(room) {
     else {
         waitingMessage.textContent = isHost ? tx("全员到齐后点「开始」。") : tx("等待房主开始…");
     }
-    if (room.status === "playing") {
+    if (room.status === "playing" || room.status === "finished") {
         const heroId = self?.hero_id || heroSelect.value;
         if (!jumping) {
             jumping = true;
             stopPolling();
-            window.location.replace(`/battle?hero=${encodeURIComponent(heroId)}&room=${encodeURIComponent(room.room_id)}&pid=${encodeURIComponent(playerId)}`);
+            const onlineMode = room.mode === "duel" ? "&mode=duel" : "";
+            window.location.replace(`/battle?hero=${encodeURIComponent(heroId)}&room=${encodeURIComponent(room.room_id)}&pid=${encodeURIComponent(playerId)}${onlineMode}`);
         }
     }
 }
@@ -214,7 +223,7 @@ async function enterRoom(result) {
 }
 async function createRoom() {
     try {
-        await enterRoom(await api("", { name: currentName() }));
+        await enterRoom(await api("", { name: currentName(), mode: selectedMode }));
     }
     catch (error) {
         showToast(error instanceof Error ? error.message : tx("创建房间失败。"), true);
@@ -227,7 +236,7 @@ async function joinRoom(roomId) {
         return;
     }
     try {
-        await enterRoom(await api("/join", { room_id: roomId, name: currentName() }));
+        await enterRoom(await api("/join", { room_id: roomId, name: currentName(), mode: selectedMode }));
     }
     catch (error) {
         showToast(error instanceof Error ? error.message : tx("加入房间失败。"), true);
@@ -282,6 +291,24 @@ async function leaveRoom() {
     clearMembership();
 }
 getElement("create-room").addEventListener("click", () => void createRoom());
+modeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+        const mode = button.dataset.lobbyMode;
+        if (mode === "ai") {
+            window.location.href = "/select?mode=duel";
+            return;
+        }
+        if (mode !== "duel" && mode !== "rogue")
+            return;
+        selectedMode = mode;
+        modeButtons.forEach((item) => {
+            const isSelected = item === button;
+            item.classList.toggle("selected", isSelected);
+            item.setAttribute("aria-pressed", String(isSelected));
+        });
+        getElement("mp-selected-mode").textContent = mode === "duel" ? MP_STRINGS.duel : MP_STRINGS.rogue;
+    });
+});
 getElement("join-toggle").addEventListener("click", () => {
     const open = joinRow.hidden;
     joinRow.hidden = !open;
@@ -299,6 +326,14 @@ codeInput.addEventListener("keydown", (event) => {
         void joinRoom(codeInput.value.trim().toUpperCase());
 });
 void showLanAddresses();
+modeButtons.forEach((button) => {
+    const isSelected = button.dataset.lobbyMode === selectedMode;
+    button.classList.toggle("selected", isSelected);
+    button.setAttribute("aria-pressed", String(isSelected));
+});
+getElement("mp-selected-mode").textContent = selectedMode === "duel" ? MP_STRINGS.duel : MP_STRINGS.rogue;
+if (MP_INITIAL_MODE === "ai")
+    window.location.replace("/select?mode=duel");
 if (currentRoomId && playerId) {
     void pollRoom();
     startPolling();

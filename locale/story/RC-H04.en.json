@@ -1,0 +1,80 @@
+{
+  "id": "RC-H04",
+  "card": {
+    "code": "RC-H04",
+    "title": "The Lost Finale",
+    "summary": "An unrecognized melody draws the Twin-Tone Musician back to an abandoned concert hall. Guqin and Harp each remember half of it. Who owns the missing finale?",
+    "quote": "If both voices are real, who is the silence answering for?"
+  },
+  "sections": {
+    "hero-dualtone-01": {
+      "title": "Segment 1 · A Beat Out of Time",
+      "summary": "An old terminal receives an anonymous recording with fingerings the Musician has never learned.",
+      "nodes": {
+        "d1-intro": {"speaker": "Narration", "text": "At two in the morning, an old terminal in the abandoned concert hall wakes by itself. A single new file waits on screen: an unsigned performance."},
+        "d1-hero": {"speaker": "Twin-Tone Musician", "text": "This melody sounds like mine, and it doesn't. Guqin remembers the opening; Harp remembers the ending. One beat is missing between them."},
+        "d1-choice": {"prompt": "The terminal reports that the original recording is damaged. Listen first, or trace where it came from?", "options": ["Put on the headphones and hear the broken melody", "Trace the upload route"]},
+        "d1-listen": {"speaker": "Twin-Tone Musician", "text": "There is a breath between the strings. Not a performer taking a breath — someone waiting for another instrument to answer."},
+        "d1-trace": {"speaker": "Qiong", "text": "The signal leads to the old rehearsal room beneath the hall. Its access log says nobody has entered in ten years."},
+        "d1-battle": {
+          "title": "The Silent Rehearsal Room",
+          "brief": "The echoes begin copying your rhythm. Clear the distorted images guarding the door.",
+          "waves": [
+            {"label": "Wave 1", "note": "Offbeat · Echo", "event": "Every note lands, and its echo follows half a beat late", "enemies": [{"hero": "pipa", "count": 1, "mod": "HP ×1.2"}, {"hero": "tech", "count": 1, "mod": "HP ×0.9"}], "skills": [{"name": "String Echo", "description": "A close-range wave slows its target", "cooldown": 10, "damage": 18, "effect": "Slow 2s"}]},
+            {"label": "Wave 2", "note": "Two Parts · Distortion", "event": "Another form emerges from the old recording", "enemies": [{"hero": "dual_tone", "count": 1, "mod": "HP ×1.5 · DMG ×1.15"}], "skills": [{"name": "False Tuning", "description": "A sound wave briefly stuns its target", "cooldown": 12, "damage": 30, "effect": "Stun 1s"}]}
+          ]
+        },
+        "d1-after": {"speaker": "Narration", "text": "As the last echo fades, the terminal plays a new measure. It fills the missing beat, then reveals a name: Beyond the Strings."},
+        "d1-reward": {"title": "Recording Fragment", "description": "You save the restored recording. Its file metadata contains an old rehearsal-room number."},
+        "d1-end": {"title": "End of Segment 1", "text": "The Musician stores the recording in the memories of both Guqin and Harp. Neither admits it belongs to them."}
+      }
+    },
+    "hero-dualtone-02": {
+      "title": "Segment 2 · The Blank Score",
+      "summary": "A score with its final page torn out lies in the basement rehearsal room, marked in two different hands.",
+      "nodes": {
+        "d2-intro": {"speaker": "Narration", "text": "There are no footprints in the rehearsal-room dust, yet a freshly opened score rests on the stand. Its last page has been cleanly removed."},
+        "d2-hero": {"speaker": "Twin-Tone Musician", "text": "Guqin's fingering is marked on the left, Harp's notation on the right. Two people must have taken turns answering on the same page."},
+        "d2-choice": {"prompt": "An old tape is tucked into the score. Restore it first, or follow the marks to find its author?", "options": ["Connect the tape to the terminal", "Follow the marks to their performer"]},
+        "d2-record": {"speaker": "Qiong", "text": "Restoration complete. Two people speak on the tape, but every time they mention the finale, the sound is cut away."},
+        "d2-follow": {"speaker": "Beyond the Strings", "text": "Stop looking for that page. It wasn't lost. Someone didn't want it performed."},
+        "d2-battle": {
+          "title": "The Sealed Platform",
+          "brief": "Guardians of the old tape block the way to the archive.",
+          "waves": [
+            {"label": "Wave 1", "note": "Tape · Rewind", "event": "The notes play backward, and your steps begin to lag", "enemies": [{"hero": "pipa", "count": 2, "mod": "HP ×1.2 · SPD ×0.9"}], "skills": [{"name": "Reversed Strings", "description": "Strings bind and damage their target", "cooldown": 10, "damage": 20, "effect": "Root 1.5s"}]},
+            {"label": "Wave 2", "note": "Archive Guard · Double Time", "event": "The recording's tempo keeps rising", "enemies": [{"hero": "volt2", "count": 1, "mod": "HP ×1.35"}, {"hero": "tech", "count": 1, "mod": "HP ×1.1 · Armor"}], "skills": [{"name": "Echo Suppression", "description": "Sustained sound damages and slows", "cooldown": 12, "damage": 28, "effect": "Slow 2.5s"}]}
+          ]
+        },
+        "d2-after": {"speaker": "Narration", "text": "The archive has no complete score, but it does hold an unsent letter. The finale, it says, should be decided by whoever hears it."},
+        "d2-reward": {"title": "The Unsent Letter", "description": "An old concert-hall address is written on the envelope. The recipient line is blank."},
+        "d2-end": {"title": "End of Segment 2", "text": "The Musician understands at last: the missing page is not an answer. It is a choice left to the performer."}
+      }
+    },
+    "hero-dualtone-03": {
+      "title": "Segment 3 · Beyond the Resonance",
+      "summary": "Beyond the Strings returns to the hall with a choice: complete the finale or let the silence remain.",
+      "nodes": {
+        "d3-intro": {"speaker": "Narration", "text": "The stage lights come on one by one. Beyond the Strings stands at center stage, holding the missing page."},
+        "d3-hero": {"speaker": "Twin-Tone Musician", "text": "Did you remove the finale because you feared it, or because you didn't want to write an ending for someone else?"},
+        "d3-choice": {"prompt": "Beyond the Strings places the page on the stand. Complete the finale, or preserve its silence?", "options": ["Finish the melody with both forms", "Leave the score blank"]},
+        "d3-complete": {"speaker": "Twin-Tone Musician", "text": "Guqin plays the first note. Harp does not follow; it answers with a different voice."},
+        "d3-silence": {"speaker": "Beyond the Strings", "text": "Thank you. A blank is not forgetting. It simply refuses to speak for anyone."},
+        "d3-battle": {
+          "title": "Before the Finale",
+          "brief": "Distorted resonance takes shape as one last guardian. Cross the echoes and hear the melody beneath them.",
+          "waves": [
+            {"label": "Wave 1", "note": "Stage · Ensemble", "event": "Sound waves cross as the edge of the stage begins to tremble", "enemies": [{"hero": "pipa", "count": 1, "mod": "HP ×1.4"}, {"hero": "tech", "count": 1, "mod": "HP ×1.2"}], "skills": [{"name": "Sealed Strings", "description": "A sound field binds and damages", "cooldown": 10, "damage": 24, "effect": "Root 1.5s"}]},
+            {"label": "Wave 2", "note": "Beyond the Strings · Duet", "event": "The other performer stops copying and finally plays back", "enemies": [{"hero": "dual_tone", "count": 1, "mod": "HP ×2 · DMG ×1.25 · Armor"}], "skills": [{"name": "Final Resonance", "description": "A powerful resonance stuns on impact", "cooldown": 14, "damage": 40, "effect": "Stun 1.5s"}]}
+          ]
+        },
+        "d3-after": {"speaker": "Narration", "text": "The last echo fades. There is no applause, only the fading notes of two instruments. Beyond the Strings hands the page back to you."},
+        "d3-choice-end": {"prompt": "How will you preserve the score?", "options": ["Record the finale played by both voices", "Keep the blank for someone else to decide"]},
+        "d3-reward-play": {"title": "A Resonant Finale", "description": "You save the complete performance, including every voice that differs."},
+        "d3-end-play": {"title": "Story Complete", "text": "The Musician returns the last page to the archive. The finale belongs to no single person — it belongs to everyone willing to hear it through."},
+        "d3-reward-keep": {"title": "An Unfinished Score", "description": "You keep the blank page, leaving room for someone else to write."},
+        "d3-end-keep": {"title": "Story Complete", "text": "The Musician writes no notes. Another performer will come, and the next voice need not sound like today's."}
+      }
+    }
+  }
+}

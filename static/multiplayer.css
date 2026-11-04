@@ -63,3 +63,16 @@ body.multiplayer-page{min-height:100vh;background:radial-gradient(ellipse at 50%
   .mp-room-buttons .mp-primary{flex:1;min-width:0}
   .mp-choice-row{gap:8px}
 }
+
+.mp-main{max-width:980px}
+.mp-mode-picker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 18px}
+.mp-mode-card{min-height:112px;padding:14px;display:grid;grid-template-columns:44px minmax(0,1fr) 12px;align-items:center;gap:12px;text-align:left;background:#101421;border:1px solid #293148;color:#e8efff;cursor:pointer;transition:border-color .15s,background .15s,transform .15s}
+.mp-mode-card:hover{transform:translateY(-2px);border-color:#49e6e0}
+.mp-mode-card.selected{background:#10232a;border-color:#49e6e0;box-shadow:0 0 20px #49e6e01c}
+.mp-mode-icon{width:42px;height:42px;display:grid;place-items:center;background:#302b54;color:#d4beff;font:900 12px 'Chakra Petch',sans-serif}
+.mp-mode-icon.pvp{background:#45283b;color:#ffb0ca}.mp-mode-icon.coop{background:#153d3b;color:#8effdf;font-size:9px}
+.mp-mode-card>span:nth-child(2){min-width:0}.mp-mode-card b,.mp-mode-card small{display:block}
+.mp-mode-card b{font-size:13px}.mp-mode-card small{margin-top:5px;color:#8d99af;font-size:10px;line-height:1.55}
+.mp-mode-card>i{color:#51e6db;font-size:19px;font-style:normal}
+.mp-entry h2{display:flex;align-items:baseline;gap:10px}.mp-entry h2 small{color:#737f96;font-size:10px;font-weight:500}
+@media(max-width:720px){.mp-mode-picker{grid-template-columns:1fr}.mp-mode-card{min-height:76px}}

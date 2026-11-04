@@ -20,7 +20,8 @@ interface LobbyPlayer {
 interface RoomSnapshot {
   room_id: string;
   host_id: string;
-  status: "waiting" | "preparing" | "playing";
+  mode: "rogue" | "duel";
+  status: "waiting" | "preparing" | "playing" | "finished";
   prep_remaining: number;
   players: LobbyPlayer[];
   capacity: number;
@@ -50,8 +51,19 @@ interface MultiplayerLocalePackage {
   };
 }
 
+type MultiplayerMode = "rogue" | "duel";
+interface LobbyStrings {
+  ai: string;
+  duel: string;
+  rogue: string;
+  mismatch: string;
+  roomMode: string;
+}
+
 declare const MP_HEROES: LobbyHero[];
 declare const MP_LOCALE: MultiplayerLocalePackage;
+declare const MP_STRINGS: LobbyStrings;
+declare const MP_INITIAL_MODE: string;
 
 const locale = MP_LOCALE;
 const translateByPattern = locale.code !== "zh";
@@ -94,10 +106,12 @@ const readyButton = getElement<HTMLButtonElement>("ready-toggle");
 const startButton = getElement<HTMLButtonElement>("start-game");
 const toast = getElement<HTMLDivElement>("mp-toast");
 const lanAddresses = getElement<HTMLSpanElement>("lan-addresses");
+const modeButtons = [...document.querySelectorAll<HTMLButtonElement>("[data-lobby-mode]")];
 const storageKey = "2d-da-jibai-lobby";
 
 let playerId = "";
 let currentRoomId = "";
+let selectedMode: MultiplayerMode = MP_INITIAL_MODE === "duel" ? "duel" : "rogue";
 let isHost = false;
 let myReady = false;
 let roomPollTimer = 0;
@@ -132,7 +146,12 @@ async function api(path: string, body?: Record<string, unknown>): Promise<ApiRes
     body: body ? JSON.stringify(body) : undefined,
   });
   const result = await response.json() as ApiResult;
-  if (!response.ok || !result.ok) throw new Error(result.error || tx(`请求失败 (${response.status})`));
+  if (!response.ok || !result.ok) {
+    const message = result.error === "房间模式不匹配，请选择相同的联机模式。"
+      ? MP_STRINGS.mismatch
+      : result.error || tx(`请求失败 (${response.status})`);
+    throw new Error(message);
+  }
   return result;
 }
 
@@ -208,11 +227,13 @@ function renderPlayers(room: RoomSnapshot): void {
 
 function showRoom(room: RoomSnapshot): void {
   currentRoomId = room.room_id;
+  selectedMode = room.mode;
   isHost = room.host_id === playerId;
   const self = room.players.find((item) => item.player_id === playerId);
   myReady = Boolean(self?.ready);
 
   getElement<HTMLElement>("current-room-code").textContent = room.room_id;
+  getElement<HTMLElement>("room-mode-label").textContent = `${MP_STRINGS.roomMode} · ${room.mode === "duel" ? MP_STRINGS.duel : MP_STRINGS.rogue}`;
   entryPanel.hidden = true;
   waitingRoom.hidden = false;
   saveMembership();
@@ -246,12 +267,13 @@ function showRoom(room: RoomSnapshot): void {
     waitingMessage.textContent = isHost ? tx("全员到齐后点「开始」。") : tx("等待房主开始…");
   }
 
-  if (room.status === "playing") {
+  if (room.status === "playing" || room.status === "finished") {
     const heroId = self?.hero_id || heroSelect.value;
     if (!jumping) {
       jumping = true;
       stopPolling();
-      window.location.replace(`/battle?hero=${encodeURIComponent(heroId)}&room=${encodeURIComponent(room.room_id)}&pid=${encodeURIComponent(playerId)}`);
+      const onlineMode = room.mode === "duel" ? "&mode=duel" : "";
+      window.location.replace(`/battle?hero=${encodeURIComponent(heroId)}&room=${encodeURIComponent(room.room_id)}&pid=${encodeURIComponent(playerId)}${onlineMode}`);
     }
   }
 }
@@ -282,7 +304,7 @@ async function enterRoom(result: ApiResult): Promise<void> {
 
 async function createRoom(): Promise<void> {
   try {
-    await enterRoom(await api("", { name: currentName() }));
+    await enterRoom(await api("", { name: currentName(), mode: selectedMode }));
   } catch (error) {
     showToast(error instanceof Error ? error.message : tx("创建房间失败。"), true);
   }
@@ -295,7 +317,7 @@ async function joinRoom(roomId: string): Promise<void> {
     return;
   }
   try {
-    await enterRoom(await api("/join", { room_id: roomId, name: currentName() }));
+    await enterRoom(await api("/join", { room_id: roomId, name: currentName(), mode: selectedMode }));
   } catch (error) {
     showToast(error instanceof Error ? error.message : tx("加入房间失败。"), true);
   }
@@ -344,6 +366,23 @@ async function leaveRoom(): Promise<void> {
 }
 
 getElement<HTMLButtonElement>("create-room").addEventListener("click", () => void createRoom());
+modeButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const mode = button.dataset.lobbyMode;
+    if (mode === "ai") {
+      window.location.href = "/select?mode=duel";
+      return;
+    }
+    if (mode !== "duel" && mode !== "rogue") return;
+    selectedMode = mode;
+    modeButtons.forEach((item) => {
+      const isSelected = item === button;
+      item.classList.toggle("selected", isSelected);
+      item.setAttribute("aria-pressed", String(isSelected));
+    });
+    getElement<HTMLElement>("mp-selected-mode").textContent = mode === "duel" ? MP_STRINGS.duel : MP_STRINGS.rogue;
+  });
+});
 getElement<HTMLButtonElement>("join-toggle").addEventListener("click", () => {
   const open = joinRow.hidden;
   joinRow.hidden = !open;
@@ -360,6 +399,13 @@ codeInput.addEventListener("keydown", (event) => {
 });
 
 void showLanAddresses();
+modeButtons.forEach((button) => {
+  const isSelected = button.dataset.lobbyMode === selectedMode;
+  button.classList.toggle("selected", isSelected);
+  button.setAttribute("aria-pressed", String(isSelected));
+});
+getElement<HTMLElement>("mp-selected-mode").textContent = selectedMode === "duel" ? MP_STRINGS.duel : MP_STRINGS.rogue;
+if (MP_INITIAL_MODE === "ai") window.location.replace("/select?mode=duel");
 if (currentRoomId && playerId) {
   void pollRoom();
   startPolling();

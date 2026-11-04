@@ -7,7 +7,7 @@
   <title>{{ tr("STORY_CHOOSE_TITLE") }} · {{ tr("PRODUCT_NAME") }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body class="story-choose-page">
+<body class="story-choose-page story-computer-page">
   <div class="scanlines"></div>
   <div class="story-backdrop" aria-hidden="true"></div>
 
@@ -27,15 +27,75 @@
     </div>
   </header>
 
-  <main class="story-choose-main">
-    <section class="story-choose-head">
-      <p class="eyebrow"><span></span> {{ tr("STORY_TITLE") }}</p>
-      <h1>{{ tr("STORY_CHOOSE_HEADING") }} <span>/ {{ "%02d"|format(chapters|length) }}</span></h1>
-      <p>{{ tr("STORY_CHOOSE_SUBTITLE") }}</p>
+  <main class="story-computer-workspace" id="story-workspace">
+    <section class="story-computer" aria-label="{{ tr('STORY_COMPUTER') }}">
+      <div class="story-tower">
+        <div class="story-tower-top"><i></i><b>2D // ARCHIVE</b></div>
+        <div class="story-tower-drive">
+          <span class="story-drive-slot" id="story-drive-slot" aria-label="{{ tr('STORY_DRIVE_SLOT') }}">
+            <i id="story-drive-disc"></i>
+          </span>
+          <button class="story-eject-button" id="story-eject" type="button" aria-label="{{ tr('STORY_EJECT') }}" title="{{ tr('STORY_EJECT') }}">⏏</button>
+        </div>
+        <div class="story-tower-lights"><i></i><i></i><i></i></div>
+        <div class="story-tower-label">MEMORY CORE<br>READER / 02</div>
+      </div>
+
+      <section class="story-monitor">
+        <div class="story-monitor-frame">
+          <div class="story-monitor-screen">
+            <header class="story-explorer-bar">
+              <span class="story-window-dots"><i></i><i></i><i></i></span>
+              <b>{{ tr("STORY_EXPLORER") }}</b>
+              <small id="story-explorer-path">ARCHIVE://NO_DISC</small>
+            </header>
+            <div class="story-explorer-content">
+              <div class="story-screen-empty" id="story-screen-empty">
+                <span>◈</span>
+                <b>{{ tr("STORY_INSERT_PROMPT") }}</b>
+                <small>{{ tr("STORY_INSERT_HINT") }}</small>
+              </div>
+              <section class="story-loaded-card" id="story-loaded-card" hidden>
+                <header class="story-loaded-head">
+                  <div>
+                    <small id="story-loaded-code"></small>
+                    <h1 id="story-loaded-title"></h1>
+                    <p id="story-loaded-summary"></p>
+                  </div>
+                  <span class="story-loaded-progress" id="story-loaded-progress"></span>
+                </header>
+                <blockquote id="story-loaded-quote" hidden></blockquote>
+                <div class="story-file-list-head">
+                  <span>{{ tr("STORY_FILE_NAME") }}</span>
+                  <span>{{ tr("STORY_FILE_STATUS") }}</span>
+                </div>
+                <ol class="story-sections" id="story-chapters" aria-live="polite"></ol>
+              </section>
+            </div>
+            <footer class="story-explorer-status">
+              <span id="story-screen-status">{{ tr("STORY_NO_DISC") }}</span>
+              <span>{{ tr("STORY_DOUBLE_CLICK_HINT") }}</span>
+            </footer>
+          </div>
+        </div>
+        <div class="story-monitor-stand"></div>
+      </section>
     </section>
 
-    <nav class="story-tabs" id="story-tabs" aria-label="{{ tr('STORY_CHOOSE_TITLE') }}"></nav>
-    <section class="story-chapter-grid" id="story-chapters" aria-live="polite"></section>
+    <button class="story-sidebar-toggle" id="story-sidebar-toggle" type="button"
+            aria-expanded="true" aria-controls="story-sidebar">
+      <span aria-hidden="true">‹</span><b>{{ tr("STORY_CARD_DRAWER") }}</b>
+    </button>
+    <aside class="story-sidebar" id="story-sidebar">
+      <header class="story-sidebar-head">
+        <small>{{ tr("STORY_CARD_DRAWER") }}</small>
+        <b>{{ tr("STORY_INSERT_CARD") }}</b>
+        <p>{{ tr("STORY_DRAG_CARD_HINT") }}</p>
+      </header>
+      <nav class="story-tabs" id="story-tabs" aria-label="{{ tr('STORY_CARD_CATEGORY') }}"></nav>
+      <div class="story-card-list" id="story-card-list" aria-live="polite"></div>
+      <footer class="story-sidebar-foot">{{ tr("STORY_SIDEBAR_FOOTER") }}</footer>
+    </aside>
   </main>
 
   <script>
@@ -44,21 +104,27 @@
     window.STORY_PROGRESS = {{ story|tojson }};
     window.STORY_ROSTER = {{ roster|tojson }};
     window.STORY_STRINGS = {{ {
-      "all": tr("STORY_CATEGORY_ALL"),
       "enter": tr("STORY_ENTER"),
       "continue": tr("STORY_CONTINUE_RUN"),
       "replay": tr("STORY_REPLAY"),
       "notStarted": tr("STORY_NOT_STARTED"),
       "inProgress": tr("STORY_IN_PROGRESS"),
       "completed": tr("STORY_COMPLETED"),
-      "nodes": tr("STORY_NODES"),
       "heroChapter": tr("STORY_HERO_CHAPTER"),
       "worldChapter": tr("STORY_WORLD_CHAPTER"),
       "empty": tr("STORY_EMPTY"),
       "cleared": tr("STORY_CLEARED"),
+      "completed": tr("STORY_COMPLETED"),
+      "inProgress": tr("STORY_IN_PROGRESS"),
+      "notStarted": tr("STORY_NOT_STARTED"),
       "locked": tr("STORY_LOCKED"),
       "lockedHint": tr("STORY_LOCKED_HINT"),
-      "fixedHeroShort": tr("STORY_FIXED_HERO")
+      "fixedHeroShort": tr("STORY_FIXED_HERO"),
+      "noDisc": tr("STORY_NO_DISC"),
+      "insertPrompt": tr("STORY_INSERT_PROMPT"),
+      "insertHint": tr("STORY_INSERT_HINT"),
+      "ejected": tr("STORY_EJECTED"),
+      "fileCount": tr("STORY_FILE_COUNT")
     }|tojson }};
   </script>
   <script src="{{ url_for('static', filename='choose_story.js') }}"></script>

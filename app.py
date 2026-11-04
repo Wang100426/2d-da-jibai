@@ -20,9 +20,8 @@ ROOM_CAPACITY = 8
 ROOM_PLAYER_TIMEOUT = 30
 # 房主点「开始」后的准备时间：期间可以换英雄并点准备，全员就绪或读秒结束即开战。
 ROOM_PREP_SECONDS = 30
-# 联机目前只有协作肉鸽：玩家之间的伤害结算一律关闭，队友攻击直接丢弃。
-# 将来要做 PvP 联机时把它改成 True 即可（前端 friendlyFire 同步打开）。
-MP_FRIENDLY_FIRE = False
+# 1V1 联机房启用 PvP；协作肉鸽房始终关闭队友伤害。
+MP_ROOM_MODES = ("rogue", "duel")
 # 进房不选英雄时的占位英雄（免费，永远解锁，保证快照里有完整配色与名字）。
 DEFAULT_ROOM_HERO = "volt"
 # 最后一个主题（school）不参与联机房间随机；新增主题请插在它前面。
@@ -1121,8 +1120,8 @@ def active_effect(player, name, now):
 
 
 def apply_player_attack(room, attacker, attack, now):
-    # 协作模式：队友之间不结算伤害，任何玩家攻击包都在这里被丢弃。
-    if not MP_FRIENDLY_FIRE:
+    # 只有 1V1 对抗房结算玩家攻击；协作肉鸽中的玩家永远是队友。
+    if room.get("mode") != "duel" or room.get("status") != "playing":
         return
     if not isinstance(attack, dict):
         return
@@ -1258,6 +1257,9 @@ def apply_player_attack(room, attacker, attack, now):
         thorns = hero_by_id(target["hero_id"])["combat"]["thorns_damage"]
         if thorns > 0 and active_effect(target, "荆棘护甲", now):
             attacker["hp"] = max(0, attacker["hp"] - thorns)
+        if target["hp"] <= 0 and attacker["hp"] > 0:
+            room["winner_id"] = attacker["player_id"]
+            room["status"] = "finished"
 
 
 def advance_room_status(room, now=None):
@@ -1287,10 +1289,12 @@ def room_snapshot(room, now=None):
     return {
         "room_id": room["room_id"],
         "host_id": room["host_id"],
+        "mode": room.get("mode", "rogue"),
         "status": room["status"],
+        "winner_id": room.get("winner_id"),
         "prep_remaining": prep_remaining,
         "players": [public_player(player) for player in room["players"].values()],
-        "capacity": ROOM_CAPACITY,
+        "capacity": 2 if room.get("mode") == "duel" else ROOM_CAPACITY,
     }
 
 
@@ -1319,6 +1323,9 @@ def cleanup_rooms():
         if not room["players"]:
             ROOMS.pop(room_id, None)
             continue
+        if room.get("mode") == "duel" and room["status"] == "playing" and len(room["players"]) == 1:
+            room["winner_id"] = next(iter(room["players"]))
+            room["status"] = "finished"
         if room["host_id"] not in room["players"]:
             room["host_id"] = next(iter(room["players"]))
         demote_if_too_few(room)
@@ -1399,6 +1406,9 @@ def create_multiplayer_room():
     hero_id, hero_error = resolve_room_hero(body.get("hero_id"))
     if hero_error:
         return error_response(hero_error)
+    mode = str(body.get("mode") or "rogue").strip()
+    if mode not in MP_ROOM_MODES:
+        return error_response("请选择有效的联机模式。")
     with ROOMS_LOCK:
         cleanup_rooms()
         room_id = secrets.token_hex(3).upper()
@@ -1408,8 +1418,8 @@ def create_multiplayer_room():
             "name": name,
             "hero_id": hero_id,
             "ready": False,
-            "x": 1600,
-            "y": 1200,
+            "x": 300 if mode == "duel" else 1600,
+            "y": 450 if mode == "duel" else 1200,
             "hp": 100,
             "max_hp": 100,
             "shield": 0,
@@ -1423,7 +1433,13 @@ def create_multiplayer_room():
             "seen_attacks": {},
             "last_seen": time.time(),
         }
-        room = {"room_id": room_id, "host_id": player_id, "status": "waiting", "players": {player_id: player}}
+        room = {
+            "room_id": room_id,
+            "host_id": player_id,
+            "mode": mode,
+            "status": "waiting",
+            "players": {player_id: player},
+        }
         ROOMS[room_id] = room
         snapshot = room_snapshot(room)
     return jsonify({"ok": True, "player_id": player_id, "room": snapshot})
@@ -1439,6 +1455,9 @@ def join_multiplayer_room():
     hero_id, hero_error = resolve_room_hero(body.get("hero_id"))
     if hero_error:
         return error_response(hero_error)
+    mode = str(body.get("mode") or "rogue").strip()
+    if mode not in MP_ROOM_MODES:
+        return error_response("请选择有效的联机模式。")
     with ROOMS_LOCK:
         cleanup_rooms()
         room = ROOMS.get(room_id)
@@ -1446,12 +1465,17 @@ def join_multiplayer_room():
             return error_response("房间不存在或已关闭。", 404)
         if room["status"] != "waiting":
             return error_response("该房间已经开始游戏。", 409)
-        if len(room["players"]) >= ROOM_CAPACITY:
+        if room.get("mode", "rogue") != mode:
+            return error_response("房间模式不匹配，请选择相同的联机模式。", 409)
+        capacity = 2 if mode == "duel" else ROOM_CAPACITY
+        if len(room["players"]) >= capacity:
             return error_response("房间人数已满。", 409)
         player_id = secrets.token_urlsafe(18)
         slot = len(room["players"])
-        spawn_points = [(1600, 1200), (1650, 1200), (1600, 1250), (1650, 1250),
+        spawn_points = ([(300, 450), (1100, 450)] if mode == "duel" else
+                        [(1600, 1200), (1650, 1200), (1600, 1250), (1650, 1250),
                         (1550, 1200), (1600, 1150), (1700, 1200), (1600, 1300)]
+                        )
         x, y = spawn_points[slot % len(spawn_points)]
         room["players"][player_id] = {
             "player_id": player_id,
@@ -1559,6 +1583,11 @@ def leave_multiplayer_room(room_id):
     with ROOMS_LOCK:
         room, player = find_room_player(room_id, str(body.get("player_id", "")))
         if room is not None and player is not None:
+            if room.get("mode") == "duel" and room["status"] == "playing" and len(room["players"]) == 2:
+                room["winner_id"] = next(
+                    member_id for member_id in room["players"] if member_id != player["player_id"]
+                )
+                room["status"] = "finished"
             room["players"].pop(player["player_id"], None)
             if not room["players"]:
                 ROOMS.pop(room["room_id"], None)
@@ -1585,27 +1614,34 @@ def sync_multiplayer_room(room_id):
         room, player = find_room_player(room_id, player_id)
         if room is None or player is None:
             return error_response("房间已关闭或你已掉线。", 404)
-        if room["status"] != "playing":
+        if room.get("mode") == "duel" and not (0 <= x <= 1400 and 0 <= y <= 900):
+            return error_response("玩家坐标超出竞技场范围。")
+        if room["status"] not in ("playing", "finished"):
             return error_response("房间尚未开始。", 409)
         now = time.time()
         player["last_seen"] = now
-        player["energy"] = min(player["max_energy"], player["energy"] + max(0, now - player.get("energy_updated_at", now)) * 1.5)
-        player["energy_updated_at"] = now
-        attacks = body.get("attacks", [])
-        if isinstance(attacks, list):
-            for attack in attacks[:16]:
-                apply_player_attack(room, player, attack, now)
-        if (
-            player["hp"] > 0
-            and not active_effect(player, "眩晕", now)
-            and not active_effect(player, "禁锢", now)
-            and not active_effect(player, "狂舞", now)
-        ):
-            player["x"] = x
-            player["y"] = y
+        if room["status"] == "playing":
+            player["energy"] = min(player["max_energy"], player["energy"] + max(0, now - player.get("energy_updated_at", now)) * 1.5)
+            player["energy_updated_at"] = now
+            attacks = body.get("attacks", [])
+            if isinstance(attacks, list):
+                for attack in attacks[:16]:
+                    apply_player_attack(room, player, attack, now)
+                    if room["status"] != "playing":
+                        break
+            if (
+                room["status"] == "playing"
+                and player["hp"] > 0
+                and not active_effect(player, "眩晕", now)
+                and not active_effect(player, "禁锢", now)
+                and not active_effect(player, "狂舞", now)
+            ):
+                player["x"] = x
+                player["y"] = y
         others = [public_player(other) for other in room["players"].values() if other["player_id"] != player_id]
         return jsonify({
             "ok": True,
+            "winner_id": room.get("winner_id"),
             "players": others,
             "self": public_player(player),
         })
@@ -1663,6 +1699,12 @@ def battle():
     player_id = request.args.get("pid", "").strip()
     multiplayer_config = None
     game_mode = "duel" if request.args.get("mode") == "duel" else "rogue"
+    if room_id and player_id:
+        with ROOMS_LOCK:
+            preflight_room, preflight_player = find_room_player(room_id, player_id)
+            if preflight_room is None or preflight_player is None or preflight_room["status"] not in ("playing", "finished"):
+                return redirect(url_for("multiplayer"))
+            game_mode = "duel" if preflight_room.get("mode") == "duel" else "rogue"
     is_story_battle = bool(story_node and story_node.get("type") == "battle")
     story_battle_config = (story_node.get("battle") or {}) if is_story_battle else {}
     resolved_map = story_script.resolve_battle_map(
@@ -1677,14 +1719,18 @@ def battle():
     if room_id and player_id:
         with ROOMS_LOCK:
             room, room_player = find_room_player(room_id, player_id)
-            if room is None or room_player is None or room["status"] != "playing":
+            if room is None or room_player is None or room["status"] not in ("playing", "finished"):
                 return redirect(url_for("multiplayer"))
             player = hero_by_id(room_player["hero_id"])
             base_defense = player["stats"]["防御"]
-            game_mode = "rogue"
+            game_mode = "duel" if room.get("mode") == "duel" else "rogue"
+            if game_mode == "duel":
+                room_player["x"] = 300 if room_player["player_id"] == room["host_id"] else 1100
+                room_player["y"] = 450
             multiplayer_config = {
                 "room_id": room_id,
                 "player_id": player_id,
+                "mode": game_mode,
                 "x": room_player["x"],
                 "y": room_player["y"],
                 "hp": room_player["hp"],
@@ -1704,7 +1750,7 @@ def battle():
         "school": ("MAP_SCHOOL", "MAP_EVENT_SCHOOL"),
     }
     map_name_key, map_event_key = transition_map_keys[map_theme]
-    if game_mode == "duel":
+    if game_mode == "duel" and not multiplayer_config:
         map_event_key = "MAP_EVENT_DUEL"
     elif multiplayer_config:
         map_event_key = "MAP_EVENT_MULTIPLAYER"
@@ -1713,9 +1759,13 @@ def battle():
     equipment_bonuses = player_save.calculate_equipment_bonuses()
     transition_map_name = locale_ui[map_name_key]
     transition_event = locale_ui[map_event_key]
+    if multiplayer_config and multiplayer_config["mode"] == "duel":
+        transition_event = locale_ui.get("MP_MODE_PVP_HINT", transition_event)
     if is_story_battle:
         # 剧情战斗不跑随机地图事件，别把该地图的事件文案挂到过场页上
         transition_event = locale_ui.get("STORY_BATTLE_EVENT", transition_event)
+    if multiplayer_config and multiplayer_config["mode"] == "duel":
+        story_arena = True
     if story_arena:
         transition_map_name = locale_ui.get("STORY_ARENA_MAP", transition_map_name)
     return render_template(

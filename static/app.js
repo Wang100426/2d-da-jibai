@@ -213,6 +213,8 @@ const minimap = requireElement("#minimap");
 const miniContext = requireContext(minimap);
 const config = getMapConfig();
 const locale = config.locale;
+const onlineDuel = config.multiplayer?.mode === "duel";
+const duelArena = config.duel || onlineDuel;
 const storyBattle = window.STORY_BATTLE || null;
 /** 剧情波次：非空时整场战斗按剧本刷怪，不再走肉鸽随机。 */
 const storyWaves = storyBattle && Array.isArray(storyBattle.waves) ? storyBattle.waves : [];
@@ -271,9 +273,9 @@ const arena = Boolean(config.arena);
  * 队友之间不结算伤害：所有 PvP 目标收集与攻击上报都走这个开关。
  * （人机对抗的对手是本地 AI，不经过 remotePlayers。）
  */
-const friendlyFire = false;
+const friendlyFire = onlineDuel;
 /** 地图尺寸 / 出生点 / 补给 / 静态物件全部由纯函数决定，方便单测。 */
-const battleSpace = resolveBattleSpace({ duel: config.duel, arena, mapTheme });
+const battleSpace = resolveBattleSpace({ duel: duelArena, arena, mapTheme });
 const map = { width: battleSpace.width, height: battleSpace.height };
 // Keep static geometry off the per-frame path; actors and map events remain dynamic.
 let staticMapLayer;
@@ -890,6 +892,8 @@ function updateWaveHud() {
         updateDuelHud();
         return;
     }
+    if (onlineDuel)
+        return;
     const displayWave = waveState === "starting" ? wave + 1 : wave;
     if (storyWaves.length > 0) {
         const spec = storyWaveAt(storyWaves, displayWave);
@@ -1173,7 +1177,7 @@ function showWaveUpgrade() {
     upgradeOverlay.hidden = false;
 }
 function updateWaveSpawner(dt) {
-    if (config.duel)
+    if (duelArena)
         return;
     if (waveState === "starting") {
         breakTimer -= dt;
@@ -1322,6 +1326,10 @@ function finishStoryBattle(result) {
     }, 260);
 }
 function finishRun() {
+    if (onlineDuel) {
+        finishOnlineDuel(false);
+        return;
+    }
     if (config.duel) {
         finishDuelRound(false);
         return;
@@ -1348,6 +1356,42 @@ let coinsSettled = false;
 /** 人机对抗、联机与剧情战斗都不结算肉鸽金币（剧情奖励走 /api/story/reward）。 */
 function coinSettlementEnabled() {
     return !config.duel && !config.multiplayer && !storyBattle;
+}
+function finishOnlineDuel(won) {
+    if (!onlineDuel || runEnded)
+        return;
+    runEnded = true;
+    keys.clear();
+    touchKeys.clear();
+    basicAttackHeld = false;
+    const multiplayer = config.multiplayer;
+    if (multiplayer) {
+        void fetch(`/api/mp/rooms/${encodeURIComponent(multiplayer.room_id)}/leave`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ player_id: multiplayer.player_id }),
+        }).then(async (response) => {
+            const result = await response.json();
+            if (!response.ok || !result.ok)
+                throw new Error(result.error || "离开联机房间失败。");
+        }).catch((error) => {
+            console.warn("Could not leave the completed online duel room.", error);
+        });
+    }
+    try {
+        localStorage.removeItem("2d-da-jibai-lobby");
+    }
+    catch (error) {
+        console.warn("Could not clear the completed online duel session.", error);
+    }
+    const title = document.querySelector("#run-over-title");
+    const description = document.querySelector("#run-over-description");
+    if (title)
+        title.textContent = locale.ui[won ? "MP_PVP_WIN" : "MP_PVP_LOSS"] || (won ? "胜利" : "失败");
+    if (description)
+        description.textContent = locale.ui[won ? "MP_PVP_WIN_HINT" : "MP_PVP_LOSS_HINT"] || "";
+    retryRunButton.textContent = locale.ui.MP_BACK_LOBBY || "返回联机大厅";
+    runOverOverlay.hidden = false;
 }
 function showRunCoins(payload) {
     if (!runOverCoins)
@@ -1537,7 +1581,7 @@ function updateHud() {
     const basicDescription = basicAttackButton.querySelector("small");
     if (basicDescription) {
         const rate = getEffectiveAttackSpeed();
-        const label = tx(config.duel ? t("basic.rate_duel", { rate: rate.toFixed(1) }) : t("basic.rate_rogue", { rate: rate.toFixed(1) }));
+        const label = tx(duelArena ? t("basic.rate_duel", { rate: rate.toFixed(1) }) : t("basic.rate_rogue", { rate: rate.toFixed(1) }));
         if (basicDescription.textContent !== label)
             basicDescription.textContent = label;
     }
@@ -1787,7 +1831,7 @@ function drawMapBase() {
         drawAirportRunways();
     if (mapTheme === "station")
         drawStationTracks();
-    if (!config.duel)
+    if (!duelArena)
         roads.forEach((road) => {
             context.fillStyle = mapTheme === "hospital" ? "#22333a"
                 : mapTheme === "music" ? "#292039"
@@ -1812,7 +1856,7 @@ function drawMapBase() {
             context.stroke();
             context.setLineDash([]);
         });
-    if (config.duel || arena) {
+    if (duelArena || arena) {
         context.save();
         context.strokeStyle = "#49e6e055";
         context.lineWidth = 5;
@@ -1826,7 +1870,7 @@ function drawMapBase() {
         context.stroke();
         context.restore();
     }
-    if (!config.duel)
+    if (!duelArena)
         obstacles.forEach((obstacle, index) => {
             if (obstacle.type === "barrier") {
                 roundedRect(context, obstacle.x, obstacle.y, obstacle.w, obstacle.h, 7);
@@ -3186,7 +3230,7 @@ function updateStationTrains(dt) {
     });
 }
 function updateRandomMapEvents(dt) {
-    if (config.duel || runEnded)
+    if (duelArena || runEnded)
         return;
     if (mapTheme === "school") {
         updateSchoolClass(dt);
@@ -3627,7 +3671,7 @@ function collides(x, y) {
         y + player.radius > map.height) {
         return true;
     }
-    if (config.duel)
+    if (duelArena)
         return false;
     return blockedByRects(x, y, player.radius);
 }
@@ -4192,7 +4236,7 @@ function knockbackEnemyInDirection(enemy, distance, directionX, directionY) {
         const nextX = startX + directionX * distance * ratio;
         const nextY = startY + directionY * distance * ratio;
         const blocked = nextX < 17 || nextY < 17 || nextX > map.width - 17 || nextY > map.height - 17 ||
-            !config.duel && blockedByRects(nextX, nextY, 17);
+            !duelArena && blockedByRects(nextX, nextY, 17);
         if (blocked)
             break;
         enemy.x = nextX;
@@ -6706,7 +6750,7 @@ function drawRemotePlayers() {
     }
 }
 async function syncMultiplayer() {
-    if (!config.multiplayer || syncPending)
+    if (!config.multiplayer || syncPending || (onlineDuel && runEnded))
         return;
     syncPending = true;
     const attacksToSend = pendingPvpAttacks.slice();
@@ -6757,9 +6801,18 @@ async function syncMultiplayer() {
             Object.entries(result.self.effects || {}).forEach(([effect, duration]) => {
                 statusEffects[effect] = Math.max(statusEffects[effect] || 0, duration);
             });
-            if (playerState.hp <= 0 && !runEnded)
-                finishRun();
+            if (playerState.hp <= 0 && !runEnded) {
+                if (onlineDuel && result.winner_id) {
+                    finishOnlineDuel(result.winner_id === config.multiplayer?.player_id);
+                }
+                else {
+                    finishRun();
+                }
+            }
             updateHud();
+        }
+        if (onlineDuel && result.winner_id && !runEnded) {
+            finishOnlineDuel(result.winner_id === config.multiplayer?.player_id);
         }
         if (syncErrorShown) {
             syncErrorShown = false;
@@ -7022,7 +7075,9 @@ basicAttackButton.addEventListener("pointerdown", (event) => {
     basicAttackButton.addEventListener(type, () => { basicAttackHeld = false; });
 });
 retryRunButton.addEventListener("click", () => {
-    if (config.duel)
+    if (onlineDuel)
+        window.location.href = "/multiplayer?mode=duel";
+    else if (config.duel)
         window.location.href = "/select?mode=duel";
     else
         window.location.reload();
@@ -7043,7 +7098,11 @@ if (config.multiplayer) {
     mapMode.textContent = tx(t("mp.room_tag", { room: config.multiplayer.room_id }));
     peerList.hidden = false;
 }
-if (config.duel) {
+if (onlineDuel) {
+    mapMode.textContent = locale.ui.MP_MODE_PVP || "1V1";
+    showToast(locale.ui.MP_PVP_START || "1V1 联机对抗开始！");
+}
+else if (config.duel) {
     mapMode.textContent = tx("人机对抗");
     startDuelRound();
     showToast(tx("人机对抗开始！先赢下 4 分获胜，SPACE 普攻，Q / E / R 释放技能。"));

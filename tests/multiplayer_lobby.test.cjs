@@ -59,13 +59,19 @@ for (const id of [
   "player-name", "hero-select", "room-code", "join-row", "mp-entry", "waiting-room",
   "waiting-players", "waiting-message", "mp-prep", "prep-countdown", "ready-toggle",
   "start-game", "mp-toast", "lan-addresses", "create-room", "join-toggle", "join-room",
-  "leave-room", "current-room-code",
+  "leave-room", "current-room-code", "mp-selected-mode", "room-mode-label",
 ]) {
   ids[id] = new El(id.includes("room-code") || id.includes("player-name") ? "input" : "div");
 }
+const modeButtons = ["ai", "duel", "rogue"].map((mode) => {
+  const button = new El("button");
+  button.dataset.lobbyMode = mode;
+  return button;
+});
 
 const documentStub = {
   getElementById: (id) => ids[id] || null,
+  querySelectorAll: (selector) => selector === "[data-lobby-mode]" ? modeButtons : [],
   createElement: (tag) => new El(tag),
   addEventListener() {},
   body: new El("body"),
@@ -121,13 +127,14 @@ async function fakeFetch(url, options) {
     return json({
       ok: true,
       player_id: "host-1",
-      room: { room_id: "ABC123", host_id: "host-1", status: "waiting", prep_remaining: 0, capacity: 8, players: [player("host-1", "房主", "volt", false)] },
+      room: { room_id: "ABC123", host_id: "host-1", mode: body.mode, status: "waiting", prep_remaining: 0, capacity: body.mode === "duel" ? 2 : 8, players: [player("host-1", "房主", "volt", false)] },
     });
   }
   if (url === "/api/mp/rooms/join") {
     roomState = {
       room_id: "ABC123",
       host_id: "host-1",
+      mode: body.mode,
       status: "preparing",
       prep_remaining: 25,
       capacity: 8,
@@ -194,6 +201,8 @@ sandbox.window.document = documentStub;
 sandbox.globalThis = sandbox;
 sandbox.MP_HEROES = HEROES;
 sandbox.MP_LOCALE = LOBBY_LOCALE;
+sandbox.MP_STRINGS = { ai: "人机", duel: "联机对抗", rogue: "合作肉鸽", mismatch: "模式不匹配", roomMode: "房间模式" };
+sandbox.MP_INITIAL_MODE = "rogue";
 
 (async () => {
   // 模板里这两个面板带 hidden 属性，stub 需要手动还原初始状态
@@ -209,6 +218,11 @@ sandbox.MP_LOCALE = LOBBY_LOCALE;
 
   check("开局没有残留房间面板", ids["waiting-room"].hidden === true);
   check("入口面板可见", ids["mp-entry"].hidden === false);
+  modeButtons[1].click();
+  check("联机对抗模式被选中", modeButtons[1].classList.contains("selected") && ids["mp-selected-mode"].textContent === "联机对抗");
+  modeButtons[0].click();
+  check("人机模式进入本地 1V1 选人页", sandbox.window.location.href === "/select?mode=duel");
+  modeButtons[2].click();
 
   // 点「加入」应只展开房间码输入，不发请求
   ids["join-toggle"].click();
@@ -221,6 +235,7 @@ sandbox.MP_LOCALE = LOBBY_LOCALE;
   await new Promise((r) => setImmediate(r));
 
   check("创建后进入房间面板", ids["waiting-room"].hidden === false && ids["mp-entry"].hidden === true);
+  check("创建请求携带肉鸽房间模式", requests.some((r) => r.url === "/api/mp/rooms" && r.body.mode === "rogue"));
   check("房间码已写入", ids["current-room-code"].textContent === "ABC123");
   check("等待阶段不显示准备按钮", ids["ready-toggle"].hidden === true);
   check("房主能看到开始按钮", ids["start-game"].hidden === false);
@@ -253,6 +268,15 @@ sandbox.MP_LOCALE = LOBBY_LOCALE;
   check("全员就绪后跳转战斗", Boolean(navigated), String(navigated));
   check("跳转带上房间与玩家", Boolean(navigated && navigated.includes("room=ABC123") && navigated.includes("pid=guest-1")), String(navigated));
   check("跳转用 replace 以免返回重进", Boolean(navigated && navigated.startsWith("/battle?hero=volt")));
+
+  ids["leave-room"].click();
+  await new Promise((r) => setImmediate(r));
+  modeButtons[1].click();
+  ids["player-name"].value = "对抗房主";
+  ids["create-room"].click();
+  await new Promise((r) => setImmediate(r));
+  check("联机对抗创建请求携带 duel 模式", requests.some((r) => r.url === "/api/mp/rooms" && r.body.mode === "duel"));
+  check("对抗房间显示联机对抗模式", ids["room-mode-label"].textContent.includes("联机对抗"));
 
   console.log(`\n${passed} checks passed`);
 })();

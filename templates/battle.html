@@ -63,11 +63,13 @@
     </div>
   </section>
   {% endif %}
+  {% if game_mode != "duel" or (multiplayer and multiplayer.mode != "duel") %}
   <aside class="wave-status">
     <b id="wave-title">{{ tr("WAVE_ONE_ASSEMBLING") }}</b>
     <span id="wave-subtitle">{{ tr("ENEMIES_INCOMING") }}</span>
   </aside>
-  {% if game_mode == "duel" %}
+  {% endif %}
+  {% if game_mode == "duel" and not multiplayer %}
   <aside class="duel-opponent" id="duel-opponent">
     <small>{{ tr("AI_OPPONENT") }}</small><b id="duel-opponent-name">{{ tr("ENEMY") }}</b>
     <i class="vital-bar"><em id="duel-opponent-hp"></em></i>
@@ -109,7 +111,7 @@
       <p class="run-over-coins" id="run-over-coins" hidden></p>
       <div class="run-over-actions">
         <button id="retry-run" class="button button-primary" type="button">{{ tr("RETRY") }}</button>
-        <a class="button button-ghost" href="{% if game_mode == 'duel' %}/select?mode=duel{% else %}/select{% endif %}">{{ tr("BACK_SELECT") }}</a>
+        <a class="button button-ghost" href="{% if multiplayer and multiplayer.mode == 'duel' %}/multiplayer?mode=duel{% elif game_mode == 'duel' %}/select?mode=duel{% else %}/select{% endif %}">{{ tr("BACK_SELECT") }}</a>
       </div>
     </div>
   </section>

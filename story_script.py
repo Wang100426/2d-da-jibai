@@ -524,7 +524,109 @@ HERO_SECTIONS = [
     },
 ]
 
-CHAPTERS = RC001_SECTIONS + HERO_SECTIONS
+DUAL_TONE_SECTIONS = [
+    {
+        "id": "hero-dualtone-01",
+        "card": "RC-H04",
+        "category": "hero",
+        "order": 0,
+        "hero": "dual_tone",
+        "background": "home-background.png",
+        "entry": "d1-intro",
+        "nodes": [
+            {"id": "d1-intro", "type": "dialogue", "speaker_key": "narrator", "initial": "档", "accent": "narrator", "next": "d1-hero"},
+            {"id": "d1-hero", "type": "dialogue", "speaker_key": "hero", "initial": "琴", "accent": "dual-tone",
+             "palette": {"main": "#9b8cff", "light": "#eee8ff", "dark": "#463b82"}, "next": "d1-choice"},
+            {"id": "d1-choice", "type": "choice", "prompt_key": "prompt", "options": [
+                {"id": "listen", "next": "d1-listen"},
+                {"id": "trace", "next": "d1-trace"},
+            ]},
+            {"id": "d1-listen", "type": "dialogue", "speaker_key": "hero", "initial": "琴", "accent": "dual-tone",
+             "palette": {"main": "#69d8ff", "light": "#ddf8ff", "dark": "#24506d"}, "next": "d1-battle"},
+            {"id": "d1-trace", "type": "dialogue", "speaker_key": "terminal", "initial": "穹", "accent": "terminal",
+             "palette": {"main": "#7cd4ff", "light": "#dff3ff", "dark": "#1b4a66"}, "next": "d1-battle"},
+            _battle_node("d1-battle", "dual_tone", "music", [
+                _wave([_enemy("pipa", 1, hp=1.2), _enemy("tech", 1, hp=0.9)],
+                      [_skill(18, 10, "减速", 2, 220)]),
+                _wave([_enemy("dual_tone", 1, hp=1.5, dmg=1.15)],
+                      [_skill(30, 12, "眩晕", 1, 200)], {"interval": 9, "damage": 6}),
+            ], "d1-after"),
+            {"id": "d1-after", "type": "dialogue", "speaker_key": "narrator", "initial": "弦", "accent": "narrator", "next": "d1-reward"},
+            {"id": "d1-reward", "type": "reward", "reward_id": "hero-dualtone-01-clear", "coins": 180, "next": "d1-end"},
+            {"id": "d1-end", "type": "chapter_end", "next": None},
+        ],
+    },
+    {
+        "id": "hero-dualtone-02",
+        "card": "RC-H04",
+        "category": "hero",
+        "order": 1,
+        "hero": "dual_tone",
+        "background": "home-background.png",
+        "entry": "d2-intro",
+        "nodes": [
+            {"id": "d2-intro", "type": "dialogue", "speaker_key": "narrator", "initial": "谱", "accent": "narrator", "next": "d2-hero"},
+            {"id": "d2-hero", "type": "dialogue", "speaker_key": "hero", "initial": "琴", "accent": "dual-tone",
+             "palette": {"main": "#e477ff", "light": "#ffe5ff", "dark": "#713d83"}, "next": "d2-choice"},
+            {"id": "d2-choice", "type": "choice", "prompt_key": "prompt", "options": [
+                {"id": "record", "next": "d2-record"},
+                {"id": "follow", "next": "d2-follow"},
+            ]},
+            {"id": "d2-record", "type": "dialogue", "speaker_key": "terminal", "initial": "穹", "accent": "terminal",
+             "palette": {"main": "#7cd4ff", "light": "#dff3ff", "dark": "#1b4a66"}, "next": "d2-battle"},
+            {"id": "d2-follow", "type": "dialogue", "speaker_key": "echo", "initial": "音", "accent": "stranger",
+             "palette": {"main": "#e477ff", "light": "#ffe5ff", "dark": "#713d83"}, "next": "d2-battle"},
+            _battle_node("d2-battle", "dual_tone", "station", [
+                _wave([_enemy("pipa", 2, hp=1.2, speed=0.9)],
+                      [_skill(20, 10, "禁锢", 1.5, 230)]),
+                _wave([_enemy("volt2", 1, hp=1.35), _enemy("tech", 1, hp=1.1, armor=0.2)],
+                      [_skill(28, 12, "减速", 2.5, 210)]),
+            ], "d2-after"),
+            {"id": "d2-after", "type": "dialogue", "speaker_key": "narrator", "initial": "谱", "accent": "narrator", "next": "d2-reward"},
+            {"id": "d2-reward", "type": "reward", "reward_id": "hero-dualtone-02-clear", "coins": 210, "next": "d2-end"},
+            {"id": "d2-end", "type": "chapter_end", "next": None},
+        ],
+    },
+    {
+        "id": "hero-dualtone-03",
+        "card": "RC-H04",
+        "category": "hero",
+        "order": 2,
+        "hero": "dual_tone",
+        "background": "home-background.png",
+        "entry": "d3-intro",
+        "nodes": [
+            {"id": "d3-intro", "type": "dialogue", "speaker_key": "narrator", "initial": "终", "accent": "narrator", "next": "d3-hero"},
+            {"id": "d3-hero", "type": "dialogue", "speaker_key": "hero", "initial": "琴", "accent": "dual-tone",
+             "palette": {"main": "#9b8cff", "light": "#eee8ff", "dark": "#463b82"}, "next": "d3-choice"},
+            {"id": "d3-choice", "type": "choice", "prompt_key": "prompt", "options": [
+                {"id": "complete", "next": "d3-complete"},
+                {"id": "silence", "next": "d3-silence"},
+            ]},
+            {"id": "d3-complete", "type": "dialogue", "speaker_key": "hero", "initial": "琴", "accent": "dual-tone",
+             "palette": {"main": "#69d8ff", "light": "#ddf8ff", "dark": "#24506d"}, "next": "d3-battle"},
+            {"id": "d3-silence", "type": "dialogue", "speaker_key": "echo", "initial": "音", "accent": "stranger",
+             "palette": {"main": "#e477ff", "light": "#ffe5ff", "dark": "#713d83"}, "next": "d3-battle"},
+            _battle_node("d3-battle", "dual_tone", "music", [
+                _wave([_enemy("pipa", 1, hp=1.4), _enemy("tech", 1, hp=1.2)],
+                      [_skill(24, 10, "禁锢", 1.5, 240)], {"interval": 8, "damage": 7}),
+                _wave([_enemy("dual_tone", 1, hp=2.0, dmg=1.25, armor=0.2)],
+                      [_skill(40, 14, "眩晕", 1.5, 240)]),
+            ], "d3-after"),
+            {"id": "d3-after", "type": "dialogue", "speaker_key": "narrator", "initial": "终", "accent": "narrator", "next": "d3-choice-end"},
+            {"id": "d3-choice-end", "type": "choice", "prompt_key": "ending_prompt", "options": [
+                {"id": "play", "next": "d3-reward-play"},
+                {"id": "keep", "next": "d3-reward-keep"},
+            ]},
+            {"id": "d3-reward-play", "type": "reward", "reward_id": "hero-dualtone-03-play", "coins": 260, "next": "d3-end-play"},
+            {"id": "d3-end-play", "type": "chapter_end", "next": None},
+            {"id": "d3-reward-keep", "type": "reward", "reward_id": "hero-dualtone-03-keep", "coins": 260, "next": "d3-end-keep"},
+            {"id": "d3-end-keep", "type": "chapter_end", "next": None},
+        ],
+    },
+]
+
+CHAPTERS = RC001_SECTIONS + HERO_SECTIONS + DUAL_TONE_SECTIONS
 
 NODE_TYPES = ("dialogue", "choice", "battle", "objective", "reward", "chapter_end")
 

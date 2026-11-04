@@ -10,18 +10,36 @@
 </head>
 <body class="multiplayer-page">
   <header class="topbar">
-    <a class="brand" href="/"><img class="brand-mark brand-mark-image" src="{{ url_for('favicon', lang=lang) }}" alt=""><span><strong>{{ tr("PRODUCT_NAME") }}</strong><small>{{ tr("LAN_MULTIPLAYER") }}</small></span></a>
+    <a class="brand" href="/"><img class="brand-mark brand-mark-image" src="{{ url_for('favicon', lang=lang) }}" alt=""><span><strong>{{ tr("PRODUCT_NAME") }}</strong><small>{{ tr("HOME_MULTIPLAYER") }}</small></span></a>
     <div class="topbar-actions"><a class="coin-pill" href="/shop" title="{{ tr('SHOP') }}"><span class="coin-pill-icon" aria-hidden="true">◈</span><b data-coin-balance>{{ "∞" if profile.infinite_coins else "{:,}".format(profile.coins) }}</b><small>{{ tr("SHOP") }}</small></a><div class="language-switch" data-language-switch></div><a class="exit-link" href="/">{{ tr("BACK_HOME") }} ×</a></div>
   </header>
   <main class="mp-main">
     <section class="mp-heading">
-      <p class="eyebrow">{{ tr("LOCAL_NETWORK_PARTY") }}</p>
-      <h1>{{ tr("LAN") }}</h1>
-      <p>{{ tr("MP_INTRO") }}</p>
+      <p class="eyebrow">{{ tr("HOME_MULTIPLAYER") }}</p>
+      <h1>{{ tr("HOME_MULTIPLAYER") }}</h1>
+      <p>{{ tr("MP_HALL_INTRO") }}</p>
+    </section>
+
+    <section class="mp-mode-picker" id="mp-mode-picker" aria-label="{{ tr('MP_MODE_PICKER') }}">
+      <button class="mp-mode-card" type="button" data-lobby-mode="ai">
+        <span class="mp-mode-icon">AI</span>
+        <span><b>{{ tr("MP_MODE_AI") }}</b><small>{{ tr("MP_MODE_AI_HINT") }}</small></span>
+        <i>›</i>
+      </button>
+      <button class="mp-mode-card" type="button" data-lobby-mode="duel">
+        <span class="mp-mode-icon pvp">1V1</span>
+        <span><b>{{ tr("MP_MODE_PVP") }}</b><small>{{ tr("MP_MODE_PVP_HINT") }}</small></span>
+        <i>›</i>
+      </button>
+      <button class="mp-mode-card" type="button" data-lobby-mode="rogue">
+        <span class="mp-mode-icon coop">CO-OP</span>
+        <span><b>{{ tr("MP_MODE_COOP") }}</b><small>{{ tr("MP_MODE_COOP_HINT") }}</small></span>
+        <i>›</i>
+      </button>
     </section>
 
     <section class="mp-panel mp-entry" id="mp-entry">
-      <h2>{{ tr("JOIN_LOBBY") }}</h2>
+      <h2><span id="mp-selected-mode">{{ tr("MP_MODE_COOP") }}</span><small>{{ tr("ROOM_LOBBY") }}</small></h2>
       <label class="mp-label" for="player-name">{{ tr("NICKNAME") }}</label>
       <input id="player-name" maxlength="20" placeholder="{{ tr('NICKNAME_PLACEHOLDER') }}" autocomplete="nickname">
       <div class="mp-choice-row">
@@ -41,7 +59,10 @@
 
     <section class="mp-panel waiting-panel" id="waiting-room" hidden>
       <div class="panel-title">
-        <div><p class="eyebrow">{{ tr("ROOM_LOBBY") }}</p><h2>{{ tr("ROOM") }} <strong id="current-room-code"></strong></h2></div>
+        <div>
+          <p class="eyebrow"><span id="room-mode-label"></span></p>
+          <h2>{{ tr("ROOM") }} <strong id="current-room-code"></strong></h2>
+        </div>
         <button class="leave-button" id="leave-room" type="button">{{ tr("LEAVE_ROOM") }}</button>
       </div>
       <div class="mp-prep" id="mp-prep" hidden>
@@ -67,7 +88,18 @@
     </section>
   </main>
   <div class="mp-toast" id="mp-toast" role="status" aria-live="polite"></div>
-  <script>window.MP_HEROES = {{ heroes|tojson }}; window.MP_LOCALE = {{ locale_pack|tojson }};</script>
+  <script>
+    window.MP_HEROES = {{ heroes|tojson }};
+    window.MP_LOCALE = {{ locale_pack|tojson }};
+    window.MP_STRINGS = {{ {
+      "ai": tr("MP_MODE_AI"),
+      "duel": tr("MP_MODE_PVP"),
+      "rogue": tr("MP_MODE_COOP"),
+      "mismatch": tr("MP_MODE_MISMATCH"),
+      "roomMode": tr("MP_ROOM_MODE")
+    }|tojson }};
+    window.MP_INITIAL_MODE = {{ request.args.get("mode", "rogue")|tojson }};
+  </script>
   <script src="{{ url_for('static', filename='multiplayer.js') }}"></script>
   <script src="{{ url_for('static', filename='language.js') }}"></script>
   <script src="{{ url_for('static', filename='page-transition.js') }}" defer></script>
