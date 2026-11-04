@@ -705,16 +705,6 @@ def mode_page():
             "palette": {"main": "#49e6e0", "light": "#d4fffd", "dark": "#0f5a57"},
         },
         {
-            "id": "duel",
-            "name": locale["DUEL"],
-            "kicker": locale.get("DUEL_KICKER", "人机竞技"),
-            "tagline": locale["DUEL_TAGLINE"],
-            "description": locale["DUEL_DESCRIPTION"],
-            "icon": locale["DUEL_ICON"],
-            "accent": "duel",
-            "palette": {"main": "#b4ff5c", "light": "#eeffd6", "dark": "#3d5c12"},
-        },
-        {
             "id": "story",
             "name": locale["STORY_TITLE"],
             "kicker": locale.get("STORY_KICKER", "剧情模式"),

@@ -85,4 +85,13 @@ confirmButton.addEventListener("click", () => {
   window.location.href = "/";
 });
 
-selectMode(choices.find((choice) => choice.classList.contains("selected"))?.dataset.modeId || modes[0].id);
+let storedModeId = "";
+try {
+  storedModeId = localStorage.getItem(STORAGE_KEY) || "";
+} catch (error) {
+  console.warn("Could not restore the previously selected game mode.", error);
+}
+const initialModeId = modes.some((mode) => mode.id === storedModeId)
+  ? storedModeId
+  : choices.find((choice) => choice.classList.contains("selected"))?.dataset.modeId || modes[0].id;
+selectMode(initialModeId);

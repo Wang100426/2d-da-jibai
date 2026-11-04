@@ -1,5 +1,28 @@
 # 更新日志 / Updates
 
+## 2.5.1
+
+### 中文
+
+- 返回剧情重现卡库时自动恢复上次插入的卡片与分类；点击弹出会清除保存状态。
+- 新增重现卡插入动画，并修正插卡后空屏提示仍占据显示区域的问题。
+- 统一静音按钮的字体样式与字号；模式选择页移除已整合进联机大厅的人机对抗入口。
+- 模式选择页进入时自动选中上次选择的模式；旧存档中已移除的模式会安全回退。
+
+### English
+
+- Returning to the story archive now restores the previously inserted card and its category; ejecting a card clears the saved selection.
+- Added a replay-card insertion animation and fixed the empty-screen prompt occupying space after a card is loaded.
+- Unified the mute button's font styling and size, and removed AI duels from the mode picker now that they are part of the multiplayer lobby.
+- The mode picker now restores the previously selected mode on entry, with a safe fallback for modes no longer available.
+
+### 日本語
+
+- ストーリーアーカイブに戻ると、前回挿入したカードと分類を復元します。カードを取り出すと保存状態を解除します。
+- 再生カードの挿入アニメーションを追加し、カード読み込み後も空画面の案内が領域を占有する問題を修正しました。
+- ミュートボタンのフォントとサイズを統一し、マルチプレイロビーに統合されたAI対戦をモード選択画面から削除しました。
+- モード選択画面を開くと前回選んだモードを復元します。利用できなくなった旧モードは安全にフォールバックします。
+
 ## 2.5.0
 
 ### 中文

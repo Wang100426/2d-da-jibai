@@ -3,6 +3,7 @@ const chooseWindow = window;
 const categories = (chooseWindow.STORY_CATEGORIES || []).slice().sort((a, b) => a.order - b.order);
 const cards = chooseWindow.STORY_CARDS || [];
 const strings = chooseWindow.STORY_STRINGS || {};
+const insertedCardStorageKey = "2d-da-jibai-story-inserted-card";
 const tabsRoot = document.getElementById("story-tabs");
 const cardListRoot = document.getElementById("story-card-list");
 const chaptersRoot = document.getElementById("story-chapters");
@@ -31,6 +32,26 @@ function setText(element, value) {
 function setHidden(element, hidden) {
     if (element)
         element.hidden = hidden;
+}
+function getInsertedCardId() {
+    try {
+        return localStorage.getItem(insertedCardStorageKey) || "";
+    }
+    catch (error) {
+        console.warn("Could not restore the inserted story card.", error);
+        return "";
+    }
+}
+function saveInsertedCardId(cardId) {
+    try {
+        if (cardId)
+            localStorage.setItem(insertedCardStorageKey, cardId);
+        else
+            localStorage.removeItem(insertedCardStorageKey);
+    }
+    catch (error) {
+        console.warn("Could not save the inserted story card.", error);
+    }
 }
 function renderTabs(active) {
     if (!tabsRoot)
@@ -140,7 +161,7 @@ function markInsertedCard(cardId) {
         button.classList.toggle("inserted", button.dataset.cardId === cardId);
     });
 }
-function loadCard(card) {
+function loadCard(card, animate = true) {
     if (!chaptersRoot)
         return;
     chaptersRoot.replaceChildren(...card.sections.map(renderSection));
@@ -156,6 +177,12 @@ function loadCard(card) {
     setHidden(loadedCard, false);
     driveSlot?.classList.add("has-disc");
     driveDisc?.classList.add("active");
+    if (animate && loadedCard) {
+        loadedCard.classList.remove("inserting");
+        void loadedCard.offsetWidth;
+        loadedCard.classList.add("inserting");
+    }
+    saveInsertedCardId(card.id);
     markInsertedCard(card.id);
 }
 function ejectCard() {
@@ -166,6 +193,7 @@ function ejectCard() {
     chaptersRoot?.replaceChildren();
     driveSlot?.classList.remove("has-disc");
     driveDisc?.classList.remove("active");
+    saveInsertedCardId("");
     markInsertedCard("");
 }
 sidebarToggle?.addEventListener("click", () => {
@@ -184,4 +212,7 @@ driveSlot?.addEventListener("drop", (event) => {
     if (card)
         loadCard(card);
 });
-renderCardList(categories[0]?.id || "all");
+const restoredCard = cards.find((card) => card.id === getInsertedCardId());
+renderCardList(restoredCard?.category || categories[0]?.id || "all");
+if (restoredCard)
+    loadCard(restoredCard, false);

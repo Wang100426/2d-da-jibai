@@ -85,6 +85,7 @@ const ids = {
   "story-loaded-progress": new El("span"),
 };
 const navigated = [];
+const storage = {};
 
 const sandbox = {
   console,
@@ -106,6 +107,11 @@ const sandbox = {
     ],
     STORY_STRINGS: strings,
     location: { href: "" },
+  },
+  localStorage: {
+    getItem: (key) => storage[key] || null,
+    setItem: (key, value) => { storage[key] = String(value); },
+    removeItem: (key) => { delete storage[key]; },
   },
 };
 sandbox.window.window = sandbox.window;
@@ -139,12 +145,32 @@ newCard.click();
 check("点击卡片将其插入主机", ids["story-drive-slot"]._classes.has("has-disc"));
 check("屏幕加载卡片标题", ids["story-loaded-title"].textContent === "失落的终章");
 check("屏幕显示该卡的三个分区", grid.find((n) => n._classes && n._classes.has("story-section")).length === 3);
+check("插卡后空屏提示隐藏", ids["story-screen-empty"].hidden === true && ids["story-loaded-card"].hidden === false);
+check("插卡动画已触发", ids["story-loaded-card"]._classes.has("inserting"));
+check("插入的重现卡已保存", storage["2d-da-jibai-story-inserted-card"] === "RC-H04");
 
 const buttons = grid.find((n) => n._classes && n._classes.has("story-section-enter"));
 check("锁定分区的按钮被禁用", buttons.filter((button) => button.disabled).length === 2);
 const openButton = buttons.find((button) => !button.disabled);
 openButton.click();
 check("点击已解锁分区进入剧情", navigated.some((url) => url.includes("hero-dualtone-01")));
+
+const returnedIds = Object.fromEntries(Object.keys(ids).map((id) => [id, new El("div")]));
+const returnedSandbox = {
+  console,
+  document: {
+    getElementById: (id) => returnedIds[id] || null,
+    createElement: (tag) => new El(tag),
+    addEventListener() {},
+    body: new El("body"),
+  },
+  window: { ...sandbox.window, location: { href: "" } },
+  localStorage: sandbox.localStorage,
+};
+vm.createContext(returnedSandbox);
+vm.runInContext(fs.readFileSync("static/choose_story.js", "utf8"), returnedSandbox);
+check("返回卡库后自动恢复已插入的卡片", returnedIds["story-loaded-title"].textContent === "失落的终章" && returnedIds["story-drive-slot"]._classes.has("has-disc"));
+check("返回卡库后自动切回该卡所属分类", returnedIds["story-tabs"].find((tab) => tab._classes.has("active"))[0]?.dataset.categoryId === "hero");
 
 ids["story-sidebar-toggle"].click();
 check("侧栏可折叠并扩展显示器区域", ids["story-sidebar"]._classes.has("collapsed") && ids["story-workspace"]._classes.has("sidebar-collapsed") && ids["story-sidebar-toggle"].attributes["aria-expanded"] === "false");
@@ -153,6 +179,7 @@ check("侧栏可重新展开", !ids["story-sidebar"]._classes.has("collapsed") &
 
 ids["story-eject"].click();
 check("弹出按钮卸载重现卡", !ids["story-drive-slot"]._classes.has("has-disc") && ids["story-loaded-card"].hidden);
+check("弹出卡片后清除保存状态", !storage["2d-da-jibai-story-inserted-card"]);
 
 console.log(fail.length ? `\n${fail.length} FAILED: ${fail.join(" | ")}` : "\nALL PASS");
 process.exit(fail.length ? 1 : 0);

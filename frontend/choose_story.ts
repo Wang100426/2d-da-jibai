@@ -39,6 +39,7 @@ const chooseWindow = window as unknown as {
 const categories = (chooseWindow.STORY_CATEGORIES || []).slice().sort((a, b) => a.order - b.order);
 const cards = chooseWindow.STORY_CARDS || [];
 const strings = chooseWindow.STORY_STRINGS || {};
+const insertedCardStorageKey = "2d-da-jibai-story-inserted-card";
 const tabsRoot = document.getElementById("story-tabs");
 const cardListRoot = document.getElementById("story-card-list");
 const chaptersRoot = document.getElementById("story-chapters");
@@ -68,6 +69,24 @@ function setText(element: HTMLElement | null, value: string): void {
 
 function setHidden(element: HTMLElement | null, hidden: boolean): void {
   if (element) element.hidden = hidden;
+}
+
+function getInsertedCardId(): string {
+  try {
+    return localStorage.getItem(insertedCardStorageKey) || "";
+  } catch (error) {
+    console.warn("Could not restore the inserted story card.", error);
+    return "";
+  }
+}
+
+function saveInsertedCardId(cardId: string): void {
+  try {
+    if (cardId) localStorage.setItem(insertedCardStorageKey, cardId);
+    else localStorage.removeItem(insertedCardStorageKey);
+  } catch (error) {
+    console.warn("Could not save the inserted story card.", error);
+  }
 }
 
 function renderTabs(active: string): void {
@@ -185,7 +204,7 @@ function markInsertedCard(cardId: string): void {
   });
 }
 
-function loadCard(card: StoryCard): void {
+function loadCard(card: StoryCard, animate = true): void {
   if (!chaptersRoot) return;
   chaptersRoot.replaceChildren(...card.sections.map(renderSection));
   setText(loadedCode, card.code);
@@ -200,6 +219,12 @@ function loadCard(card: StoryCard): void {
   setHidden(loadedCard, false);
   driveSlot?.classList.add("has-disc");
   driveDisc?.classList.add("active");
+  if (animate && loadedCard) {
+    loadedCard.classList.remove("inserting");
+    void loadedCard.offsetWidth;
+    loadedCard.classList.add("inserting");
+  }
+  saveInsertedCardId(card.id);
   markInsertedCard(card.id);
 }
 
@@ -211,6 +236,7 @@ function ejectCard(): void {
   chaptersRoot?.replaceChildren();
   driveSlot?.classList.remove("has-disc");
   driveDisc?.classList.remove("active");
+  saveInsertedCardId("");
   markInsertedCard("");
 }
 
@@ -230,4 +256,6 @@ driveSlot?.addEventListener("drop", (event) => {
   if (card) loadCard(card);
 });
 
-renderCardList(categories[0]?.id || "all");
+const restoredCard = cards.find((card) => card.id === getInsertedCardId());
+renderCardList(restoredCard?.category || categories[0]?.id || "all");
+if (restoredCard) loadCard(restoredCard, false);

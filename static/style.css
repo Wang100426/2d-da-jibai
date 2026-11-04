@@ -348,7 +348,7 @@ button:disabled{transform:none}
 .select-top-actions{position:fixed;z-index:12;top:14px;right:clamp(20px,4vw,64px);display:flex;align-items:center;gap:10px}
 
 /* 全局静音开关：喇叭图标，静音时切开一道斜线 */
-.audio-toggle{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 12px;background:#0d1524;border:1px solid #2f3a55;color:#cfe6ff;font:11px 'Chakra Petch',inherit;letter-spacing:.8px;cursor:pointer;transition:border-color .16s,background .16s,color .16s}
+.audio-toggle{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 12px;background:#0d1524;border:1px solid #2f3a55;color:#cfe6ff;font:600 11px 'Chakra Petch','Noto Sans SC',sans-serif;letter-spacing:.8px;cursor:pointer;transition:border-color .16s,background .16s,color .16s}
 .audio-toggle:hover{border-color:var(--cyan);background:#131f33}
 .audio-toggle:active{transform:scale(.97)}
 .audio-toggle svg{width:17px;height:17px;flex:none;display:block}
@@ -936,6 +936,8 @@ body.leaving *{pointer-events:none}
 .story-screen-empty>b{font-size:clamp(15px,2vw,22px)}
 .story-screen-empty>small{max-width:300px;color:#77869f;font-size:11px;line-height:1.7}
 .story-loaded-card{max-width:760px;margin:0 auto}
+.story-loaded-card.inserting{animation:story-card-insert .52s cubic-bezier(.18,.75,.25,1) both}
+@keyframes story-card-insert{0%{opacity:0;transform:translateY(-22px) scale(.97);filter:brightness(1.8)}65%{opacity:1;transform:translateY(3px) scale(1.01);filter:brightness(1.2)}100%{opacity:1;transform:translateY(0) scale(1);filter:brightness(1)}}
 .story-loaded-head{display:flex;align-items:flex-start;gap:14px;padding-bottom:18px;border-bottom:1px solid #2b3b50}
 .story-loaded-head>div{flex:1;min-width:0}.story-loaded-head>div>small{color:#6ddbdc;font:10px 'Chakra Petch',sans-serif;letter-spacing:1.5px}
 .story-loaded-head h1{margin:7px 0;font-size:clamp(22px,3vw,34px);color:#ecf3ff}
@@ -984,5 +986,6 @@ body.leaving *{pointer-events:none}
 .story-computer-workspace.sidebar-collapsed{grid-template-columns:minmax(0,1fr) 0}
 .story-sidebar-toggle.collapsed>span{transform:rotate(180deg)}
 .story-card-list .story-empty{padding:20px;text-align:center;color:#78869b;font:10px 'Chakra Petch',sans-serif}
+.story-computer-page [hidden]{display:none!important}
 @media(max-width:980px){.story-computer-workspace{grid-template-columns:minmax(0,1fr) 290px;padding:14px 12px}.story-computer{grid-template-columns:145px minmax(0,1fr);gap:14px}.story-tower{min-height:360px}.story-monitor-frame{height:min(65vh,560px);min-height:380px}.story-sidebar-toggle{right:298px}}
 @media(max-width:720px){.story-computer-page{overflow:auto}.story-computer-workspace{min-height:auto;display:flex;flex-direction:column;padding:10px 12px 30px}.story-computer{grid-template-columns:1fr;gap:10px}.story-tower{min-height:110px;padding:12px 18px;display:grid;grid-template-columns:1fr 2fr 1fr;gap:12px}.story-tower-top{grid-column:1/-1}.story-tower-drive{grid-column:1/-1}.story-tower-lights,.story-tower-label{display:none}.story-monitor-frame{height:68vh;min-height:390px;padding:8px}.story-monitor-stand{height:14px}.story-sidebar{position:relative;inset:auto;width:100%;height:350px;transform:none!important;opacity:1!important;pointer-events:auto!important}.story-sidebar-toggle{position:relative;inset:auto;transform:none;width:100%;height:34px;writing-mode:horizontal-tb;border:1px solid #3c5264;margin:8px 0}.story-sidebar-toggle>b{font-size:10px}.story-sidebar-toggle>span{transform:rotate(-90deg)}.story-sidebar-toggle.collapsed>span{transform:rotate(90deg)}.story-sidebar.collapsed{display:none}.story-computer-page .story-section{grid-template-columns:22px 18px minmax(0,1fr) auto;gap:7px;padding:10px 8px}.story-computer-page .story-section>em{display:none}.story-computer-page .story-section-enter{min-width:68px;padding:7px 6px}.story-explorer-status>span:last-child{display:none}}

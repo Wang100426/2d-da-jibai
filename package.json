@@ -1,6 +1,6 @@
 {
   "name": "2d-da-jibai",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "description": "2D大击败 - 赛博风肉鸽竞技场",
   "main": "electron/main.cjs",
   "author": "2D大击败",
@@ -38,7 +38,8 @@
     "test:battle-space": "npm run build:battle-space && node --test tests/battle_space.test.cjs",
     "test:story-map": "node --test tests/story_map.test.cjs",
     "test:multiplayer": "npm run build:lobby && node tests/multiplayer_lobby.test.cjs",
-    "test:all": "npm run test:story && npm run test:multiplayer && npm run test:voice",
+    "test:mode-picker": "npm run build:mode && node tests/mode_selection.test.cjs && python -m unittest discover -s tests -p test_mode_picker.py",
+    "test:all": "npm run test:story && npm run test:multiplayer && npm run test:mode-picker && npm run test:voice",
     "test:voice": "npm run build:select && node tests/hero_voice.test.cjs && node tests/audio_toggle.test.cjs",
     "test:audio": "node tests/audio_toggle.test.cjs"
   },
