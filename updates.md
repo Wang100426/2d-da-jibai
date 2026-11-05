@@ -1,5 +1,25 @@
 # 更新日志 / Updates
 
+## 2.5.2
+
+### 中文
+
+- **修复联机大厅在房间内等待超过 30 秒被误判掉线的问题**：之前在房间干等会被静默移出——房主先消失，房间只剩新加入的人，开始按钮也随之消失。现在大厅轮询会持续刷新在线状态，只要停在房间页面就不会再被误判。
+- 被移出房间时会收到提示并自动返回大厅，不再停留在一个不属于你的房间页面上。
+- 修复点下「退出房间」后界面又弹回房间的问题（退出的同时有请求还在路上，旧响应会把房间重新画出来）。
+
+### English
+
+- **Fixed the LAN lobby kicking you out of a room after 30 seconds of waiting**: idling in a room used to count as going offline — the host vanished first, leaving only the newly joined player, and the Start button disappeared with them. Lobby polling now keeps the connection alive, so staying on the room page is enough.
+- Being removed from a room now shows a notice and returns you to the lobby instead of leaving you on a room page that no longer contains you.
+- Fixed the room screen reappearing after pressing "Leave Room" (an in-flight poll response used to re-render it).
+
+### 日本語
+
+- **LAN ロビーで 30 秒待つと勝手に退室させられる問題を修正**：以前は部屋で待機しているとオフライン扱いでホストが先に消え、部屋には新しく参加した人だけが残っていました。ロビーのポーリングがオンライン状態を更新し続けるため、部屋ページを開いていれば誤判定されません。
+- 部屋から外された場合は通知を出してロビーへ戻るようになり、自分がいない部屋の画面に留まらなくなりました。
+- 「退室」を押したのに部屋画面が再表示される問題（退室中に飛行中のポーリング応答が部屋を再描画する）を修正しました。
+
 ## 2.5.1
 
 ### 中文

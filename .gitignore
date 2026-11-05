@@ -16,3 +16,4 @@ save/
 GameCom_Img.png
 # 本地跑服务/构建时的临时日志
 *.log
+.wbapp_*.genie
