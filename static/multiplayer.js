@@ -153,6 +153,12 @@ function showRoom(room) {
     selectedMode = room.mode;
     isHost = room.host_id === playerId;
     const self = room.players.find((item) => item.player_id === playerId);
+    if (!self && playerId) {
+        // 被服务器移出（掉线/超时清理）：房间还在但已不属于你，别再展示别人的房间
+        showToast(tx("你已离开房间或被移出，请重新加入。"), true);
+        clearMembership();
+        return;
+    }
     myReady = Boolean(self?.ready);
     getElement("current-room-code").textContent = room.room_id;
     getElement("room-mode-label").textContent = `${MP_STRINGS.roomMode} · ${room.mode === "duel" ? MP_STRINGS.duel : MP_STRINGS.rogue}`;
@@ -200,11 +206,17 @@ async function pollRoom() {
     if (!currentRoomId || !playerId || jumping)
         return;
     try {
-        const result = await api(`/${encodeURIComponent(currentRoomId)}`);
+        // pid 当心跳：服务端对房间内的玩家刷新在线时间，等在房间里的人不会被 30 秒掉线清理
+        const result = await api(`/${encodeURIComponent(currentRoomId)}?pid=${encodeURIComponent(playerId)}`);
+        // 请求飞行期间用户可能点了「退出房间」——丢弃过期响应，别把房间界面画回来
+        if (!currentRoomId || !playerId)
+            return;
         if (result.room)
             showRoom(result.room);
     }
     catch (error) {
+        if (!currentRoomId || !playerId)
+            return;
         clearMembership();
         showToast(error instanceof Error ? error.message : tx("房间已关闭，请重新加入。"), true);
     }

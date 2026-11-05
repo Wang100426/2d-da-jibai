@@ -101,6 +101,12 @@ const LOBBY_LOCALE = {
   },
 };
 
+let holdResponses = false;
+const holdQueue = [];
+function releaseHolds() {
+  while (holdQueue.length) holdQueue.shift()({ ok: true, room: roomState });
+}
+
 const player = (id, name, heroId, ready) => ({
   player_id: id,
   name,
@@ -151,6 +157,9 @@ async function fakeFetch(url, options) {
   }
   if (url.endsWith("/leave")) return json({ ok: true });
   if (url.startsWith("/api/mp/rooms/") && !body) {
+    if (holdResponses) {
+      return new Promise((resolve) => { holdQueue.push((payload) => resolve(json(payload))); });
+    }
     return json({ ok: true, room: roomState });
   }
   return json({ ok: false, error: `unexpected ${url}` });
@@ -174,8 +183,8 @@ const sandbox = {
     removeItem: (k) => { delete store[k]; },
   },
   fetch: fakeFetch,
-  setInterval: () => 1,
-  clearInterval: () => {},
+  setInterval: (fn) => { sandbox.__poll = fn; return 1; },
+  clearInterval: () => { sandbox.__poll = null; },
   setTimeout: () => 1,
   clearTimeout: () => {},
   Promise,
@@ -194,8 +203,8 @@ sandbox.window = {
   location: { replace: (u) => { navigated = u; }, href: "" },
   setTimeout: () => 1,
   clearTimeout: () => {},
-  setInterval: () => 1,
-  clearInterval: () => {},
+  setInterval: (fn) => { sandbox.__poll = fn; return 1; },
+  clearInterval: () => { sandbox.__poll = null; },
 };
 sandbox.window.document = documentStub;
 sandbox.globalThis = sandbox;
@@ -277,6 +286,38 @@ sandbox.MP_INITIAL_MODE = "rogue";
   await new Promise((r) => setImmediate(r));
   check("联机对抗创建请求携带 duel 模式", requests.some((r) => r.url === "/api/mp/rooms" && r.body.mode === "duel"));
   check("对抗房间显示联机对抗模式", ids["room-mode-label"].textContent.includes("联机对抗"));
+
+  // ---------- 回归：房间被服务端清理/自己被移出的场景 ----------
+  // 重新加入一个正常房间
+  ids["join-room"].click();
+  await new Promise((r) => setImmediate(r));
+  check("回归用例：重新加入成功", ids["waiting-room"].hidden === false);
+
+  // A. 轮询拿到不含自己的房间（被服务端移出）→ 自动退出并提示
+  holdResponses = true;
+  sandbox.__poll();
+  roomState = { ...roomState, players: [roomState.players[0]] };
+  releaseHolds();
+  await new Promise((r) => setImmediate(r));
+  check("被移出房间后自动退出", ids["waiting-room"].hidden === true && ids["mp-entry"].hidden === false);
+  check("被移出时有提示", ids["mp-toast"].textContent.includes("已离开房间或被移出"));
+
+  // B. 点退出后，飞行中的轮询响应不再把房间画回来
+  ids["join-room"].click();
+  await new Promise((r) => setImmediate(r));
+  check("回归用例：再次加入成功", ids["waiting-room"].hidden === false);
+  holdResponses = true;
+  sandbox.__poll();
+  ids["leave-room"].click();
+  await new Promise((r) => setImmediate(r));
+  check("点退出后回到入口面板", ids["mp-entry"].hidden === false && ids["waiting-room"].hidden === true);
+  roomState = {
+    ...roomState,
+    players: [player("host-1", "房主", "volt", false), player("guest-1", "队友", "volt", false)],
+  };
+  releaseHolds();
+  await new Promise((r) => setImmediate(r));
+  check("退出后过期响应不会重新渲染房间", ids["waiting-room"].hidden === true && ids["mp-entry"].hidden === false);
 
   console.log(`\n${passed} checks passed`);
 })();

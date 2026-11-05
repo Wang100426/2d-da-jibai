@@ -1494,9 +1494,16 @@ def join_multiplayer_room():
 @app.get("/api/mp/rooms/<room_id>")
 def get_multiplayer_room(room_id):
     with ROOMS_LOCK:
-        cleanup_rooms()
+        # 轮询即心跳：大厅里唯一持续动作就是轮询 GET。必须先把 pid 的在线时间刷掉再清理，
+        # 否则等 31 秒的人会在 cleanup_rooms 里先被踢，touch 永远轮不到（真实事故：房主凭空消失）。
         room = ROOMS.get(room_id.upper())
-        if room is None:
+        pid = request.args.get("pid", "").strip()
+        if room is not None and pid:
+            player = room["players"].get(pid)
+            if player is not None:
+                player["last_seen"] = time.time()
+        cleanup_rooms()
+        if room is None or room["room_id"] not in ROOMS:
             return error_response("房间不存在或已关闭。", 404)
         return jsonify({"ok": True, "room": room_snapshot(room)})
 
