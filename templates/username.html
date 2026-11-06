@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="{{ {'en': 'en', 'ja': 'ja'}.get(lang, 'zh-CN') }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ tr("PROFILE_SETUP_TITLE") }} · {{ tr("PRODUCT_NAME") }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}">
+</head>
+<body class="username-page">
+  <main class="username-panel">
+    <p class="eyebrow">{{ tr("PROFILE_SETUP_KICKER") }}</p>
+    <h1>{{ tr("PROFILE_SETUP_TITLE") }}</h1>
+    <p>{{ tr("PROFILE_SETUP_COPY") }}</p>
+    <form method="post" action="{{ url_for('username_setup') }}">
+      <input type="hidden" name="next" value="{{ next_page }}">
+      <label for="username">{{ tr("PROFILE_USERNAME") }}</label>
+      <input id="username" name="username" maxlength="20" required autofocus autocomplete="nickname" value="{{ profile.username if profile else '' }}" placeholder="{{ tr('PROFILE_USERNAME_PLACEHOLDER') }}">
+      {% if error %}<p class="username-error" role="alert">{{ error }}</p>{% endif %}
+      <button class="username-submit" type="submit">{{ tr("PROFILE_SETUP_CONTINUE") }} <span>›</span></button>
+    </form>
+  </main>
+  <script src="{{ url_for('static', filename='language.js') }}"></script>
+</body>
+</html>

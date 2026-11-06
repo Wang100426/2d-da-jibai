@@ -41,7 +41,7 @@
     <section class="mp-panel mp-entry" id="mp-entry">
       <h2><span id="mp-selected-mode">{{ tr("MP_MODE_COOP") }}</span><small>{{ tr("ROOM_LOBBY") }}</small></h2>
       <label class="mp-label" for="player-name">{{ tr("NICKNAME") }}</label>
-      <input id="player-name" maxlength="20" placeholder="{{ tr('NICKNAME_PLACEHOLDER') }}" autocomplete="nickname">
+      <input id="player-name" maxlength="20" value="{{ profile.username }}" placeholder="{{ tr('NICKNAME_PLACEHOLDER') }}" autocomplete="nickname" readonly>
       <div class="mp-choice-row">
         <button class="mp-primary" id="create-room" type="button">{{ tr("CREATE_ROOM") }}</button>
         <button class="mp-primary mp-alt" id="join-toggle" type="button" aria-expanded="false">{{ tr("JOIN") }}</button>
@@ -91,6 +91,7 @@
   <script>
     window.MP_HEROES = {{ heroes|tojson }};
     window.MP_LOCALE = {{ locale_pack|tojson }};
+    window.MP_USERNAME = {{ profile.username|tojson }};
     window.MP_STRINGS = {{ {
       "ai": tr("MP_MODE_AI"),
       "duel": tr("MP_MODE_PVP"),

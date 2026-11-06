@@ -1,5 +1,5 @@
 "use strict";
-// 主页右上角的「存档管理」面板：总览 / 导出 / 导入 / 重置。
+// 主页客厅书架上的「存档管理」面板：总览 / 导出 / 导入 / 重置。
 // 面板内容由 Flask 服务端渲染（金币、英雄解锁状态都在 HTML 里），
 // 这里只负责打开关闭、调用存档接口，并把结果同步回页面。
 const saveState = window.SAVE_STATE || {
@@ -166,6 +166,7 @@ async function resetSave() {
         showToast(saveStrings.reset_done, "success");
 }
 saveOpenButton?.addEventListener("click", openPanel);
+document.addEventListener("home:open-save", openPanel);
 saveCloseButton?.addEventListener("click", closePanel);
 saveOverlay?.addEventListener("click", (event) => {
     if (event.target === saveOverlay)

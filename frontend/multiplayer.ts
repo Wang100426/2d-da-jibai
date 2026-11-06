@@ -64,8 +64,10 @@ declare const MP_HEROES: LobbyHero[];
 declare const MP_LOCALE: MultiplayerLocalePackage;
 declare const MP_STRINGS: LobbyStrings;
 declare const MP_INITIAL_MODE: string;
+declare const MP_USERNAME: string;
 
 const locale = MP_LOCALE;
+const savedUsername = typeof MP_USERNAME === "undefined" ? "" : MP_USERNAME;
 const translateByPattern = locale.code !== "zh";
 const tx = (source: string): string => localizeLobbyText(source);
 
@@ -121,7 +123,8 @@ let jumping = false;
 let heroDirty = false;
 
 try {
-  nameInput.value = localStorage.getItem("2d-da-jibai-name") || "";
+  nameInput.value = savedUsername || localStorage.getItem("2d-da-jibai-name") || "";
+  nameInput.readOnly = Boolean(savedUsername);
   const stored = JSON.parse(localStorage.getItem(storageKey) || "null") as { playerId?: string; roomId?: string } | null;
   if (stored?.playerId && stored.roomId) {
     playerId = stored.playerId;
@@ -169,7 +172,7 @@ async function showLanAddresses(): Promise<void> {
 }
 
 function currentName(): string {
-  const name = nameInput.value.trim();
+  const name = (savedUsername || nameInput.value).trim();
   if (!name) throw new Error(tx("请先输入昵称。"));
   localStorage.setItem("2d-da-jibai-name", name);
   return name;

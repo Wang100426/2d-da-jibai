@@ -6,181 +6,110 @@
   <link rel="icon" href="{{ url_for('favicon', lang=lang) }}">
   <title>{{ tr("PRODUCT_NAME") }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}">
 </head>
 <body class="home-page">
-  <div class="splash" id="splash" role="presentation" aria-hidden="true">
-    <div class="splash-inner">
-      <img class="splash-logo" src="{{ url_for('static', filename='gamecom.png') }}" alt="">
-      <p class="splash-rules">
-        <span>抵制不良游戏，拒绝盗版游戏。</span>
-        <span>注意自我保护，谨防受骗上当。</span>
-        <span>适度游戏益脑，沉迷游戏伤身。</span>
-        <span>合理安排时间，享受健康生活。</span>
-      </p>
-    </div>
-  </div>
-  <script>
-    (function () {
-      var splash = document.getElementById("splash");
-      if (!splash) return;
-      // 每个应用会话只播一次：刷新/从战斗返回主页都不会再挡 3 秒。
-      try {
-        if (sessionStorage.getItem("splashShown") === "1") {
-          splash.remove();
-          return;
-        }
-        sessionStorage.setItem("splashShown", "1");
-      } catch (error) {
-        // 隐私模式下 sessionStorage 不可用时，本次照常播放。
-      }
-      window.setTimeout(function () {
-        splash.classList.add("splash-out");
-        window.setTimeout(function () { splash.remove(); }, 520);
-      }, 2520);
-    })();
-  </script>
   <div class="scanlines"></div>
-
-  <header class="home-topbar" aria-label="{{ tr('HOME') }}">
-    <a class="coin-pill" href="/shop" title="{{ tr('SHOP') }}">
-      <span class="coin-pill-icon" aria-hidden="true">◈</span>
-      <b data-coin-balance>{{ "∞" if profile.infinite_coins else "{:,}".format(profile.coins) }}</b>
-      <small>{{ tr("SHOP") }}</small>
-    </a>
-    <button class="save-pill" id="save-open" type="button" aria-haspopup="dialog" aria-controls="save-overlay">
-      <span class="save-pill-icon" aria-hidden="true">▤</span>
-      <b>{{ tr("SAVE_MANAGE") }}</b>
-    </button>
-    <div class="language-switch" data-language-switch></div>
+  <header class="home-topbar">
+    <div class="home-identity">
+      <span class="home-avatar" aria-hidden="true">{{ profile.username[:1] }}</span>
+      <span><small>{{ tr("HOME_PLAYER") }}</small><b>{{ profile.username }}</b></span>
+    </div>
+    <div class="home-tools">
+      <a class="coin-pill" href="/shop" title="{{ tr('SHOP') }}">
+        <span class="coin-pill-icon" aria-hidden="true">◈</span>
+        <b data-coin-balance>{{ "∞" if profile.infinite_coins else "{:,}".format(profile.coins) }}</b>
+      </a>
+      <div class="language-switch" data-language-switch></div>
+    </div>
   </header>
 
-  <main class="home-dashboard">
-    <section class="home-hero-copy" aria-label="{{ tr('PRODUCT_NAME') }}">
-      <p class="eyebrow"><span></span> {{ tr("SEASON") }}</p>
-      {% if lang == 'en' %}<img class="home-logo" src="{{ url_for('favicon', lang=lang) }}" alt="{{ tr('PRODUCT_NAME') }}">{% elif lang == 'ja' %}<img class="home-logo" src="{{ url_for('favicon', lang=lang) }}" alt="{{ tr('PRODUCT_NAME') }}">{% else %}<img class="home-logo" src="{{ url_for('static', filename='2d_da_jibai_logo.png') }}" alt="{{ tr('PRODUCT_NAME') }}">{% endif %}
-      <p class="subtitle">{{ tr("HOME_SUBTITLE") }}<br><b>{{ tr("HOME_DESCRIPTION") }}</b></p>
+  <main class="home-world" id="home-world">
+    <div class="home-world-heading">
+      <div><p>{{ tr("HOME_HOUSE_KICKER") }}</p><h1>{{ tr("HOME_HOUSE_TITLE") }}</h1></div>
+      <span>{{ tr("HOME_E_INTERACT") }}</span>
+    </div>
+    <section class="house-floor" id="house-floor" aria-label="{{ tr('HOME_HOUSE_TITLE') }}">
+      <div class="house-map" id="house-map">
+      <div class="room living-room">
+        <span class="room-label">{{ tr("HOME_LIVING_ROOM") }}</span>
+        <div class="furniture sofa" aria-hidden="true"><span>▰</span></div>
+        <button class="home-hotspot wardrobe" type="button" data-home-href="/backpack" data-home-label="{{ tr('HOME_WARDROBE') }}" aria-label="{{ tr('HOME_WARDROBE') }}">
+          <span class="object-icon" aria-hidden="true">▥</span><b>{{ tr("HOME_WARDROBE") }}</b><kbd>E</kbd>
+        </button>
+        <button class="home-hotspot bookshelf" type="button" data-home-action="save" data-home-label="{{ tr('HOME_BOOKSHELF') }}" aria-label="{{ tr('HOME_BOOKSHELF') }}">
+          <span class="object-icon" aria-hidden="true">▤</span><b>{{ tr("HOME_BOOKSHELF") }}</b><kbd>E</kbd>
+        </button>
+        <div class="furniture living-table" aria-hidden="true"><span class="phone-icon">▰</span></div>
+        <button class="home-hotspot phone" type="button" data-home-href="/shop" data-home-label="{{ tr('HOME_SHOP_PHONE') }}" aria-label="{{ tr('HOME_SHOP_PHONE') }}">
+          <span class="object-icon" aria-hidden="true">▯</span><b>{{ tr("HOME_SHOP_PHONE") }}</b><kbd>E</kbd>
+        </button>
+        <div class="rug" aria-hidden="true"></div>
+      </div>
+      <div class="room study-room">
+        <span class="room-label">{{ tr("HOME_STUDY_ROOM") }}</span>
+        <div class="furniture study-desk" aria-hidden="true"><span>▤</span></div>
+        <button class="home-hotspot computer" type="button" data-home-href="/story/choose" data-home-label="{{ tr('HOME_STORY_COMPUTER') }}" aria-label="{{ tr('HOME_STORY_COMPUTER') }}">
+          <span class="object-icon" aria-hidden="true">▣</span><b>{{ tr("HOME_STORY_COMPUTER") }}</b><kbd>E</kbd>
+        </button>
+        <button class="home-hotspot codex-map" type="button" data-home-href="/codex" data-home-label="{{ tr('HOME_CODEX_MAP') }}" aria-label="{{ tr('HOME_CODEX_MAP') }}">
+          <span class="object-icon" aria-hidden="true">▧</span><b>{{ tr("HOME_CODEX_MAP") }}</b><kbd>E</kbd>
+        </button>
+        <div class="study-lamp" aria-hidden="true">⌁</div>
+      </div>
+      <button class="home-hotspot front-door" type="button" data-home-action="destinations" data-home-label="{{ tr('HOME_DOOR') }}" aria-label="{{ tr('HOME_DOOR') }}">
+        <span class="object-icon" aria-hidden="true">⇧</span><b>{{ tr("HOME_DOOR") }}</b><kbd>E</kbd>
+      </button>
+      <div class="home-player" id="home-player" role="img" aria-label="{{ profile.username }}">
+        <span class="player-name">{{ profile.username }}</span><span class="player-sprite" aria-hidden="true">你</span>
+      </div>
+      </div>
     </section>
-
-    <section class="home-actions" aria-label="{{ tr('HOME_ACTIONS') }}">
-      <a class="home-mode-card" href="/mode" data-camp-transition>
-        <span class="home-mode-icon" id="home-mode-icon">{{ tr("ROGUE_ICON") }}</span>
-        <span class="home-mode-copy">
-          <small>{{ tr("MODE_PICKER") }}</small>
-          <b id="home-mode-label">{{ tr("ROGUE") }}</b>
-        </span>
-        <span class="home-mode-arrow" aria-hidden="true">›</span>
-      </a>
-      <a class="home-start-button" id="home-start" href="/select" data-camp-transition>
-        <span>{{ tr("HOME_START_GAME") }}</span>
-        <b aria-hidden="true">↗</b>
-      </a>
-    </section>
+    <div class="home-interact-prompt" id="home-interact-prompt" aria-live="polite">
+      <kbd>E</kbd><span id="home-interact-label">{{ tr("HOME_WALK_HINT") }}</span>
+    </div>
+    <div class="home-controls"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> {{ tr("MOVE") }}</span><span>{{ tr("HOME_MOVE_HINT") }}</span></div>
   </main>
 
-  <nav class="home-bottom-bar" aria-label="{{ tr('HOME') }}">
-    <a class="home-nav-item" href="/shop">
-      <span>◈</span>
-      <b>{{ tr("NAV_SHOP") }}</b>
-    </a>
-    <a class="home-nav-item" href="/equipment">
-      <span>⚙</span>
-      <b>{{ tr("NAV_EQUIPMENT") }}</b>
-    </a>
-    <a class="home-nav-item" href="/codex">
-      <span>图</span>
-      <b>{{ tr("NAV_CODEX") }}</b>
-    </a>
-    <a class="home-nav-item" href="/backpack">
-      <span>包</span>
-      <b>{{ tr("NAV_BACKPACK") }}</b>
-    </a>
-  </nav>
+  <section class="destination-overlay" id="destination-overlay" hidden>
+    <div class="destination-panel" role="dialog" aria-modal="true" aria-labelledby="destination-title">
+      <button class="destination-close" id="destination-close" type="button" aria-label="{{ tr('SAVE_CLOSE') }}">×</button>
+      <p class="eyebrow">{{ tr("HOME_DOOR") }}</p><h2 id="destination-title">{{ tr("HOME_SELECT_DESTINATION") }}</h2>
+      <a class="destination-choice rogue" href="/select"><b>{{ tr("ROGUE") }}</b><span>›</span></a>
+      <a class="destination-choice lobby" href="/multiplayer"><b>{{ tr("HOME_ENTER_LOBBY") }}</b><span>›</span></a>
+    </div>
+  </section>
 
   <section class="save-overlay" id="save-overlay" hidden>
     <div class="save-panel" role="dialog" aria-modal="true" aria-labelledby="save-title">
       <header class="save-head">
-        <div>
-          <p class="eyebrow">{{ tr("SAVE_OVERVIEW") }}</p>
-          <h2 id="save-title">{{ tr("SAVE_MANAGE") }}</h2>
-        </div>
+        <div><p class="eyebrow">{{ tr("SAVE_OVERVIEW") }}</p><h2 id="save-title">{{ tr("SAVE_MANAGE") }}</h2></div>
         <button class="save-close" id="save-close" type="button" aria-label="{{ tr('SAVE_CLOSE') }}">✕</button>
       </header>
       <p class="save-subtitle">{{ tr("SAVE_SUBTITLE") }}</p>
       <div class="save-summary">
-        <div class="save-stat">
-          <span>{{ tr("COINS") }}</span>
-          <b data-coin-balance>{{ "∞" if profile.infinite_coins else "{:,}".format(profile.coins) }}</b>
-          <small id="save-coins-note" {% if not profile.infinite_coins %}hidden{% endif %}>{{ tr("SAVE_INFINITE_NOTE") }}</small>
-        </div>
-        <div class="save-stat">
-          <span>{{ tr("SAVE_HEROES") }}</span>
-          <b><i id="save-owned-count">{{ owned_count }}</i> / {{ "%02d"|format(heroes|length) }}</b>
-          <small>{{ tr("SAVE_FREE_HINT") }}</small>
-        </div>
+        <div class="save-stat"><span>{{ tr("COINS") }}</span><b data-coin-balance>{{ "∞" if profile.infinite_coins else "{:,}".format(profile.coins) }}</b><small id="save-coins-note" {% if not profile.infinite_coins %}hidden{% endif %}>{{ tr("SAVE_INFINITE_NOTE") }}</small></div>
+        <div class="save-stat"><span>{{ tr("SAVE_HEROES") }}</span><b><i id="save-owned-count">{{ owned_count }}</i> / {{ "%02d"|format(heroes|length) }}</b><small>{{ tr("SAVE_FREE_HINT") }}</small></div>
       </div>
       <div class="save-roster" id="save-roster">
         {% for hero in heroes %}
-        <span class="save-chip{% if hero.locked %} locked{% endif %}"
-              data-save-hero="{{ hero.id }}" data-price="{{ hero.price }}"
-              style="--hero-main:{{ hero.palette.main }};--hero-light:{{ hero.palette.light }};--hero-dark:{{ hero.palette.dark }}">
-          <i>{{ hero.initial }}</i>
-          <b>{{ hero.name }}</b>
-          <em>{% if hero.locked %}{{ tr("SHOP_LOCKED") }}{% else %}{{ tr("SHOP_OWNED") }}{% endif %}</em>
+        <span class="save-chip{% if hero.locked %} locked{% endif %}" data-save-hero="{{ hero.id }}" data-price="{{ hero.price }}" style="--hero-main:{{ hero.palette.main }};--hero-light:{{ hero.palette.light }};--hero-dark:{{ hero.palette.dark }}">
+          <i>{{ hero.initial }}</i><b>{{ hero.name }}</b><em>{% if hero.locked %}{{ tr("SHOP_LOCKED") }}{% else %}{{ tr("SHOP_OWNED") }}{% endif %}</em>
         </span>
         {% endfor %}
       </div>
-      <dl class="save-meta">
-        <div><dt>{{ tr("SAVE_PATH") }}</dt><dd id="save-path">{{ save_path }}</dd></div>
-        <div><dt>{{ tr("SAVE_SETTLED") }}</dt><dd id="save-settled">{{ settled_count }}</dd></div>
-      </dl>
+      <dl class="save-meta"><div><dt>{{ tr("SAVE_PATH") }}</dt><dd id="save-path">{{ save_path }}</dd></div><div><dt>{{ tr("SAVE_SETTLED") }}</dt><dd id="save-settled">{{ settled_count }}</dd></div></dl>
       <div class="save-actions">
-        <button class="save-action" id="save-export" type="button">
-          <b>{{ tr("SAVE_EXPORT") }}</b><small>{{ tr("SAVE_EXPORT_HINT") }}</small>
-        </button>
-        <button class="save-action" id="save-import" type="button">
-          <b>{{ tr("SAVE_IMPORT") }}</b><small>{{ tr("SAVE_IMPORT_HINT") }}</small>
-        </button>
-        <button class="save-action danger" id="save-reset" type="button">
-          <b>{{ tr("SAVE_RESET") }}</b><small data-reset-hint>{{ tr("SAVE_RESET_HINT") }}</small>
-        </button>
+        <button class="save-action" id="save-export" type="button"><b>{{ tr("SAVE_EXPORT") }}</b><small>{{ tr("SAVE_EXPORT_HINT") }}</small></button>
+        <button class="save-action" id="save-import" type="button"><b>{{ tr("SAVE_IMPORT") }}</b><small>{{ tr("SAVE_IMPORT_HINT") }}</small></button>
+        <button class="save-action danger" id="save-reset" type="button"><b>{{ tr("SAVE_RESET") }}</b><small data-reset-hint>{{ tr("SAVE_RESET_HINT") }}</small></button>
         <input id="save-import-file" type="file" accept="application/json,.json" hidden>
       </div>
       <div class="save-toast" id="save-toast" role="status" aria-live="polite"></div>
     </div>
   </section>
-
-  <div class="camp-transition" id="camp-transition" hidden>
-    <img class="camp-transition-art" id="camp-transition-art" src="/static/camp-default.jpg" alt="">
-    <div class="camp-transition-shade"></div>
-    <div class="camp-transition-briefing">
-      <p class="camp-transition-kicker" id="camp-transition-kicker">{{ tr("CAMP_KICKER") }}</p>
-      <h1 id="camp-transition-title">{{ tr("CAMP_TITLE") }}</h1>
-      <div class="camp-transition-loader">
-        <span class="map-loader-animation" aria-hidden="true"></span>
-      </div>
-    </div>
-  </div>
-
-  <script src="{{ url_for('static', filename='language.js') }}"></script>
+  <script src="{{ url_for('static', filename='home.js') }}" defer></script>
   <script src="{{ url_for('static', filename='save.js') }}" defer></script>
-  <script src="{{ url_for('static', filename='page-transition.js') }}" defer></script>
-  <script>
-    (function () {
-      const modeRoutes = {
-        rogue: { label: {{ tr("ROGUE")|tojson }}, href: "/select", icon: {{ tr("ROGUE_ICON")|tojson }} },
-        lan: { label: {{ tr("LAN")|tojson }}, href: "/multiplayer?mode=rogue", icon: {{ tr("LAN_ICON")|tojson }} },
-        duel: { label: {{ tr("DUEL")|tojson }}, href: "/multiplayer?mode=ai", icon: {{ tr("DUEL_ICON")|tojson }} },
-        story: { label: {{ tr("STORY_TITLE")|tojson }}, href: "/story/choose", icon: {{ tr("STORY_ICON")|tojson }} }
-      };
-      const selected = localStorage.getItem("selectedMode") || "rogue";
-      const info = modeRoutes[selected] || modeRoutes.rogue;
-      const labelEl = document.getElementById("home-mode-label");
-      const iconEl = document.getElementById("home-mode-icon");
-      const startEl = document.getElementById("home-start");
-      if (labelEl) labelEl.textContent = info.label;
-      if (iconEl) iconEl.textContent = info.icon;
-      if (startEl) startEl.href = info.href;
-    })();
-  </script>
+  <script src="{{ url_for('static', filename='language.js') }}"></script>
 </body>
 </html>

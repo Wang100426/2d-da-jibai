@@ -1,5 +1,6 @@
 "use strict";
 const locale = MP_LOCALE;
+const savedUsername = typeof MP_USERNAME === "undefined" ? "" : MP_USERNAME;
 const translateByPattern = locale.code !== "zh";
 const tx = (source) => localizeLobbyText(source);
 /** 长键优先：tojson 会按键名排序，短键先跑会拆散长句导致漏译。 */
@@ -50,7 +51,8 @@ let jumping = false;
 /** 上一帧看到的英雄，避免轮询把玩家的选择覆盖掉。 */
 let heroDirty = false;
 try {
-    nameInput.value = localStorage.getItem("2d-da-jibai-name") || "";
+    nameInput.value = savedUsername || localStorage.getItem("2d-da-jibai-name") || "";
+    nameInput.readOnly = Boolean(savedUsername);
     const stored = JSON.parse(localStorage.getItem(storageKey) || "null");
     if (stored?.playerId && stored.roomId) {
         playerId = stored.playerId;
@@ -97,7 +99,7 @@ async function showLanAddresses() {
     }
 }
 function currentName() {
-    const name = nameInput.value.trim();
+    const name = (savedUsername || nameInput.value).trim();
     if (!name)
         throw new Error(tx("请先输入昵称。"));
     localStorage.setItem("2d-da-jibai-name", name);

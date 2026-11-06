@@ -7048,7 +7048,7 @@ function drawPlayer() {
     context.fillText(config.initial, 0, 1);
     context.fillStyle = "#f1f5f9";
     context.font = "12px sans-serif";
-    context.fillText(config.name, 0, -34);
+    context.fillText(config.playerName || config.name, 0, -34);
     drawEffectIndicators(0, 0, statusEffects);
     drawPassiveProgress();
     context.restore();
@@ -7056,25 +7056,27 @@ function drawPlayer() {
 function drawPassiveProgress() {
     const meter = getPassiveMeter();
     const progress = Math.max(0, Math.min(1, meter.progress));
-    const centerY = 31;
+    const radius = player.radius + 6;
+    const startAngle = 0.2;
+    const endAngle = Math.PI - 0.2;
     context.save();
     context.lineWidth = 3;
     context.strokeStyle = "#10131eee";
     context.beginPath();
-    context.arc(0, centerY, 15, 0, Math.PI * 2);
+    context.arc(0, 0, radius, startAngle, endAngle);
     context.stroke();
     context.strokeStyle = meter.color;
     context.shadowColor = context.strokeStyle;
     context.shadowBlur = 8;
     context.beginPath();
-    context.arc(0, centerY, 15, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
+    context.arc(0, 0, radius, startAngle, startAngle + (endAngle - startAngle) * progress);
     context.stroke();
     context.shadowBlur = 0;
     context.fillStyle = "#f1f5f9";
     context.font = "bold 12px sans-serif";
     context.textAlign = "left";
-    context.textBaseline = "middle";
-    context.fillText(meter.value, 22, centerY);
+    context.textBaseline = "alphabetic";
+    context.fillText(meter.value, radius + 7, radius + 3);
     context.restore();
 }
 function getPassiveMeter() {

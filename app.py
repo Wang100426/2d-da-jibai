@@ -706,6 +706,7 @@ def profile_snapshot():
     """存档的公开状态：金币、是否无限金币、已解锁英雄与装备摘要。"""
     profile = player_save.load()
     return {
+        "username": profile["username"],
         "coins": profile["coins"],
         "infinite_coins": profile["infinite_coins"],
         "unlocked_heroes": sorted(unlocked_hero_ids()),
@@ -748,7 +749,10 @@ def hero_roster(language="zh"):
 
 @app.get("/")
 def home():
-    """主页：模式选择、开始游戏、底部功能导航。"""
+    """主页：可步行探索的家中据点。"""
+    profile = player_save.load()
+    if not profile["username"]:
+        return redirect(url_for("username_setup", next="/"))
     language = request.args.get("lang", request.cookies.get("lang", "zh"))
     heroes = localized_heroes(language)
     unlocked = unlocked_hero_ids()
@@ -759,6 +763,26 @@ def home():
         owned_count=sum(1 for hero in heroes if hero["id"] in unlocked),
         save_path=str(player_save.save_path()),
         settled_count=len(player_save.load()["settled_runs"]),
+    )
+
+
+@app.route("/profile/name", methods=["GET", "POST"])
+def username_setup():
+    next_page = request.values.get("next", "/")
+    if not next_page.startswith("/") or next_page.startswith("//") or "\\" in next_page:
+        next_page = "/"
+    if request.method == "POST":
+        try:
+            player_save.set_username(request.form.get("username", ""))
+        except ValueError as error:
+            return render_template(
+                "username.html", error=str(error), next_page=next_page,
+                profile=player_save.load(),
+            ), 400
+        return redirect(next_page)
+    return render_template(
+        "username.html", error="", next_page=next_page,
+        profile=player_save.load(),
     )
 
 
@@ -949,8 +973,9 @@ def equipment_page():
 
 
 @app.get("/backpack")
+@app.get("/wardrobe")
 def backpack_page():
-    """背包：查看所有拥有的装备。"""
+    """衣柜：查看与管理已拥有的装备。"""
     language = request.args.get("lang", request.cookies.get("lang", "zh"))
     return render_template(
         "backpack.html",
@@ -1491,6 +1516,9 @@ def error_response(message, status=400):
 
 @app.get("/multiplayer")
 def multiplayer():
+    profile = player_save.load()
+    if not profile["username"]:
+        return redirect(url_for("username_setup", next=request.full_path))
     return render_template(
         "multiplayer.html",
         heroes=localized_heroes(request.args.get("lang", request.cookies.get("lang", "zh"))),
@@ -1542,7 +1570,7 @@ def list_multiplayer_rooms():
 @app.post("/api/mp/rooms")
 def create_multiplayer_room():
     body = request.get_json(silent=True) or {}
-    name = str(body.get("name", "")).strip()[:20]
+    name = player_save.load()["username"] or str(body.get("name", "")).strip()[:20]
     if not name:
         return error_response("请先输入昵称。")
     hero_id, hero_error = resolve_room_hero(body.get("hero_id"))
@@ -1591,7 +1619,7 @@ def create_multiplayer_room():
 def join_multiplayer_room():
     body = request.get_json(silent=True) or {}
     room_id = str(body.get("room_id", "")).strip().upper()
-    name = str(body.get("name", "")).strip()[:20]
+    name = player_save.load()["username"] or str(body.get("name", "")).strip()[:20]
     if not name:
         return error_response("请先输入昵称。")
     hero_id, hero_error = resolve_room_hero(body.get("hero_id"))
@@ -1931,6 +1959,7 @@ def battle():
         transition_map_name=transition_map_name,
         transition_event=transition_event,
         equipment_bonuses=equipment_bonuses,
+        player_username=player_save.load()["username"] if game_mode == "rogue" and not multiplayer_config else "",
     )
 
 

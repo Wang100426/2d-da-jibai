@@ -7,7 +7,8 @@
 
 存档结构：
     {
-      "version": 2,
+      "version": 3,
+      "username": "",             # 玩家在本地与联机中使用的名称
       "coins": 0,                 # 当前金币
       "infinite_coins": false,    # 测试存档：金币无限，购买不扣钱
       "unlocked_heroes": [],      # 额外解锁的英雄（免费英雄恒解锁，不入档）
@@ -55,7 +56,7 @@ def current_scope() -> str:
     """当前生效的存档身份；空字符串表示本地单文件档。"""
     return _ACTIVE_SCOPE.get()
 
-SAVE_VERSION = 2
+SAVE_VERSION = 3
 # 结算公式：通过波次 × 10 + 击杀数 × 1，单局上限 500。
 COINS_PER_WAVE = 10
 COINS_PER_KILL = 1
@@ -182,6 +183,7 @@ def save_path() -> Path:
 def default_profile() -> dict:
     return {
         "version": SAVE_VERSION,
+        "username": "",
         "coins": 0,
         "infinite_coins": False,
         "unlocked_heroes": [],
@@ -204,6 +206,11 @@ def _normalized(raw) -> dict:
     profile = default_profile()
     if not isinstance(raw, dict):
         return profile
+    username = raw.get("username")
+    if isinstance(username, str):
+        username = username.strip()
+        if username and len(username) <= 20 and not any(ord(char) < 32 or ord(char) == 127 for char in username):
+            profile["username"] = username
     infinite = _truthy(raw.get("infinite_coins"))
     coins = raw.get("coins")
     if isinstance(coins, str):
@@ -326,6 +333,18 @@ def load() -> dict:
         return profile
 
 
+def set_username(username: str) -> dict:
+    """设置存档用户名；用于主页身份与联机大厅展示。"""
+    value = username.strip()
+    if not value or len(value) > 20 or any(ord(char) < 32 or ord(char) == 127 for char in value):
+        raise ValueError("用户名需为 1 至 20 个字符，且不能包含控制字符。")
+    with _LOCK:
+        profile = load()
+        profile["username"] = value
+        write(profile)
+        return profile
+
+
 def run_reward(wave, kills) -> int:
     return max(0, min(COINS_RUN_CAP, int(wave) * COINS_PER_WAVE + int(kills) * COINS_PER_KILL))
 
@@ -397,6 +416,7 @@ def reset() -> dict:
     with _LOCK:
         profile = load()
         fresh = default_profile()
+        fresh["username"] = profile.get("username", "")
         fresh["settled_runs"] = profile["settled_runs"]
         write(fresh)
         return fresh

@@ -1,5 +1,25 @@
 # 更新日志 / Updates
 
+## 2.7.0
+
+### 中文
+
+- 主页改为可探索的霓虹公寓地图：WASD 移动，靠近物件按 E 交互。衣柜打开原背包，客厅手机进入商店，书桌电脑进入剧情模式，右侧地图打开图鉴；客厅书架打开存档管理。
+- 公寓大门可选择进入单机肉鸽或联机大厅。
+- 新存档及旧版存档首次启动时需设置用户名。用户名保存在存档中，用于主页身份显示、肉鸽战斗角色头顶显示和联机大厅。
+
+### English
+
+- Rebuilt the home screen as an explorable neon apartment. Move with WASD and press E near objects: wardrobe for inventory, phone for the shop, desk computer for stories, wall map for the codex, and living-room bookshelf for save management.
+- The front door lets players choose between roguelike and the multiplayer lobby.
+- New and legacy saves require a username on first launch. It is saved with the profile and shown at home, above the hero in roguelike battles, and in the multiplayer lobby.
+
+### 日本語
+
+- ホーム画面を探索できるネオンアパートに刷新。WASDで移動し、家具の近くでEキーを押して操作します。クローゼットは装備、スマホはショップ、机のパソコンはストーリー、壁の地図は図鑑、リビングの本棚はセーブ管理を開きます。
+- 玄関からローグライクまたはマルチプレイロビーを選択できます。
+- 新規・旧バージョンのセーブデータは初回起動時にユーザー名の設定が必要です。名前はセーブに保存され、ホーム、ローグライク戦闘中のヒーロー頭上、マルチプレイロビーに表示されます。
+
 ## 2.6.0
 
 ### 中文

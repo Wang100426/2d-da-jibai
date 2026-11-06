@@ -145,6 +145,7 @@
     window.MAP_CONFIG = {
       heroId: {{ player.id|tojson }},
       name: {{ player.name|tojson }},
+      playerName: {{ player_username|tojson }},
       initial: {{ player.initial|tojson }},
       accent: {{ player.accent|tojson }},
       roster: {{ roster|tojson }},
