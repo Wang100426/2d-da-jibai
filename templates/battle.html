@@ -63,12 +63,13 @@
     </div>
   </section>
   {% endif %}
-  {% if game_mode != "duel" or (multiplayer and multiplayer.mode != "duel") %}
-  <aside class="wave-status">
+  {# 波次面板的元素必须始终存在：前端 requireElement("#wave-title") 是加载期硬要求，
+     之前这里整块条件渲染，duel 模式直接抛 "Required map element was not found"。
+     本地人机对决靠它显示比分，所以只有联机 1V1 才隐藏。 #}
+  <aside class="wave-status"{% if multiplayer and multiplayer.mode == "duel" %} hidden{% endif %}>
     <b id="wave-title">{{ tr("WAVE_ONE_ASSEMBLING") }}</b>
     <span id="wave-subtitle">{{ tr("ENEMIES_INCOMING") }}</span>
   </aside>
-  {% endif %}
   {% if game_mode == "duel" and not multiplayer %}
   <aside class="duel-opponent" id="duel-opponent">
     <small>{{ tr("AI_OPPONENT") }}</small><b id="duel-opponent-name">{{ tr("ENEMY") }}</b>
