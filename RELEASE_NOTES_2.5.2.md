@@ -1,4 +1,6 @@
-# 🛠️ 2DFight Arena 2.5.2 — Lobby Hotfix
+# 2D大击败 2.5.2 — Lobby Hotfix
+
+## English
 
 A small patch for one nasty multiplayer bug. No new installer — this one is code-only.
 
@@ -6,7 +8,7 @@ A small patch for one nasty multiplayer bug. No new installer — this one is co
 * 🐛 **Fixed**: pressing "Leave Room" sometimes bounced you right back into the room screen (a stale in-flight poll response re-rendered it)
 * ✅ Being removed from a room now shows a notice and returns you to the lobby automatically
 
-# 🛠️ 2D大击败 2.5.2 — 联机大厅热修复
+## 中文
 
 小补丁，只修一个联机 bug。纯代码更新，不提供安装包。
 
@@ -14,7 +16,7 @@ A small patch for one nasty multiplayer bug. No new installer — this one is co
 * 🐛 **修复**：点「退出房间」后界面又弹回房间（退出瞬间还有旧请求在路上，把房间重新画了出来）
 * ✅ 被移出房间时会收到提示并自动返回大厅
 
-# 🛠️ 2D大撃破 2.5.2 — ロビー緊急修正
+## 日本語
 
 マルチプレイヤーのバグ 1 件のみの修正。コードのみの更新のため、インストーラーはありません。
 

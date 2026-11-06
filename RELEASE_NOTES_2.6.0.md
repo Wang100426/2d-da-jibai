@@ -10,7 +10,7 @@ Meet **Star Messenger**, a new hero available in the shop for 2,000 coins.
 - **E · Astral Guard** — gain a 3-second guard that blocks incoming hits and grants Star Energy when it blocks. Upgrades add a block and damage nearby enemies on successful blocks.
 - **R · Star Suppression** — place a ring that stuns and slows enemies; enemies still inside after 2.5 seconds are caught in an explosion. Upgrades add repeat blasts and additional targets.
 
-## Combat HUD
+### Combat HUD
 
 - Replaced status badges with concentric rings around characters to show remaining effect durations.
 - Added a passive-specific progress ring and value beneath **every hero**. The meter reflects each hero's passive resource or state; Basketball Boy's ring shows remaining magazine capacity.
