@@ -1,5 +1,22 @@
 # 更新日志 / Updates
 
+## 2.6.0
+
+### 中文
+
+- 新增可在商店以 2000 金币解锁的英雄「星之使者」，加入星能叠层、近远程差异普攻、星环守护、延时爆炸与困敌星环大招，并支持技能升阶。
+- 状态显示升级为环绕角色的多层剩余时间进度环；所有英雄脚下均显示对应被动的进度与数值，篮球少年的圆环显示弹夹余量。
+
+### English
+
+- Added Star Messenger, unlockable in the shop for 2,000 coins, with Star Energy stacking, distinct close- and long-range attacks, Astral Guard, delayed ring explosions, and a trapping ultimate with tier upgrades.
+- Replaced status badges with concentric remaining-time rings around characters. Every hero now displays a passive-specific meter and value beneath the player; Basketball Boy's ring tracks magazine capacity.
+
+### 日本語
+
+- ショップで2,000コインで解放できる「星の使者」を追加。星エネルギーの蓄積、近距離・遠距離で異なる通常攻撃、星環の守護、遅延爆発、敵を閉じ込めるアルティメットとスキル段階強化を実装。
+- 状態表示をキャラクターの周囲に重なる残り時間リングへ変更。全ヒーローの足元に固有パッシブの進行度と数値を表示し、バスケットボーイのリングは弾倉の残量を示します。
+
 ## 2.5.2
 
 ### 中文

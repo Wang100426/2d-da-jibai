@@ -729,6 +729,37 @@
         }
       }
     },
+    "star_messenger": {
+      "name": "Star Messenger",
+      "class_name": "Astral Ring Controller",
+      "tagline": "Gather starlight, then trap your foes beneath the cosmos.",
+      "initial": "S",
+      "stats": ["Attack", "Defense", "Mobility"],
+      "passive": {
+        "name": "Astral Ring",
+        "description": "Each basic attack grants 1 Star Energy, up to 6. At 6, your next basic attack is empowered: its damage radius is tripled, and enemies hit are stunned for 1s and slowed for 3s."
+      },
+      "skills": {
+        "star-ult": {
+          "name": "Trapped in Starlight",
+          "kind": "Ultimate",
+          "description": "Create a distant great ring · trap and damage enemies",
+          "detail_description": "Create a large ring at the nearest enemy's position, regardless of distance. For 5s, enemies inside cannot leave and take damage every 0.5s; you can pass through freely. Tier 2: enemies inside are stunned for 0.5s every 0.5s. Tier 3: enemies are also slowed by 30% and take 30% more damage."
+        },
+        "star-guard": {
+          "name": "Astral Guard",
+          "kind": "Skill",
+          "description": "Guard for 3s · block damage and gain Star Energy",
+          "detail_description": "Gain Astral Guard for 3s and block 1 hit; a successful block grants 3 Star Energy. Tier 2: block 2 hits. Tier 3: each successful block deals 200% of the blocked damage to every enemy within basic-attack range."
+        },
+        "star-suppression": {
+          "name": "Star Suppression",
+          "kind": "Skill",
+          "description": "Drop a ring at the nearest enemy · stun and slow",
+          "detail_description": "Drop a ring at the nearest enemy within basic-attack range, stunning enemies inside for 1s and slowing them by 40% for 3s. Enemies still inside after 2.5s trigger an explosion that deals damage and stuns for another 1s. Tier 2: explode 3 times at 0.5s intervals; the last two explosions do not stun. Tier 3: target the 2 nearest enemies; if only one is available, double the stun and slow durations."
+        }
+      }
+    },
     "bball": {
       "name": "Basketball Boy",
       "class_name": "Court Shooter",
@@ -816,6 +847,12 @@
       "眩晕中无法行动": "Stunned: unable to act",
       "狂舞中无法行动": "Frenzied: unable to act",
       "禁锢中无法移动": "Rooted: unable to move",
+      "星能已充满": "Star Energy full",
+      "星环横扫": "Astral ring sweep",
+      "星星飞射": "Star shot",
+      "星能已充满": "Star Energy full",
+      "星环横扫": "Astral ring sweep",
+      "星星飞射": "Star shot",
       "探索者已被击败": "Explorer defeated",
       "竞技胜利": "VICTORY",
       "挑战失败": "DEFEAT",
@@ -1423,6 +1460,10 @@
       "双音减速35": "35% slow",
       "双音减速60": "60% slow",
       "双音减速90": "90% slow",
+      "星环守护": "Astral Guard",
+      "星环禁锢": "Astral Cage",
+      "星之压抑减速": "Star Suppression Slow",
+      "星环减速": "Astral Ring Slow",
       "荆棘护甲": "Thorn armor",
       "中毒": "Poison",
       "月影护盾": "Moon shield",
@@ -1439,7 +1480,8 @@
       "sakura": "Firework hit for {damage} damage, igniting the target.",
       "jianghu": "The blade flashes for {damage} damage.",
       "skater": "Board strike deals {damage} damage; faster speed means more damage.",
-      "bball": "Basketball hits for {damage} damage."
+      "bball": "Basketball hits for {damage} damage.",
+      "star_messenger": "Star shot hits for {damage} damage."
     },
     "templates": {
       "skill.cooling": "{name} is on cooldown for {seconds}s more.",
@@ -1463,6 +1505,10 @@
       "skill.pipa_yangchun": "{name} hits {hits} enemies, rooting them for {seconds}s and restoring {healed} health.",
       "skill.pipa_yangchun_miss": "{name} found no enemies within {range}.",
       "skill.pipa_shimian": "{name} summons {count} minions that hunt down enemies.",
+      "star.cage": "Trapped in Starlight: {hits} enemies caged for {seconds}s.",
+      "star.guard": "Astral Guard active for {seconds}s; blocks {charges} hits.",
+      "star.suppression": "Star Suppression: rings deployed at {hits} locations, stunning for {seconds}s.",
+      "star.empowered_attack": "Empowered star-ring attack hits in a {radius} radius.",
       "dual_tone.form_changed": "Resonance ends. Switched to {form} form.",
       "dual_tone.form_label": "Form: {form}",
       "dual_tone.ultimate_start": "Twin-Tone Resonance: empowered for {seconds}s; form changes when it ends.",
@@ -1672,6 +1718,12 @@
     "眩晕时间 +1 秒": "+1s stun duration",
     "强化普攻额外伤害 +12": "+12 empowered attack damage",
     "强化普攻可波及周围敌人": "Empowered attack splashes nearby enemies",
+    "星环内敌人每隔 0.5 秒眩晕 0.5 秒": "Stun enemies in the ring for 0.5s every 0.5s",
+    "星环内敌人减速 30%，受到伤害 +30%": "Enemies in the ring are slowed by 30% and take 30% more damage",
+    "可抵挡伤害次数 +1": "+1 damage block",
+    "每次抵挡时对普攻范围敌人造成抵挡伤害的 200%": "Each block deals 200% of blocked damage to enemies in attack range",
+    "星环爆炸 3 次，间隔 0.5 秒": "Ring explodes 3 times at 0.5s intervals",
+    "可投放至最近 2 名敌人；仅 1 名时眩晕和减速时间翻倍": "Target the 2 nearest enemies; double stun and slow duration if only one is available",
     "冲刺距离 +45": "+45 dash distance",
     "冲刺伤害提高 30%": "Dash damage +30%",
     "荆棘花园半径 +40": "+40 root field radius",

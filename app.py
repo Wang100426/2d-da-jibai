@@ -644,6 +644,47 @@ HEROES = [
                               3: {"label": "竹林之梦持续伤害；甜蜜和弦吸血比例 50% → 100%", "patch": {"global_damage_per_tick": {"set": 5}, "play_heal_ratio": {"set": 1}}}}},
         ],
     },
+    {
+        "id": "star_messenger",
+        "name": "星之使者",
+        "class_name": "星环控场师",
+        "tagline": "以星能点亮星环，将敌人困于星空。",
+        "initial": "星",
+        "accent": "star",
+        "price": 2000,
+        "palette": {"main": "#8bdcff", "light": "#e6f8ff", "dark": "#24547f"},
+        "stats": {"攻击": 84, "防御": 64, "机动": 82},
+        "combat": {
+            "speed": 230,
+            "basic_range": 300,
+            "basic_damage": 14,
+            "basic_effect": "",
+            "basic_effect_turns": 0,
+            "basic_beam": {"color": "#8bdcff", "duration": 0.2},
+            "basic_restore_label": "RANGED_RESTORE",
+            "bot_skill_effect": "眩晕",
+            "bot_skill_effect_turns": 1,
+            "bot_skill_damage_scale": 2,
+            "thorns_damage": 0,
+        },
+        "passive": {
+            "id": "star_energy",
+        },
+        "skills": [
+            {"id": "star-ult", "name": "困于星空", "description": "无视距离生成星环 · 困住敌人并持续造成伤害", "kind": "大招", "target": "enemy", "action": "star_cage", "cost": 60, "cooldown": 20, "cast_range": 9999, "damage": 6, "radius": 150, "effect": "", "effect_turns": 5,
+             "cage_tick_interval": 0.5, "cage_duration": 5, "cage_slow_ratio": 0.3,
+             "tier_effects": {2: {"label": "星环内敌人每隔 0.5 秒眩晕 0.5 秒", "patch": {"cage_stun_interval": {"set": 0.5}, "cage_stun_duration": {"set": 0.5}}},
+                              3: {"label": "星环内敌人减速 30%，受到伤害 +30%", "patch": {"cage_slow_ratio": {"set": 0.3}, "cage_damage_scale": {"set": 1.3}}}}},
+            {"id": "star-guard", "name": "星环守护", "description": "获得 3 秒守护 · 抵挡伤害并积攒星能", "kind": "小技能", "target": "self", "action": "star_guard", "cost": 25, "cooldown": 12, "damage": 0, "effect": "星环守护", "effect_turns": 3,
+             "guard_charges": 1, "guard_star_gain": 3, "guard_reflect_multiplier": 2,
+             "tier_effects": {2: {"label": "可抵挡伤害次数 +1", "patch": {"guard_charges": {"add": 1}}},
+                              3: {"label": "每次抵挡时对普攻范围敌人造成抵挡伤害的 200%", "patch": {"guard_reflect_multiplier": {"set": 2}}}}},
+            {"id": "star-suppression", "name": "星之压抑", "description": "向最近敌人投放星环 · 眩晕并减速", "kind": "小技能", "target": "enemy", "action": "star_suppression", "cost": 30, "cooldown": 14, "cast_range": 300, "damage": 18, "radius": 135, "effect": "眩晕", "effect_turns": 1,
+             "suppression_slow_ratio": 0.4, "suppression_slow_duration": 3, "suppression_delay": 2.5, "suppression_bursts": 1,
+             "tier_effects": {2: {"label": "星环爆炸 3 次，间隔 0.5 秒", "patch": {"suppression_bursts": {"set": 3}, "suppression_interval": {"set": 0.5}}},
+                              3: {"label": "可投放至最近 2 名敌人；仅 1 名时眩晕和减速时间翻倍", "patch": {"suppression_target_count": {"set": 2}}}}},
+        ],
+    },
 ]
 
 
@@ -1134,8 +1175,12 @@ def public_player(player):
         "shield": player.get("shield", 0) if effects.get("月影护盾", 0) > 0 else 0,
         "energy": player["energy"],
         "max_energy": player["max_energy"],
+        "star_energy": player.get("star_energy", 0),
+        "star_guard_charges": player.get("star_guard_charges", 0),
         "effects": effects,
-        "invulnerable": player["invulnerable_until"] > time.time(),
+        "invulnerable": player["invulnerable_until"] > time.time() or (
+            active_effect(player, "星环守护", time.time()) and player.get("star_guard_charges", 0) > 0
+        ),
     }
 
 
@@ -1186,6 +1231,8 @@ def apply_player_attack(room, attacker, attack, now):
     basic_range, basic_damage = player_limits(attacker["hero_id"])
     skill_id = str(attack.get("skill_id", ""))
     lifesteal_rate = 0
+    star_empowered_attack = False
+    skill_tier = max(1, min(3, _safe_count(attack.get("skill_tier"), 3)))
     if attack_kind == "dash_start":
         skill = next((item for item in hero["skills"] if item["id"] == skill_id), None)
         cast_id = str(attack.get("cast_id", ""))
@@ -1210,6 +1257,13 @@ def apply_player_attack(room, attacker, attack, now):
         effect = hero["combat"]["basic_effect"]
         effect_duration = hero["combat"]["basic_effect_turns"]
         attack_range = basic_range
+        if attacker["hero_id"] == "star_messenger":
+            star_energy = min(6, max(0, _safe_count(attacker.get("star_energy", 0), 6)))
+            star_empowered_attack = star_energy >= 6
+            attacker["star_energy"] = 0 if star_empowered_attack else min(6, star_energy + 1)
+            if star_empowered_attack:
+                effect = "眩晕"
+                effect_duration = 1
     elif attack_kind in ("skill", "dash_hit"):
         skill = next((item for item in hero["skills"] if item["id"] == skill_id), None)
         if skill is None:
@@ -1228,6 +1282,16 @@ def apply_player_attack(room, attacker, attack, now):
             cooldowns[skill_id] = now + skill["cooldown"]
         damage = skill["damage"]
         effect = skill.get("effect", "")
+        action = skill.get("action", "")
+        if action == "star_guard":
+            attacker["effects"]["星环守护"] = max(
+                attacker["effects"].get("星环守护", 0), now + skill.get("effect_turns", 3)
+            )
+            attacker["star_guard_charges"] = skill.get("guard_charges", 1) + (skill_tier >= 2)
+            attacker["star_guard_reflect"] = (
+                skill.get("guard_reflect_multiplier", 2) if skill_tier >= 3 else 0
+            )
+            return
         if skill.get("action") == "pipa_yangchun":
             lifesteal_rate = 0.2
         if skill.get("action") == "pipa_yangchun":
@@ -1266,6 +1330,20 @@ def apply_player_attack(room, attacker, attack, now):
             continue
         if (target["x"] - attacker["x"]) ** 2 + (target["y"] - attacker["y"]) ** 2 > attack_range ** 2:
             continue
+        if (
+            target["hero_id"] == "star_messenger"
+            and active_effect(target, "星环守护", now)
+            and target.get("star_guard_charges", 0) > 0
+        ):
+            target["star_guard_charges"] -= 1
+            target["star_energy"] = min(6, target.get("star_energy", 0) + 3)
+            reflected = round(damage * target.get("star_guard_reflect", 0))
+            if reflected > 0:
+                attacker["hp"] = max(0, attacker["hp"] - reflected)
+                if attacker["hp"] <= 0:
+                    room["winner_id"] = target["player_id"]
+                    room["status"] = "finished"
+            continue
         if target["invulnerable_until"] > now:
             continue
         if not active_effect(target, "月影护盾", now):
@@ -1286,6 +1364,37 @@ def apply_player_attack(room, attacker, attack, now):
         if effect and effect_duration > 0:
             target["effects"][effect] = max(
                 target["effects"].get(effect, 0), now + effect_duration
+            )
+        if attack_kind == "basic" and attacker["hero_id"] == "star_messenger":
+            if star_empowered_attack:
+                target["effects"]["减速"] = max(target["effects"].get("减速", 0), now + 3)
+            elif (target["x"] - attacker["x"]) ** 2 + (target["y"] - attacker["y"]) ** 2 < 150 ** 2:
+                target["effects"]["减速"] = max(target["effects"].get("减速", 0), now + 0.5)
+        if attack_kind == "skill" and skill.get("action") == "star_cage":
+            target["effects"]["星环禁锢"] = max(
+                target["effects"].get("星环禁锢", 0), now + skill.get("cage_duration", 5)
+            )
+            if skill_tier >= 3:
+                target["effects"]["星环减速"] = max(
+                    target["effects"].get("星环减速", 0), now + skill.get("cage_tick_interval", 0.5)
+                )
+        if attack_kind == "skill" and skill.get("action") == "star_suppression":
+            targets_count = len(target_ids)
+            duration_scale = 2 if skill_tier >= 3 and targets_count == 1 else 1
+            target["effects"]["眩晕"] = max(
+                target["effects"].get("眩晕", 0), now + skill.get("effect_turns", 1) * duration_scale
+            )
+            target["effects"]["星之压抑减速"] = max(
+                target["effects"].get("星之压抑减速", 0),
+                now + skill.get("suppression_slow_duration", 3) * duration_scale,
+            )
+        if attack_kind == "skill" and skill.get("action") == "star_cage" and skill_tier >= 2:
+            target["effects"]["眩晕"] = max(
+                target["effects"].get("眩晕", 0), now + skill.get("cage_stun_duration", 0.5)
+            )
+        if attack_kind == "skill" and skill.get("action") == "star_cage" and skill_tier >= 3:
+            target["effects"]["星环减速"] = max(
+                target["effects"].get("星环减速", 0), now + skill.get("cage_tick_interval", 0.5)
             )
         thorns = hero_by_id(target["hero_id"])["combat"]["thorns_damage"]
         if thorns > 0 and active_effect(target, "荆棘护甲", now):
