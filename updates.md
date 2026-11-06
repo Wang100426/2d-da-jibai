@@ -1,5 +1,28 @@
 # 更新日志 / Updates
 
+## 2.7.6
+
+### 中文
+
+- **修复对决模式战斗页面加载即崩溃**：进入对决时报 `Required map element was not found: #wave-title`，整个战斗脚本加载失败。波次面板现在始终存在于页面中，只有联机 1V1 才隐藏。
+- 本地人机对决重新显示比分（此前同样受影响，只是一直没有入口能进到该页面）。
+- 新增自动回归测试，覆盖肉鸽、本地人机对决与联机 1V1 三种模式的页面元素。
+- release notes 不再保留在仓库中，改以 GitHub release 页面为唯一出处。
+
+### English
+
+- **Fixed duel battles crashing on load**: entering a duel threw `Required map element was not found: #wave-title` and the whole battle script failed to load. The wave panel now always exists in the page and is only hidden for online 1v1.
+- Local AI duels show the score again — they were affected by the same crash, but no entry point had reached that page.
+- Added an automatic regression test covering the page elements of all three modes: roguelike, local AI duel and online 1v1.
+- Release notes are no longer kept in the repository; the GitHub release page is now the single source of truth.
+
+### 日本語
+
+- **対戦モードの読み込み時クラッシュを修正**：対戦に入った際に `Required map element was not found: #wave-title` が発生し、戦闘スクリプト全体の読み込みが失敗していました。ウェーブパネルは常にページ内に存在し、非表示になるのはオンライン1対1のみになります。
+- ローカルAI対戦でスコアが再び表示されます。同じ影響を受けていましたが、해당ページへ到達する入口がありませんでした。
+- ローグライク、ローカルAI対戦、オンライン1対1の3モードでページ要素を検証する自動リグレッションテストを追加しました。
+- リリースノートをリポジトリから削除し、GitHub リリースページを唯一の正としました。
+
 ## 2.7.5
 
 ### 中文
