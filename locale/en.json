@@ -3,7 +3,7 @@
   "ui": {
     "HOME": "HOME",
     "HEROES": "HEROES",
-    "LAN": "LAN MULTIPLAYER",
+    "LAN": "MULTIPLAYER LOBBY",
     "SEASON": "SEASON 01 / NEON AWAKENING",
     "HOME_SUBTITLE": "Choose a mode and face the challenge in the neon ruins.",
     "HOME_DESCRIPTION": "Survive enemy waves solo, or battle friends together online.",
@@ -13,7 +13,7 @@
     "ROGUE_DESCRIPTION": "Explore the neon ruins alone, survive escalating waves, and choose upgrades.",
     "ROGUE_TAGLINE": "Choose a hero · Start the run · Survive the next wave",
     "LAN_DESCRIPTION": "Join a room with friends on the same Wi-Fi and fight together.",
-    "LAN_KICKER": "LAN PARTY",
+    "LAN_KICKER": "CO-OP PARTY",
     "LAN_TAGLINE": "Create a room · Invite friends · Fight together",
     "DUEL": "AI DUEL",
     "DUEL_KICKER": "AI ARENA",
@@ -152,7 +152,7 @@
     "ROOM_LOBBY": "ROOM LOBBY",
     "CYBER_ARENA": "CYBER ARENA",
     "SLOGAN": "NO RAGE · JUST DAMAGE",
-    "LAN_MULTIPLAYER": "LAN MULTIPLAYER",
+    "LAN_MULTIPLAYER": "MULTIPLAYER LOBBY",
     "LOCAL_NETWORK_PARTY": "LOCAL NETWORK PARTY",
     "HOME_MULTIPLAYER": "MULTIPLAYER LOBBY",
     "MP_HALL_INTRO": "Choose how to play: challenge the AI, duel a friend 1v1, or team up against PvE waves.",
@@ -667,8 +667,15 @@
       "class_name": "Dual-Form Controller",
       "tagline": "One string stills the heart; the next changes the tide.",
       "initial": "T",
-      "stats": ["Attack", "Defense", "Mobility"],
-      "forms": {"guqin": "Guqin", "harp": "Harp"},
+      "stats": [
+        "Attack",
+        "Defense",
+        "Mobility"
+      ],
+      "forms": {
+        "guqin": "Guqin",
+        "harp": "Harp"
+      },
       "passive": {
         "name": "Twin Strings",
         "description": "Switches between Guqin and Harp forms. Guqin continuously slows enemies within 250 by 35%; Harp grants 30% movement speed. Q's Resonance suspends the passive, then switches to the other form when the empowered state ends."
@@ -686,9 +693,18 @@
           "description": "Guqin links enemies; Harp sends three sound waves",
           "detail_description": "Guqin: link up to 7 nearest enemies within basic-attack range; after 1 second, pull them close, deal 60 damage, and stun them for 1 second. Harp: emit 3 waves around you, each dealing 14 damage. Enemies hit by at least 3 waves take 28 bonus damage and are stunned for 1 second.",
           "forms": {
-            "guqin": {"name": "Beyond the Seven Strings", "description": "Link up to 7 nearest enemies in attack range · pull, damage, and stun after 1s"},
-            "harp": {"name": "Noble Tone", "description": "Emit 3 waves around you · enemies hit 3 times take bonus damage and are stunned"},
-            "ultimate": {"name": "Sound · Lure", "description": "Pull all nearby enemies · emit 7 waves and stun for 2s"}
+            "guqin": {
+              "name": "Beyond the Seven Strings",
+              "description": "Link up to 7 nearest enemies in attack range · pull, damage, and stun after 1s"
+            },
+            "harp": {
+              "name": "Noble Tone",
+              "description": "Emit 3 waves around you · enemies hit 3 times take bonus damage and are stunned"
+            },
+            "ultimate": {
+              "name": "Sound · Lure",
+              "description": "Pull all nearby enemies · emit 7 waves and stun for 2s"
+            }
           }
         },
         "dual-tone-r": {
@@ -697,9 +713,18 @@
           "description": "Guqin slows all and heals; Harp plays in place and knocks back",
           "detail_description": "Guqin: immediately slow all enemies by 60% for 3 seconds and restore 3 health every 0.5 seconds. Harp: remain still and play for 3 seconds, dealing 6 damage and knocking back enemies within 250 every 0.4 seconds; restore health equal to 50% of damage dealt.",
           "forms": {
-            "guqin": {"name": "Dream of the Bamboo Grove", "description": "Slow all enemies by 60% for 3s · slowly restore health"},
-            "harp": {"name": "Sweet Chord", "description": "Play in place for 3s · knock back nearby enemies, deal damage, and heal"},
-            "ultimate": {"name": "Sound · Startle", "description": "Damage and slow all enemies by 90% · knock back those within twice attack range"}
+            "guqin": {
+              "name": "Dream of the Bamboo Grove",
+              "description": "Slow all enemies by 60% for 3s · slowly restore health"
+            },
+            "harp": {
+              "name": "Sweet Chord",
+              "description": "Play in place for 3s · knock back nearby enemies, deal damage, and heal"
+            },
+            "ultimate": {
+              "name": "Sound · Startle",
+              "description": "Damage and slow all enemies by 90% · knock back those within twice attack range"
+            }
           }
         }
       }

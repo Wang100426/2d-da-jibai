@@ -22,11 +22,38 @@ from __future__ import annotations
 import json
 import os
 import random
+import re
 import sys
 import tempfile
 import threading
 import time
+from contextvars import ContextVar
 from pathlib import Path
+
+# ---------- 存档作用域（本地单文件 / 云端按身份分档） ----------
+# 统一入口：应用层只调 bind_scope()，不直接碰路径。
+#   bind_scope("")     → 本地单文件档（桌面版、开发环境，老存档原样保留）
+#   bind_scope("<uid>") → 该身份独占的一份存档（云端网页版，cookie 里的身份标识）
+# 用 ContextVar 而不是模块级变量：Flask 多线程并发请求时各请求的身份互不串档。
+_ACTIVE_SCOPE: ContextVar[str] = ContextVar("dajibai_archive_scope", default="")
+UID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,64}$")
+
+
+def valid_uid(uid: str) -> bool:
+    """身份标识格式校验；同时挡住路径穿越（只允许字母数字下划线连字符）。"""
+    return bool(UID_PATTERN.match(uid or ""))
+
+
+def bind_scope(uid: str = "") -> str:
+    """绑定当前存档身份，返回生效的 scope。空字符串 = 本地单文件档。"""
+    value = uid if valid_uid(uid) else ""
+    _ACTIVE_SCOPE.set(value)
+    return value
+
+
+def current_scope() -> str:
+    """当前生效的存档身份；空字符串表示本地单文件档。"""
+    return _ACTIVE_SCOPE.get()
 
 SAVE_VERSION = 2
 # 结算公式：通过波次 × 10 + 击杀数 × 1，单局上限 500。
@@ -140,6 +167,12 @@ def save_path() -> Path:
     override = os.environ.get("DAJIBAI_SAVE")
     if override:
         return Path(override).expanduser()
+    scope = current_scope()
+    if scope:
+        # 云端多用户：每个身份一份存档，互不干扰
+        profiles = Path(__file__).resolve().parent / "save" / "profiles"
+        profiles.mkdir(parents=True, exist_ok=True)
+        return profiles / f"{scope}.json"
     if getattr(sys, "frozen", False):
         base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
         return Path(base) / "2d-da-jibai" / "save.json"

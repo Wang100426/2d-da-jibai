@@ -1,12 +1,14 @@
 import copy
 import json
+import os
 import secrets
 import socket
+import sys
 import threading
 import time
 from pathlib import Path
 
-from flask import Flask, jsonify, redirect, render_template, request, send_file, url_for
+from flask import Flask, g, jsonify, redirect, render_template, request, send_file, url_for
 
 import player_save
 import story_script
@@ -100,6 +102,47 @@ def localized_heroes(language):
                 if tier_effect["label"] in tier_labels:
                     tier_effect["label"] = tier_labels[tier_effect["label"]]
     return heroes
+
+
+# ---------- 存档作用域：统一入口 ----------
+# 应用层只认 player_save.bind_scope() 一个入口：
+#   桌面版 / 开发环境 → scope 为空 → 仍是原来那一个本地存档文件（老存档不丢）
+#   云端网页版        → scope = cookie 里的身份标识 → 每个浏览器一份自己的存档
+# 云端判定：显式环境变量优先，其次是「有 PORT 且不是打包环境」（沙箱部署会注入 PORT）。
+ARCHIVE_COOKIE = "dajibai_uid"
+ARCHIVE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365 * 2  # 两年
+
+
+def cloud_archive_enabled() -> bool:
+    if os.environ.get("DAJIBAI_CLOUD_ARCHIVE") == "1":
+        return True
+    return bool(os.environ.get("PORT")) and not getattr(sys, "frozen", False)
+
+
+@app.before_request
+def bind_archive_scope():
+    """把本次请求的存档身份绑到当前作用域（本地单文件 / 云端分档）。"""
+    uid = ""
+    if cloud_archive_enabled():
+        uid = request.cookies.get(ARCHIVE_COOKIE, "")
+        if not player_save.valid_uid(uid):
+            uid = secrets.token_urlsafe(24)
+    player_save.bind_scope(uid)
+    g.archive_uid = uid
+
+
+@app.after_request
+def remember_archive_scope(response):
+    """云端把身份标识还回浏览器，之后每次访问都认自己的存档。"""
+    uid = getattr(g, "archive_uid", "")
+    if player_save.valid_uid(uid):
+        response.set_cookie(
+            ARCHIVE_COOKIE,
+            uid,
+            max_age=ARCHIVE_COOKIE_MAX_AGE,
+            samesite="Lax",
+        )
+    return response
 
 
 @app.context_processor
@@ -1783,4 +1826,6 @@ def battle():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=False, port=5000)
+    # 云部署：沙箱会把实际端口注入 PORT 环境变量；本地跑默认还是 5000
+    port = int(os.environ.get("PORT", "5000"))
+    app.run(host="0.0.0.0", debug=False, port=port)
