@@ -317,6 +317,7 @@ const heroPassive = rosterById.get(config.heroId)?.passive || {
 /** 被动的逐级触发计数。 */
 const passiveState = {
     kills: 0,
+    basicAttacks: 0,
     frenzyKills: 0,
     minionKills: 0,
     /** 达到被动阈值时授予的强化窗口，下一次对应技能会获得额外效果。 */
@@ -478,6 +479,12 @@ const touchKeys = new Set();
 const skillCooldowns = new Map();
 const skillProgress = new Map(config.skills.map((skill) => [skill.id, { tier: 1, minorUpgrades: 0 }]));
 const statusEffects = {};
+const statusEffectMaxDurations = new WeakMap();
+let starEnergy = 0;
+let starEmpowered = false;
+let starGuardCharges = 0;
+const starCages = [];
+const starSuppressionRings = [];
 let dualToneForm = "guqin";
 let dualToneUltimateRemaining = 0;
 let dualToneLink;
@@ -576,8 +583,10 @@ function hasPlayerEffect(effect) {
 function enemySlowMultiplier(enemy, regularSlowMultiplier = 0.45) {
     const normalSlow = enemy.effects["强力减速"] ? 0.4
         : enemy.effects["减速"] ? regularSlowMultiplier : 1;
+    const starSlow = enemy.effects["星之压抑减速"] ? 0.6
+        : enemy.effects["星环减速"] ? 0.7 : 1;
     const dualToneRatio = [25, 35, 60, 90].reduce((strongest, ratio) => enemy.effects[`双音减速${ratio}`] ? Math.max(strongest, ratio / 100) : strongest, 0);
-    return Math.min(normalSlow, 1 - dualToneRatio);
+    return Math.min(normalSlow, starSlow, 1 - dualToneRatio);
 }
 function applyDualToneSlow(enemy, ratio, duration) {
     const effect = `双音减速${Math.round(ratio * 100)}`;
@@ -643,6 +652,28 @@ function queuePvpSelfAttack() {
         kind: "basic",
         target_ids: [config.multiplayer.player_id],
     });
+}
+function drawStarFields() {
+    const drawField = (x, y, radius, remaining, duration, color) => {
+        const progress = Math.max(0, Math.min(1, remaining / duration));
+        context.save();
+        context.strokeStyle = color;
+        context.shadowColor = color;
+        context.shadowBlur = 16;
+        context.lineWidth = 3;
+        context.setLineDash([12, 8]);
+        context.beginPath();
+        context.arc(x, y, radius, 0, Math.PI * 2);
+        context.stroke();
+        context.setLineDash([]);
+        context.lineWidth = 5;
+        context.beginPath();
+        context.arc(x, y, radius + 7, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
+        context.stroke();
+        context.restore();
+    };
+    starCages.forEach((cage) => drawField(cage.x, cage.y, cage.radius, cage.remaining, cage.skill.cage_duration || 5, "#8bdcff"));
+    starSuppressionRings.forEach((ring) => drawField(ring.x, ring.y, ring.radius, ring.remaining, ring.skill.suppression_delay || 2.5, "#bda5ff"));
 }
 function showControlBlocked(action) {
     const reason = hasPlayerEffect("眩晕")
@@ -2443,7 +2474,7 @@ function drawGymRusher(rusher) {
     context.fillRect(-24, -31, 48, 5);
     context.fillStyle = "#ff795d";
     context.fillRect(-24, -31, 48 * Math.max(0, rusher.hp / rusher.maxHp), 5);
-    drawEffectIndicators(0, -49, rusher.effects);
+    drawEffectIndicators(0, 0, rusher.effects);
     context.restore();
 }
 function drawAirportPlane(plane) {
@@ -2519,9 +2550,10 @@ function drawTrafficCar(car) {
     context.restore();
 }
 function drawEffectIndicators(x, y, effects) {
-    const negativeEffects = ["眩晕", "禁锢", "减速", "强力减速", "中毒", "狂舞"]
-        .filter((effect) => (effects[effect] || 0) > 0);
-    if (!negativeEffects.length)
+    const activeEffects = Object.entries(effects)
+        .filter(([, remaining]) => remaining > 0)
+        .sort(([left], [right]) => left.localeCompare(right));
+    if (!activeEffects.length)
         return;
     const colorsByEffect = {
         "眩晕": "#ffe45c",
@@ -2530,23 +2562,43 @@ function drawEffectIndicators(x, y, effects) {
         "强力减速": "#e99cff",
         "中毒": "#9cff65",
         "狂舞": "#f1b95b",
+        "星环守护": "#8bdcff",
+        "星环禁锢": "#a7e8ff",
+        "星之压抑减速": "#75d7ff",
+        "星环减速": "#bda5ff",
+        "加速": "#76f0b0",
+        "攻速加成": "#ff8fc4",
+        "攻击力加成": "#ffb15c",
+        "荆棘护甲": "#b7ef55",
+        "月影护盾": "#bda5ff",
+        "御剑飞行": "#ffd98e",
+        "引燃": "#ff8a5b",
     };
+    const maxDurations = statusEffectMaxDurations.get(effects) || {};
+    activeEffects.forEach(([effect, remaining]) => {
+        if (remaining > (maxDurations[effect] || 0))
+            maxDurations[effect] = remaining;
+    });
+    Object.keys(maxDurations).forEach((effect) => {
+        if (!(effects[effect] > 0))
+            delete maxDurations[effect];
+    });
+    statusEffectMaxDurations.set(effects, maxDurations);
     context.save();
-    context.font = "bold 12px sans-serif";
-    context.textAlign = "center";
-    context.textBaseline = "middle";
-    negativeEffects.forEach((effect, index) => {
-        const label = `${locale.battle.effects[effect] || effect} ${Math.ceil(effects[effect])}s`;
-        const width = context.measureText(label).width + 16;
-        const xOffset = (index - (negativeEffects.length - 1) / 2) * (width + 4);
-        roundedRect(context, x + xOffset - width / 2, y - 16, width, 22, 6);
-        context.fillStyle = "#090d16eF";
-        context.fill();
-        context.strokeStyle = colorsByEffect[effect] || "#ffffff";
-        context.lineWidth = 1.5;
+    activeEffects.forEach(([effect, remaining], index) => {
+        const radius = 23 + index * 4;
+        const progress = Math.max(0, Math.min(1, remaining / maxDurations[effect]));
+        context.lineWidth = 2.5;
+        context.strokeStyle = "#111827bb";
+        context.beginPath();
+        context.arc(x, y, radius, 0, Math.PI * 2);
         context.stroke();
-        context.fillStyle = colorsByEffect[effect] || "#ffffff";
-        context.fillText(label, x + xOffset, y - 5);
+        context.strokeStyle = colorsByEffect[effect] || "#ffffff";
+        context.shadowColor = context.strokeStyle;
+        context.shadowBlur = 6;
+        context.beginPath();
+        context.arc(x, y, radius, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
+        context.stroke();
     });
     context.restore();
 }
@@ -2619,7 +2671,7 @@ function drawEnemy(enemy) {
             context.arc(0, 0, size + 5, 0, Math.PI * 2);
             context.stroke();
         }
-        drawEffectIndicators(0, -size - 34, enemy.effects);
+        drawEffectIndicators(0, 0, enemy.effects);
         context.restore();
         return;
     }
@@ -2655,7 +2707,7 @@ function drawEnemy(enemy) {
             context.arc(0, 0, 32, 0, Math.PI * 2);
             context.stroke();
         }
-        drawEffectIndicators(0, -56, enemy.effects);
+        drawEffectIndicators(0, 0, enemy.effects);
         context.restore();
         return;
     }
@@ -2684,7 +2736,7 @@ function drawEnemy(enemy) {
         context.fillRect(-22, -29, 44, 5);
         context.fillStyle = "#7df3e6";
         context.fillRect(-22, -29, 44 * Math.max(0, enemy.hp / enemy.maxHp), 5);
-        drawEffectIndicators(0, -53, enemy.effects);
+        drawEffectIndicators(0, 0, enemy.effects);
         context.restore();
         return;
     }
@@ -2720,7 +2772,7 @@ function drawEnemy(enemy) {
         context.arc(0, 0, size + 4, 0, Math.PI * 2);
         context.stroke();
     }
-    drawEffectIndicators(0, -size - 22, enemy.effects);
+    drawEffectIndicators(0, 0, enemy.effects);
     context.restore();
 }
 function drawFloatingTexts() {
@@ -2951,8 +3003,9 @@ function updateGymRushers(dt) {
         }
         const slowMultiplier = enemySlowMultiplier(rusher);
         const movementMultiplier = rusher.effects["眩晕"] || rusher.effects["禁锢"] ? 0 : slowMultiplier;
-        rusher.x += rusher.vx * dt * movementMultiplier;
-        rusher.y += rusher.vy * dt * movementMultiplier;
+        const nextPosition = constrainToStarCages(rusher, rusher.x + rusher.vx * dt * movementMultiplier, rusher.y + rusher.vy * dt * movementMultiplier);
+        rusher.x = nextPosition.x;
+        rusher.y = nextPosition.y;
         rusher.life -= dt;
         let impacted = false;
         for (const victim of targets) {
@@ -3492,6 +3545,50 @@ function drawSkillVisuals() {
             context.arc(visual.x, visual.y, radius * 0.88, 0, Math.PI * 2);
             context.stroke();
         }
+        else if (visual.type === "ring-shot") {
+            const x = visual.x + (visual.targetX - visual.x) * progress;
+            const y = visual.y + (visual.targetY - visual.y) * progress;
+            const radius = (visual.radius || 14) * (0.75 + progress * 0.25);
+            context.shadowColor = visual.color;
+            context.shadowBlur = 18;
+            context.strokeStyle = visual.color;
+            context.lineWidth = 4;
+            context.beginPath();
+            context.arc(x, y, radius, 0, Math.PI * 2);
+            context.stroke();
+            context.strokeStyle = "#ffffff";
+            context.lineWidth = 1.5;
+            context.beginPath();
+            context.arc(x, y, radius * 0.6, 0, Math.PI * 2);
+            context.stroke();
+        }
+        else if (visual.type === "star") {
+            const x = visual.x + (visual.targetX - visual.x) * progress;
+            const y = visual.y + (visual.targetY - visual.y) * progress;
+            const radius = visual.radius || 14;
+            context.translate(x, y);
+            context.rotate(progress * Math.PI * 4);
+            context.shadowColor = visual.color;
+            context.shadowBlur = 20;
+            context.fillStyle = visual.color;
+            context.beginPath();
+            for (let point = 0; point < 10; point += 1) {
+                const angle = -Math.PI / 2 + point * Math.PI / 5;
+                const distance = point % 2 === 0 ? radius : radius * 0.42;
+                const pointX = Math.cos(angle) * distance;
+                const pointY = Math.sin(angle) * distance;
+                if (point === 0)
+                    context.moveTo(pointX, pointY);
+                else
+                    context.lineTo(pointX, pointY);
+            }
+            context.closePath();
+            context.fill();
+            context.fillStyle = "#ffffff";
+            context.beginPath();
+            context.arc(0, 0, radius * 0.18, 0, Math.PI * 2);
+            context.fill();
+        }
         else if (visual.type === "trail") {
             const dx = visual.targetX - visual.x;
             const dy = visual.targetY - visual.y;
@@ -3803,10 +3900,11 @@ function moveEnemyToward(enemy, target, distance, dt) {
     const travel = Math.min(distance, length);
     const nextX = enemy.x + dx / length * travel;
     const nextY = enemy.y + dy / length * travel;
-    if (!isEnemyPositionBlocked(nextX, enemy.y))
-        enemy.x = nextX;
-    if (!isEnemyPositionBlocked(enemy.x, nextY))
-        enemy.y = nextY;
+    const resolved = constrainToStarCages(enemy, nextX, nextY);
+    if (!isEnemyPositionBlocked(resolved.x, enemy.y))
+        enemy.x = resolved.x;
+    if (!isEnemyPositionBlocked(enemy.x, resolved.y))
+        enemy.y = resolved.y;
 }
 function movePlayerToward(targetX, targetY, distance) {
     if (playerMovementLocked())
@@ -4112,6 +4210,22 @@ function healFromDamage(damage, x, y) {
     updateHud();
 }
 function applyPlayerDamage(damage, attacker) {
+    if (heroPassive.id === "star_energy" && (statusEffects["星环守护"] || 0) > 0 && starGuardCharges > 0) {
+        starGuardCharges -= 1;
+        starEnergy = Math.min(6, starEnergy + 3);
+        if (starEnergy >= 6)
+            starEmpowered = true;
+        addFloatingText(player.x, player.y - 38, "✦ +3", "#8bdcff");
+        const guardSkill = config.skills.find((skill) => skill.action === "star_guard");
+        if ((skillProgress.get(guardSkill?.id || "")?.tier || 1) >= 3) {
+            enemies.forEach((enemy) => {
+                if (enemy.hp > 0 && distanceTo(enemy.x, enemy.y) <= getPlayerAttackRange()) {
+                    hitEnemy(enemy, damage * (guardSkill?.guard_reflect_multiplier || 2));
+                }
+            });
+        }
+        return false;
+    }
     if (player.invulnerable) {
         addFloatingText(player.x, player.y - 34, t("float.invulnerable_dodge"), "#ff8a00");
         return false;
@@ -4186,8 +4300,9 @@ function updateDuelBot(bot, dt) {
             direction = -0.55;
         if (direction !== 0) {
             const speed = bot.speed * enemySlowMultiplier(bot, 0.5) * dt * direction;
-            bot.x = Math.max(38, Math.min(map.width - 38, bot.x + (player.x - bot.x) / distance * speed));
-            bot.y = Math.max(38, Math.min(map.height - 38, bot.y + (player.y - bot.y) / distance * speed));
+            const next = constrainToStarCages(bot, Math.max(38, Math.min(map.width - 38, bot.x + (player.x - bot.x) / distance * speed)), Math.max(38, Math.min(map.height - 38, bot.y + (player.y - bot.y) / distance * speed)));
+            bot.x = next.x;
+            bot.y = next.y;
         }
     }
     bot.attackTimer = Math.max(0, bot.attackTimer - dt);
@@ -4239,8 +4354,9 @@ function knockbackEnemyInDirection(enemy, distance, directionX, directionY) {
             !duelArena && blockedByRects(nextX, nextY, 17);
         if (blocked)
             break;
-        enemy.x = nextX;
-        enemy.y = nextY;
+        const resolved = constrainToStarCages(enemy, nextX, nextY);
+        enemy.x = resolved.x;
+        enemy.y = resolved.y;
     }
     skillVisuals.push({
         type: "aura",
@@ -4346,6 +4462,7 @@ function queuePvpAction(kind, targets, skillId, castId) {
         id: `${config.multiplayer.player_id}-${Date.now()}-${attackSequence++}`,
         kind,
         ...(skillId ? { skill_id: skillId } : {}),
+        ...(skillId ? { skill_tier: skillProgress.get(skillId)?.tier || 1 } : {}),
         ...(castId ? { cast_id: castId } : {}),
         target_ids: targetIds,
     });
@@ -4837,10 +4954,11 @@ function advanceSakuraStorms(dt) {
                 const step = Math.min(distance, 380 * dt);
                 const nextX = enemy.x + dx / distance * step;
                 const nextY = enemy.y + dy / distance * step;
-                if (!isEnemyPositionBlocked(nextX, enemy.y))
-                    enemy.x = nextX;
-                if (!isEnemyPositionBlocked(enemy.x, nextY))
-                    enemy.y = nextY;
+                const resolved = constrainToStarCages(enemy, nextX, nextY);
+                if (!isEnemyPositionBlocked(resolved.x, enemy.y))
+                    enemy.x = resolved.x;
+                if (!isEnemyPositionBlocked(enemy.x, resolved.y))
+                    enemy.y = resolved.y;
             });
         }
         if (!storm.resolved && storm.elapsed >= storm.pull) {
@@ -5013,9 +5131,10 @@ function castDualToneE(skill) {
                 const step = Math.max(0, distance - stopDistance);
                 const nextX = enemy.x + dx * step;
                 const nextY = enemy.y + dy * step;
-                if (!isEnemyPositionBlocked(nextX, nextY, 18)) {
-                    enemy.x = nextX;
-                    enemy.y = nextY;
+                const resolved = constrainToStarCages(enemy, nextX, nextY);
+                if (!isEnemyPositionBlocked(resolved.x, resolved.y, 18)) {
+                    enemy.x = resolved.x;
+                    enemy.y = resolved.y;
                 }
             }
         });
@@ -5114,9 +5233,10 @@ function advanceDualToneLink(dt) {
             const step = distance - stopDistance;
             const nextX = enemy.x + (player.x - enemy.x) / distance * step;
             const nextY = enemy.y + (player.y - enemy.y) / distance * step;
-            if (!isEnemyPositionBlocked(nextX, nextY, 18)) {
-                enemy.x = nextX;
-                enemy.y = nextY;
+            const resolved = constrainToStarCages(enemy, nextX, nextY);
+            if (!isEnemyPositionBlocked(resolved.x, resolved.y, 18)) {
+                enemy.x = resolved.x;
+                enemy.y = resolved.y;
             }
         }
         hitEnemy(enemy, link.skill.damage, "眩晕", link.skill.effect_turns);
@@ -5848,6 +5968,156 @@ function castBballCrossover(skill) {
     }, (duration + delay) * 1000);
     addSkillVisual(skill);
 }
+function castStarCage(skill, target) {
+    const radius = skill.radius || 150;
+    const duration = skill.cage_duration || 5;
+    starCages.push({
+        x: target.x,
+        y: target.y,
+        radius,
+        remaining: duration,
+        tickTimer: 0,
+        skill,
+        trapped: new Set(enemies.filter((enemy) => enemy.hp > 0 && !enemy.friendlySummon && Math.hypot(enemy.x - target.x, enemy.y - target.y) <= radius)),
+    });
+    starCages[starCages.length - 1].trapped.forEach((enemy) => {
+        enemy.effects["星环禁锢"] = Math.max(enemy.effects["星环禁锢"] || 0, duration);
+    });
+    queuePvpAttack("skill", nearbyPvpTargets(target.x, target.y, radius), skill.id);
+    skillVisuals.push({
+        type: "ring", x: target.x, y: target.y, targetX: 0, targetY: 0,
+        age: 0, duration: 0.65, color: "#8bdcff", radius,
+    });
+    showToast(t("star.cage", { hits: starCages[starCages.length - 1].trapped.size, seconds: duration }));
+}
+function castStarGuard(skill) {
+    const tier = skillProgress.get(skill.id)?.tier || 1;
+    starGuardCharges = (skill.guard_charges || 1) + (tier >= 2 ? 1 : 0);
+    statusEffects["星环守护"] = skill.effect_turns;
+    skillVisuals.push({
+        type: "aura", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
+        age: 0, duration: 0.7, color: "#8bdcff", radius: 54,
+    });
+    showToast(t("star.guard", { charges: starGuardCharges, seconds: skill.effect_turns }));
+}
+function castStarSuppression(skill, target) {
+    const tier = skillProgress.get(skill.id)?.tier || 1;
+    const targetCount = tier >= 3 ? skill.suppression_target_count || 2 : 1;
+    const selected = enemies
+        .filter((enemy) => enemy.hp > 0 && !enemy.friendlySummon && distanceTo(enemy.x, enemy.y) <= getPlayerAttackRange())
+        .sort((left, right) => distanceTo(left.x, left.y) - distanceTo(right.x, right.y))
+        .slice(0, targetCount);
+    if (!selected.length)
+        selected.push(target);
+    const doubleDuration = tier >= 3 && selected.length === 1;
+    const stunDuration = skill.effect_turns * (doubleDuration ? 2 : 1);
+    const slowDuration = (skill.suppression_slow_duration || 3) * (doubleDuration ? 2 : 1);
+    const radius = skill.radius || 135;
+    selected.forEach((center) => {
+        const victims = enemies.filter((enemy) => enemy.hp > 0 && !enemy.friendlySummon &&
+            Math.hypot(enemy.x - center.x, enemy.y - center.y) <= radius);
+        victims.forEach((enemy) => {
+            enemy.effects["眩晕"] = Math.max(enemy.effects["眩晕"] || 0, stunDuration);
+            enemy.effects["星之压抑减速"] = Math.max(enemy.effects["星之压抑减速"] || 0, slowDuration);
+        });
+        const totalPulses = tier >= 2 ? 3 : 1;
+        starSuppressionRings.push({
+            x: center.x,
+            y: center.y,
+            radius,
+            remaining: skill.suppression_delay || 2.5,
+            pulseTimer: 0,
+            totalPulses,
+            pulsesLeft: totalPulses,
+            skill,
+            targets: new Set(victims),
+        });
+        skillVisuals.push({
+            type: "ring", x: center.x, y: center.y, targetX: 0, targetY: 0,
+            age: 0, duration: 0.55, color: "#bda5ff", radius,
+        });
+    });
+    const pvpTargets = selected.flatMap((center) => nearbyPvpTargets(center.x, center.y, radius));
+    queuePvpAttack("skill", pvpTargets, skill.id);
+    showToast(t("star.suppression", { hits: selected.length, seconds: stunDuration }));
+}
+function constrainToStarCages(enemy, x, y) {
+    let constrained = { x, y };
+    starCages.forEach((cage) => {
+        const distance = Math.hypot(constrained.x - cage.x, constrained.y - cage.y);
+        if (!cage.trapped.has(enemy) && distance <= cage.radius)
+            cage.trapped.add(enemy);
+        if (!cage.trapped.has(enemy) || distance <= cage.radius - 18)
+            return;
+        const angle = Math.atan2(constrained.y - cage.y, constrained.x - cage.x);
+        constrained = {
+            x: cage.x + Math.cos(angle) * (cage.radius - 18),
+            y: cage.y + Math.sin(angle) * (cage.radius - 18),
+        };
+    });
+    return constrained;
+}
+function advanceStarFields(dt) {
+    for (let index = starCages.length - 1; index >= 0; index -= 1) {
+        const cage = starCages[index];
+        cage.remaining = Math.max(0, cage.remaining - dt);
+        cage.tickTimer -= dt;
+        while (cage.tickTimer <= 0 && cage.remaining > 0) {
+            cage.tickTimer += cage.skill.cage_tick_interval || 0.5;
+            const tier = skillProgress.get(cage.skill.id)?.tier || 1;
+            enemies.forEach((enemy) => {
+                if (enemy.hp <= 0 || enemy.friendlySummon ||
+                    Math.hypot(enemy.x - cage.x, enemy.y - cage.y) > cage.radius)
+                    return;
+                cage.trapped.add(enemy);
+                enemy.effects["星环禁锢"] = Math.max(enemy.effects["星环禁锢"] || 0, Math.min(0.6, cage.remaining));
+                const stunInterval = tier >= 2 ? cage.skill.cage_stun_interval || 0.5 : 0;
+                const stunDuration = tier >= 2 ? cage.skill.cage_stun_duration || 0.5 : 0;
+                hitEnemy(enemy, cage.skill.damage * (tier >= 3 ? cage.skill.cage_damage_scale || 1.3 : 1), stunInterval > 0 ? "眩晕" : "", stunDuration);
+                if (tier >= 3) {
+                    enemy.effects["星环减速"] = Math.max(enemy.effects["星环减速"] || 0, cage.skill.cage_tick_interval || 0.5);
+                }
+            });
+        }
+        if (cage.remaining <= 0) {
+            cage.trapped.forEach((enemy) => {
+                if (!starCages.some((other, otherIndex) => otherIndex !== index && other.trapped.has(enemy))) {
+                    delete enemy.effects["星环禁锢"];
+                }
+            });
+            starCages.splice(index, 1);
+        }
+    }
+    for (let index = starSuppressionRings.length - 1; index >= 0; index -= 1) {
+        const ring = starSuppressionRings[index];
+        ring.targets.forEach((enemy) => {
+            if (Math.hypot(enemy.x - ring.x, enemy.y - ring.y) > ring.radius)
+                ring.targets.delete(enemy);
+        });
+        if (ring.remaining > 0)
+            ring.remaining = Math.max(0, ring.remaining - dt);
+        else
+            ring.pulseTimer -= dt;
+        if (ring.remaining > 0 || ring.pulseTimer > 0)
+            continue;
+        const targets = [...ring.targets].filter((enemy) => enemy.hp > 0 && Math.hypot(enemy.x - ring.x, enemy.y - ring.y) <= ring.radius);
+        if (!targets.length) {
+            starSuppressionRings.splice(index, 1);
+            continue;
+        }
+        const firstExplosion = ring.pulsesLeft === ring.totalPulses;
+        targets.forEach((enemy) => {
+            hitEnemy(enemy, ring.skill.damage, firstExplosion ? "眩晕" : "", firstExplosion ? 1 : 0);
+        });
+        ring.pulsesLeft -= 1;
+        if (ring.pulsesLeft <= 0) {
+            starSuppressionRings.splice(index, 1);
+        }
+        else {
+            ring.pulseTimer = ring.skill.suppression_interval || 0.5;
+        }
+    }
+}
 function castSkill(index) {
     if (skillIsPaused())
         return;
@@ -6175,6 +6445,15 @@ function castSkill(index) {
     else if (skill.action === "dual_tone_ult") {
         startDualToneUltimate(skill);
     }
+    else if (skill.action === "star_guard") {
+        castStarGuard(skill);
+    }
+    else if (skill.action === "star_cage" && target) {
+        castStarCage(skill, target);
+    }
+    else if (skill.action === "star_suppression" && target) {
+        castStarSuppression(skill, target);
+    }
     else if (skill.action === "dual_tone_e") {
         castDualToneE(skill);
     }
@@ -6224,8 +6503,23 @@ function basicAttack() {
     const range = getPlayerAttackRange();
     const target = nearestEnemy(range);
     const remoteTarget = nearestRemoteAt(player.x, player.y, range);
+    if (heroPassive.id === "star_energy") {
+        if (remoteTarget && (!target || distanceTo(remoteTarget.x, remoteTarget.y) < distanceTo(target.x, target.y))) {
+            return basicAttackStar(undefined, remoteTarget);
+        }
+        if (!target) {
+            showToast(t("basic.out_of_range", { range: heroCombat.basic_range }), "warning");
+            return false;
+        }
+        return basicAttackStar(target);
+    }
     if (remoteTarget && (!target || distanceTo(remoteTarget.x, remoteTarget.y) < distanceTo(target.x, target.y))) {
         if (heroPassive.id === "bball_magazine") {
+            if (!bballInfiniteAmmo) {
+                bballMagazine = Math.max(0, bballMagazine - 1);
+                if (bballMagazine <= 0)
+                    bballReloadTimer = 1.5;
+            }
             skillVisuals.push({
                 type: "ball", x: player.x, y: player.y, targetX: remoteTarget.x, targetY: remoteTarget.y,
                 age: 0, duration: 0.22, color: "#ff8a5b", radius: 11,
@@ -6319,6 +6613,7 @@ function basicAttack() {
 }
 /** 霓虹拳王被动：每普攻 1 次叠加攻速。 */
 function onPlayerBasicAttack() {
+    passiveState.basicAttacks += 1;
     const gains = heroPassive.on_basic_attack;
     if (gains) {
         Object.entries(gains).forEach(([stat, amount]) => addPassiveStat(stat, amount));
@@ -6329,7 +6624,66 @@ function onPlayerBasicAttack() {
         player.speed = heroCombat.speed * skaterSpeedMultiplier + (equipmentBonuses.speed || 0);
         addFloatingText(player.x, player.y - 44, `+${Math.round((skaterSpeedMultiplier - 1) * 100)}%`, "#ff8a00");
     }
+    if (heroPassive.id === "star_energy" && !starEmpowered) {
+        starEnergy = Math.min(6, starEnergy + 1);
+        if (starEnergy === 6) {
+            starEmpowered = true;
+            addFloatingText(player.x, player.y - 48, tx("星能已充满"), "#8bdcff");
+        }
+        else {
+            addFloatingText(player.x, player.y - 42, `✦ ${starEnergy}/6`, "#8bdcff");
+        }
+    }
     updateHud();
+}
+function basicAttackStar(target, remoteTarget) {
+    basicAttackTimer = getBasicAttackCooldown();
+    const wasEmpowered = starEmpowered;
+    if (wasEmpowered) {
+        starEmpowered = false;
+        starEnergy = 0;
+    }
+    const targetX = target?.x ?? remoteTarget.x;
+    const targetY = target?.y ?? remoteTarget.y;
+    const closeRange = Math.hypot(targetX - player.x, targetY - player.y) < 150;
+    const baseRadius = closeRange ? 90 : 55;
+    const impactRadius = wasEmpowered ? baseRadius * 3 : baseRadius;
+    skillVisuals.push({
+        type: closeRange ? "ring-shot" : "star",
+        x: player.x, y: player.y, targetX, targetY,
+        age: 0, duration: closeRange ? 0.32 : 0.28,
+        color: "#8bdcff", radius: 15,
+    });
+    skillVisuals.push({
+        type: "ring", x: targetX, y: targetY, targetX: 0, targetY: 0,
+        age: 0, duration: 0.28, color: "#8bdcff", radius: impactRadius,
+    });
+    if (target) {
+        const victims = enemies.filter((enemy) => enemy.hp > 0 && !enemy.friendlySummon &&
+            Math.hypot(enemy.x - targetX, enemy.y - targetY) <= impactRadius);
+        victims.forEach((enemy) => {
+            hitEnemy(enemy, heroCombat.basic_damage + playerState.equipmentAttackBonus, wasEmpowered ? "眩晕" : "", wasEmpowered ? 1 : 0);
+            if (wasEmpowered) {
+                enemy.effects["减速"] = Math.max(enemy.effects["减速"] || 0, 3);
+            }
+            else if (closeRange) {
+                enemy.effects["减速"] = Math.max(enemy.effects["减速"] || 0, 0.5);
+            }
+        });
+    }
+    else if (remoteTarget) {
+        const pvpTargets = nearbyPvpTargets(targetX, targetY, impactRadius);
+        if (!pvpTargets.some((remote) => remote.player_id === remoteTarget.player_id))
+            pvpTargets.push(remoteTarget);
+        queuePvpAttack("basic", pvpTargets);
+    }
+    playerState.energy = Math.min(playerState.maxEnergy, playerState.energy + 5);
+    showToast(wasEmpowered
+        ? t("star.empowered_attack", { radius: Math.round(impactRadius) })
+        : tx(closeRange ? "星环横扫" : "星星飞射"));
+    onPlayerBasicAttack();
+    updateHud();
+    return true;
 }
 function getPlayerAttackRange() {
     return heroCombat.basic_range + playerState.passiveRangeBonus;
@@ -6522,6 +6876,8 @@ function updateCombat(dt) {
         statusEffects[effect] = Math.max(0, statusEffects[effect] - dt);
         if (statusEffects[effect] <= 0) {
             delete statusEffects[effect];
+            if (effect === "星环守护")
+                starGuardCharges = 0;
             if (effect === "月影护盾") {
                 playerState.shield = 0;
                 updateHud();
@@ -6534,6 +6890,7 @@ function updateCombat(dt) {
     advanceDualToneSongs(dt);
     advanceSakuraEffects(dt);
     advanceJianghuRain(dt);
+    advanceStarFields(dt);
     // 剧情战斗走剧本事件，不再叠加地图随机事件（避免同一波里两套意外伤害）
     if (!storyBattle)
         updateRandomMapEvents(dt);
@@ -6692,8 +7049,96 @@ function drawPlayer() {
     context.fillStyle = "#f1f5f9";
     context.font = "12px sans-serif";
     context.fillText(config.name, 0, -34);
-    drawEffectIndicators(0, -56, statusEffects);
+    drawEffectIndicators(0, 0, statusEffects);
+    drawPassiveProgress();
     context.restore();
+}
+function drawPassiveProgress() {
+    const meter = getPassiveMeter();
+    const progress = Math.max(0, Math.min(1, meter.progress));
+    const centerY = 31;
+    context.save();
+    context.lineWidth = 3;
+    context.strokeStyle = "#10131eee";
+    context.beginPath();
+    context.arc(0, centerY, 15, 0, Math.PI * 2);
+    context.stroke();
+    context.strokeStyle = meter.color;
+    context.shadowColor = context.strokeStyle;
+    context.shadowBlur = 8;
+    context.beginPath();
+    context.arc(0, centerY, 15, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
+    context.stroke();
+    context.shadowBlur = 0;
+    context.fillStyle = "#f1f5f9";
+    context.font = "bold 12px sans-serif";
+    context.textAlign = "left";
+    context.textBaseline = "middle";
+    context.fillText(meter.value, 22, centerY);
+    context.restore();
+}
+function getPassiveMeter() {
+    const cycleProgress = (stacks) => (stacks % 10) / 10;
+    switch (heroPassive.id) {
+        case "volt_limit_break":
+            return { value: String(passiveState.basicAttacks), progress: cycleProgress(passiveState.basicAttacks), color: "#ff4fa3" };
+        case "moss_gift": {
+            const stacks = Math.max(0, Math.round((playerState.lifesteal - 0.1) / 0.01));
+            return { value: String(stacks), progress: cycleProgress(passiveState.kills), color: "#b7ef55" };
+        }
+        case "luna_expansion": {
+            const stacks = Math.round(playerState.passiveRangeBonus / 5);
+            return { value: String(stacks), progress: cycleProgress(stacks), color: "#8c9aff" };
+        }
+        case "tech_overclock":
+            return { value: String(passiveState.techBonus), progress: (passiveState.kills % 20) / 20, color: "#49e6e0" };
+        case "pipa_endless": {
+            const frenzyGoal = heroPassive.frenzy_kills || 1;
+            const minionGoal = heroPassive.minion_kills || 1;
+            return {
+                value: String(passiveState.minionBonus),
+                progress: Math.max((passiveState.frenzyKills % frenzyGoal) / frenzyGoal, (passiveState.minionKills % minionGoal) / minionGoal),
+                color: "#f1b95b",
+            };
+        }
+        case "volt2_resonance": {
+            const stacks = enemies.reduce((maximum, enemy) => Math.max(maximum, enemy.resonanceStacks || 0), 0);
+            return {
+                value: String(stacks),
+                progress: stacks / Math.max(1, heroPassive.stack_required || 3),
+                color: "#ff5cf0",
+            };
+        }
+        case "sakura_ignite": {
+            const maximumBurn = enemies.reduce((maximum, enemy) => enemy.effects["引燃"] > 0 ? Math.max(maximum, enemy.igniteDamage || 0) : maximum, 0);
+            const base = Math.max(1, playerState.maxHp * (heroPassive.ignite_dps_ratio || 0.05));
+            const scale = heroPassive.ignite_bonus_scale || 1.1;
+            const cap = heroPassive.ignite_max_scale || 4;
+            const stacks = maximumBurn > base && scale > 1 ? Math.round(Math.log(maximumBurn / base) / Math.log(scale)) : 0;
+            return { value: String(stacks), progress: maximumBurn / (base * cap), color: "#ff8fc4" };
+        }
+        case "jianghu_execute": {
+            const target = nearestEnemy(getPlayerAttackRange());
+            const chance = target && target.maxHp > 0
+                ? Math.min(0.95, Math.max(0, 1 - target.hp / target.maxHp) * 100 * (heroPassive.execute_per_percent || 0))
+                : 0;
+            return { value: String(Math.round(chance * 100)), progress: chance / 0.95, color: "#ffd98e" };
+        }
+        case "skater_momentum":
+            return { value: String(passiveState.basicAttacks), progress: cycleProgress(passiveState.basicAttacks), color: "#ff8a00" };
+        case "bball_magazine":
+            return {
+                value: bballInfiniteAmmo ? "∞" : String(bballMagazine),
+                progress: bballInfiniteAmmo ? 1 : bballMagazine / Math.max(1, bballMagazineMax),
+                color: "#ff8a5b",
+            };
+        case "dual_tone_forms":
+            return { value: dualToneForm === "guqin" ? "1" : "2", progress: dualToneForm === "guqin" ? 0.5 : 1, color: dualToneColor() };
+        case "star_energy":
+            return { value: String(starEnergy), progress: starEmpowered ? 1 : starEnergy / 6, color: "#8bdcff" };
+        default:
+            return { value: "0", progress: 0, color: heroColors.main };
+    }
 }
 function drawRemotePlayers() {
     remotePlayers.forEach((remote) => {
@@ -6739,7 +7184,7 @@ function drawRemotePlayers() {
         context.fillStyle = "#f1f5f9";
         context.font = "12px sans-serif";
         context.fillText(`${remote.name} ${remote.hp}${remote.shield > 0 ? `+${remote.shield}` : ""}/${remote.max_hp}`, 0, -33);
-        drawEffectIndicators(0, 48, remote.effects);
+        drawEffectIndicators(0, 0, remote.effects);
         context.restore();
     });
     if (config.multiplayer) {
@@ -6792,6 +7237,11 @@ async function syncMultiplayer() {
             playerState.maxHp = result.self.max_hp;
             playerState.energy = result.self.energy;
             playerState.maxEnergy = result.self.max_energy;
+            if (heroPassive.id === "star_energy") {
+                starEnergy = result.self.star_energy ?? starEnergy;
+                starEmpowered = starEnergy >= 6;
+                starGuardCharges = result.self.star_guard_charges ?? starGuardCharges;
+            }
             player.x = result.self.x;
             player.y = result.self.y;
             Object.keys(statusEffects).forEach((effect) => {
@@ -6965,6 +7415,7 @@ function drawFrame(timestamp) {
     context.translate(-camera.x, -camera.y);
     drawMap();
     drawWorldEffects();
+    drawStarFields();
     drawSkillVisuals();
     drawPlayer();
     drawRemotePlayers();
