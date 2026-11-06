@@ -6,10 +6,14 @@ import app as game
 class MultiplayerModeTests(unittest.TestCase):
     def setUp(self):
         game.ROOMS.clear()
+        game.MP_HALL_PLAYERS.clear()
+        game.MP_HALL_INVITATIONS.clear()
         self.client = game.app.test_client()
 
     def tearDown(self):
         game.ROOMS.clear()
+        game.MP_HALL_PLAYERS.clear()
+        game.MP_HALL_INVITATIONS.clear()
 
     def create_room(self, mode):
         response = self.client.post(
@@ -24,6 +28,70 @@ class MultiplayerModeTests(unittest.TestCase):
             "/api/mp/rooms/join",
             json={"room_id": room_id, "name": name, "mode": mode},
         )
+
+    def hall_heartbeat(self, player_id, name, x=500, y=350):
+        return self.client.post(
+            "/api/mp/hall",
+            json={"player_id": player_id, "name": name, "x": x, "y": y},
+        )
+
+    def test_hall_presence_and_room_invitations(self):
+        host_presence = self.hall_heartbeat("hall-host", "Host").get_json()["self"]
+        guest_presence = self.hall_heartbeat("hall-guest", "Guest", 600, 360).get_json()["self"]
+        self.assertNotEqual((host_presence["x"], host_presence["y"]), (guest_presence["x"], guest_presence["y"]))
+
+        host_view = self.client.get("/api/mp/hall?player_id=hall-host").get_json()
+        self.assertEqual(len(host_view["players"]), 1)
+        self.assertEqual(host_view["players"][0]["player_id"], "hall-guest")
+
+        created = self.client.post(
+            "/api/mp/rooms",
+            json={"name": "Host", "mode": "duel", "hall_player_id": "hall-host"},
+        ).get_json()
+        room_id = created["room"]["room_id"]
+        invitation = self.client.post(
+            "/api/mp/hall/invitations",
+            json={
+                "player_id": "hall-host",
+                "target_id": "hall-guest",
+                "room_id": room_id,
+                "mode": "duel",
+            },
+        )
+        self.assertEqual(invitation.status_code, 200)
+        guest_view = self.client.get("/api/mp/hall?player_id=hall-guest").get_json()
+        self.assertEqual(guest_view["invitations"][0]["room_id"], room_id)
+        self.assertEqual(
+            self.client.get("/api/mp/hall?player_id=hall-host").get_json()["invitations"],
+            [],
+        )
+
+        rejected = self.client.post(
+            "/api/mp/hall/invitations",
+            json={
+                "player_id": "hall-host",
+                "target_id": "hall-guest",
+                "room_id": room_id,
+                "mode": "rogue",
+            },
+        )
+        self.assertEqual(rejected.status_code, 409)
+
+        self.client.delete("/api/mp/hall?player_id=hall-guest")
+        self.assertEqual(
+            self.client.get("/api/mp/hall?player_id=hall-host").get_json()["players"],
+            [],
+        )
+        self.assertEqual(game.MP_HALL_INVITATIONS, {})
+
+    def test_hall_presence_rejects_missing_identity_and_invalid_coordinates(self):
+        missing_identity = self.client.post(
+            "/api/mp/hall",
+            json={"name": "Guest", "x": 500, "y": 350},
+        )
+        self.assertEqual(missing_identity.status_code, 400)
+        invalid_position = self.hall_heartbeat("hall-invalid", "Guest", 1200, 350)
+        self.assertEqual(invalid_position.status_code, 400)
 
     def start_room(self, room_id, host_id, guest_id):
         started = self.client.post(

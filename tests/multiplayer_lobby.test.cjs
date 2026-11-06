@@ -60,6 +60,7 @@ for (const id of [
   "waiting-players", "waiting-message", "mp-prep", "prep-countdown", "ready-toggle",
   "start-game", "mp-toast", "lan-addresses", "create-room", "join-toggle", "join-room",
   "leave-room", "current-room-code", "mp-selected-mode", "room-mode-label",
+  "mp-entry-overlay", "waiting-overlay",
 ]) {
   ids[id] = new El(id.includes("room-code") || id.includes("player-name") ? "input" : "div");
 }
@@ -182,6 +183,11 @@ const sandbox = {
     setItem: (k, v) => { store[k] = String(v); },
     removeItem: (k) => { delete store[k]; },
   },
+  sessionStorage: {
+    getItem: (k) => (k in store ? store[k] : null),
+    setItem: (k, v) => { store[k] = String(v); },
+    removeItem: (k) => { delete store[k]; },
+  },
   fetch: fakeFetch,
   setInterval: (fn) => { sandbox.__poll = fn; return 1; },
   clearInterval: () => { sandbox.__poll = null; },
@@ -216,6 +222,8 @@ sandbox.MP_INITIAL_MODE = "rogue";
 (async () => {
   // 模板里这两个面板带 hidden 属性，stub 需要手动还原初始状态
   ids["waiting-room"].hidden = true;
+  ids["mp-entry-overlay"].hidden = true;
+  ids["waiting-overlay"].hidden = true;
   ids["join-row"].hidden = true;
   ids["ready-toggle"].hidden = true;
   ids["start-game"].hidden = true;
@@ -226,7 +234,7 @@ sandbox.MP_INITIAL_MODE = "rogue";
   await new Promise((r) => setImmediate(r));
 
   check("开局没有残留房间面板", ids["waiting-room"].hidden === true);
-  check("入口面板可见", ids["mp-entry"].hidden === false);
+  check("手动房间码面板默认关闭", ids["mp-entry-overlay"].hidden === true);
   modeButtons[1].click();
   check("联机对抗模式被选中", modeButtons[1].classList.contains("selected") && ids["mp-selected-mode"].textContent === "联机对抗");
   modeButtons[0].click();
@@ -243,7 +251,7 @@ sandbox.MP_INITIAL_MODE = "rogue";
   ids["create-room"].click();
   await new Promise((r) => setImmediate(r));
 
-  check("创建后进入房间面板", ids["waiting-room"].hidden === false && ids["mp-entry"].hidden === true);
+  check("创建后进入房间面板", ids["waiting-room"].hidden === false && ids["waiting-overlay"].hidden === false);
   check("创建请求携带肉鸽房间模式", requests.some((r) => r.url === "/api/mp/rooms" && r.body.mode === "rogue"));
   check("房间码已写入", ids["current-room-code"].textContent === "ABC123");
   check("等待阶段不显示准备按钮", ids["ready-toggle"].hidden === true);
@@ -299,7 +307,7 @@ sandbox.MP_INITIAL_MODE = "rogue";
   roomState = { ...roomState, players: [roomState.players[0]] };
   releaseHolds();
   await new Promise((r) => setImmediate(r));
-  check("被移出房间后自动退出", ids["waiting-room"].hidden === true && ids["mp-entry"].hidden === false);
+  check("被移出房间后自动退出", ids["waiting-overlay"].hidden === true && ids["waiting-room"].hidden === true);
   check("被移出时有提示", ids["mp-toast"].textContent.includes("已离开房间或被移出"));
 
   // B. 点退出后，飞行中的轮询响应不再把房间画回来
@@ -310,14 +318,14 @@ sandbox.MP_INITIAL_MODE = "rogue";
   sandbox.__poll();
   ids["leave-room"].click();
   await new Promise((r) => setImmediate(r));
-  check("点退出后回到入口面板", ids["mp-entry"].hidden === false && ids["waiting-room"].hidden === true);
+  check("点退出后返回大厅地图", ids["mp-entry-overlay"].hidden === true && ids["waiting-overlay"].hidden === true);
   roomState = {
     ...roomState,
     players: [player("host-1", "房主", "volt", false), player("guest-1", "队友", "volt", false)],
   };
   releaseHolds();
   await new Promise((r) => setImmediate(r));
-  check("退出后过期响应不会重新渲染房间", ids["waiting-room"].hidden === true && ids["mp-entry"].hidden === false);
+  check("退出后过期响应不会重新渲染房间", ids["waiting-overlay"].hidden === true);
 
   console.log(`\n${passed} checks passed`);
 })();

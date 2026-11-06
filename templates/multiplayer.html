@@ -13,35 +13,70 @@
     <a class="brand" href="/"><img class="brand-mark brand-mark-image" src="{{ url_for('favicon', lang=lang) }}" alt=""><span><strong>{{ tr("PRODUCT_NAME") }}</strong><small>{{ tr("HOME_MULTIPLAYER") }}</small></span></a>
     <div class="topbar-actions"><a class="coin-pill" href="/shop" title="{{ tr('SHOP') }}"><span class="coin-pill-icon" aria-hidden="true">◈</span><b data-coin-balance>{{ "∞" if profile.infinite_coins else "{:,}".format(profile.coins) }}</b><small>{{ tr("SHOP") }}</small></a><div class="language-switch" data-language-switch></div><a class="exit-link" href="/">{{ tr("BACK_HOME") }} ×</a></div>
   </header>
-  <main class="mp-main">
-    <section class="mp-heading">
-      <p class="eyebrow">{{ tr("HOME_MULTIPLAYER") }}</p>
-      <h1>{{ tr("HOME_MULTIPLAYER") }}</h1>
-      <p>{{ tr("MP_HALL_INTRO") }}</p>
+  <main class="hall-shell">
+    <header class="hall-heading">
+      <div><p class="eyebrow">{{ tr("HOME_MULTIPLAYER") }}</p><h1>{{ tr("MP_HALL_MAP_TITLE") }}</h1><p>{{ tr("MP_HALL_MAP_HINT") }}</p></div>
+      <div class="hall-heading-actions">
+        <span class="hall-online-count"><i></i><b id="hall-online-count">1</b> {{ tr("MP_HALL_ONLINE") }}</span>
+        <button class="hall-code-button" id="mp-room-code-open" type="button">{{ tr("MP_HALL_ROOM_CODE") }}</button>
+      </div>
+    </header>
+    <section class="hall-viewport" id="hall-viewport" aria-label="{{ tr('MP_HALL_MAP_TITLE') }}">
+      <div class="hall-map" id="hall-map">
+        <div class="hall-ground-markings" aria-hidden="true"></div>
+        <div class="hall-zone hall-arena-zone" aria-hidden="true"><span>{{ tr("MP_HALL_ARENA") }}</span></div>
+        <div class="hall-zone hall-portal-zone" aria-hidden="true"><span>{{ tr("MP_HALL_PORTAL") }}</span></div>
+        <button class="hall-interactable arena-object" id="arena-object" type="button" data-hall-action="arena" aria-label="{{ tr('MP_HALL_ARENA_INTERACT') }}">
+          <span class="arena-ring"><i>VS</i></span><b>{{ tr("MP_HALL_ARENA") }}</b><small>{{ tr("MP_HALL_ARENA_INTERACT") }}</small><kbd>E</kbd>
+        </button>
+        <button class="hall-interactable portal-object" id="portal-object" type="button" data-hall-action="rogue" aria-label="{{ tr('MP_HALL_PORTAL_INTERACT') }}">
+          <span class="portal-gate"><i></i></span><b>{{ tr("MP_HALL_PORTAL") }}</b><small>{{ tr("MP_HALL_PORTAL_INTERACT") }}</small><kbd>E</kbd>
+        </button>
+        <div class="hall-player hall-self" id="hall-self"><span class="hall-player-name">{{ profile.username }}</span><i>{{ profile.username[:1] }}</i></div>
+        <div class="hall-players" id="hall-players"></div>
+      </div>
     </section>
+    <div class="hall-footer">
+      <div class="hall-interact-prompt" id="hall-interact-prompt"><kbd>E</kbd><span id="hall-interact-label">{{ tr("MP_HALL_WALK_HINT") }}</span></div>
+      <div class="hall-controls"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> {{ tr("MOVE") }}</span><small>{{ tr("MP_HALL_INTERACT_HINT") }}</small></div>
+      <div class="hall-touch-controls" aria-label="{{ tr('MOVE') }}">
+        <button type="button" data-move="up" aria-label="↑">↑</button><button type="button" data-move="left" aria-label="←">←</button><button type="button" data-move="down" aria-label="↓">↓</button><button type="button" data-move="right" aria-label="→">→</button>
+      </div>
+      <button class="hall-touch-interact" id="hall-touch-interact" type="button" aria-label="{{ tr('MP_HALL_INTERACT_HINT') }}">E</button>
+    </div>
+  </main>
 
-    <section class="mp-mode-picker" id="mp-mode-picker" aria-label="{{ tr('MP_MODE_PICKER') }}">
-      <button class="mp-mode-card" type="button" data-lobby-mode="ai">
-        <span class="mp-mode-icon">AI</span>
-        <span><b>{{ tr("MP_MODE_AI") }}</b><small>{{ tr("MP_MODE_AI_HINT") }}</small></span>
-        <i>›</i>
-      </button>
-      <button class="mp-mode-card" type="button" data-lobby-mode="duel">
-        <span class="mp-mode-icon pvp">1V1</span>
-        <span><b>{{ tr("MP_MODE_PVP") }}</b><small>{{ tr("MP_MODE_PVP_HINT") }}</small></span>
-        <i>›</i>
-      </button>
-      <button class="mp-mode-card" type="button" data-lobby-mode="rogue">
-        <span class="mp-mode-icon coop">CO-OP</span>
-        <span><b>{{ tr("MP_MODE_COOP") }}</b><small>{{ tr("MP_MODE_COOP_HINT") }}</small></span>
-        <i>›</i>
-      </button>
-    </section>
+  <section class="mp-overlay" id="arena-overlay" hidden>
+    <div class="mp-dialog" role="dialog" aria-modal="true" aria-labelledby="arena-title">
+      <button class="mp-dialog-close" data-close-overlay type="button" aria-label="{{ tr('SAVE_CLOSE') }}">×</button>
+      <p class="eyebrow">{{ tr("MP_HALL_ARENA") }}</p><h2 id="arena-title">{{ tr("MP_HALL_ARENA_TITLE") }}</h2>
+      <button class="hall-choice" id="arena-online" type="button"><b>{{ tr("MP_HALL_WAIT_OPPONENT") }}</b><small>{{ tr("MP_HALL_WAIT_OPPONENT_HINT") }}</small><i>›</i></button>
+      <button class="hall-choice" id="arena-ai" type="button"><b>{{ tr("MP_MODE_AI") }}</b><small>{{ tr("MP_MODE_AI_HINT") }}</small><i>›</i></button>
+    </div>
+  </section>
 
-    <section class="mp-panel mp-entry" id="mp-entry">
-      <h2><span id="mp-selected-mode">{{ tr("MP_MODE_COOP") }}</span><small>{{ tr("ROOM_LOBBY") }}</small></h2>
+  <section class="mp-overlay" id="invite-overlay" hidden>
+    <div class="mp-dialog" role="dialog" aria-modal="true" aria-labelledby="invite-title">
+      <button class="mp-dialog-close" data-close-overlay type="button" aria-label="{{ tr('SAVE_CLOSE') }}">×</button>
+      <p class="eyebrow">{{ tr("MP_HALL_INVITE") }}</p><h2 id="invite-title"><span id="invite-target-name"></span></h2>
+      <p class="mp-dialog-hint">{{ tr("MP_HALL_INVITE_PICK_MODE") }}</p>
+      <button class="hall-choice" id="invite-duel" type="button"><b>{{ tr("MP_MODE_PVP") }}</b><i>›</i></button>
+      <button class="hall-choice" id="invite-rogue" type="button"><b>{{ tr("MP_MODE_COOP") }}</b><i>›</i></button>
+    </div>
+  </section>
+
+  <section class="mp-overlay" id="mp-entry-overlay" hidden>
+    <section class="mp-panel mp-entry" id="mp-entry" role="dialog" aria-modal="true" aria-labelledby="entry-title">
+      <button class="mp-dialog-close" data-close-overlay type="button" aria-label="{{ tr('SAVE_CLOSE') }}">×</button>
+      <h2 id="entry-title"><span>{{ tr("MP_HALL_ROOM_CODE") }}</span><small>{{ tr("ROOM_LOBBY") }}</small></h2>
       <label class="mp-label" for="player-name">{{ tr("NICKNAME") }}</label>
       <input id="player-name" maxlength="20" value="{{ profile.username }}" placeholder="{{ tr('NICKNAME_PLACEHOLDER') }}" autocomplete="nickname" readonly>
+      <section class="mp-mode-picker" id="mp-mode-picker" aria-label="{{ tr('MP_MODE_PICKER') }}">
+        <button class="mp-mode-card" type="button" data-lobby-mode="ai"><span class="mp-mode-icon">AI</span><span><b>{{ tr("MP_MODE_AI") }}</b><small>{{ tr("MP_MODE_AI_HINT") }}</small></span><i>›</i></button>
+        <button class="mp-mode-card" type="button" data-lobby-mode="duel"><span class="mp-mode-icon pvp">1V1</span><span><b>{{ tr("MP_MODE_PVP") }}</b><small>{{ tr("MP_MODE_PVP_HINT") }}</small></span><i>›</i></button>
+        <button class="mp-mode-card" type="button" data-lobby-mode="rogue"><span class="mp-mode-icon coop">CO-OP</span><span><b>{{ tr("MP_MODE_COOP") }}</b><small>{{ tr("MP_MODE_COOP_HINT") }}</small></span><i>›</i></button>
+      </section>
+      <h3 id="mp-selected-mode">{{ tr("MP_MODE_COOP") }}</h3>
       <div class="mp-choice-row">
         <button class="mp-primary" id="create-room" type="button">{{ tr("CREATE_ROOM") }}</button>
         <button class="mp-primary mp-alt" id="join-toggle" type="button" aria-expanded="false">{{ tr("JOIN") }}</button>
@@ -50,43 +85,27 @@
         <input id="room-code" maxlength="6" placeholder="{{ tr('ROOM_CODE_PLACEHOLDER') }}">
         <button id="join-room" type="button">{{ tr("MP_ENTER_ROOM") }}</button>
       </div>
-      <div class="lan-address-panel">
-        <b>{{ tr("LAN_ADDRESS") }}</b>
-        <span id="lan-addresses">{{ tr("LOADING_LAN") }}</span>
-        <small>{{ tr("LAN_HELP") }}</small>
-      </div>
+      <div class="lan-address-panel"><b>{{ tr("LAN_ADDRESS") }}</b><span id="lan-addresses">{{ tr("LOADING_LAN") }}</span><small>{{ tr("LAN_HELP") }}</small></div>
     </section>
+  </section>
 
-    <section class="mp-panel waiting-panel" id="waiting-room" hidden>
+  <section class="mp-overlay" id="waiting-overlay" hidden>
+    <section class="mp-panel waiting-panel" id="waiting-room">
       <div class="panel-title">
-        <div>
-          <p class="eyebrow"><span id="room-mode-label"></span></p>
-          <h2>{{ tr("ROOM") }} <strong id="current-room-code"></strong></h2>
-        </div>
+        <div><p class="eyebrow"><span id="room-mode-label"></span></p><h2>{{ tr("ROOM") }} <strong id="current-room-code"></strong></h2></div>
         <button class="leave-button" id="leave-room" type="button">{{ tr("LEAVE_ROOM") }}</button>
       </div>
-      <div class="mp-prep" id="mp-prep" hidden>
-        <b id="prep-countdown">30</b>
-        <span>{{ tr("MP_PREP_HINT") }}</span>
-      </div>
+      <div class="mp-prep" id="mp-prep" hidden><b id="prep-countdown">30</b><span>{{ tr("MP_PREP_HINT") }}</span></div>
       <div class="waiting-players" id="waiting-players"></div>
       <div class="mp-room-actions">
-        <div class="mp-hero-picker">
-          <label class="mp-label" for="hero-select">{{ tr("MP_HERO_PICK") }}</label>
-          <select id="hero-select">
-            {% for hero in heroes %}
-            <option value="{{ hero.id }}" {% if hero.locked %}disabled{% endif %}>{{ hero.name }} · {{ hero.class_name }}{% if hero.locked %} · {{ tr("SHOP_LOCKED") }} ◈ {{ hero.price }}{% endif %}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="mp-room-buttons">
-          <button class="mp-primary" id="ready-toggle" type="button" hidden>{{ tr("MP_READY") }}</button>
-          <button class="mp-primary" id="start-game" type="button" hidden>{{ tr("START_GAME") }}</button>
-        </div>
+        <div class="mp-hero-picker"><label class="mp-label" for="hero-select">{{ tr("MP_HERO_PICK") }}</label><select id="hero-select">{% for hero in heroes %}<option value="{{ hero.id }}" {% if hero.locked %}disabled{% endif %}>{{ hero.name }} · {{ hero.class_name }}{% if hero.locked %} · {{ tr("SHOP_LOCKED") }} ◈ {{ hero.price }}{% endif %}</option>{% endfor %}</select></div>
+        <div class="mp-room-buttons"><button class="mp-primary" id="ready-toggle" type="button" hidden>{{ tr("MP_READY") }}</button><button class="mp-primary" id="start-game" type="button" hidden>{{ tr("START_GAME") }}</button></div>
       </div>
       <p class="mp-room-hint" id="waiting-message">{{ tr("WAITING_PLAYERS") }}</p>
     </section>
-  </main>
+  </section>
+
+  <section class="mp-invitations" id="mp-invitations" aria-live="polite"></section>
   <div class="mp-toast" id="mp-toast" role="status" aria-live="polite"></div>
   <script>
     window.MP_HEROES = {{ heroes|tojson }};
@@ -100,6 +119,18 @@
       "roomMode": tr("MP_ROOM_MODE")
     }|tojson }};
     window.MP_INITIAL_MODE = {{ request.args.get("mode", "rogue")|tojson }};
+    window.MP_HALL_STRINGS = {{ {
+      "arena": tr("MP_HALL_ARENA"),
+      "portal": tr("MP_HALL_PORTAL"),
+      "player": tr("MP_HALL_PLAYER_INTERACT"),
+      "walk": tr("MP_HALL_WALK_HINT"),
+      "inviteReceived": tr("MP_HALL_INVITE_RECEIVED"),
+      "inviteSent": tr("MP_HALL_INVITE_SENT"),
+      "accept": tr("MP_HALL_ACCEPT"),
+      "decline": tr("MP_HALL_DECLINE"),
+      "duel": tr("MP_MODE_PVP"),
+      "rogue": tr("MP_MODE_COOP")
+    }|tojson }};
   </script>
   <script src="{{ url_for('static', filename='multiplayer.js') }}"></script>
   <script src="{{ url_for('static', filename='language.js') }}"></script>

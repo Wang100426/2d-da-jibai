@@ -46,6 +46,17 @@ class UserProfileTests(unittest.TestCase):
         self.assertEqual(created.status_code, 200)
         self.assertEqual(created.get_json()["room"]["players"][0]["name"], "Saved Name")
 
+    def test_multiplayer_page_renders_explorable_hall_and_invite_controls(self):
+        player_save.set_username("Lobby Player")
+        for language in ("zh", "en", "ja"):
+            lobby = self.client.get(f"/multiplayer?lang={language}")
+            self.assertEqual(lobby.status_code, 200)
+            self.assertIn(b'id="hall-map"', lobby.data)
+            self.assertIn(b'id="arena-object"', lobby.data)
+            self.assertIn(b'id="portal-object"', lobby.data)
+            self.assertIn(b'id="invite-overlay"', lobby.data)
+            self.assertIn(b'id="mp-invitations"', lobby.data)
+
     def test_home_map_links_each_room_object_to_its_existing_page(self):
         player_save.set_username("Apartment Player")
         home = self.client.get("/")

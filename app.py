@@ -18,8 +18,12 @@ from map_codex import codex_entries
 app = Flask(__name__)
 ROOMS = {}
 ROOMS_LOCK = threading.RLock()
+MP_HALL_PLAYERS = {}
+MP_HALL_INVITATIONS = {}
 ROOM_CAPACITY = 8
 ROOM_PLAYER_TIMEOUT = 30
+MP_HALL_TIMEOUT = 15
+MP_INVITATION_TIMEOUT = 60
 # 房主点「开始」后的准备时间：期间可以换英雄并点准备，全员就绪或读秒结束即开战。
 ROOM_PREP_SECONDS = 30
 # 1V1 联机房启用 PvP；协作肉鸽房始终关闭队友伤害。
@@ -1514,6 +1518,42 @@ def error_response(message, status=400):
     return jsonify({"ok": False, "error": message}), status
 
 
+def cleanup_multiplayer_hall(now=None):
+    now = time.time() if now is None else now
+    for player_id, player in list(MP_HALL_PLAYERS.items()):
+        if now - player["last_seen"] > MP_HALL_TIMEOUT:
+            MP_HALL_PLAYERS.pop(player_id, None)
+    for invitation_id, invitation in list(MP_HALL_INVITATIONS.items()):
+        if now >= invitation["expires_at"] or invitation["target_id"] not in MP_HALL_PLAYERS:
+            MP_HALL_INVITATIONS.pop(invitation_id, None)
+
+
+def multiplayer_hall_spawn(player_id):
+    occupied = [
+        (player["x"], player["y"])
+        for player in MP_HALL_PLAYERS.values()
+    ]
+    points = [
+        (x, y)
+        for y in (90, 220, 350, 480, 610)
+        for x in (100, 300, 500, 700, 900)
+        if not (200 <= x <= 400 and 170 <= y <= 390)
+        and not (620 <= x <= 810 and 170 <= y <= 390)
+    ]
+    offset = sum(player_id.encode("utf-8")) % len(points)
+    points = points[offset:] + points[:offset]
+    for x, y in points:
+        if all((x - other_x) ** 2 + (y - other_y) ** 2 >= 90 ** 2 for other_x, other_y in occupied):
+            return x, y
+    for _ in range(128):
+        x = 70 + secrets.randbelow(860)
+        y = 70 + secrets.randbelow(560)
+        near_venue = (200 <= x <= 400 or 620 <= x <= 810) and 170 <= y <= 390
+        if not near_venue and all((x - other_x) ** 2 + (y - other_y) ** 2 >= 90 ** 2 for other_x, other_y in occupied):
+            return x, y
+    return 500, 350
+
+
 @app.get("/multiplayer")
 def multiplayer():
     profile = player_save.load()
@@ -1524,6 +1564,107 @@ def multiplayer():
         heroes=localized_heroes(request.args.get("lang", request.cookies.get("lang", "zh"))),
         profile=profile_snapshot(),
     )
+
+
+@app.route("/api/mp/hall", methods=["GET", "POST", "DELETE"])
+def multiplayer_hall_presence():
+    body = request.get_json(silent=True) or {}
+    raw_player_id = body.get("player_id") if request.method == "POST" else request.args.get("player_id", "")
+    player_id = str(raw_player_id or "").strip()
+    if not player_id or len(player_id) > 100:
+        return error_response("大厅身份无效。")
+
+    with ROOMS_LOCK:
+        now = time.time()
+        cleanup_multiplayer_hall(now)
+        if request.method == "DELETE":
+            MP_HALL_PLAYERS.pop(player_id, None)
+            for invitation_id, invitation in list(MP_HALL_INVITATIONS.items()):
+                if invitation["target_id"] == player_id:
+                    MP_HALL_INVITATIONS.pop(invitation_id, None)
+            return jsonify({"ok": True})
+        if request.method == "POST":
+            name = player_save.load()["username"] or str(body.get("name", "")).strip()[:20]
+            if not name:
+                return error_response("请先设置用户名。")
+            try:
+                x = float(body.get("x"))
+                y = float(body.get("y"))
+            except (TypeError, ValueError):
+                return error_response("大厅坐标无效。")
+            if not (0 <= x <= 1000 and 0 <= y <= 700):
+                return error_response("大厅坐标超出地图范围。")
+            if player_id not in MP_HALL_PLAYERS:
+                x, y = multiplayer_hall_spawn(player_id)
+            MP_HALL_PLAYERS[player_id] = {"player_id": player_id, "name": name, "x": x, "y": y, "last_seen": now}
+        elif player_id in MP_HALL_PLAYERS:
+            MP_HALL_PLAYERS[player_id]["last_seen"] = now
+
+        players = [
+            {key: player[key] for key in ("player_id", "name", "x", "y")}
+            for other_id, player in MP_HALL_PLAYERS.items()
+            if other_id != player_id
+        ]
+        invitations = [
+            {
+                "invitation_id": invitation_id,
+                "from_name": invitation["from_name"],
+                "room_id": invitation["room_id"],
+                "mode": invitation["mode"],
+                "expires_at": invitation["expires_at"],
+            }
+            for invitation_id, invitation in MP_HALL_INVITATIONS.items()
+            if invitation["target_id"] == player_id
+        ]
+        self_presence = MP_HALL_PLAYERS.get(player_id)
+        self_snapshot = (
+            {key: self_presence[key] for key in ("player_id", "name", "x", "y")}
+            if self_presence else None
+        )
+    return jsonify({"ok": True, "players": players, "invitations": invitations, "self": self_snapshot})
+
+
+@app.post("/api/mp/hall/invitations")
+def create_multiplayer_hall_invitation():
+    body = request.get_json(silent=True) or {}
+    inviter_id = str(body.get("player_id", "")).strip()
+    target_id = str(body.get("target_id", "")).strip()
+    room_id = str(body.get("room_id", "")).strip().upper()
+    mode = str(body.get("mode", "")).strip()
+    if mode not in MP_ROOM_MODES:
+        return error_response("请选择有效的联机模式。")
+    with ROOMS_LOCK:
+        cleanup_multiplayer_hall()
+        inviter = MP_HALL_PLAYERS.get(inviter_id)
+        target = MP_HALL_PLAYERS.get(target_id)
+        room = ROOMS.get(room_id)
+        if not inviter or not target or inviter_id == target_id:
+            return error_response("玩家已离开大厅。", 404)
+        if room is None or room.get("mode") != mode or room.get("host_hall_id") != inviter_id or room["status"] != "waiting":
+            return error_response("邀请房间已关闭或无法加入。", 409)
+        capacity = 2 if mode == "duel" else ROOM_CAPACITY
+        if len(room["players"]) >= capacity:
+            return error_response("房间人数已满。", 409)
+        invitation_id = secrets.token_urlsafe(12)
+        MP_HALL_INVITATIONS[invitation_id] = {
+            "target_id": target_id,
+            "from_name": inviter["name"],
+            "room_id": room_id,
+            "mode": mode,
+            "expires_at": time.time() + MP_INVITATION_TIMEOUT,
+        }
+    return jsonify({"ok": True, "invitation_id": invitation_id})
+
+
+@app.post("/api/mp/hall/invitations/<invitation_id>/dismiss")
+def dismiss_multiplayer_hall_invitation(invitation_id):
+    body = request.get_json(silent=True) or {}
+    player_id = str(body.get("player_id", "")).strip()
+    with ROOMS_LOCK:
+        invitation = MP_HALL_INVITATIONS.get(invitation_id)
+        if invitation and invitation["target_id"] == player_id:
+            MP_HALL_INVITATIONS.pop(invitation_id, None)
+    return jsonify({"ok": True})
 
 
 @app.get("/api/server-info")
@@ -1579,8 +1720,11 @@ def create_multiplayer_room():
     mode = str(body.get("mode") or "rogue").strip()
     if mode not in MP_ROOM_MODES:
         return error_response("请选择有效的联机模式。")
+    hall_player_id = str(body.get("hall_player_id", "")).strip()
     with ROOMS_LOCK:
         cleanup_rooms()
+        if hall_player_id and hall_player_id not in MP_HALL_PLAYERS:
+            return error_response("大厅连接已失效，请重新进入大厅。", 409)
         room_id = secrets.token_hex(3).upper()
         player_id = secrets.token_urlsafe(18)
         player = {
@@ -1608,6 +1752,7 @@ def create_multiplayer_room():
             "host_id": player_id,
             "mode": mode,
             "status": "waiting",
+            "host_hall_id": hall_player_id,
             "players": {player_id: player},
         }
         ROOMS[room_id] = room
