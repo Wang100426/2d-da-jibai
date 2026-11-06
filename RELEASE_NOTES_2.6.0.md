@@ -1,52 +1,213 @@
-# 2D大击败 2.6.0 — Star Messenger
+# 🌟 2DFight Arena 2.6.0 — STAR MESSENGER
 
-## English
+A new hero who fights with rings of starlight — and a brand-new way to read every status effect on the battlefield.
 
-Meet **Star Messenger**, a new hero available in the shop for 2,000 coins.
+Here's what's new:
 
-- **Passive · Star Energy** — basic attacks build up to 6 energy. The next attack is empowered: its area is expanded, enemies hit are stunned for 1 second and slowed for 3 seconds.
-- **Basic attack** — at close range, sweep the ring to slow nearby enemies; at longer range, launch a star projectile.
-- **Q · Astral Cage** — create a ring around the nearest enemy, trapping and damaging enemies inside for 5 seconds. Upgrades add repeated stuns, slow and bonus damage.
-- **E · Astral Guard** — gain a 3-second guard that blocks incoming hits and grants Star Energy when it blocks. Upgrades add a block and damage nearby enemies on successful blocks.
-- **R · Star Suppression** — place a ring that stuns and slows enemies; enemies still inside after 2.5 seconds are caught in an explosion. Upgrades add repeat blasts and additional targets.
+---
 
-### Combat HUD
+## 🌟 1. New Hero — Star Messenger
 
-- Replaced status badges with concentric rings around characters to show remaining effect durations.
-- Added a passive-specific progress ring and value beneath **every hero**. The meter reflects each hero's passive resource or state; Basketball Boy's ring shows remaining magazine capacity.
+A ranged fighter built around **Star Energy**.
 
-## 中文
+* ✅ Available in the shop for **2,000 coins**
+* ✅ **Basic attack**: at close range, sweep a ring of stars to slow nearby enemies; at longer range, launch a star projectile
 
-### 新英雄：星之使者
+---
 
-商店新增英雄「星之使者」，售价 **2000 金币**。
+## ⭐ 2. Passive — Star Energy
 
-- **被动 · 星环之力** —— 普攻积攒最多 6 层星能；攒满后强化下一次普攻，扩大攻击范围，命中的敌人眩晕 1 秒并减速 3 秒。
-- **普攻** —— 近距离挥出星环并减速附近敌人；较远距离发射星星。
-- **Q · 困于星空** —— 在最近敌人位置生成星环，将其中敌人困住并持续造成伤害，持续 5 秒。升阶可增加周期眩晕、减速与额外伤害。
-- **E · 星环守护** —— 获得持续 3 秒的守护，可抵挡来袭攻击；成功抵挡会获得星能。升阶可增加抵挡次数，并在成功抵挡时伤害附近敌人。
-- **R · 星之压抑** —— 投放星环，眩晕并减速敌人；2.5 秒后仍留在环内的敌人会受到爆炸伤害。升阶可增加连续爆炸次数与目标数量。
+Basic attacks charge it. The next hit spends it.
 
-### 战斗界面
+* ✅ Basic attacks build up to **6 stacks** of Star Energy
+* ✅ At full energy, your next attack is **empowered**: the area expands, and enemies hit are **stunned for 1 second** and **slowed for 3 seconds**
 
-- 将状态徽章改为角色周围的多层倒计时环，直观显示效果剩余时间。
-- **所有英雄**脚下新增对应被动的进度环与数值；篮球少年的圆环显示弹夹剩余容量。
+---
 
-## 日本語
+## 🌙 3. Q — Astral Cage
 
-### 新ヒーロー：星の使者
+Trap them where they stand.
 
-ショップに新ヒーロー「星の使者」を追加。価格は **2,000コイン**です。
+* ✅ Creates a ring around the **nearest enemy**, trapping and damaging everyone inside for **5 seconds**
+* ✅ Upgrades add **repeated stuns, slow and bonus damage**
 
-- **パッシブ · 星環の力** — 通常攻撃で最大6スタックの星エネルギーを獲得。最大時、次の攻撃が強化され、攻撃範囲が広がり、命中した敵を1秒間スタン、3秒間スローにします。
-- **通常攻撃** — 近距離では星環を振り回して周囲の敵をスローにし、離れた敵には星を発射します。
-- **Q · 星空に囚われて** — 最も近い敵の位置に星環を作り、範囲内の敵を閉じ込めて5秒間継続ダメージを与えます。段階強化で周期スタン、スロー、追加ダメージを付与します。
-- **E · 星環の守護** — 3秒間、攻撃を防ぐ守護を獲得。攻撃を防ぐと星エネルギーを得ます。段階強化で防御回数が増え、防御成功時に周囲の敵へダメージを与えます。
-- **R · 星の抑圧** — 星環を設置して敵をスタン、スローにします。2.5秒後も環内にいる敵は爆発ダメージを受けます。段階強化で爆発回数と対象数が増えます。
+---
 
-### 戦闘 HUD
+## 🛡️ 4. E — Astral Guard
 
-- 状態バッジをキャラクターの周囲に表示する複数の残り時間リングに変更しました。
-- **全ヒーロー**の足元に、パッシブ固有の進行リングと数値を追加しました。バスケットボーイのリングは弾倉残量を示します。
+Turn incoming hits into charge.
 
-**Full Changelog**: https://github.com/Wang100426/2d-da-jibai/compare/v2.5.2...v2.6.0
+* ✅ Gain a **3-second guard** that **blocks incoming attacks**
+* ✅ Successfully blocking grants **Star Energy**
+* ✅ Upgrades add **more blocks** and **damage to nearby enemies** when a block succeeds
+
+---
+
+## 💥 5. R — Star Suppression
+
+A ring that ends in an explosion.
+
+* ✅ Places a ring that **stuns and slows** enemies
+* ✅ Enemies still inside after **2.5 seconds** are caught in an **explosion**
+* ✅ Upgrades add **repeat blasts** and **additional targets**
+
+---
+
+## 🎛️ 6. Combat HUD
+
+Every effect, readable at a glance.
+
+* ✅ Status badges replaced with **concentric rings** around characters, showing remaining effect durations
+* ✅ Added a **passive progress ring and value beneath every hero** — the meter reflects that hero's passive resource (Basketball Boy's ring shows remaining magazine capacity)
+
+---
+
+# 🚀 Download 2DFight Arena 2.6.0!
+
+Get the **installer** or **portable build** from the Assets section below.
+
+**Charge the stars. Let them fall.** 🌟
+
+---
+
+# 🌟 2D大击败 2.6.0 正式发布 —— 星之使者
+
+新英雄用星光之环战斗 —— 外加一整套重新设计的战斗状态显示。
+
+来看看这次都更新了什么：
+
+---
+
+## 🌟 1. 新英雄——星之使者
+
+围绕**星能**设计的远程英雄。
+
+* ✅ 商店上架，售价 **2000 金币**
+* ✅ **普攻**：近距离挥出星环减速附近敌人，较远距离发射星星
+
+---
+
+## ⭐ 2. 被动「星环之力」
+
+普攻积攒，攒满就爆发。
+
+* ✅ 普攻最多积攒 **6 层**星能
+* ✅ 攒满后强化下一次普攻：扩大攻击范围，命中的敌人**眩晕 1 秒**并**减速 3 秒**
+
+---
+
+## 🌙 3. Q「困于星空」
+
+把人钉在原地。
+
+* ✅ 在**最近敌人**位置生成星环，将其中敌人困住并持续造成伤害，持续 **5 秒**
+* ✅ 升阶可增加**周期眩晕、减速与额外伤害**
+
+---
+
+## 🛡️ 4. E「星环守护」
+
+把挨打变成充能。
+
+* ✅ 获得持续 **3 秒**的守护，可**抵挡来袭攻击**
+* ✅ 成功抵挡会获得**星能**
+* ✅ 升阶可增加抵挡次数，并在成功抵挡时**伤害附近敌人**
+
+---
+
+## 💥 5. R「星之压抑」
+
+一个以爆炸收尾的环。
+
+* ✅ 投放星环，**眩晕并减速**敌人
+* ✅ **2.5 秒**后仍留在环内的敌人会受到**爆炸伤害**
+* ✅ 升阶可增加**连续爆炸次数与目标数量**
+
+---
+
+## 🎛️ 6. 战斗界面
+
+每个效果，一眼读懂。
+
+* ✅ 状态徽章改为角色周围的**多层倒计时环**，直观显示效果剩余时间
+* ✅ **所有英雄**脚下新增对应被动的**进度环与数值**（篮球少年的圆环显示弹夹剩余容量）
+
+---
+
+# 🚀 快来下载《2D大击败》2.6.0！
+
+**安装版**和**便携版**都在下方 Assets 里。
+
+**积攒星光，让它落下。** 🌟
+
+---
+
+# 🌟 2D大撃破 2.6.0 リリース —— 星の使者
+
+星の光の輪で戦う新しいヒーローと、戦闘中のステータスを一目で読める新しい表示。
+
+今回の更新内容はこちらです：
+
+---
+
+## 🌟 1. 新ヒーロー——星の使者
+
+**星エネルギー**を軸に設計された ranged ヒーローです。
+
+* ✅ ショップに **2,000 コイン**で追加
+* ✅ **通常攻撃**：近距離では星環を振り回して減速、離れた敵には星を発射
+
+---
+
+## ⭐ 2. パッシブ「星環の力」
+
+通常攻撃で貯めて、溜まったら放出します。
+
+* ✅ 通常攻撃で最大 **6 スタック**の星エネルギーを獲得
+* ✅ 最大時、次の攻撃が強化され、範囲が広がり、命中した敵を **1 秒スタン**・**3 秒スロー**
+
+---
+
+## 🌙 3. Q「星空に囚われて」
+
+その場に留め置く。
+
+* ✅ **最も近い敵**の位置に星環を作り、範囲内の敵を閉じ込めて **5 秒間** 継続ダメージ
+* ✅ 段階強化で周期スタン、スロー、追加ダメージを付与
+
+---
+
+## 🛡️ 4. E「星環の守護」
+
+被弾をチャージに変える。
+
+* ✅ **3 秒間**、攻撃を防ぐ守護を獲得
+* ✅ 攻撃を防ぐと**星エネルギー**を獲得
+* ✅ 段階強化で防御回数が増え、防御成功時に**周囲の敵へダメージ**
+
+---
+
+## 💥 5. R「星の抑圧」
+
+爆発で終わる輪。
+
+* ✅ 星環を設置して敵をスタン、スロー
+* ✅ **2.5 秒**後も環内にいる敵は**爆発ダメージ**
+* ✅ 段階強化で爆発回数と対象数が増える
+
+---
+
+## 🎛️ 6. 戦闘 HUD
+
+すべての効果を、一目で。
+
+* ✅ 状態バッジをキャラクターの周囲に表示する**複数の残り時間リング**に変更
+* ✅ **全ヒーロー**の足元に**パッシブ固有の進行リングと数値**を追加（バスケットボーイのリングは弾倉残量）
+
+---
+
+# 🚀 2D大撃破 2.6.0 をダウンロード！
+
+**インストーラー**と**ポータブル版**は下の Assets から。
+
+**星を貯めて、落とそう。** 🌟
