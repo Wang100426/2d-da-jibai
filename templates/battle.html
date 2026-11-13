@@ -126,6 +126,7 @@
       <small>{{ skill.description|default(skill.kind ~ " · " ~ skill.cost ~ " 能量") }}</small>
       <span class="skill-rank"></span>
       <span class="skill-cooldown"></span>
+      <span class="skill-charges" hidden></span>
     </button>
     {% endfor %}
     <button class="map-skill basic-attack" id="basic-attack" type="button">

@@ -1,5 +1,37 @@
 # 更新日志 / Updates
 
+## 2.8.0
+
+### 中文
+
+- **新增英雄「飞索超人」**：普攻距离 200。可停留在建筑上方，每停留 2 秒能量恢复速度 +10%（无上限）；回到地面保留 3 秒层数，期间回到建筑上保留一半，建筑之间跳跃层数不变。
+- **一技能 E「飞索·抓」**：向移动方向抛出飞索，命中建筑 / 敌方英雄 / 地图边缘后停下，并把玩家**匀速拉向**该位置（不是瞬移）。拉拽期间无敌、可穿透建筑，沿途造成伤害，停止点造成范围伤害与击退；命中敌方时其在飞行过程中保持眩晕。
+- **E 升阶**：2 阶拉拽期间时间停滞、所有伤害延迟结算；3 阶只锁定建筑或地图边缘，穿透敌方，自身经过时使其眩晕（同样延迟结算）。
+- **二技能 R「飞索·移」**：充能 5 次、每 3 秒恢复 1 次、使用冷却 1 秒，技能上显示剩余充能次数。1 秒跳跃期间穿透建筑、无敌且跟随键盘位移；落在建筑上则留在屋顶（普攻禁用、E 只锁建筑、碰到地图边缘返还 70% 冷却），落在地面则对周围敌人造成伤害与减速，并额外获得 1 秒无敌。
+- **R / Q 升阶**：R 2 阶充能 10 次 / 每 2 秒恢复 / 冷却 0.5 秒，3 阶屋顶可用普攻但伤害 -50%；大招 Q「万重飞索」牵引 2 倍普攻范围内所有敌人，1 秒内拉向自己（屋顶时拉到建筑边缘），造成大量伤害与 1 秒眩晕。
+- **界面优化**：「无敌」作为正面状态，与其他状态一样显示倒计时环；技能描述中与 2 / 3 阶重复的升阶说明已删除。
+- 新增 25 项几何单测与 35 项战斗集成回归测试。
+
+### English
+
+- **New hero: Grapple Man.** Basic attack range 200. He can perch on rooftops: every 2 seconds there, energy regeneration gains +10% with no cap; stacks persist for 3 seconds after touching the ground, halve if you return to a rooftop during that grace period, and stay intact when leaping between buildings.
+- **E – Grapple Hook:** fires a line in your movement direction, stops at a building, enemy hero, or the map edge, then **reels you in at a fixed speed (no teleporting)**. Invulnerable and able to pass through buildings during the pull; damages enemies along the path, then deals area damage and knockback at the stop point. A hooked enemy stays stunned for the whole flight.
+- **E upgrades:** Tier 2 stops time during the pull and defers all damage until landing; Tier 3 only latches onto structures or the map edge, piercing enemies and stunning them as you pass (also deferred).
+- **R – Grapple Leap:** 5 charges, one restored every 3 seconds, a 1-second use cooldown, with the remaining charge count shown on the skill. The 1-second airborne phase passes through buildings, grants invulnerability and follows keyboard movement. Landing on a rooftop keeps you there (no basic attacks, E locks onto buildings only, hitting the map edge refunds 70% of the cooldown); landing on the ground deals area damage and slow, plus 1 extra second of invulnerability.
+- **R / Q upgrades:** Tier 2 gives R 10 charges, 2-second recovery and a 0.5-second cooldown; Tier 3 allows basic attacks from rooftops at -50% damage. Q – Myriad Grapples pulls every enemy within 2x basic attack range toward you over 1 second (to the building edge when perched), dealing heavy damage and a 1-second stun.
+- **Polish:** invulnerability now shows as a positive status ring alongside the other effect rings; redundant tier descriptions were removed from skill text, since Tier 2 / Tier 3 are already listed separately.
+- Added 25 geometry tests and 35 combat integration tests.
+
+### 日本語
+
+- **新ヒーロー「グラップルマン」を追加**：通常攻撃の射程は 200。建物の上に留まれるようになり、2 秒ごとにエネルギー回復速度が +10%（上限なし）。地上に戻ると 3 秒間スタックを保持し、その間に建物へ戻ると半分になり、建物から建物へ跳ぶ場合はそのまま維持されます。
+- **E「グラップル・フック」**：移動方向へワイヤーを射出し、建物・敵・マップ端に命中した地点まで自分を等速で引き寄せます（瞬間移動ではありません）。牽引中は無敵で建物をすり抜け、通過した敵にダメージを加え、到着地点で範囲ダメージとノックバック。敵に命中すると牽引中ずっとスタンします。
+- **E の段階強化**：2 段階では牽引中の時間が停止し、すべてのダメージは着地後にまとめて適用。3 段階では建物とマップ端だけを捉え、敵を貫通してすり抜けた敵をスタン状態にします（これも遅延適用）。
+- **R「グラップル・リープ」**：チャージ 5 回、3 秒ごとに 1 回回復、発動クールダウン 1 秒。残り回数はスキル表示に出ます。1 秒の跳躍中は建物を貫通・無敵・キー操作で移動可能。建物に着地すると屋上に留まり（通常攻撃不可、E は建物のみ、マップ端でクールダウン 70% 返還）、地上に着地すると周囲へダメージと減速、さらに 1 秒の無敵を獲得します。
+- **R / Q の段階強化**：R は 2 段階でチャージ 10 回・2 秒回復・クールダウン 0.5 秒、3 段階で屋上でも通常攻撃が可能（ダメージ -50%）。Q「万重飛索」は通常攻撃射程の 2 倍にいる敵を 1 秒かけて引き寄せ（屋上なら建物の端まで）、大ダメージと 1 秒のスタンを加えます。
+- **表示まわりの改善**：「無敵」を正面効果として他と同じ残り時間リングに表示。2 段階・3 段階の説明と重複していたスキル文の昇段記述を削除しました。
+- 幾何 25 件＋戦闘統合 35 件の回帰テストを追加。
+
 ## 2.7.6
 
 ### 中文

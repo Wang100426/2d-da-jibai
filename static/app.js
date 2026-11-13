@@ -189,6 +189,283 @@ function normalizeStoryHazard(hazard) {
         effect_turns: storyClamp(hazard.effect_turns, 0, 0, 10),
     };
 }
+/**
+ * 飞索超人的空间判定：把「建筑顶部在哪」「飞索射线会打中什么」收敛成纯函数，
+ * `map.ts` 只做消费和状态推进。
+ *
+ * 为什么要单独一份：
+ * - 「站在建筑上方」需要一套独立的坐标语义（屋顶平面 = 建筑矩形的上边缘），
+ *   和地面碰撞（`blockedByRects` 用圆心距离）是两套逻辑，混在一起容易算错；
+ * - 纯函数能在 Node 里直接测，不用浏览器或 Canvas。
+ *
+ * 坐标系说明：地图是俯视 2D。建筑是矩形 `(x, y, w, h)`，
+ * 「建筑上方」= 站在矩形上边缘 `y` 处 —— 玩家以脚部贴合屋顶平面，
+ * 即角色圆心位于 `roofY - playerRadius`。
+ */
+/** 地图尺寸，与 `battle_space.ts` 的 NORMAL_SIZE 保持一致。 */
+const MAP_WIDTH = 3200;
+const MAP_HEIGHT = 2400;
+/** 射线与矩形（建筑）相交：返回进入点，用于判断「先打到建筑还是先打到敌人」。 */
+function rayRectEntry(originX, originY, dirX, dirY, rect) {
+    // 用 slab 法求射线与矩形的最近交点参数 t（0 表示起点在矩形内）。
+    let tMin = 0;
+    let tMax = Number.POSITIVE_INFINITY;
+    const axes = [
+        [originX, dirX, rect.x, rect.x + rect.w],
+        [originY, dirY, rect.y, rect.y + rect.h],
+    ];
+    for (const [origin, dir, min, max] of axes) {
+        if (Math.abs(dir) < 1e-9) {
+            // 与该轴平行：起点必须已经在范围内，否则不相交。
+            if (origin < min || origin > max)
+                return undefined;
+            continue;
+        }
+        let t1 = (min - origin) / dir;
+        let t2 = (max - origin) / dir;
+        if (t1 > t2)
+            [t1, t2] = [t2, t1];
+        tMin = Math.max(tMin, t1);
+        tMax = Math.min(tMax, t2);
+        if (tMin > tMax)
+            return undefined;
+    }
+    if (tMax < 0)
+        return undefined;
+    return tMin;
+}
+/** 射线与圆的最近交点距离（未命中返回 undefined）。 */
+function rayCircleEntry(originX, originY, dirX, dirY, target) {
+    const toX = target.x - originX;
+    const toY = target.y - originY;
+    const projection = toX * dirX + toY * dirY;
+    // 目标在射线反方向 —— 不命中。
+    if (projection < 0)
+        return undefined;
+    const perpendicularSq = toX * toX + toY * toY - projection * projection;
+    const radiusSq = target.radius * target.radius;
+    if (perpendicularSq > radiusSq)
+        return undefined;
+    const half = Math.sqrt(Math.max(0, radiusSq - perpendicularSq));
+    const entry = Math.max(0, projection - half);
+    return entry;
+}
+/**
+ * 沿方向发射飞索，返回最先命中的目标。
+ *
+ * @param onlyStructure 3 阶：只锁定建筑与地图边缘，穿透敌人。
+ */
+function castGrappleRay(originX, originY, dirX, dirY, range, obstacles, targets, onlyStructure = false) {
+    const length = Math.hypot(dirX, dirY);
+    if (!length)
+        return undefined;
+    const unitX = dirX / length;
+    const unitY = dirY / length;
+    let best;
+    // 建筑：取进入点最近的矩形。
+    obstacles.forEach((obstacle) => {
+        const entry = rayRectEntry(originX, originY, unitX, unitY, obstacle);
+        if (entry === undefined || entry > range)
+            return;
+        if (best && best.distance <= entry)
+            return;
+        best = {
+            kind: "building",
+            x: originX + unitX * entry,
+            y: originY + unitY * entry,
+            obstacle: { x: obstacle.x, y: obstacle.y, w: obstacle.w, h: obstacle.h },
+            distance: entry,
+        };
+    });
+    // 敌方英雄：取进入点最近的圆。
+    if (!onlyStructure) {
+        targets.forEach((target) => {
+            const entry = rayCircleEntry(originX, originY, unitX, unitY, target);
+            if (entry === undefined || entry > range)
+                return;
+            if (best && best.distance <= entry)
+                return;
+            best = {
+                kind: "enemy",
+                x: target.x,
+                y: target.y,
+                targetId: target.id,
+                distance: entry,
+            };
+        });
+    }
+    // 地图边缘：与命中物的距离比较，取先到者。
+    //
+    // 注意要算「射线真正撞到边界」的距离，而不是「到某条边界线的垂距」：
+    // 起点贴边时垂距会是 0（把建筑命中吃掉），而斜射时先撞到的是
+    // 四条边里最近的那条。所以这里对四条边分别求交，再取最小。
+    //
+    // 每条边只考虑射线「朝它去」的方向：朝右射时左边界在身后，不算命中；
+    // 但起点正好贴着左边界且朝外射时，仍然算命中（距离 0）。
+    let edgeDistance = Number.POSITIVE_INFINITY;
+    const edges = [
+        // [起点轴值, 方向, 边界值, 是否竖直边, 允许的射线方向符号]
+        [originX, unitX, 0, false, -1],
+        [originX, unitX, MAP_WIDTH, false, 1],
+        [originY, unitY, 0, true, -1],
+        [originY, unitY, MAP_HEIGHT, true, 1],
+    ];
+    edges.forEach(([origin, dir, boundary, isVertical, allowedSign]) => {
+        if (Math.abs(dir) < 1e-9)
+            return;
+        // 射线必须朝着这条边去，否则它在射线身后。
+        if (Math.sign(dir) !== allowedSign)
+            return;
+        const distance = (boundary - origin) / dir;
+        // distance == 0 表示起点本来就贴在这条边界上且朝外射 —— 算命中边缘。
+        if (distance < -1e-9)
+            return;
+        // 斜射时还要确认交点落在那条边的有效范围内，否则会算出边界外的点。
+        if (isVertical) {
+            const cross = originY + unitY * distance;
+            if (cross < -1e-9 || cross > MAP_HEIGHT + 1e-9)
+                return;
+        }
+        else {
+            const cross = originX + unitX * distance;
+            if (cross < -1e-9 || cross > MAP_WIDTH + 1e-9)
+                return;
+        }
+        edgeDistance = Math.min(edgeDistance, Math.max(0, distance));
+    });
+    if (edgeDistance <= range) {
+        if (!best || edgeDistance < best.distance) {
+            best = {
+                kind: "edge",
+                x: originX + unitX * edgeDistance,
+                y: originY + unitY * edgeDistance,
+                distance: edgeDistance,
+            };
+        }
+    }
+    return best;
+}
+/**
+ * 找到玩家脚下正对的建筑（用于判定「是否站在建筑上方」）。
+ *
+ * 判定条件：建筑的水平范围包含玩家 x，且玩家脚部（圆心 + 半径）
+ * 落在屋顶平面附近。
+ */
+function findRooftopUnder(x, footY, obstacles, tolerance = 6) {
+    let best;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    obstacles.forEach((obstacle) => {
+        if (obstacle.type !== "building")
+            return;
+        if (x < obstacle.x - 2 || x > obstacle.x + obstacle.w + 2)
+            return;
+        const distance = Math.abs(footY - obstacle.y);
+        if (distance > tolerance)
+            return;
+        if (distance < bestDistance) {
+            bestDistance = distance;
+            best = { x: obstacle.x, y: obstacle.y, w: obstacle.w, h: obstacle.h };
+        }
+    });
+    return best;
+}
+/** 被动的每层时间：每 2 秒 +1 层。 */
+const STACK_INTERVAL = 2;
+/** 回到地面后保留层数的宽限期：3 秒。 */
+const GROUND_GRACE = 3;
+/**
+ * 推进飞索超人的被动（一帧）。
+ *
+ * 规则：
+ * - 在建筑上时每 2 秒 +1 层（无上限）；
+ * - 回到地面时保留层数 3 秒，期间回到建筑上会**保留一半层数**；
+ * - 在建筑之间跳跃（不落地）层数不变 —— 所以只有「真正落到地面」才扣层数。
+ */
+function advanceGrapplePassive(state, dt, onRooftop) {
+    let stacksChanged = false;
+    let halved = false;
+    // 从建筑落到地面：启动宽限期（层数保留 3 秒）。
+    if (state.onRooftop && !onRooftop) {
+        state.groundGrace = GROUND_GRACE;
+    }
+    if (onRooftop) {
+        // 从地面回到建筑：按规则保留一半层数。
+        if (state.groundGrace > 0) {
+            state.stacks = Math.floor(state.stacks / 2);
+            state.groundGrace = 0;
+            halved = true;
+            stacksChanged = true;
+        }
+        state.stackTimer += dt;
+        while (state.stackTimer >= STACK_INTERVAL) {
+            state.stackTimer -= STACK_INTERVAL;
+            state.stacks += 1;
+            stacksChanged = true;
+        }
+    }
+    else if (state.stacks > 0) {
+        // 回到地面：宽限期内层数保留，超时清空。
+        if (state.groundGrace > 0) {
+            state.groundGrace = Math.max(0, state.groundGrace - dt);
+            if (state.groundGrace <= 0) {
+                state.stacks = 0;
+                state.stackTimer = 0;
+                stacksChanged = true;
+            }
+        }
+    }
+    state.onRooftop = onRooftop;
+    return { stacksChanged, halved };
+}
+/** 能量恢复速度倍率：每层 +10%。 */
+function grappleEnergyRegenScale(stacks) {
+    if (stacks <= 0)
+        return 1;
+    return 1 + stacks * 0.1;
+}
+/**
+ * 飞索·移的充能推进（一帧）。
+ *
+ * @param charges 当前充能次数（会被就地修改）。
+ */
+function advanceGrappleCharges(charges, timer, dt, maxCharges, rechargeSeconds) {
+    if (charges >= maxCharges)
+        return { charges, timer: 0 };
+    const nextTimer = timer + dt;
+    if (nextTimer >= rechargeSeconds) {
+        return { charges: Math.min(maxCharges, charges + 1), timer: nextTimer - rechargeSeconds };
+    }
+    return { charges, timer: nextTimer };
+}
+/**
+ * 把点夹到建筑边缘（用于「在建筑上就拉到建筑边缘」）。
+ *
+ * 边缘 = 屋顶矩形的四条边里离给定点最近的那条；返回落在边上的点。
+ *
+ * 距离必须是「点到**边段**」的真实距离（含沿边方向的偏移），
+ * 只算垂距会让矩形外侧的角点判错边，夹出来的位置也是错的。
+ */
+function clampToBuildingEdge(pointX, pointY, rect) {
+    /** 点到轴对齐线段的最短距离，以及线段上最近的那个点。 */
+    const nearestOnSegment = (fixed, isVertical, segmentStart, segmentEnd) => {
+        if (isVertical) {
+            // 竖直边：x 固定，y 在 [segmentStart, segmentEnd] 内
+            const y = Math.max(segmentStart, Math.min(pointY, segmentEnd));
+            return { d: Math.hypot(pointX - fixed, pointY - y), x: fixed, y };
+        }
+        // 水平边：y 固定，x 在 [segmentStart, segmentEnd] 内
+        const x = Math.max(segmentStart, Math.min(pointX, segmentEnd));
+        return { d: Math.hypot(pointX - x, pointY - fixed), x, y: fixed };
+    };
+    const candidates = [
+        nearestOnSegment(rect.y, false, rect.x, rect.x + rect.w),
+        nearestOnSegment(rect.y + rect.h, false, rect.x, rect.x + rect.w),
+        nearestOnSegment(rect.x, true, rect.y, rect.y + rect.h),
+        nearestOnSegment(rect.x + rect.w, true, rect.y, rect.y + rect.h),
+    ];
+    candidates.sort((left, right) => left.d - right.d);
+    return { x: candidates[0].x, y: candidates[0].y };
+}
 function requireElement(selector) {
     const element = document.querySelector(selector);
     if (!element)
@@ -280,12 +557,33 @@ const map = { width: battleSpace.width, height: battleSpace.height };
 // Keep static geometry off the per-frame path; actors and map events remain dynamic.
 let staticMapLayer;
 const equipmentBonuses = config.equipmentBonuses || {};
+/**
+ * 「无敌」剩余时间（秒）。0 表示没有无敌。
+ *
+ * 无敌是一个**正面状态**，所以和眩晕、减速这些负面状态一样放在
+ * `statusEffects` 里 —— 这样它能自动出现在角色周围的倒计时环上，
+ * 不需要单独画一层特效。
+ */
+let invulnerableTimer = 0;
 const player = {
     x: config.multiplayer?.x ?? battleSpace.spawnX,
     y: config.multiplayer?.y ?? battleSpace.spawnY,
     radius: 19,
     speed: heroCombat.speed + (equipmentBonuses.speed || 0),
-    invulnerable: false,
+    /** 无敌状态：读写统一走 `invulnerableTimer`，保证状态环能同步显示。 */
+    get invulnerable() {
+        return invulnerableTimer > 0;
+    },
+    set invulnerable(value) {
+        if (value) {
+            // 没有明确时长时给一个短窗口，保证状态环至少亮一下。
+            if (invulnerableTimer <= 0)
+                invulnerableTimer = 0.35;
+        }
+        else {
+            invulnerableTimer = 0;
+        }
+    },
 };
 const camera = { x: 0, y: 0 };
 const facing = { x: 1, y: 0 };
@@ -479,6 +777,38 @@ const touchKeys = new Set();
 const skillCooldowns = new Map();
 const skillProgress = new Map(config.skills.map((skill) => [skill.id, { tier: 1, minorUpgrades: 0 }]));
 const statusEffects = {};
+/* ---------- 飞索超人 ---------- */
+/** 当前飞索（E）的状态机；不在飞行时为 undefined。 */
+let grappleHook;
+/** 当前飞索·移（R）的空中阶段；落地后清空。 */
+let grappleLeap;
+/** 当前万重飞索（Q）的牵引状态。 */
+let grappleMyriad;
+/** 飞索·移的剩余充能次数。 */
+let grappleLeapCharges = 0;
+/** 飞索·移充能恢复计时。 */
+let grappleLeapRechargeTimer = 0;
+/** 飞索·移的最大充能次数（升阶会改）。 */
+let grappleLeapChargeMax = 5;
+// 飞索超人：初始化飞索·移的充能次数
+if (isGrappleHero()) {
+    const leapSkill = grappleSkill("grapple_leap");
+    grappleLeapChargeMax = leapSkill?.leap_charges || 5;
+    grappleLeapCharges = grappleLeapChargeMax;
+}
+/** 玩家当前是否站在建筑上方。 */
+let grappleOnRooftop = false;
+/** 当前所站建筑的矩形（在建筑上时有效）。 */
+let grappleRooftopRect;
+/** 被动状态：层数、累积计时、宽限期计时（在建筑上与否）。 */
+const grapplePassiveState = {
+    stacks: 0,
+    stackTimer: 0,
+    groundGrace: 0,
+    onRooftop: false,
+};
+/** 被动：能量恢复加速的层数（每 2 秒 +1 层，无上限）。 */
+let grappleEnergyStacks = 0;
 const statusEffectMaxDurations = new WeakMap();
 let starEnergy = 0;
 let starEmpowered = false;
@@ -2573,6 +2903,7 @@ function drawEffectIndicators(x, y, effects) {
         "月影护盾": "#bda5ff",
         "御剑飞行": "#ffd98e",
         "引燃": "#ff8a5b",
+        "无敌": "#ffe9a8",
     };
     const maxDurations = statusEffectMaxDurations.get(effects) || {};
     activeEffects.forEach(([effect, remaining]) => {
@@ -3775,6 +4106,20 @@ function collides(x, y) {
 function movePlayer(dx, dy) {
     if (playerMovementLocked())
         return;
+    // 飞索超人站在屋顶上：俯视角下顶面就是平台，WASD 四向都能走。
+    // 脚下这栋建筑不参与地面碰撞（人站在顶上而不是地面），否则真实地图里
+    // 相邻建筑与路障会把玩家死死卡住，表现成「上屋顶后完全动不了」。
+    if (grappleOnRooftop && grappleRooftopRect) {
+        const roof = grappleRooftopRect;
+        const inset = player.radius * 0.5;
+        const minX = roof.x + inset;
+        const maxX = roof.x + roof.w - inset;
+        const minY = roof.y - player.radius;
+        const maxY = roof.y + roof.h - player.radius;
+        player.x = Math.max(minX, Math.min(maxX, player.x + dx));
+        player.y = Math.max(minY, Math.min(maxY, player.y + dy));
+        return;
+    }
     if (!collides(player.x + dx, player.y))
         player.x += dx;
     if (!collides(player.x, player.y + dy))
@@ -4563,6 +4908,584 @@ function startAfterimageDash(skill, extraTrips = 0) {
     if (config.multiplayer)
         queuePvpAction("dash_start", [], skill.id, castId);
     showToast(t("skill.tech_afterimage_start", { trips: afterimageDash.totalSegments / 2 }));
+}
+// ───────────────────────── 飞索超人：飞索·抓 / 飞索·移 / 万重飞索 ─────────────────────────
+/** 是否是飞索超人（很多行为要按英雄区分）。 */
+function isGrappleHero() {
+    return config.heroId === "grapple";
+}
+/** 取飞索超人的某个技能配置。 */
+function grappleSkill(action) {
+    return config.skills.find((skill) => skill.action === action);
+}
+/** 取飞索超人的技能阶级。 */
+function grappleTier(action) {
+    const skill = grappleSkill(action);
+    return skill ? (skillProgress.get(skill.id)?.tier || 1) : 1;
+}
+/** 建筑列表（给纯函数模块用；只取判定需要的字段）。 */
+function grappleObstacles() {
+    return obstacles.map((obstacle) => ({
+        x: obstacle.x,
+        y: obstacle.y,
+        w: obstacle.w,
+        h: obstacle.h,
+        type: obstacle.type,
+    }));
+}
+/* ---------- 被动：停在建筑上方，能量恢复加速 ---------- */
+/**
+ * 判定玩家当前是否站在某个建筑上方。
+ *
+ * 「上方」= 脚部（圆心 + 半径）贴合建筑矩形的上边缘。
+ * 这里用 `findRooftopUnder` 的纯函数判定，和地面碰撞（圆心距矩形）是两套逻辑。
+ */
+function updateGrappleRooftop() {
+    if (!isGrappleHero())
+        return;
+    // 飞索状态机飞行期间不要插手屋顶判定，否则会把正在被拉拽的玩家弹走。
+    if (grappleHook || grappleLeap || grappleMyriad)
+        return;
+    const footY = player.y + player.radius;
+    if (grappleOnRooftop && grappleRooftopRect) {
+        const roof = grappleRooftopRect;
+        const margin = 8;
+        // 已经站在屋顶上：只判断有没有走出顶面，不再逐帧重新「发现」屋顶。
+        // 逐帧 findRooftopUnder 会被相邻建筑抢走判定，状态一抖动，
+        // 普攻禁用 / E 只锁建筑 / 被动层数全都会跟着失效。
+        const inside = player.x >= roof.x - margin && player.x <= roof.x + roof.w + margin &&
+            footY >= roof.y - margin && footY <= roof.y + roof.h + margin;
+        if (inside)
+            return;
+        grappleOnRooftop = false;
+        grappleRooftopRect = undefined;
+        // 自己走出边缘：就近推出建筑，别把玩家瞬移到建筑另一侧。
+        const left = player.x - roof.x;
+        const right = roof.x + roof.w - player.x;
+        const top = footY - roof.y;
+        const bottom = roof.y + roof.h - footY;
+        const nearest = Math.min(left, right, top, bottom);
+        if (nearest === left)
+            player.x = roof.x - player.radius - 2;
+        else if (nearest === right)
+            player.x = roof.x + roof.w + player.radius + 2;
+        else if (nearest === top)
+            player.y = roof.y - player.radius - 2;
+        else
+            player.y = roof.y + roof.h + player.radius + 2;
+        let guard = 0;
+        while (collides(player.x, player.y) && guard < 40) {
+            player.y += 12;
+            guard += 1;
+        }
+        addFloatingText(player.x, player.y - 46, t("float.grapple_fall"), "#ff9d7a");
+        return;
+    }
+    // 未上屋顶：脚部贴合某栋建筑上边缘时进入屋顶（R 落地 / 外部放置）。
+    const rooftop = findRooftopUnder(player.x, footY, grappleObstacles(), 10);
+    if (!rooftop)
+        return;
+    grappleOnRooftop = true;
+    grappleRooftopRect = rooftop;
+    // 把脚部贴回屋顶平面，避免被地面碰撞判定推下去。
+    player.y = rooftop.y - player.radius;
+}
+/**
+ * 被动计时：每 2 秒 +1 层能量恢复加速（无上限）。
+ *
+ * 规则：
+ * - 在建筑上时层数持续累积；
+ * - 回到地面时保留层数 3 秒（宽限期），期间回到建筑上会**保留一半层数**；
+ * - 在建筑之间跳跃（不落地）层数不变。
+ *
+ * 实际规则在纯函数 `advanceGrapplePassive` 里，方便单测。
+ */
+function updateGrapplePassive(dt) {
+    if (!isGrappleHero())
+        return;
+    const result = advanceGrapplePassive(grapplePassiveState, dt, grappleOnRooftop);
+    if (!result.stacksChanged)
+        return;
+    grappleEnergyStacks = grapplePassiveState.stacks;
+    if (result.halved) {
+        addFloatingText(player.x, player.y - 46, t("float.grapple_stack_half"), "#ff8a3d");
+    }
+    else if (grappleEnergyStacks > 0) {
+        addFloatingText(player.x, player.y - 46, `⚡ ×${grappleEnergyStacks}`, "#ff8a3d");
+    }
+}
+/** 能量恢复速度倍率：每层 +10%。 */
+function grappleEnergyRegenMultiplier() {
+    if (!isGrappleHero())
+        return 1;
+    return grappleEnergyRegenScale(grappleEnergyStacks);
+}
+/* ---------- E「飞索·抓」 ---------- */
+/**
+ * 施放飞索·抓。
+ *
+ * 飞索沿移动方向飞出，命中建筑 / 敌方英雄 / 地图边缘后停下，
+ * 然后把玩家**拉向**命中点 —— 不是瞬间移动，而是匀速飞过去。
+ */
+function castGrappleHook(skill) {
+    const tier = skillProgress.get(skill.id)?.tier || 1;
+    // 升阶效果优先读 tier_effects patch（配置驱动），tier 只是兜底。
+    const timeStop = (skill.hook_time_stop || 0) > 0 || tier >= 2;
+    const deferDamage = (skill.hook_defer_damage || 0) > 0 || tier >= 2;
+    const pierceStun = (skill.hook_pierce_stun || 0) > 0 || tier >= 3;
+    // 在建筑上时，一技能只能锁定建筑（3 阶本来也只锁建筑）。
+    const onlyStructure = (skill.hook_only_structure || 0) > 0 || tier >= 3 || grappleOnRooftop;
+    const directionX = facing.x || 1;
+    const directionY = facing.y;
+    const range = skill.hook_range || 620;
+    // 在建筑上时只锁建筑，敌方英雄不作为目标。
+    const targets = onlyStructure
+        ? []
+        : enemies
+            .filter((enemy) => enemy.hp > 0)
+            .map((enemy, index) => ({
+            id: enemy.id || `grapple-${index}`,
+            x: enemy.x,
+            y: enemy.y,
+            radius: enemy.kind === "brute" ? 25 : enemy.kind === "runner" ? 14 : 20,
+        }));
+    const hit = castGrappleRay(player.x, player.y, directionX, directionY, range, grappleObstacles(), targets, onlyStructure);
+    const targetX = hit ? hit.x : player.x + directionX * range;
+    const targetY = hit ? hit.y : player.y + directionY * range;
+    // 命中敌方英雄时，该敌人在自己飞行过程中保持眩晕。
+    let hitEnemy;
+    if (hit && hit.kind === "enemy" && hit.targetId) {
+        hitEnemy = enemies.find((enemy) => (enemy.id || "") === hit.targetId);
+    }
+    const flightSpeed = skill.hook_flight_speed || 720;
+    const distance = Math.hypot(targetX - player.x, targetY - player.y);
+    grappleHook = {
+        skillId: skill.id,
+        skillName: skill.name,
+        phase: "cast",
+        targetX,
+        targetY,
+        targetObstacle: hit?.obstacle,
+        hitKind: hit?.kind || "edge",
+        hitEnemy,
+        elapsed: 0,
+        duration: Math.max(0.12, distance / flightSpeed),
+        flightSpeed,
+        flightDamage: skill.hook_flight_damage || 0,
+        damageInterval: skill.hook_flight_damage_interval || 0.35,
+        damageTimer: 0,
+        hitEnemies: new Set(),
+        radius: skill.radius || 130,
+        damage: skill.damage || 0,
+        timeStop,
+        deferDamage,
+        onlyStructure,
+        pierceStun,
+        pendingDamage: [],
+    };
+    addSkillVisual(skill);
+    skillVisuals.push({
+        type: "beam",
+        x: player.x,
+        y: player.y,
+        targetX,
+        targetY,
+        age: 0,
+        duration: 0.16,
+        color: "#ff8a3d",
+    });
+    showToast(t("skill.grapple_hook_start", { name: skill.name }));
+}
+/**
+ * 推进飞索状态机。
+ *
+ * `cast` 阶段：飞索在空中飞（玩家原地不动，只是连线）。
+ * `reel` 阶段：玩家被拉向命中点 —— 匀速移动，期间无敌、可穿建筑。
+ */
+function advanceGrappleHook(dt) {
+    const hook = grappleHook;
+    if (!hook)
+        return;
+    hook.elapsed += dt;
+    if (hook.phase === "cast") {
+        if (hook.elapsed >= hook.duration) {
+            hook.phase = "reel";
+            hook.elapsed = 0;
+            // 拉拽总时长按距离算，速度恒定。
+            hook.duration = Math.max(0.15, Math.hypot(hook.targetX - player.x, hook.targetY - player.y) / hook.flightSpeed);
+            // 进入拉拽阶段时进入无敌。
+            player.invulnerable = true;
+            invulnerableTimer = hook.duration;
+            if (hook.hitEnemy && hook.hitEnemy.hp > 0) {
+                hook.hitEnemy.effects["眩晕"] = Math.max(hook.hitEnemy.effects["眩晕"] || 0, hook.duration + 0.2);
+            }
+        }
+        return;
+    }
+    if (hook.phase !== "reel")
+        return;
+    // 拉拽：匀速飞向命中点，穿透建筑（不走碰撞）。
+    const deltaX = hook.targetX - player.x;
+    const deltaY = hook.targetY - player.y;
+    const distance = Math.hypot(deltaX, deltaY);
+    const step = hook.flightSpeed * dt;
+    if (distance <= step || distance < 1) {
+        player.x = hook.targetX;
+        player.y = hook.targetY;
+        finishGrappleHook(hook);
+        return;
+    }
+    const previousX = player.x;
+    const previousY = player.y;
+    player.x += deltaX / distance * step;
+    player.y += deltaY / distance * step;
+    facing.x = deltaX / distance;
+    facing.y = deltaY / distance;
+    // 飞行途中对附近敌人造成伤害。
+    // 必须逐帧检测：拉拽速度 720px/s，按 0.35 秒采样会直接跳过路径上的敌人。
+    // hitEnemies 已保证同一敌人只结算一次，不需要再用计时器节流。
+    if (hook.flightDamage > 0 || hook.pierceStun) {
+        enemies.forEach((enemy) => {
+            if (enemy.hp <= 0 || hook.hitEnemies.has(enemy))
+                return;
+            const enemyRadius = enemy.kind === "brute" ? 25 : enemy.kind === "runner" ? 14 : 20;
+            if (distanceToSegment(enemy.x, enemy.y, previousX, previousY, player.x, player.y) > player.radius + enemyRadius + 22)
+                return;
+            hook.hitEnemies.add(enemy);
+            if (hook.deferDamage) {
+                hook.pendingDamage.push({ enemy, damage: hook.flightDamage, effect: "", effectTurns: 0 });
+            }
+            else {
+                hitEnemy(enemy, hook.flightDamage);
+            }
+            // 3 阶：自身经过时眩晕他们（延迟结算）。
+            if (hook.pierceStun) {
+                if (hook.deferDamage) {
+                    hook.pendingDamage.push({ enemy, damage: 0, effect: "眩晕", effectTurns: 1 });
+                }
+                else {
+                    enemy.effects["眩晕"] = Math.max(enemy.effects["眩晕"] || 0, 1);
+                }
+            }
+        });
+    }
+    // 拉拽轨迹特效。
+    skillVisuals.push({
+        type: "trail",
+        x: previousX,
+        y: previousY,
+        targetX: player.x,
+        targetY: player.y,
+        age: 0,
+        duration: 0.2,
+        color: "#ff8a3d",
+        radius: 26,
+    });
+}
+/** 飞索·抓结束：落点范围伤害 + 击退，并结算延迟伤害。 */
+function finishGrappleHook(hook) {
+    const rooftopMode = hook.hitKind === "building";
+    const victims = enemies.filter((enemy) => enemy.hp > 0 && Math.hypot(enemy.x - player.x, enemy.y - player.y) <= hook.radius);
+    victims.forEach((enemy) => {
+        if (hook.deferDamage) {
+            hook.pendingDamage.push({ enemy, damage: hook.damage, effect: "", effectTurns: 0 });
+        }
+        else {
+            hitEnemy(enemy, hook.damage);
+        }
+        // 站在建筑上时，飞行中只能造成伤害（不击退）。
+        if (!rooftopMode) {
+            const dx = enemy.x - player.x;
+            const dy = enemy.y - player.y;
+            const length = Math.hypot(dx, dy) || 1;
+            knockbackEnemyInDirection(enemy, 110, dx / length, dy / length);
+        }
+    });
+    skillVisuals.push({
+        type: "ring",
+        x: player.x,
+        y: player.y,
+        targetX: 0,
+        targetY: 0,
+        age: 0,
+        duration: 0.4,
+        color: "#ff8a3d",
+        radius: hook.radius,
+    });
+    // 结算延迟伤害（2 阶 / 3 阶）。
+    if (hook.deferDamage && hook.pendingDamage.length) {
+        const queue = hook.pendingDamage.splice(0, hook.pendingDamage.length);
+        queue.forEach((entry) => {
+            if (entry.enemy.hp <= 0)
+                return;
+            if (entry.damage > 0)
+                hitEnemy(entry.enemy, entry.damage);
+            if (entry.effect) {
+                entry.enemy.effects[entry.effect] = Math.max(entry.enemy.effects[entry.effect] || 0, entry.effectTurns);
+            }
+        });
+    }
+    player.invulnerable = false;
+    grappleHook = undefined;
+    // 在建筑上时，碰到地图边缘返还 70% 冷却（拉过去没意义）。
+    if (grappleOnRooftop && hook.hitKind === "edge") {
+        const refund = (skillCooldowns.get(hook.skillId) || 0) * (grappleSkill("grapple_hook")?.leap_edge_refund || 0.7);
+        if (refund > 0) {
+            skillCooldowns.set(hook.skillId, Math.max(0, (skillCooldowns.get(hook.skillId) || 0) - refund));
+            addFloatingText(player.x, player.y - 46, t("float.grapple_edge_refund"), "#ffd9a8");
+        }
+    }
+    showToast(t("skill.grapple_hook_end", { name: hook.skillName, hits: victims.length }));
+}
+/* ---------- R「飞索·移」 ---------- */
+/**
+ * 施放飞索·移：起跳。
+ *
+ * 跳跃期间可穿透建筑、无敌，并跟随键盘位移控制。
+ * 落地时判定：在建筑上 → 留在建筑上；否则 → 砸出范围伤害与减速 + 1 秒无敌。
+ */
+function castGrappleLeap(skill) {
+    if (grappleLeapCharges <= 0) {
+        showToast(t("skill.grapple_leap_no_charge"), "warning");
+        return;
+    }
+    grappleLeapCharges -= 1;
+    grappleLeap = {
+        skillId: skill.id,
+        skillName: skill.name,
+        elapsed: 0,
+        duration: skill.leap_duration || 1,
+        originY: player.y,
+        originOnRoof: grappleOnRooftop,
+    };
+    player.invulnerable = true;
+    invulnerableTimer = grappleLeap.duration;
+    addSkillVisual(skill);
+    addFloatingText(player.x, player.y - 50, t("float.grapple_leap"), "#ff8a3d");
+    updateSkillButtons();
+}
+/** 推进飞索·移的空中阶段：跟随键盘位移、穿透建筑。 */
+function advanceGrappleLeap(dt) {
+    const leap = grappleLeap;
+    if (!leap)
+        return;
+    leap.elapsed += dt;
+    // 空中跟随键盘位移（不与地面移动冲突，这里直接用位移输入）。
+    const direction = movementInput();
+    if (direction.x || direction.y) {
+        const length = Math.hypot(direction.x, direction.y) || 1;
+        const speed = player.speed * 1.35;
+        const nextX = player.x + direction.x / length * speed * dt;
+        const nextY = player.y + direction.y / length * speed * dt;
+        // 空中可穿透建筑，只做地图边界限制。
+        if (nextX - player.radius >= 0 && nextX + player.radius <= map.width)
+            player.x = nextX;
+        if (nextY - player.radius >= 0 && nextY + player.radius <= map.height)
+            player.y = nextY;
+        facing.x = direction.x / length;
+        facing.y = direction.y / length;
+    }
+    if (leap.elapsed < leap.duration)
+        return;
+    finishGrappleLeap(leap);
+}
+/** 飞索·移落地：判定在建筑上还是地面。 */
+function finishGrappleLeap(leap) {
+    const skill = grappleSkill("grapple_leap");
+    const footY = player.y + player.radius;
+    const rooftop = findRooftopUnder(player.x, footY, grappleObstacles(), 26);
+    if (rooftop) {
+        // 落在建筑上：留在建筑上。
+        grappleOnRooftop = true;
+        grappleRooftopRect = rooftop;
+        player.y = rooftop.y - player.radius;
+        addFloatingText(player.x, player.y - 46, t("float.grapple_rooftop"), "#ffd9a8");
+        showToast(t("skill.grapple_leap_rooftop", { name: leap.skillName }));
+    }
+    else {
+        // 落在地面：范围伤害 + 减速，额外 1 秒无敌。
+        const radius = skill?.radius || 150;
+        const damage = skill?.damage || 0;
+        const slowTurns = skill?.leap_slow_turns || 2;
+        const slowRatio = skill?.leap_slow_ratio || 0.5;
+        enemies.forEach((enemy) => {
+            if (enemy.hp <= 0)
+                return;
+            if (Math.hypot(enemy.x - player.x, enemy.y - player.y) > radius)
+                return;
+            hitEnemy(enemy, damage);
+            const ratio = Math.round(slowRatio * 100);
+            enemy.effects[`双音减速${ratio}`] = Math.max(enemy.effects[`双音减速${ratio}`] || 0, slowTurns);
+        });
+        skillVisuals.push({
+            type: "ring",
+            x: player.x,
+            y: player.y,
+            targetX: 0,
+            targetY: 0,
+            age: 0,
+            duration: 0.42,
+            color: "#ff8a3d",
+            radius,
+        });
+        // 落地额外 1 秒无敌。
+        statusEffects["无敌"] = Math.max(statusEffects["无敌"] || 0, 1);
+        showToast(t("skill.grapple_leap_ground", { name: leap.skillName }));
+    }
+    player.invulnerable = false;
+    grappleLeap = undefined;
+}
+/** 飞索·移的充能恢复。 */
+function updateGrappleLeapCharges(dt) {
+    const skill = grappleSkill("grapple_leap");
+    if (!skill)
+        return;
+    const maxCharges = skill.leap_charges || 5;
+    const recharge = skill.leap_recharge || 3;
+    if (grappleLeapChargeMax !== maxCharges) {
+        grappleLeapChargeMax = maxCharges;
+        grappleLeapCharges = Math.min(maxCharges, grappleLeapCharges);
+    }
+    if (grappleLeapCharges >= maxCharges)
+        return;
+    const next = advanceGrappleCharges(grappleLeapCharges, grappleLeapRechargeTimer, dt, maxCharges, recharge);
+    grappleLeapCharges = next.charges;
+    grappleLeapRechargeTimer = next.timer;
+    if (grappleLeapCharges > 0)
+        updateSkillButtons();
+}
+/* ---------- Q「万重飞索」 ---------- */
+/**
+ * 施放万重飞索：把 2 倍普攻范围内的敌人全部拉向自己。
+ *
+ * 在建筑上时，敌人被拉到**建筑边缘**而不是玩家脚下。
+ */
+function castGrappleMyriad(skill) {
+    const range = (skill.radius || 400) * (skill.myriad_range_scale || 2);
+    const duration = skill.myriad_pull_duration || 1;
+    const damageScale = skill.myriad_damage_scale || 1;
+    const victims = enemies
+        .filter((enemy) => enemy.hp > 0 && distanceTo(enemy.x, enemy.y) <= range)
+        .slice(0, 12);
+    if (!victims.length) {
+        showToast(t("skill.grapple_myriad_miss", { name: skill.name, range }), "warning");
+        return;
+    }
+    // 牵引终点：在建筑上就拉到建筑边缘。
+    let endX = player.x;
+    let endY = player.y;
+    if (grappleOnRooftop && grappleRooftopRect) {
+        const edge = clampToBuildingEdge(player.x, player.y, grappleRooftopRect);
+        endX = edge.x;
+        endY = edge.y;
+    }
+    grappleMyriad = {
+        skillId: skill.id,
+        skillName: skill.name,
+        duration,
+        elapsed: 0,
+        targets: victims.map((enemy) => ({ enemy, startX: enemy.x, startY: enemy.y })),
+        endX,
+        endY,
+        damage: Math.round((skill.damage || 0) * damageScale),
+        effect: skill.effect || "眩晕",
+        effectTurns: skill.effect_turns || 1,
+    };
+    addSkillVisual(skill);
+    skillVisuals.push({
+        type: "ring",
+        x: player.x,
+        y: player.y,
+        targetX: 0,
+        targetY: 0,
+        age: 0,
+        duration: duration,
+        color: "#ffb15c",
+        radius: range,
+    });
+    showToast(t("skill.grapple_myriad_start", { name: skill.name, hits: victims.length }));
+}
+/** 推进万重飞索：敌人被拉向终点。 */
+function advanceGrappleMyriad(dt) {
+    const myriad = grappleMyriad;
+    if (!myriad)
+        return;
+    myriad.elapsed += dt;
+    const progress = Math.min(1, myriad.elapsed / myriad.duration);
+    myriad.targets.forEach((entry) => {
+        const enemy = entry.enemy;
+        if (enemy.hp <= 0)
+            return;
+        const targetX = myriad.endX + (entry.startX - myriad.endX) * (1 - progress);
+        const targetY = myriad.endY + (entry.startY - myriad.endY) * (1 - progress);
+        const dx = targetX - enemy.x;
+        const dy = targetY - enemy.y;
+        const distance = Math.hypot(dx, dy);
+        if (distance < 0.5)
+            return;
+        const step = Math.min(distance, 420 * dt);
+        const nextX = enemy.x + dx / distance * step;
+        const nextY = enemy.y + dy / distance * step;
+        if (!isEnemyPositionBlocked(nextX, nextY, 17)) {
+            enemy.x = nextX;
+            enemy.y = nextY;
+        }
+    });
+    if (myriad.elapsed < myriad.duration)
+        return;
+    // 牵引结束：造成伤害并眩晕。
+    myriad.targets.forEach((entry) => {
+        if (entry.enemy.hp <= 0)
+            return;
+        hitEnemy(entry.enemy, myriad.damage);
+        if (myriad.effect) {
+            entry.enemy.effects[myriad.effect] = Math.max(entry.enemy.effects[myriad.effect] || 0, myriad.effectTurns);
+        }
+    });
+    showToast(t("skill.grapple_myriad_end", { name: myriad.skillName, hits: myriad.targets.length }));
+    grappleMyriad = undefined;
+}
+/* ---------- 飞索超人的辅助：普攻限制与技能按钮 ---------- */
+/** 建筑上是否允许普攻（3 阶解锁，但伤害减半）。 */
+function grappleRooftopAttackScale() {
+    if (!grappleOnRooftop)
+        return 1;
+    if (grappleTier("grapple_leap") < 3)
+        return 0;
+    const skill = grappleSkill("grapple_leap");
+    return skill?.leap_rooftop_attack_scale || 0.5;
+}
+/** 在建筑上时普攻不可用（3 阶 / 升阶 patch 解锁后除外）。 */
+function grappleBlocksBasicAttack() {
+    if (!grappleOnRooftop)
+        return false;
+    const skill = grappleSkill("grapple_leap");
+    if ((skill?.leap_rooftop_attack || 0) > 0)
+        return false;
+    return grappleTier("grapple_leap") < 3;
+}
+/** 取当前的移动输入方向（键盘 + 触屏）。 */
+function movementInput() {
+    let x = 0;
+    let y = 0;
+    if (keys.has("a") || keys.has("arrowleft") || touchKeys.has("left"))
+        x -= 1;
+    if (keys.has("d") || keys.has("arrowright") || touchKeys.has("right"))
+        x += 1;
+    if (keys.has("w") || keys.has("arrowup") || touchKeys.has("up"))
+        y -= 1;
+    if (keys.has("s") || keys.has("arrowdown") || touchKeys.has("down"))
+        y += 1;
+    return { x, y };
+}
+/**
+ * 2 阶：飞索飞行期间时间停滞。
+ *
+ * 只在「拉拽阶段」暂停（飞索还在飞的时候世界还在动），
+ * 落点结算后世界恢复。
+ */
+function grappleTimeStopped() {
+    return !!grappleHook && grappleHook.timeStop && grappleHook.phase === "reel";
 }
 // ───────────────────────── 电音人：音浪冲击 / 碟片风暴 ─────────────────────────
 /** 音浪撞到建筑时原地爆炸。pierce 模式（3 阶）下不触发。 */
@@ -5720,6 +6643,7 @@ function startSkaterJump() {
     skaterFlight.jumpTimer = 1;
     player.speed *= 1.2;
     player.invulnerable = true;
+    invulnerableTimer = 0.48;
     skillVisuals.push({
         type: "trail", x: player.x, y: player.y + 20, targetX: player.x, targetY: player.y - 110,
         age: 0, duration: 0.48, color: "#ffd39a", radius: 42,
@@ -5870,7 +6794,9 @@ function castBballLayup(skill) {
         const startX = player.x;
         const startY = player.y;
         const originalInvulnerable = player.invulnerable;
+        const originalInvulnerableTimer = invulnerableTimer;
         player.invulnerable = true;
+        invulnerableTimer = Math.max(invulnerableTimer, 0.35);
         const travelled = movePlayerToward(startX + dirX * range, startY + dirY * range, range);
         skillVisuals.push({
             type: "trail", x: startX, y: startY, targetX: player.x, targetY: player.y,
@@ -5894,6 +6820,7 @@ function castBballLayup(skill) {
         }
         else {
             player.invulnerable = originalInvulnerable;
+            invulnerableTimer = originalInvulnerableTimer;
             showToast(t("skill.bball_layup", { hits: victims.length }));
         }
     };
@@ -5933,7 +6860,9 @@ function castBballCrossover(skill) {
         .sort((a, b) => distanceTo(a.x, a.y) - distanceTo(b.x, b.y))
         .slice(0, targetCount);
     const originalInvulnerable = player.invulnerable;
+    const originalInvulnerableTimer = invulnerableTimer;
     player.invulnerable = true;
+    invulnerableTimer = Math.max(invulnerableTimer, delay + duration + 0.1);
     const hitTargets = [];
     if (targets.length > 0) {
         const stepInterval = duration / targets.length;
@@ -5957,6 +6886,7 @@ function castBballCrossover(skill) {
     }
     setTimeout(() => {
         player.invulnerable = originalInvulnerable;
+        invulnerableTimer = originalInvulnerableTimer;
         hitTargets.forEach((enemy) => {
             hitEnemy(enemy, skill.damage, stun > 0 ? "眩晕" : "", stun);
             skillVisuals.push({
@@ -6206,6 +7136,15 @@ function castSkill(index) {
     }
     else if (skill.action === "volt2_wave") {
         startSoundWave(skill);
+    }
+    else if (skill.action === "grapple_hook") {
+        castGrappleHook(skill);
+    }
+    else if (skill.action === "grapple_leap") {
+        castGrappleLeap(skill);
+    }
+    else if (skill.action === "grapple_myriad") {
+        castGrappleMyriad(skill);
     }
     else if (skill.action === "volt2_empower") {
         empoweredAttack = true;
@@ -6500,6 +7439,11 @@ function basicAttack() {
         addFloatingText(player.x, player.y - 40, t("float.bball_empty"), "#ff6b35");
         return false;
     }
+    // 飞索超人：站在建筑上时普攻不可用（3 阶解锁，但伤害减半）
+    if (grappleBlocksBasicAttack()) {
+        showToast(t("basic.grapple_rooftop_blocked"), "warning");
+        return false;
+    }
     const range = getPlayerAttackRange();
     const target = nearestEnemy(range);
     const remoteTarget = nearestRemoteAt(player.x, player.y, range);
@@ -6564,6 +7508,8 @@ function basicAttack() {
     let damage = wasEmpowered
         ? Math.round(baseEmpoweredDamage + playerState.equipmentAttackBonus)
         : heroCombat.basic_damage + playerState.equipmentAttackBonus;
+    // 飞索超人 3 阶：在建筑上可以用普攻，但伤害 -50%
+    damage = Math.round(damage * grappleRooftopAttackScale());
     // 滑板小子被动：附加（移速倍率 - 1）× 基础伤害 的额外伤害
     if (heroPassive.id === "skater_momentum") {
         damage += Math.round(heroCombat.basic_damage * (skaterSpeedMultiplier - 1));
@@ -6758,6 +7704,19 @@ function updateSkillButtons() {
                 ? tx(t("skill.rank_short", { tier: progress.tier, current: progress.minorUpgrades, required }))
                 : tx("3阶 · 已满");
         }
+        // 飞索超人·飞索·移：在技能上显示剩余充能次数。
+        const chargeLabel = button.querySelector(".skill-charges");
+        if (chargeLabel) {
+            if (skill.action === "grapple_leap") {
+                chargeLabel.hidden = false;
+                const text = `${grappleLeapCharges}/${grappleLeapChargeMax}`;
+                if (chargeLabel.textContent !== text)
+                    chargeLabel.textContent = text;
+            }
+            else {
+                chargeLabel.hidden = true;
+            }
+        }
     });
 }
 function calculateSkillCooldown(skill) {
@@ -6778,6 +7737,17 @@ function updateCombat(dt) {
     advanceSoundWaves(dt);
     advanceHomingDiscs(dt);
     advanceSkaterBoomerang(dt);
+    if (skillIsPaused())
+        return;
+    if (!playerMovementLocked())
+        advanceGrappleHook(dt);
+    if (skillIsPaused())
+        return;
+    advanceGrappleLeap(dt);
+    advanceGrappleMyriad(dt);
+    updateGrappleRooftop();
+    updateGrapplePassive(dt);
+    updateGrappleLeapCharges(dt);
     if (skillIsPaused())
         return;
     if (!playerMovementLocked())
@@ -6884,6 +7854,15 @@ function updateCombat(dt) {
             }
         }
     });
+    // 无敌倒计时：独立计时，再镜像进 statusEffects，这样它能和别的状态
+    // 一起画在角色周围的倒计时环上。
+    invulnerableTimer = Math.max(0, invulnerableTimer - dt);
+    if (invulnerableTimer > 0) {
+        statusEffects["无敌"] = Math.max(statusEffects["无敌"] || 0, invulnerableTimer);
+    }
+    else {
+        delete statusEffects["无敌"];
+    }
     advanceDualToneEffects(dt);
     advanceDualToneLink(dt);
     advanceDualToneWaves(dt);
@@ -6894,96 +7873,102 @@ function updateCombat(dt) {
     // 剧情战斗走剧本事件，不再叠加地图随机事件（避免同一波里两套意外伤害）
     if (!storyBattle)
         updateRandomMapEvents(dt);
-    enemies.forEach((enemy) => {
-        if (runEnded || skillIsPaused())
-            return;
-        Object.keys(enemy.effects).forEach((effect) => {
-            enemy.effects[effect] = Math.max(0, enemy.effects[effect] - dt);
-            if (enemy.effects[effect] <= 0) {
-                delete enemy.effects[effect];
-                if (effect === "中毒")
-                    enemy.poisonDamage = 0;
-                if (effect === "引燃")
-                    enemy.igniteDamage = 0;
+    // 飞索超人 2 阶：飞索飞行期间时间停滞 —— 敌人不动、状态不倒计时。
+    if (grappleTimeStopped()) {
+        // 时间暂停期间跳过整个敌人更新循环。
+    }
+    else {
+        enemies.forEach((enemy) => {
+            if (runEnded || skillIsPaused())
+                return;
+            Object.keys(enemy.effects).forEach((effect) => {
+                enemy.effects[effect] = Math.max(0, enemy.effects[effect] - dt);
+                if (enemy.effects[effect] <= 0) {
+                    delete enemy.effects[effect];
+                    if (effect === "中毒")
+                        enemy.poisonDamage = 0;
+                    if (effect === "引燃")
+                        enemy.igniteDamage = 0;
+                }
+            });
+            if (enemy.hp <= 0)
+                return;
+            if (enemy.anesthetist && enemy.lifeTimer !== undefined) {
+                enemy.lifeTimer -= dt;
+                if (enemy.lifeTimer <= 0) {
+                    enemy.hp = 0;
+                    addFloatingText(enemy.x, enemy.y - 28, tx("医生撤离"), "#c9f4ff");
+                    return;
+                }
+            }
+            if (enemy.poisonDamage > 0) {
+                enemy.poisonTimer -= dt;
+                if (enemy.poisonTimer <= 0) {
+                    enemy.poisonTimer = 1;
+                    const damage = schoolClassDuration > 0 ? enemy.poisonDamage * 0.8 : enemy.poisonDamage;
+                    const poisonDamage = Math.min(enemy.hp, damage);
+                    enemy.hp = Math.max(0, enemy.hp - poisonDamage);
+                    healFromDamage(poisonDamage, enemy.x, enemy.y);
+                    addFloatingText(enemy.x, enemy.y - 30, `-${poisonDamage} 毒`, "#9cff65");
+                    if (enemy.hp <= 0) {
+                        if (enemy.duelBot)
+                            finishDuelRound(true);
+                        else
+                            addEnemyLoot(enemy);
+                    }
+                }
+                if (enemy.hp <= 0)
+                    return;
+            }
+            if ((enemy.igniteDamage || 0) > 0) {
+                enemy.igniteTimer = Math.max(0, (enemy.igniteTimer || 1) - dt);
+                if (enemy.igniteTimer === 0) {
+                    enemy.igniteTimer = 1;
+                    const burn = schoolClassDuration > 0 ? (enemy.igniteDamage || 0) * 0.8 : (enemy.igniteDamage || 0);
+                    const burnDamage = Math.min(enemy.hp, Math.max(1, Math.round(burn)));
+                    enemy.hp = Math.max(0, enemy.hp - burnDamage);
+                    healFromDamage(burnDamage, enemy.x, enemy.y);
+                    addFloatingText(enemy.x, enemy.y - 30, `-${burnDamage} ${tx("引燃")}`, "#ff8fc4");
+                    spawnImpact(enemy.x, enemy.y, "#ff8fc4");
+                    if (enemy.hp <= 0) {
+                        if (enemy.duelBot)
+                            finishDuelRound(true);
+                        else
+                            addEnemyLoot(enemy);
+                    }
+                }
+                if (enemy.hp <= 0)
+                    return;
+            }
+            if (enemy.gymRusher)
+                return;
+            if (enemy.duelBot) {
+                if (enemy.effects["狂舞"] > 0)
+                    updateDuelBotFrenzy(enemy, dt);
+                else
+                    updateDuelBot(enemy, dt);
+                return;
+            }
+            if (enemy.storySkills && enemy.storySkills.length > 0)
+                updateStoryEnemySkill(enemy, dt);
+            const target = getEnemyTarget(enemy);
+            if (!target)
+                return;
+            const distance = Math.hypot(target.x - enemy.x, target.y - enemy.y);
+            const attackRange = enemy.anesthetist ? 54 : enemy.kind === "brute" ? 70 : 48;
+            if (distance > attackRange && !enemy.effects["禁锢"] && !enemy.effects["眩晕"]) {
+                const speed = enemy.speed * enemySlowMultiplier(enemy) *
+                    (schoolClassDuration > 0 ? 0.4 : 1) * dt;
+                moveEnemyToward(enemy, target, speed, dt);
+            }
+            const frenzySpeed = enemy.effects["狂舞"] > 0 ? frenzyAttackSpeedMultiplier() : 1;
+            enemy.attackTimer = Math.max(0, enemy.attackTimer - dt * (schoolClassDuration > 0 ? 0.5 : 1) * frenzySpeed);
+            if (distance < attackRange && enemy.attackTimer === 0 && !enemy.effects["眩晕"]) {
+                enemy.attackTimer = enemy.anesthetist ? 1.3 : enemy.kind === "runner" ? 1.05 : 1.35;
+                attackEnemyTarget(enemy, target);
             }
         });
-        if (enemy.hp <= 0)
-            return;
-        if (enemy.anesthetist && enemy.lifeTimer !== undefined) {
-            enemy.lifeTimer -= dt;
-            if (enemy.lifeTimer <= 0) {
-                enemy.hp = 0;
-                addFloatingText(enemy.x, enemy.y - 28, tx("医生撤离"), "#c9f4ff");
-                return;
-            }
-        }
-        if (enemy.poisonDamage > 0) {
-            enemy.poisonTimer -= dt;
-            if (enemy.poisonTimer <= 0) {
-                enemy.poisonTimer = 1;
-                const damage = schoolClassDuration > 0 ? enemy.poisonDamage * 0.8 : enemy.poisonDamage;
-                const poisonDamage = Math.min(enemy.hp, damage);
-                enemy.hp = Math.max(0, enemy.hp - poisonDamage);
-                healFromDamage(poisonDamage, enemy.x, enemy.y);
-                addFloatingText(enemy.x, enemy.y - 30, `-${poisonDamage} 毒`, "#9cff65");
-                if (enemy.hp <= 0) {
-                    if (enemy.duelBot)
-                        finishDuelRound(true);
-                    else
-                        addEnemyLoot(enemy);
-                }
-            }
-            if (enemy.hp <= 0)
-                return;
-        }
-        if ((enemy.igniteDamage || 0) > 0) {
-            enemy.igniteTimer = Math.max(0, (enemy.igniteTimer || 1) - dt);
-            if (enemy.igniteTimer === 0) {
-                enemy.igniteTimer = 1;
-                const burn = schoolClassDuration > 0 ? (enemy.igniteDamage || 0) * 0.8 : (enemy.igniteDamage || 0);
-                const burnDamage = Math.min(enemy.hp, Math.max(1, Math.round(burn)));
-                enemy.hp = Math.max(0, enemy.hp - burnDamage);
-                healFromDamage(burnDamage, enemy.x, enemy.y);
-                addFloatingText(enemy.x, enemy.y - 30, `-${burnDamage} ${tx("引燃")}`, "#ff8fc4");
-                spawnImpact(enemy.x, enemy.y, "#ff8fc4");
-                if (enemy.hp <= 0) {
-                    if (enemy.duelBot)
-                        finishDuelRound(true);
-                    else
-                        addEnemyLoot(enemy);
-                }
-            }
-            if (enemy.hp <= 0)
-                return;
-        }
-        if (enemy.gymRusher)
-            return;
-        if (enemy.duelBot) {
-            if (enemy.effects["狂舞"] > 0)
-                updateDuelBotFrenzy(enemy, dt);
-            else
-                updateDuelBot(enemy, dt);
-            return;
-        }
-        if (enemy.storySkills && enemy.storySkills.length > 0)
-            updateStoryEnemySkill(enemy, dt);
-        const target = getEnemyTarget(enemy);
-        if (!target)
-            return;
-        const distance = Math.hypot(target.x - enemy.x, target.y - enemy.y);
-        const attackRange = enemy.anesthetist ? 54 : enemy.kind === "brute" ? 70 : 48;
-        if (distance > attackRange && !enemy.effects["禁锢"] && !enemy.effects["眩晕"]) {
-            const speed = enemy.speed * enemySlowMultiplier(enemy) *
-                (schoolClassDuration > 0 ? 0.4 : 1) * dt;
-            moveEnemyToward(enemy, target, speed, dt);
-        }
-        const frenzySpeed = enemy.effects["狂舞"] > 0 ? frenzyAttackSpeedMultiplier() : 1;
-        enemy.attackTimer = Math.max(0, enemy.attackTimer - dt * (schoolClassDuration > 0 ? 0.5 : 1) * frenzySpeed);
-        if (distance < attackRange && enemy.attackTimer === 0 && !enemy.effects["眩晕"]) {
-            enemy.attackTimer = enemy.anesthetist ? 1.3 : enemy.kind === "runner" ? 1.05 : 1.35;
-            attackEnemyTarget(enemy, target);
-        }
-    });
+    }
     updatePipaMinions(dt);
     if (skillIsPaused())
         return;
@@ -7405,7 +8390,7 @@ function drawFrame(timestamp) {
             (schoolClassDuration > 0 ? 0.4 : 1);
         if (!playerMovementLocked() && !afterimageDash && !jianghuDash)
             movePlayer(dx * movementSpeed * dt, dy * movementSpeed * dt);
-        playerState.energy = Math.min(playerState.maxEnergy, playerState.energy + dt * playerState.energyRegen);
+        playerState.energy = Math.min(playerState.maxEnergy, playerState.energy + dt * playerState.energyRegen * grappleEnergyRegenMultiplier());
         updateCombat(dt);
         if (Math.floor(playerState.energy) !== lastHudEnergy)
             updateHud();
@@ -7574,3 +8559,107 @@ else {
 }
 drawMap();
 scheduleFrame();
+/**
+ * 测试钩子：只在页面显式设置 `window.__GRAPPLE_TEST_HOOK__ = true` 时挂载。
+ *
+ * 浏览器里不会触发（生产环境没有这个标志），所以对正式包零影响。
+ * 存在的意义是让 `tests/grapple_hero.test.cjs` 能用 DOM stub 真跑一遍
+ * 飞索超人的战斗逻辑，而不是只测纯函数。
+ */
+if (window.__GRAPPLE_TEST_HOOK__) {
+    window.__grappleTest = {
+        step(dt) {
+            updateCombat(dt);
+        },
+        movePlayer(dx, dy) {
+            movePlayer(dx, dy);
+        },
+        basicAttack() {
+            return basicAttack();
+        },
+        castSkill(index) {
+            castSkill(index);
+        },
+        getPlayerX() { return player.x; },
+        getPlayerY() { return player.y; },
+        getEnergy() { return playerState.energy; },
+        setPlayerPosition(x, y) {
+            player.x = x;
+            player.y = y;
+        },
+        getOnRooftop() { return grappleOnRooftop; },
+        getStacks() { return grapplePassiveState.stacks; },
+        getEnergyRegenScale() { return grappleEnergyRegenScale(grapplePassiveState.stacks); },
+        resetPassive() {
+            grapplePassiveState.stacks = 0;
+            grapplePassiveState.stackTimer = 0;
+            grapplePassiveState.groundGrace = 0;
+            grapplePassiveState.onRooftop = false;
+            grappleEnergyStacks = 0;
+        },
+        getLeapCharges() { return grappleLeapCharges; },
+        getLeapActive() { return !!grappleLeap; },
+        getHookActive() { return !!grappleHook; },
+        getHookPhase() { return grappleHook ? grappleHook.phase : "none"; },
+        getHookTargetKind() { return grappleHook ? grappleHook.hitKind : "none"; },
+        getHookTimeStop() { return !!grappleHook && grappleHook.timeStop; },
+        getTimeStopped() { return grappleTimeStopped(); },
+        getTier(skillId) { return skillProgress.get(skillId)?.tier || 1; },
+        setTier(skillId, tier) {
+            const progress = skillProgress.get(skillId);
+            if (progress)
+                progress.tier = tier;
+        },
+        getMyriadActive() { return !!grappleMyriad; },
+        spawnEnemy(x, y, hp) {
+            enemies.push({
+                id: `test-enemy-${enemies.length}`,
+                x, y, hp, maxHp: hp,
+                attackTimer: 1, attack: 10, speed: 100,
+                kind: "grunt", poisonDamage: 0, poisonTimer: 0,
+                effects: {}, experienceAwarded: false,
+            });
+        },
+        getEnemyPosition() {
+            const enemy = enemies[0];
+            return enemy ? { x: enemy.x, y: enemy.y } : { x: 0, y: 0 };
+        },
+        getEnemyHp() { return enemies[0]?.hp ?? 0; },
+        getEnemyEffects() {
+            return { ...(enemies[0]?.effects || {}) };
+        },
+        /** 用确定的建筑覆盖随机地图布局，让屋顶判定可测。 */
+        setTestObstacles(list) {
+            obstacles.length = 0;
+            list.forEach((item) => obstacles.push({ ...item }));
+        },
+        resetAll() {
+            grappleHook = undefined;
+            grappleLeap = undefined;
+            grappleMyriad = undefined;
+            grappleOnRooftop = false;
+            grappleRooftopRect = undefined;
+            grappleLeapCharges = grappleLeapChargeMax;
+            grappleLeapRechargeTimer = 0;
+            grapplePassiveState.stacks = 0;
+            grapplePassiveState.stackTimer = 0;
+            grapplePassiveState.groundGrace = 0;
+            grapplePassiveState.onRooftop = false;
+            grappleEnergyStacks = 0;
+            enemies.length = 0;
+            skillCooldowns.clear();
+            // 测试之间必须完全隔离：升阶进度、普攻冷却、朝向都会影响后续断言。
+            skillProgress.forEach((progress) => {
+                progress.tier = 1;
+                progress.minorUpgrades = 0;
+            });
+            basicAttackTimer = 0;
+            facing.x = 1;
+            facing.y = 0;
+            delete statusEffects["无敌"];
+            player.invulnerable = false;
+            invulnerableTimer = 0;
+            playerState.energy = playerState.maxEnergy;
+        },
+    };
+}

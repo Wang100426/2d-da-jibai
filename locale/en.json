@@ -776,7 +776,11 @@
       "class_name": "Astral Ring Controller",
       "tagline": "Gather starlight, then trap your foes beneath the cosmos.",
       "initial": "S",
-      "stats": ["Attack", "Defense", "Mobility"],
+      "stats": [
+        "Attack",
+        "Defense",
+        "Mobility"
+      ],
       "passive": {
         "name": "Astral Ring",
         "description": "Each basic attack grants 1 Star Energy, up to 6. At 6, your next basic attack is empowered: its damage radius is tripled, and enemies hit are stunned for 1s and slowed for 3s."
@@ -786,19 +790,19 @@
           "name": "Trapped in Starlight",
           "kind": "Ultimate",
           "description": "Create a distant great ring · trap and damage enemies",
-          "detail_description": "Create a large ring at the nearest enemy's position, regardless of distance. For 5s, enemies inside cannot leave and take damage every 0.5s; you can pass through freely. Tier 2: enemies inside are stunned for 0.5s every 0.5s. Tier 3: enemies are also slowed by 30% and take 30% more damage."
+          "detail_description": "Create a large ring at the nearest enemy's position, regardless of distance. For 5s, enemies inside cannot leave and take damage every 0.5s; you can pass through freely."
         },
         "star-guard": {
           "name": "Astral Guard",
           "kind": "Skill",
           "description": "Guard for 3s · block damage and gain Star Energy",
-          "detail_description": "Gain Astral Guard for 3s and block 1 hit; a successful block grants 3 Star Energy. Tier 2: block 2 hits. Tier 3: each successful block deals 200% of the blocked damage to every enemy within basic-attack range."
+          "detail_description": "Gain Astral Guard for 3s and block 1 hit; a successful block grants 3 Star Energy."
         },
         "star-suppression": {
           "name": "Star Suppression",
           "kind": "Skill",
           "description": "Drop a ring at the nearest enemy · stun and slow",
-          "detail_description": "Drop a ring at the nearest enemy within basic-attack range, stunning enemies inside for 1s and slowing them by 40% for 3s. Enemies still inside after 2.5s trigger an explosion that deals damage and stuns for another 1s. Tier 2: explode 3 times at 0.5s intervals; the last two explosions do not stun. Tier 3: target the 2 nearest enemies; if only one is available, double the stun and slow durations."
+          "detail_description": "Drop a ring at the nearest enemy within basic-attack range, stunning enemies inside for 1s and slowing them by 40% for 3s. Enemies still inside after 2.5s trigger an explosion that deals damage and stuns for another 1s."
         }
       }
     },
@@ -834,6 +838,41 @@
           "kind": "Skill",
           "description": "Unlimited magazine for several seconds",
           "detail_description": "Your magazine is treated as unlimited for 3 seconds; keep firing basketballs at 5 per second."
+        }
+      }
+    },
+    "grapple": {
+      "name": "Grapple Man",
+      "class_name": "Rooftop Hunter",
+      "tagline": "Swing between rooftops and see who hits the ground first.",
+      "initial": "G",
+      "stats": [
+        "攻击",
+        "防御",
+        "机动"
+      ],
+      "passive": {
+        "name": "High Altitude Charge",
+        "description": "You can stay on top of buildings. Every 2 seconds spent there, energy recovery speed +10%, with no cap. Leaving the ground keeps your stacks for 3 seconds; return to a building within that window and you keep half of them. Jumping between buildings keeps your stacks unchanged."
+      },
+      "skills": {
+        "grapple-ult": {
+          "name": "Myriad Grapple",
+          "kind": "Ultimate",
+          "description": "Pull every enemy in range · drag them to you and stun",
+          "detail_description": "Pull all enemies within 2x your basic-attack range and drag them to you over 1 second (to the building edge if you are on a building), dealing heavy damage and stunning them for 1 second."
+        },
+        "grapple-hook": {
+          "name": "Grapple Hook",
+          "kind": "Skill",
+          "description": "Throw a grapple toward your movement · reel yourself in",
+          "detail_description": "Fire a grapple in your movement direction; it stops on a building, an enemy hero or the map edge, then reels you toward that spot — you actually fly there, no teleporting. You are invincible and pass through buildings while flying, damaging nearby enemies, and land with area damage and knockback. Hit an enemy and it stays stunned for the whole flight."
+        },
+        "grapple-leap": {
+          "name": "Grapple Leap",
+          "kind": "Skill",
+          "description": "Jump into the air · land on a roof or slam the ground",
+          "detail_description": "Jump for 1 second, passing through buildings, invincible and following your movement keys. Land on a building and you stay up there: no basic attacks, and your hook only locks onto buildings (hitting the map edge refunds 70% cooldown), dealing damage without knockback. Land on the ground and nearby enemies take damage and are slowed, and you gain 1 extra second of invincibility."
         }
       }
     }
@@ -889,9 +928,6 @@
       "眩晕中无法行动": "Stunned: unable to act",
       "狂舞中无法行动": "Frenzied: unable to act",
       "禁锢中无法移动": "Rooted: unable to move",
-      "星能已充满": "Star Energy full",
-      "星环横扫": "Astral ring sweep",
-      "星星飞射": "Star shot",
       "星能已充满": "Star Energy full",
       "星环横扫": "Astral ring sweep",
       "星星飞射": "Star shot",
@@ -1640,7 +1676,7 @@
       "event.train_damage": "Train impact -{damage}",
       "float.sakura_invincible": "Sakura guard",
       "skill.jianghu_xia_ke_xing": "{name} begins: invulnerable dash chain, up to {max} dashes {interval}s apart.",
-      "skill.jianghu_xia_ke_xing_stop": "{name} ends: {used} dashes landed, {refund}% cooldown refunded.",
+      "skill.jianghu_xia_ke_xing_stop": "{name} ends: {used}/{max} dashes landed, {cooldown}s cooldown remaining.",
       "skill.jianghu_xia_ke_xing_empty": "{name}: nothing in range, cooldown cleared.",
       "skill.jianghu_flight": "{name} is active: +{speed}% movement speed and +{dodge}% dodge for {seconds}s.",
       "float.execute": "EXECUTED!",
@@ -1678,7 +1714,21 @@
       "pause_stats.equipment_attack": "Gear Attack",
       "story.tag": "STORY BATTLE",
       "story.tag_arena": "STORY BATTLE · 1V1 ARENA",
-      "story.hint": "Clear the target waves to leave this memory."
+      "story.hint": "Clear the target waves to leave this memory.",
+      "skill.grapple_hook_start": "{name} thrown!",
+      "skill.grapple_hook_end": "{name} hit {hits} enemies.",
+      "skill.grapple_leap_no_charge": "Grapple Leap has no charges left.",
+      "skill.grapple_leap_rooftop": "{name} landed on a rooftop — hold your ground.",
+      "skill.grapple_leap_ground": "{name} slammed the ground, slowing enemies.",
+      "skill.grapple_myriad_start": "{name} pulls {hits} enemies!",
+      "skill.grapple_myriad_end": "{name} finished pulling, hitting {hits} enemies.",
+      "skill.grapple_myriad_miss": "No enemies within range of {name} (max {range}).",
+      "float.grapple_stack_half": "Stacks halved",
+      "float.grapple_leap": "Grapple Leap",
+      "float.grapple_rooftop": "Rooftop secured",
+      "float.grapple_edge_refund": "Cooldown refunded",
+      "basic.grapple_rooftop_blocked": "Cannot basic attack from a rooftop (unlocks at Tier 3).",
+      "float.grapple_fall": "Back to ground"
     }
   },
   "lobby": {

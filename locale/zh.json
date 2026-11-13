@@ -776,7 +776,11 @@
       "class_name": "星环控场师",
       "tagline": "以星能点亮星环，将敌人困于星空。",
       "initial": "星",
-      "stats": ["攻击", "防御", "机动"],
+      "stats": [
+        "攻击",
+        "防御",
+        "机动"
+      ],
       "passive": {
         "name": "星环之力",
         "description": "每次普攻获得 1 层星能，最多 6 层；攒满后强化下一次普攻，伤害范围扩大至 3 倍，命中敌人眩晕 1 秒并减速 3 秒。"
@@ -786,19 +790,19 @@
           "name": "困于星空",
           "kind": "大招",
           "description": "无视距离生成大星环 · 困住敌人并持续造成伤害",
-          "detail_description": "在最近敌人位置生成半径 150 的大星环，持续 5 秒。星环内敌人无法离开并每 0.5 秒受到伤害，自己可以自由穿行。2 阶：星环内敌人每 0.5 秒眩晕 0.5 秒。3 阶：敌人额外减速 30%，受到的伤害提高 30%。"
+          "detail_description": "在最近敌人位置生成半径 150 的大星环，持续 5 秒。星环内敌人无法离开并每 0.5 秒受到伤害，自己可以自由穿行。"
         },
         "star-guard": {
           "name": "星环守护",
           "kind": "小技能",
           "description": "获得 3 秒守护 · 抵挡伤害并积攒星能",
-          "detail_description": "获得持续 3 秒的星环守护，可抵挡 1 次伤害；成功抵挡后获得 3 层星能。2 阶：抵挡次数提高至 2 次。3 阶：每次成功抵挡时，对普攻范围内所有敌人造成相当于抵挡伤害 200% 的伤害。"
+          "detail_description": "获得持续 3 秒的星环守护，可抵挡 1 次伤害；成功抵挡后获得 3 层星能。"
         },
         "star-suppression": {
           "name": "星之压抑",
           "kind": "小技能",
           "description": "向最近敌人投放星环 · 眩晕并减速",
-          "detail_description": "向普攻范围内最近敌人的位置投放星环，范围内敌人眩晕 1 秒并减速 40%、持续 3 秒。若敌人在 2.5 秒内没有离开星环，星环爆炸并造成伤害，额外眩晕 1 秒。2 阶：爆炸 3 次，每次间隔 0.5 秒，后两次不造成眩晕。3 阶：可投放至最近 2 名敌人；若只有 1 名，眩晕和减速持续时间翻倍。"
+          "detail_description": "向普攻范围内最近敌人的位置投放星环，范围内敌人眩晕 1 秒并减速 40%、持续 3 秒。若敌人在 2.5 秒内没有离开星环，星环爆炸并造成伤害，额外眩晕 1 秒。"
         }
       }
     },
@@ -834,6 +838,41 @@
           "kind": "小技能",
           "description": "接下来数秒内弹夹无限",
           "detail_description": "接下来 3 秒内弹夹容量视为无限，可以持续以 5 个/秒的速度射出篮球。"
+        }
+      }
+    },
+    "grapple": {
+      "name": "飞索超人",
+      "class_name": "高空猎手",
+      "tagline": "在楼顶之间荡来荡去，看谁先落地。",
+      "initial": "飞",
+      "stats": [
+        "攻击",
+        "防御",
+        "机动"
+      ],
+      "passive": {
+        "name": "高空充能",
+        "description": "可以待在建筑上方。每待 2 秒，能量恢复速度 +10%，没有上限；回到地面时保留 3 秒，期间回到建筑上会重新保留一半的层数。在建筑之间跳跃，层数不变。"
+      },
+      "skills": {
+        "grapple-ult": {
+          "name": "万重飞索",
+          "kind": "大招",
+          "description": "牵引范围内所有敌人 · 拉向自己并眩晕",
+          "detail_description": "将 2 倍普攻范围内的所有敌人牵引，在 1 秒内拉向自己（在建筑上就拉到建筑边缘），造成大量伤害并眩晕 1 秒。"
+        },
+        "grapple-hook": {
+          "name": "飞索·抓",
+          "kind": "小技能",
+          "description": "朝移动方向抛出飞索 · 拉向命中点",
+          "detail_description": "向移动方向发射飞索，击中建筑、敌方英雄或地图边缘停下，并将自己拉向该位置——不是瞬间移动，是真的飞过去。期间无敌并可以穿透建筑物，飞行时对附近敌人造成伤害，在停止点造成范围伤害和击退。如果击中敌方，其在自己飞行过程中保持眩晕。"
+        },
+        "grapple-leap": {
+          "name": "飞索·移",
+          "kind": "小技能",
+          "description": "跳向空中 · 落在建筑上或砸向地面",
+          "detail_description": "在 1 秒内跳起，期间可以穿透建筑，无敌且跟随键盘位移控制。如果跳结束时在建筑上，那么留在建筑上，普攻无法使用，一技能只能锁定建筑（碰到地图边缘返还 70% 冷却），飞行时只能造成伤害；如果结束时在地面上，那么对周围敌人造成伤害和减速，并额外获得 1 秒无敌。"
         }
       }
     }
@@ -1294,7 +1333,21 @@
       "pause_stats.equipment_attack": "装备攻击",
       "story.tag": "剧情战斗",
       "story.tag_arena": "剧情战斗 · 1V1 竞技场",
-      "story.hint": "清完目标波次即可脱离这段记忆。"
+      "story.hint": "清完目标波次即可脱离这段记忆。",
+      "skill.grapple_hook_start": "抛出{name}！",
+      "skill.grapple_hook_end": "{name}命中 {hits} 个敌人。",
+      "skill.grapple_leap_no_charge": "飞索·移没有充能了。",
+      "skill.grapple_leap_rooftop": "{name}落在建筑上，可以继续蹲守。",
+      "skill.grapple_leap_ground": "{name}砸向地面，敌人被减速。",
+      "skill.grapple_myriad_start": "{name}牵引 {hits} 个敌人！",
+      "skill.grapple_myriad_end": "{name}完成牵引，命中 {hits} 个敌人。",
+      "skill.grapple_myriad_miss": "{name}范围内没有敌人（最大距离 {range}）。",
+      "float.grapple_stack_half": "层数减半",
+      "float.grapple_leap": "飞索·移",
+      "float.grapple_rooftop": "占领屋顶",
+      "float.grapple_edge_refund": "返还冷却",
+      "basic.grapple_rooftop_blocked": "站在建筑上无法普攻（3 阶可解锁）。",
+      "float.grapple_fall": "落回地面"
     }
   },
   "lobby": {
