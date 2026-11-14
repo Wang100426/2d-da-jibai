@@ -28,7 +28,10 @@ STORY_SAVE_VERSION = 1
 
 # 剧情战斗可以锁地图：写 `battle.map_theme` 就用那张；不写则默认 1V1 竞技场。
 STORY_ARENA_THEME = "arena"
-STORY_MAP_THEMES = ("arena", "city", "hospital", "music", "gym", "airport", "station", "school")
+STORY_MAP_THEMES = (
+    "arena", "city", "hospital", "music", "gym", "airport", "station", "school",
+    "ancient_town", "windy_valley", "neon_beach",
+)
 # 地图 id → locale ui 的显示名键（arena 是剧情专属，跟 1V1 共用场地）
 MAP_LABEL_KEYS = {
     "arena": "STORY_ARENA_MAP",
@@ -39,6 +42,9 @@ MAP_LABEL_KEYS = {
     "airport": "MAP_AIRPORT",
     "station": "MAP_STATION",
     "school": "MAP_SCHOOL",
+    "ancient_town": "MAP_ANCIENT_TOWN",
+    "windy_valley": "MAP_WINDY_VALLEY",
+    "neon_beach": "MAP_NEON_BEACH",
 }
 
 # 剧情分类：赛博世界剧情 / 英雄剧情
@@ -864,7 +870,7 @@ def resolve_battle_map(battle, *, story_battle: bool, game_mode: str = "rogue",
         return {"map_theme": map_theme, "arena": False, "locked": True, "invalid": False}
     if game_mode == "duel":
         return {"map_theme": "city", "arena": False, "locked": False, "invalid": False}
-    options = themes[:-1] if has_room else themes
+    options = tuple(theme for theme in themes if theme != "school") if has_room else themes
     picked = chooser(options) if chooser else options[0]
     if picked not in options:
         picked = options[0]

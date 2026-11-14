@@ -21,9 +21,10 @@ if (!fs.existsSync(grapplePath)) {
 }
 
 const grappleCode = fs.readFileSync(grapplePath, "utf8");
-vm.runInThisContext(`${grappleCode}\nglobalThis.__grapple = { castGrappleRay, findRooftopUnder, clampToBuildingEdge, advanceGrapplePassive, grappleEnergyRegenScale, advanceGrappleCharges };`);
+vm.runInThisContext(`${grappleCode}\nglobalThis.__grapple = { castGrappleRay, resolveGrappleLanding, findRooftopUnder, clampToBuildingEdge, advanceGrapplePassive, grappleEnergyRegenScale, advanceGrappleCharges };`);
 const {
   castGrappleRay,
+  resolveGrappleLanding,
   findRooftopUnder,
   clampToBuildingEdge,
   advanceGrapplePassive,
@@ -82,6 +83,28 @@ test("起点贴在边界上朝外射，算命中边缘（距离 0）", () => {
   assert.equal(hit.kind, "edge");
   assert.equal(hit.x, 0);
   assert.equal(hit.distance, 0);
+});
+
+test("飞索命中建筑后落在建筑外，角色不会卡进碰撞体", () => {
+  const hit = castGrappleRay(0, 150, 1, 0, 600, [BUILDING], []);
+  const landing = resolveGrappleLanding(0, 150, hit, 19);
+  assert.ok(landing.x < BUILDING.x - 19, `落点应在建筑外，实际 x=${landing.x}`);
+  assert.equal(landing.y, 150);
+});
+
+test("飞索命中地图边缘后落点保留角色半径", () => {
+  const hit = castGrappleRay(500, 150, -1, 0, 600, [], []);
+  const landing = resolveGrappleLanding(500, 150, hit, 19);
+  assert.equal(landing.x, 21);
+  assert.equal(landing.y, 150);
+});
+
+test("飞索落点按当前战场尺寸限制", () => {
+  const hit = castGrappleRay(800, 450, 1, 0, 900, [], [], false, 1400, 900);
+  assert.equal(hit.x, 1400);
+  const landing = resolveGrappleLanding(800, 450, hit, 19, 1400, 900);
+  assert.equal(landing.x, 1379);
+  assert.equal(landing.y, 450);
 });
 
 test("建筑后方还有建筑时命中更近的那个", () => {

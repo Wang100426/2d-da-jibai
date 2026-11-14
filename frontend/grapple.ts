@@ -47,6 +47,11 @@ interface GrappleRayHit {
   distance: number;
 }
 
+interface GrappleLanding {
+  x: number;
+  y: number;
+}
+
 /** 射线起点与一个圆形目标（敌人）的碰撞测试。 */
 interface GrappleCircleTarget {
   id: string;
@@ -122,6 +127,8 @@ function castGrappleRay(
   obstacles: GrappleObstacle[],
   targets: GrappleCircleTarget[],
   onlyStructure = false,
+  mapWidth = MAP_WIDTH,
+  mapHeight = MAP_HEIGHT,
 ): GrappleRayHit | undefined {
   const length = Math.hypot(dirX, dirY);
   if (!length) return undefined;
@@ -172,9 +179,9 @@ function castGrappleRay(
   const edges: [number, number, number, boolean, number][] = [
     // [起点轴值, 方向, 边界值, 是否竖直边, 允许的射线方向符号]
     [originX, unitX, 0, false, -1],
-    [originX, unitX, MAP_WIDTH, false, 1],
+    [originX, unitX, mapWidth, false, 1],
     [originY, unitY, 0, true, -1],
-    [originY, unitY, MAP_HEIGHT, true, 1],
+    [originY, unitY, mapHeight, true, 1],
   ];
   edges.forEach(([origin, dir, boundary, isVertical, allowedSign]) => {
     if (Math.abs(dir) < 1e-9) return;
@@ -186,10 +193,10 @@ function castGrappleRay(
     // 斜射时还要确认交点落在那条边的有效范围内，否则会算出边界外的点。
     if (isVertical) {
       const cross = originY + unitY * distance;
-      if (cross < -1e-9 || cross > MAP_HEIGHT + 1e-9) return;
+      if (cross < -1e-9 || cross > mapHeight + 1e-9) return;
     } else {
       const cross = originX + unitX * distance;
-      if (cross < -1e-9 || cross > MAP_WIDTH + 1e-9) return;
+      if (cross < -1e-9 || cross > mapWidth + 1e-9) return;
     }
     edgeDistance = Math.min(edgeDistance, Math.max(0, distance));
   });
@@ -205,6 +212,33 @@ function castGrappleRay(
   }
 
   return best;
+}
+
+/**
+ * Keep ground hooks from ending inside a building or beyond the map boundary.
+ * Rooftop transfers still use the building hit point and are clamped to the roof
+ * by the battle state machine.
+ */
+function resolveGrappleLanding(
+  originX: number,
+  originY: number,
+  hit: GrappleRayHit,
+  playerRadius: number,
+  mapWidth = MAP_WIDTH,
+  mapHeight = MAP_HEIGHT,
+): GrappleLanding {
+  let x = hit.x;
+  let y = hit.y;
+  if (hit.kind === "building" && hit.obstacle) {
+    const distance = Math.hypot(x - originX, y - originY) || 1;
+    const inset = playerRadius + 2;
+    x -= (x - originX) / distance * inset;
+    y -= (y - originY) / distance * inset;
+  }
+  return {
+    x: Math.max(playerRadius + 2, Math.min(mapWidth - playerRadius - 2, x)),
+    y: Math.max(playerRadius + 2, Math.min(mapHeight - playerRadius - 2, y)),
+  };
 }
 
 /**

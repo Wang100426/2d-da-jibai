@@ -102,7 +102,7 @@ const ids = {};
 const ELEMENT_IDS = [
   "basic-attack", "combat-traits", "energy-bar", "energy-label", "final-wave", "hp-bar",
   "hp-label", "loot-count", "map-mode", "map-toast", "minimap", "peer-list",
-  "pickup-prompt", "retry-run", "run-level", "run-over-overlay", "shield-bar",
+  "pickup-key", "pickup-label", "pickup-prompt", "retry-run", "run-level", "run-over-overlay", "shield-bar",
   "skill-exp-bar", "skill-exp-label", "skill-upgrade-choices", "skill-upgrade-overlay",
   "skill-upgrade-subtitle", "skill-upgrade-title", "touch-mode-toggle", "upgrade-choices",
   "upgrade-overlay", "wave-subtitle", "wave-title",
@@ -352,6 +352,10 @@ step(0.016);
 check("走到建筑区域不能自动上屋顶", api.getOnRooftop() === false);
 jumpToRoof(BUILDING.x + BUILDING.w / 2, BUILDING.y + BUILDING.h / 2 - 19);
 check("上屋顶后状态生效", api.getOnRooftop() === true);
+const rooftopHp = api.getPlayerHp();
+check("屋顶状态免疫地图事件伤害",
+  api.damagePlayerFromEvent(80) === false && api.getPlayerHp() === rooftopHp,
+  `血量 ${rooftopHp} -> ${api.getPlayerHp()}`);
 // 连续移动多帧，状态不能被逐帧 findRooftopUnder 判掉。
 for (let i = 0; i < 120; i += 1) {
   api.movePlayer(i % 4 < 2 ? 6 : -6, i % 3 === 0 ? 5 : -5);
@@ -517,13 +521,13 @@ api.spawnEnemy(690, api.getPlayerY(), 500);
 api.setTier("grapple-hook", 2);
 api.castSkill(1);
 check("屋顶一技能只锁定另一栋建筑", api.getHookTargetKind() === "building");
-let rooftopDamageDuringTimeStop = false;
+let rooftopDamageDuringReel = false;
 for (let i = 0; i < 200 && api.getHookActive(); i += 1) {
   // 模拟持续按住与飞索方向相反的移动键，不能被旧屋顶平台边界夹回起点。
   api.movePlayer(-10000, 0);
   step(0.016);
-  if (api.getTimeStopped() && (api.getEnemyHp(0) < 500 || api.getEnemyHp(1) < 500)) {
-    rooftopDamageDuringTimeStop = true;
+  if (api.getHookPhase() === "reel" && (api.getEnemyHp(0) < 500 || api.getEnemyHp(1) < 500)) {
+    rooftopDamageDuringReel = true;
   }
 }
 check("屋顶一技能转移到目标建筑", api.getOnRooftop() === true &&
@@ -532,7 +536,7 @@ check("屋顶一技能转移到目标建筑", api.getOnRooftop() === true &&
 check("屋顶一技能转移途中对范围内敌人造成伤害",
   api.getEnemyHp(0) < 500 && api.getEnemyHp(1) < 500,
   `敌人血量 ${api.getEnemyHp(0)}, ${api.getEnemyHp(1)}`);
-check("二阶时间停滞时屋顶范围伤害仍即时结算", rooftopDamageDuringTimeStop);
+check("二阶全图眩晕时屋顶范围伤害仍即时结算", rooftopDamageDuringReel);
 
 /* ---------- 6. Q「万重飞索」牵引 ---------- */
 
@@ -563,35 +567,40 @@ check("地面上：普攻可用", api.basicAttack() === true);
 
 /* ---------- 8. 升阶行为 ---------- */
 
-// 2 阶：拉拽（玩家飞行）期间时间停滞，敌人不动；伤害延迟到落点结算。
+// 2 阶：命中瞬间对全场敌人施加眩晕（世界不再冻结），伤害延迟到落点结算。
 api.resetAll();
 api.setTier("grapple-hook", 2);
 check("2 阶：升阶进度写入", api.getTier("grapple-hook") === 2);
 api.spawnEnemy(600, 1000, 100);
+api.spawnEnemy(1100, 300, 100); // 远处的敌人也要被晕 —— 全图，不是沿途
 api.setPlayerPosition(100, 1000);
 api.castSkill(1);
-check("2 阶：飞索带时间停滞标记", api.getHookTimeStop() === true);
-
-let stoppedFrames = 0;
-let stopOrigin = null;
-let driftWhileStopped = 0;
-let hpWhileStopped = 100;
+check("2 阶：全图眩晕时长已记录", api.getGlobalStun() >= 1.2,
+  `眩晕 ${api.getGlobalStun().toFixed(2)}s`);
+check("2 阶：近处敌人被眩晕", api.getEnemyEffects(0)["眩晕"] > 0);
+check("2 阶：远处敌人同样被眩晕（全图）", api.getEnemyEffects(1)["眩晕"] > 0);
+check("2 阶：时间停滞已彻底移除",
+  api.getTimeStopped === undefined && api.getHookTimeStop === undefined);
+const stunAtCast = api.getEnemyEffects(0)["眩晕"];
+let driftWhileStunned = 0;
+let hpWhileReel = 100;
+const stunOrigin = api.getEnemyPosition();
 for (let i = 0; i < 200 && api.getHookActive(); i += 1) {
   step(0.016);
-  if (api.getTimeStopped()) {
+  if (api.getHookPhase() === "reel") {
     const now = api.getEnemyPosition();
-    if (!stopOrigin) stopOrigin = now;
-    stoppedFrames += 1;
-    driftWhileStopped = Math.max(driftWhileStopped,
-      Math.hypot(now.x - stopOrigin.x, now.y - stopOrigin.y));
-    hpWhileStopped = Math.min(hpWhileStopped, api.getEnemyHp());
+    driftWhileStunned = Math.max(driftWhileStunned,
+      Math.hypot(now.x - stunOrigin.x, now.y - stunOrigin.y));
+    hpWhileReel = Math.min(hpWhileReel, api.getEnemyHp());
   }
 }
-check("2 阶：拉拽阶段进入时间停滞", stoppedFrames > 0, `停滞帧 ${stoppedFrames}`);
-check("2 阶：停滞期间敌人完全不动", driftWhileStopped < 1,
-  `位移 ${driftWhileStopped.toFixed(2)}`);
-check("2 阶：停滞期间伤害不结算", hpWhileStopped === 100,
-  `最低血量 ${hpWhileStopped}`);
+check("2 阶：眩晕期间敌人不动", driftWhileStunned < 1,
+  `位移 ${driftWhileStunned.toFixed(2)}`);
+check("2 阶：眩晕计时正常递减（世界没被冻结）",
+  (api.getEnemyEffects(0)["眩晕"] || 0) < stunAtCast,
+  `${stunAtCast.toFixed(2)} -> ${(api.getEnemyEffects(0)["眩晕"] || 0).toFixed(2)}`);
+check("2 阶：拉拽期间伤害不结算", hpWhileReel === 100,
+  `最低血量 ${hpWhileReel}`);
 check("2 阶：落点后延迟伤害已结算", api.getEnemyHp() < 100,
   `当前血量 ${api.getEnemyHp()}`);
 
@@ -605,10 +614,10 @@ api.castSkill(1);
 check("3 阶：飞索穿透敌人只锁定建筑",
   api.getHookTargetKind() === "building",
   `命中类型 ${api.getHookTargetKind()}`);
-check("3 阶：被穿透的敌人未被锁定",
-  api.getEnemyHp() === 100 && !(api.getEnemyEffects()["眩晕"] > 0));
+check("3 阶：继承 2 阶的全图眩晕", api.getGlobalStun() >= 1.2,
+  `眩晕 ${api.getGlobalStun().toFixed(2)}s`);
 for (let i = 0; i < 200 && api.getHookActive(); i += 1) step(0.016);
-check("3 阶：穿透经过的敌人延迟结算伤害与眩晕",
+check("3 阶：穿透经过的敌人延迟结算伤害",
   api.getEnemyHp() < 100 && api.getEnemyEffects()["眩晕"] > 0,
   `血量 ${api.getEnemyHp()}，眩晕 ${api.getEnemyEffects()["眩晕"] || 0}`);
 

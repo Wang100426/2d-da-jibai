@@ -28,7 +28,7 @@ interface BattleSpace {
   supplies: BattleSupply[];
   /** 是否铺静态建筑（竞技场没有掩体）。 */
   staticObstacles: boolean;
-  /** 是否画道路（竞技场、机场、火车站都没有）。 */
+  /** 是否画道路（竞技场、机场、火车站及自然地貌地图都没有）。 */
   roads: boolean;
 }
 
@@ -79,6 +79,6 @@ function resolveBattleSpace(input: BattleSpaceInput = {}): BattleSpace {
     spawnY: theme === "airport" ? 1300 : 1200,
     supplies: NORMAL_SUPPLIES.map((supply) => ({ ...supply })),
     staticObstacles: true,
-    roads: theme !== "airport" && theme !== "station",
+    roads: !["airport", "station", "ancient_town", "windy_valley", "neon_beach"].includes(theme),
   };
 }

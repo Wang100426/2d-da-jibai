@@ -44,7 +44,7 @@ import story_script as s
 cases = {}
 cases["arena_default"] = s.resolve_battle_map({"target_waves": 1}, story_battle=True)
 cases["arena_explicit"] = s.resolve_battle_map({"map_theme": "arena"}, story_battle=True)
-for theme in ("school", "station", "gym", "hospital"):
+for theme in ("school", "station", "gym", "hospital", "ancient_town", "windy_valley", "neon_beach"):
     cases["lock_" + theme] = s.resolve_battle_map({"map_theme": theme}, story_battle=True)
 cases["invalid"] = s.resolve_battle_map({"map_theme": "town"}, story_battle=True)
 cases["rogue"] = s.resolve_battle_map({}, story_battle=False, chooser=lambda options: options[0])
@@ -65,7 +65,7 @@ test("剧情战斗没有 map_theme 时默认 1V1 竞技场", { skip: plainPython
 
 test("剧情战斗锁学校 / 火车站 / 体育馆 / 医院", { skip: plainPython ? false : "没有可用的 Python" }, () => {
   const cases = runPython(plainPython, LOGIC_SCRIPT);
-  ["school", "station", "gym", "hospital"].forEach((theme) => {
+  ["school", "station", "gym", "hospital", "ancient_town", "windy_valley", "neon_beach"].forEach((theme) => {
     const entry = cases[`lock_${theme}`];
     assert.equal(entry.map_theme, theme, `${theme} 没被锁住`);
     assert.equal(entry.arena, false, `${theme} 不应触发竞技场`);
@@ -84,7 +84,7 @@ test("普通肉鸽与人机对抗的选择不受剧情逻辑影响", { skip: pla
   assert.equal(cases.rogue.arena, false);
   assert.equal(cases.rogue.locked, false);
   assert.ok(cases.rogue.map_theme, "肉鸽应随机到一张合法地图");
-  assert.equal(cases.rogue_room.map_theme, "station", "联机房间排除最后一个主题（school）");
+  assert.equal(cases.rogue_room.map_theme, "neon_beach", "联机房间排除学校地图");
   assert.equal(cases.duel.map_theme, "city");
   assert.equal(cases.duel.arena, false);
   assert.equal(cases.duel.locked, false);
@@ -169,7 +169,10 @@ test("/battle 路由：arena 开关与锁定地图真的注入到页面", { skip
   assert.equal(routes.rogue.arena, false);
   assert.equal(routes.rogue.duel, false);
   assert.equal(routes.rogue.arena_event, false, "普通肉鸽要保持原本的事件文案");
-  assert.ok(["city", "hospital", "music", "gym", "airport", "station", "school"].includes(routes.rogue.theme));
+  assert.ok([
+    "city", "hospital", "music", "gym", "airport", "station", "school",
+    "ancient_town", "windy_valley", "neon_beach",
+  ].includes(routes.rogue.theme));
 
   assert.equal(routes.duel.duel, true);
   assert.equal(routes.duel.arena, false);

@@ -1,5 +1,34 @@
 # 更新日志 / Updates
 
+## 2.8.2
+
+### 中文
+
+- **飞索超人修复**：飞索命中建筑或地图边缘后使用安全落点，避免移动时卡住；在建筑屋顶上免疫地面地图事件伤害。
+- **地图布局修正**：霓虹城区的建筑生成会避开道路；赛博机场调整建筑位置，避免建筑侵入飞机跑道。
+- **新增古风小镇**：年夜饭定时出现，玩家与敌人都可争抢；食用后回复生命并获得限时加速。
+- **新增风起谷**：三股龙卷风随波次加速；卷起单位 1 秒，期间眩晕且免疫伤害，随后抛至空地并造成伤害与减速。
+- **新增霓虹海滩**：沙滩移速与攻速 +20%，海水区域移速与攻速 −20%。
+- **一技能 2 阶调整**：原「时间停滞」改为命中瞬间对全场敌人施加 1.5 秒眩晕；世界不再冻结，地图事件与状态倒计时照常推进。
+
+### English
+
+- **Grapple Man fixes:** grappling to buildings or map edges now uses a safe landing point to prevent getting stuck; rooftop Grapple Man is immune to ground-based map event damage.
+- **Map layout fixes:** Neon City buildings avoid roads, and Cyber Airport buildings are repositioned away from runways.
+- **New map — Ancient Town:** a timed feast can be claimed by either side, restoring health and granting temporary movement speed.
+- **New map — Windy Valley:** three tornadoes speed up with each wave. Units caught are stunned and invulnerable for one second, then thrown to open ground with damage and a brief slow.
+- **New map — Neon Beach:** movement and attack speed are 20% higher on sand and 20% lower in water.
+- **Tier 2 Hook rework:** time stop is replaced by a 1.5 s stun applied to every enemy on the map when the hook fires; the world keeps running instead of freezing.
+
+### 日本語
+
+- **グラップルマンを修正**：建物やマップ端へのフック後に安全な着地点を使い、移動中に動けなくなる問題を防止。屋上では地上マップイベントのダメージを受けません。
+- **マップ配置を修正**：ネオンシティの建物が道路を避けるようにし、サイバー空港の建物を滑走路から移動しました。
+- **新マップ「古風な町」**：時間経過で年越し料理が出現し、プレイヤーと敵が奪い合います。食べると回復し、一定時間移動速度が上がります。
+- **新マップ「風起谷」**：3つの竜巻がウェーブごとに加速します。巻き上げられたユニットは1秒間スタン・無敵になり、その後、空き地へ投げ飛ばされてダメージと短時間のスローを受けます。
+- **新マップ「ネオンビーチ」**：砂浜では移動速度と攻撃速度が20%上昇し、水中では20%低下します。
+- **E 2 段階を変更**：時間停止を廃止し、フック発動時にマップ上の全敵へ 1.5 秒のスタンが発生。世界は止まらず、マップイベントや状態のカウントは進みます。
+
 ## 2.8.1
 
 ### 中文

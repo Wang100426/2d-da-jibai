@@ -722,7 +722,7 @@ HEROES = [
                               3: {"label": "牵引时间延长至 1.5 秒，额外眩晕 1 秒", "patch": {"myriad_pull_duration": {"set": 1.5}, "effect_turns": {"add": 1}}}}},
             {"id": "grapple-hook", "name": "飞索·抓", "description": "地面抓向命中点；屋顶仅连接其他建筑并在转移途中造成范围伤害", "kind": "小技能", "target": "self", "action": "grapple_hook", "cost": 25, "cooldown": 8, "damage": 22, "radius": 130, "effect": "", "effect_turns": 0,
              "hook_range": 620, "hook_speed": 1150, "hook_flight_speed": 720, "hook_flight_damage": 9, "hook_flight_damage_interval": 0.35,
-             "tier_effects": {2: {"label": "非屋顶飞行期间时间停滞，飞行伤害延迟结算", "patch": {"hook_time_stop": {"set": 1}, "hook_defer_damage": {"set": 1}}},
+             "tier_effects": {2: {"label": "命中时对全场敌人施加 1.5 秒眩晕，飞行伤害延迟结算", "patch": {"hook_global_stun": {"set": 1.5}, "hook_defer_damage": {"set": 1}}},
                               3: {"label": "只锁定建筑与地图边缘，穿透敌人并眩晕", "patch": {"hook_only_structure": {"set": 1}, "hook_pierce_stun": {"set": 1}}}}},
             {"id": "grapple-leap", "name": "飞索·移", "description": "跳向空中 · 落在建筑上或砸向地面", "kind": "小技能", "target": "self", "action": "grapple_leap", "cost": 20, "cooldown": 1, "damage": 26, "radius": 150, "effect": "", "effect_turns": 0,
              "leap_charges": 5, "leap_recharge": 3, "leap_duration": 1, "leap_slow_turns": 2, "leap_slow_ratio": 0.5, "leap_edge_refund": 0.7,
@@ -2111,6 +2111,9 @@ def battle():
         "airport": ("MAP_AIRPORT", "MAP_EVENT_AIRPORT"),
         "station": ("MAP_STATION", "MAP_EVENT_STATION"),
         "school": ("MAP_SCHOOL", "MAP_EVENT_SCHOOL"),
+        "ancient_town": ("MAP_ANCIENT_TOWN", "MAP_EVENT_ANCIENT_TOWN"),
+        "windy_valley": ("MAP_WINDY_VALLEY", "MAP_EVENT_WINDY_VALLEY"),
+        "neon_beach": ("MAP_NEON_BEACH", "MAP_EVENT_NEON_BEACH"),
     }
     map_name_key, map_event_key = transition_map_keys[map_theme]
     if game_mode == "duel" and not multiplayer_config:

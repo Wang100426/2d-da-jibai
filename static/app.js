@@ -50,7 +50,7 @@ function resolveBattleSpace(input = {}) {
         spawnY: theme === "airport" ? 1300 : 1200,
         supplies: NORMAL_SUPPLIES.map((supply) => ({ ...supply })),
         staticObstacles: true,
-        roads: theme !== "airport" && theme !== "station",
+        roads: !["airport", "station", "ancient_town", "windy_valley", "neon_beach"].includes(theme),
     };
 }
 /**
@@ -254,7 +254,7 @@ function rayCircleEntry(originX, originY, dirX, dirY, target) {
  *
  * @param onlyStructure 3 阶：只锁定建筑与地图边缘，穿透敌人。
  */
-function castGrappleRay(originX, originY, dirX, dirY, range, obstacles, targets, onlyStructure = false) {
+function castGrappleRay(originX, originY, dirX, dirY, range, obstacles, targets, onlyStructure = false, mapWidth = MAP_WIDTH, mapHeight = MAP_HEIGHT) {
     const length = Math.hypot(dirX, dirY);
     if (!length)
         return undefined;
@@ -305,9 +305,9 @@ function castGrappleRay(originX, originY, dirX, dirY, range, obstacles, targets,
     const edges = [
         // [起点轴值, 方向, 边界值, 是否竖直边, 允许的射线方向符号]
         [originX, unitX, 0, false, -1],
-        [originX, unitX, MAP_WIDTH, false, 1],
+        [originX, unitX, mapWidth, false, 1],
         [originY, unitY, 0, true, -1],
-        [originY, unitY, MAP_HEIGHT, true, 1],
+        [originY, unitY, mapHeight, true, 1],
     ];
     edges.forEach(([origin, dir, boundary, isVertical, allowedSign]) => {
         if (Math.abs(dir) < 1e-9)
@@ -322,12 +322,12 @@ function castGrappleRay(originX, originY, dirX, dirY, range, obstacles, targets,
         // 斜射时还要确认交点落在那条边的有效范围内，否则会算出边界外的点。
         if (isVertical) {
             const cross = originY + unitY * distance;
-            if (cross < -1e-9 || cross > MAP_HEIGHT + 1e-9)
+            if (cross < -1e-9 || cross > mapHeight + 1e-9)
                 return;
         }
         else {
             const cross = originX + unitX * distance;
-            if (cross < -1e-9 || cross > MAP_WIDTH + 1e-9)
+            if (cross < -1e-9 || cross > mapWidth + 1e-9)
                 return;
         }
         edgeDistance = Math.min(edgeDistance, Math.max(0, distance));
@@ -343,6 +343,25 @@ function castGrappleRay(originX, originY, dirX, dirY, range, obstacles, targets,
         }
     }
     return best;
+}
+/**
+ * Keep ground hooks from ending inside a building or beyond the map boundary.
+ * Rooftop transfers still use the building hit point and are clamped to the roof
+ * by the battle state machine.
+ */
+function resolveGrappleLanding(originX, originY, hit, playerRadius, mapWidth = MAP_WIDTH, mapHeight = MAP_HEIGHT) {
+    let x = hit.x;
+    let y = hit.y;
+    if (hit.kind === "building" && hit.obstacle) {
+        const distance = Math.hypot(x - originX, y - originY) || 1;
+        const inset = playerRadius + 2;
+        x -= (x - originX) / distance * inset;
+        y -= (y - originY) / distance * inset;
+    }
+    return {
+        x: Math.max(playerRadius + 2, Math.min(mapWidth - playerRadius - 2, x)),
+        y: Math.max(playerRadius + 2, Math.min(mapHeight - playerRadius - 2, y)),
+    };
 }
 /**
  * 找到玩家脚下的建筑屋顶（用于判定「是否站在建筑上方」）。
@@ -707,6 +726,16 @@ let storySpawnSerial = 0;
 let randomEventWarning = 0;
 const trafficCars = [];
 const harpFields = [];
+let yearEndDinner;
+let yearEndDinnerTimer = 24 + Math.random() * 12;
+let tornadoPlayerLift;
+const valleyTornadoes = mapTheme === "windy_valley"
+    ? [
+        { x: 650, y: 1200, directionX: 0.8, directionY: 0.6, speed: 110, phase: 0 },
+        { x: 1600, y: 700, directionX: -0.7, directionY: 0.7, speed: 125, phase: 2 },
+        { x: 2550, y: 1300, directionX: -0.8, directionY: -0.6, speed: 140, phase: 4 },
+    ]
+    : [];
 const gymRushers = [];
 const airportPlanes = [];
 const pipaMinions = [];
@@ -839,6 +868,8 @@ const skillButtons = [...document.querySelectorAll(".map-skill[data-skill]")];
 const touchModeToggle = requireElement("#touch-mode-toggle");
 const toast = requireElement("#map-toast");
 const pickupPrompt = requireElement("#pickup-prompt");
+const pickupKey = requireElement("#pickup-key");
+const pickupLabel = requireElement("#pickup-label");
 const basicAttackButton = requireElement("#basic-attack");
 const hpBar = requireElement("#hp-bar");
 const shieldBar = requireElement("#shield-bar");
@@ -914,7 +945,8 @@ function enemySlowMultiplier(enemy, regularSlowMultiplier = 0.45) {
     const starSlow = enemy.effects["星之压抑减速"] ? 0.6
         : enemy.effects["星环减速"] ? 0.7 : 1;
     const dualToneRatio = [25, 35, 60, 90].reduce((strongest, ratio) => enemy.effects[`双音减速${ratio}`] ? Math.max(strongest, ratio / 100) : strongest, 0);
-    return Math.min(normalSlow, starSlow, 1 - dualToneRatio);
+    const haste = enemy.effects["年夜饭加速"] > 0 ? 1.2 : 1;
+    return Math.min(normalSlow, starSlow, 1 - dualToneRatio) * haste;
 }
 function applyDualToneSlow(enemy, ratio, duration) {
     const effect = `双音减速${Math.round(ratio * 100)}`;
@@ -923,6 +955,39 @@ function applyDualToneSlow(enemy, ratio, duration) {
 function playerMovementLocked() {
     return hasPlayerEffect("眩晕") || hasPlayerEffect("禁锢") || hasPlayerEffect("狂舞") ||
         !!dualTonePlay;
+}
+function terrainMovementMultiplier(x, y) {
+    if (mapTheme !== "neon_beach")
+        return 1;
+    if (y >= 1660)
+        return 0.8;
+    if (y >= 1350)
+        return 1.2;
+    return 1;
+}
+function terrainAttackSpeedMultiplier(x, y) {
+    if (mapTheme !== "neon_beach")
+        return 1;
+    if (y >= 1660)
+        return 0.8;
+    if (y >= 1350)
+        return 1.2;
+    return 1;
+}
+function mapThemeName() {
+    const keys = {
+        city: "MAP_CITY",
+        hospital: "MAP_HOSPITAL",
+        music: "MAP_MUSIC",
+        gym: "MAP_GYM",
+        airport: "MAP_AIRPORT",
+        station: "MAP_STATION",
+        school: "MAP_SCHOOL",
+        ancient_town: "MAP_ANCIENT_TOWN",
+        windy_valley: "MAP_WINDY_VALLEY",
+        neon_beach: "MAP_NEON_BEACH",
+    };
+    return t(keys[mapTheme]);
 }
 function playerActionsLocked() {
     return hasPlayerEffect("眩晕") || hasPlayerEffect("狂舞");
@@ -1097,12 +1162,46 @@ const schoolObstacles = [
 const airportObstacles = [
     { x: 970, y: 300, w: 430, h: 250, type: "building", name: "航站楼" },
     { x: 260, y: 310, w: 410, h: 250, type: "building", name: "货运中心" },
-    { x: 2070, y: 310, w: 440, h: 250, type: "building", name: "机库 A" },
+    { x: 1980, y: 100, w: 440, h: 250, type: "building", name: "机库 A" },
     { x: 260, y: 1810, w: 420, h: 250, type: "building", name: "维修机库" },
-    { x: 2230, y: 1810, w: 430, h: 250, type: "building", name: "机库 B" },
-    { x: 2040, y: 790, w: 300, h: 210, type: "building", name: "空管塔台" },
-    { x: 870, y: 1800, w: 360, h: 230, type: "building", name: "行李分拣中心" },
+    { x: 2470, y: 1810, w: 430, h: 250, type: "building", name: "机库 B" },
+    { x: 2310, y: 790, w: 300, h: 210, type: "building", name: "空管塔台" },
+    { x: 560, y: 1450, w: 360, h: 230, type: "building", name: "行李分拣中心" },
     { x: 1750, y: 330, w: 175, h: 130, type: "building", name: "机场消防站" },
+];
+const ancientTownObstacles = [
+    { x: 250, y: 260, w: 560, h: 330, type: "building", name: "牌楼街" },
+    { x: 2350, y: 260, w: 600, h: 330, type: "building", name: "茶坊" },
+    { x: 250, y: 1780, w: 580, h: 340, type: "building", name: "客栈" },
+    { x: 2370, y: 1780, w: 580, h: 340, type: "building", name: "戏台" },
+    { x: 1000, y: 320, w: 390, h: 260, type: "building", name: "染坊" },
+    { x: 1810, y: 320, w: 390, h: 260, type: "building", name: "药铺" },
+    { x: 960, y: 1800, w: 420, h: 250, type: "building", name: "米行" },
+    { x: 1820, y: 1800, w: 420, h: 250, type: "building", name: "灯坊" },
+    { x: 780, y: 900, w: 170, h: 52, type: "barrier", name: "石桥" },
+    { x: 2210, y: 1420, w: 170, h: 52, type: "barrier", name: "石桥" },
+];
+const windyValleyObstacles = [
+    { x: 250, y: 260, w: 520, h: 300, type: "building", name: "风蚀岩壁" },
+    { x: 2440, y: 280, w: 520, h: 310, type: "building", name: "断崖" },
+    { x: 270, y: 1800, w: 540, h: 300, type: "building", name: "峡谷巨石" },
+    { x: 2400, y: 1790, w: 560, h: 320, type: "building", name: "山脊" },
+    { x: 1020, y: 350, w: 300, h: 220, type: "building", name: "风化石柱" },
+    { x: 1900, y: 1750, w: 300, h: 250, type: "building", name: "风化石柱" },
+    { x: 830, y: 780, w: 210, h: 56, type: "barrier", name: "碎石带" },
+    { x: 2150, y: 1480, w: 220, h: 56, type: "barrier", name: "碎石带" },
+    { x: 1450, y: 480, w: 70, h: 220, type: "barrier", name: "岩柱" },
+    { x: 1690, y: 1740, w: 70, h: 220, type: "barrier", name: "岩柱" },
+];
+const neonBeachObstacles = [
+    { x: 250, y: 250, w: 580, h: 320, type: "building", name: "海滨旅店" },
+    { x: 2360, y: 250, w: 590, h: 320, type: "building", name: "霓虹码头" },
+    { x: 280, y: 850, w: 520, h: 300, type: "building", name: "冲浪俱乐部" },
+    { x: 2390, y: 850, w: 520, h: 300, type: "building", name: "海鲜市场" },
+    { x: 1030, y: 340, w: 370, h: 240, type: "building", name: "海岸观景台" },
+    { x: 1800, y: 340, w: 370, h: 240, type: "building", name: "潮汐研究所" },
+    { x: 930, y: 900, w: 180, h: 46, type: "barrier", name: "木栈道" },
+    { x: 2110, y: 1190, w: 190, h: 46, type: "barrier", name: "木栈道" },
 ];
 const stationObstacles = [
     { x: 0, y: 0, w: 3200, h: 300, type: "building", name: "候车厅" },
@@ -1110,21 +1209,42 @@ const stationObstacles = [
     { x: 2650, y: 2292, w: 340, h: 96, type: "building", name: "检票口" },
 ];
 function randomizeObstacleLayout(source) {
-    return source.map((item) => {
-        const jitter = item.type === "building" ? 76 : 48;
-        let x = item.x;
-        let y = item.y;
-        for (let attempt = 0; attempt < 12; attempt += 1) {
-            x = Math.max(70, Math.min(map.width - item.w - 70, item.x + (Math.random() * 2 - 1) * jitter));
-            y = Math.max(70, Math.min(map.height - item.h - 70, item.y + (Math.random() * 2 - 1) * jitter));
-            const spawnOverlaps = x < 1630 && x + item.w > 1570 && y < 1230 && y + item.h > 1170;
-            if (!spawnOverlaps)
-                break;
-            x = item.x;
-            y = item.y;
+    const layout = [];
+    source.forEach((item) => {
+        if (mapTheme === "airport") {
+            layout.push({ ...item });
+            return;
         }
-        return { ...item, x, y };
+        const jitter = item.type === "building" ? 76 : 48;
+        let position;
+        const isSafe = (x, y) => {
+            const spawnOverlaps = x < 1630 && x + item.w > 1570 && y < 1230 && y + item.h > 1170;
+            const roadOverlap = item.type === "building" && roads.some((road) => x < road.x + road.w && x + item.w > road.x &&
+                y < road.y + road.h && y + item.h > road.y);
+            return !spawnOverlaps && !roadOverlap;
+        };
+        for (let attempt = 0; attempt < 48; attempt += 1) {
+            const x = Math.max(70, Math.min(map.width - item.w - 70, item.x + (Math.random() * 2 - 1) * jitter));
+            const y = Math.max(70, Math.min(map.height - item.h - 70, item.y + (Math.random() * 2 - 1) * jitter));
+            if (isSafe(x, y)) {
+                position = { x, y };
+                break;
+            }
+        }
+        if (!position) {
+            for (let y = 70; y <= map.height - item.h - 70 && !position; y += 60) {
+                for (let x = 70; x <= map.width - item.w - 70; x += 60) {
+                    if (isSafe(x, y)) {
+                        position = { x, y };
+                        break;
+                    }
+                }
+            }
+        }
+        if (position)
+            layout.push({ ...item, ...position });
     });
+    return layout;
 }
 const airportApron = { x: map.width / 2, y: map.height / 2 };
 const airportRunways = [
@@ -1141,16 +1261,6 @@ const airportRunways = [
         endY: airportApron.y + y * distance,
     };
 });
-const obstacles = !battleSpace.staticObstacles
-    ? []
-    : mapTheme === "station"
-        ? stationObstacles
-        : randomizeObstacleLayout(mapTheme === "hospital" ? hospitalObstacles
-            : mapTheme === "music" ? musicObstacles
-                : mapTheme === "gym" ? gymObstacles
-                    : mapTheme === "airport" ? airportObstacles
-                        : mapTheme === "school" ? schoolObstacles
-                            : cityObstacles);
 const roads = !battleSpace.roads ? [] : mapTheme === "hospital"
     ? [
         { x: 0, y: 660 + Math.random() * 45, w: map.width, h: 150 },
@@ -1166,6 +1276,22 @@ const roads = !battleSpace.roads ? [] : mapTheme === "hospital"
         { x: 1260 + Math.random() * 80, y: 0, w: 105, h: map.height },
         { x: 2240 + Math.random() * 80, y: 0, w: 115, h: map.height },
     ];
+const obstacles = !battleSpace.staticObstacles
+    ? []
+    : mapTheme === "station"
+        ? stationObstacles
+        : mapTheme === "ancient_town"
+            ? randomizeObstacleLayout(ancientTownObstacles)
+            : mapTheme === "windy_valley"
+                ? randomizeObstacleLayout(windyValleyObstacles)
+                : mapTheme === "neon_beach"
+                    ? randomizeObstacleLayout(neonBeachObstacles)
+                    : randomizeObstacleLayout(mapTheme === "hospital" ? hospitalObstacles
+                        : mapTheme === "music" ? musicObstacles
+                            : mapTheme === "gym" ? gymObstacles
+                                : mapTheme === "airport" ? airportObstacles
+                                    : mapTheme === "school" ? schoolObstacles
+                                        : cityObstacles);
 const upgradePool = [
     {
         id: "attack-speed",
@@ -2165,14 +2291,20 @@ function drawMapBase() {
             : mapTheme === "gym" ? "#1d171b"
                 : mapTheme === "airport" ? "#15202a"
                     : mapTheme === "station" ? "#0e1720"
-                        : mapTheme === "school" ? "#172321" : "#111827";
+                        : mapTheme === "school" ? "#172321"
+                            : mapTheme === "ancient_town" ? "#281c1a"
+                                : mapTheme === "windy_valley" ? "#1b2926"
+                                    : mapTheme === "neon_beach" ? "#142631" : "#111827";
     context.fillRect(0, 0, map.width, map.height);
     context.strokeStyle = mapTheme === "hospital" ? "#29404a"
         : mapTheme === "music" ? "#37294a"
             : mapTheme === "gym" ? "#443331"
                 : mapTheme === "airport" ? "#263c50"
                     : mapTheme === "station" ? "#1d2f3d"
-                        : mapTheme === "school" ? "#30463d" : "#20303a";
+                        : mapTheme === "school" ? "#30463d"
+                            : mapTheme === "ancient_town" ? "#493438"
+                                : mapTheme === "windy_valley" ? "#354640"
+                                    : mapTheme === "neon_beach" ? "#285064" : "#20303a";
     context.lineWidth = 1;
     for (let x = 0; x <= map.width; x += 64) {
         context.beginPath();
@@ -2215,6 +2347,27 @@ function drawMapBase() {
             context.stroke();
             context.setLineDash([]);
         });
+    if (mapTheme === "neon_beach") {
+        context.fillStyle = "#d7b979";
+        context.fillRect(0, 1350, map.width, 310);
+        context.fillStyle = "#dff0c0";
+        context.fillRect(0, 1638, map.width, 26);
+        context.fillStyle = "#17617a";
+        context.fillRect(0, 1660, map.width, map.height - 1660);
+        context.strokeStyle = "#65c8c0";
+        context.lineWidth = 3;
+        for (let y = 1690; y < map.height; y += 72) {
+            context.beginPath();
+            for (let x = 0; x <= map.width; x += 32) {
+                const waveY = y + Math.sin(x / 88 + y / 30) * 7;
+                if (x === 0)
+                    context.moveTo(x, waveY);
+                else
+                    context.lineTo(x, waveY);
+            }
+            context.stroke();
+        }
+    }
     if (duelArena || arena) {
         context.save();
         context.strokeStyle = "#49e6e055";
@@ -2250,14 +2403,20 @@ function drawMapBase() {
                     : mapTheme === "gym" ? "#4a3839"
                         : mapTheme === "airport" ? "#3a4b5a"
                             : mapTheme === "station" ? "#2b3d4d"
-                                : mapTheme === "school" ? "#35463f" : "#252d3c";
+                                : mapTheme === "school" ? "#35463f"
+                                    : mapTheme === "ancient_town" ? "#633e37"
+                                        : mapTheme === "windy_valley" ? "#4b5146"
+                                            : mapTheme === "neon_beach" ? "#355565" : "#252d3c";
             context.fill();
             context.strokeStyle = mapTheme === "hospital" ? "#70a2a5"
                 : mapTheme === "music" ? "#b47dcb"
                     : mapTheme === "gym" ? "#c26d58"
                         : mapTheme === "airport" ? "#93adbe"
                             : mapTheme === "station" ? "#7fa3bd"
-                                : mapTheme === "school" ? "#a5c27d" : "#465365";
+                                : mapTheme === "school" ? "#a5c27d"
+                                    : mapTheme === "ancient_town" ? "#d99b59"
+                                        : mapTheme === "windy_valley" ? "#a7bd8a"
+                                            : mapTheme === "neon_beach" ? "#5ce0d4" : "#465365";
             context.lineWidth = 4;
             context.stroke();
             context.fillStyle = mapTheme === "hospital" ? "#45616b"
@@ -2265,7 +2424,10 @@ function drawMapBase() {
                     : mapTheme === "gym" ? "#654745"
                         : mapTheme === "airport" ? "#506579"
                             : mapTheme === "station" ? "#3d5468"
-                                : mapTheme === "school" ? "#4a5b4c" : "#313c4d";
+                                : mapTheme === "school" ? "#4a5b4c"
+                                    : mapTheme === "ancient_town" ? "#815044"
+                                        : mapTheme === "windy_valley" ? "#626657"
+                                            : mapTheme === "neon_beach" ? "#426879" : "#313c4d";
             context.fillRect(obstacle.x + 12, obstacle.y + 12, obstacle.w - 24, 28);
             context.fillStyle = mapTheme === "hospital" ? "#d3eff0"
                 : mapTheme === "music" ? "#f0d8ff"
@@ -2281,11 +2443,17 @@ function drawMapBase() {
                     ? index % 2 ? "#8855a0" : "#b06b9c"
                     : mapTheme === "gym"
                         ? index % 2 ? "#9c5049" : "#7c5b47"
-                        : mapTheme === "airport"
-                            ? index % 2 ? "#5d819c" : "#7e9cae"
-                            : mapTheme === "school"
-                                ? index % 2 ? "#77885b" : "#526d61"
-                                : index % 2 ? "#31585a" : "#4c3e65";
+                        : mapTheme === "ancient_town"
+                            ? index % 2 ? "#bc654a" : "#e2a35a"
+                            : mapTheme === "windy_valley"
+                                ? index % 2 ? "#6d7565" : "#9bab7d"
+                                : mapTheme === "neon_beach"
+                                    ? index % 2 ? "#42a7ae" : "#ff9c79"
+                                    : mapTheme === "airport"
+                                        ? index % 2 ? "#5d819c" : "#7e9cae"
+                                        : mapTheme === "school"
+                                            ? index % 2 ? "#77885b" : "#526d61"
+                                            : index % 2 ? "#31585a" : "#4c3e65";
             context.lineWidth = 2;
             for (let x = obstacle.x + 25; x < obstacle.x + obstacle.w - 20; x += 54) {
                 context.beginPath();
@@ -2301,6 +2469,12 @@ function drawMapBase() {
             }
             context.fillStyle = "#121923";
             context.fillRect(obstacle.x + obstacle.w / 2 - 18, obstacle.y + obstacle.h - 20, 36, 20);
+            if (mapTheme === "ancient_town") {
+                context.fillStyle = "#a44738";
+                context.fillRect(obstacle.x + 18, obstacle.y + 44, obstacle.w - 36, 8);
+                context.fillStyle = "#ffd27a";
+                context.fillRect(obstacle.x + obstacle.w - 30, obstacle.y + 20, 5, 12);
+            }
             if (mapTheme === "hospital") {
                 context.fillStyle = "#9ef6ed";
                 context.fillRect(obstacle.x + obstacle.w - 42, obstacle.y + 17, 4, 18);
@@ -2357,6 +2531,9 @@ function drawMap() {
     harpFields.forEach(drawHarpField);
     gymRushers.forEach(drawGymRusher);
     airportPlanes.forEach(drawAirportPlane);
+    if (yearEndDinner)
+        drawYearEndDinner();
+    valleyTornadoes.forEach(drawValleyTornado);
     supplies.forEach((supply) => {
         if (!supply.collected)
             drawSupply(supply);
@@ -3227,8 +3404,7 @@ function applyEventDamage(target, damage) {
         return applyPlayerDamage(damage);
     if (!target.unit || target.unit.hp <= 0)
         return false;
-    damageEnemyByNpc(target.unit, damage);
-    return true;
+    return damageEnemyByNpc(target.unit, damage);
 }
 function applyKnockback(target, directionX, directionY, distance) {
     const length = Math.hypot(directionX, directionY);
@@ -3262,11 +3438,12 @@ function updateHarpFields(dt) {
             getEventTargets().forEach((target) => {
                 if (Math.hypot(target.x - harp.x, target.y - harp.y) > 190 + combatTargetRadius(target))
                     return;
+                if (!applyEventDamage(target, 2))
+                    return;
                 if (target.player)
                     statusEffects["强力减速"] = Math.max(statusEffects["强力减速"] || 0, 0.7);
                 else if (target.unit)
                     target.unit.effects["强力减速"] = Math.max(target.unit.effects["强力减速"] || 0, 0.7);
-                applyEventDamage(target, 2);
             });
         }
         if (harp.age >= 5)
@@ -3611,6 +3788,239 @@ function updateStationTrains(dt) {
         });
     });
 }
+function findOpenDinnerPosition() {
+    for (let attempt = 0; attempt < 120; attempt += 1) {
+        const point = {
+            x: 90 + Math.random() * (map.width - 180),
+            y: 90 + Math.random() * (map.height - 180),
+        };
+        if (blockedByRects(point.x, point.y, 36))
+            continue;
+        if (Math.hypot(point.x - player.x, point.y - player.y) < 280)
+            continue;
+        if (enemies.some((enemy) => enemy.hp > 0 && Math.hypot(point.x - enemy.x, point.y - enemy.y) < 100))
+            continue;
+        return point;
+    }
+    return undefined;
+}
+function spawnYearEndDinner() {
+    const point = findOpenDinnerPosition();
+    if (!point) {
+        yearEndDinnerTimer = 8;
+        return;
+    }
+    yearEndDinner = { ...point, remaining: 22 };
+    showToast(t("event.dinner_spawn"), "warning");
+}
+function applyDinnerToPlayer() {
+    if (!yearEndDinner)
+        return;
+    const dinner = yearEndDinner;
+    const restored = Math.min(Math.round(playerState.maxHp * 0.25), playerState.maxHp - playerState.hp);
+    playerState.hp += restored;
+    statusEffects["年夜饭加速"] = Math.max(statusEffects["年夜饭加速"] || 0, 7);
+    addFloatingText(dinner.x, dinner.y - 20, restored ? `+${restored} HP` : t("float.hp_full"), "#ffcf63");
+    addFloatingText(player.x, player.y - 50, t("float.dinner_haste"), "#ffcf63");
+    showToast(t("event.dinner_heal", { amount: restored, seconds: 7 }));
+    yearEndDinner = undefined;
+    updateHud();
+}
+function collectYearEndDinner() {
+    if (!yearEndDinner || Math.hypot(player.x - yearEndDinner.x, player.y - yearEndDinner.y) > 76)
+        return false;
+    applyDinnerToPlayer();
+    return true;
+}
+function collectDinnerForEnemy(enemy) {
+    if (!yearEndDinner)
+        return;
+    const dinner = yearEndDinner;
+    const restored = Math.min(Math.round(enemy.maxHp * 0.25), enemy.maxHp - enemy.hp);
+    enemy.hp += restored;
+    enemy.effects["年夜饭加速"] = Math.max(enemy.effects["年夜饭加速"] || 0, 7);
+    addFloatingText(enemy.x, enemy.y - 42, `+${restored} HP`, "#ffcf63");
+    showToast(t("event.dinner_enemy", { name: enemy.name || tx("敌人") }));
+    spawnImpact(dinner.x, dinner.y, "#ffcf63");
+    yearEndDinner = undefined;
+}
+function updateYearEndDinner(dt) {
+    if (!yearEndDinner) {
+        yearEndDinnerTimer = Math.max(0, yearEndDinnerTimer - dt);
+        if (yearEndDinnerTimer === 0) {
+            spawnYearEndDinner();
+            yearEndDinnerTimer = 36 + Math.random() * 12;
+        }
+        return;
+    }
+    yearEndDinner.remaining = Math.max(0, yearEndDinner.remaining - dt);
+    if (yearEndDinner.remaining === 0) {
+        yearEndDinner = undefined;
+        return;
+    }
+    const rival = enemies
+        .filter((enemy) => enemy.hp > 0 && !enemy.effects["眩晕"] && !enemy.effects["禁锢"])
+        .sort((left, right) => Math.hypot(left.x - yearEndDinner.x, left.y - yearEndDinner.y) -
+        Math.hypot(right.x - yearEndDinner.x, right.y - yearEndDinner.y))[0];
+    if (rival && Math.hypot(rival.x - yearEndDinner.x, rival.y - yearEndDinner.y) < 38) {
+        collectDinnerForEnemy(rival);
+    }
+}
+function findTornadoLanding(x, y, tornadoX, tornadoY, enemy) {
+    const awayX = x - tornadoX;
+    const awayY = y - tornadoY;
+    const awayLength = Math.hypot(awayX, awayY) || 1;
+    const baseAngle = Math.atan2(awayY / awayLength, awayX / awayLength);
+    const blocked = (px, py) => enemy ? isEnemyPositionBlocked(px, py, 22) : collides(px, py);
+    for (let distance = 96; distance <= 336; distance += 24) {
+        for (let index = 0; index < 12; index += 1) {
+            const angle = baseAngle + index * Math.PI / 6;
+            const px = Math.max(24, Math.min(map.width - 24, x + Math.cos(angle) * distance));
+            const py = Math.max(24, Math.min(map.height - 24, y + Math.sin(angle) * distance));
+            if (!blocked(px, py))
+                return { x: px, y: py };
+        }
+    }
+    return { x, y };
+}
+function beginTornadoLift(target, tornado) {
+    if (target.player) {
+        if (grappleOnRooftop || tornadoPlayerLift)
+            return;
+        tornadoPlayerLift = { remaining: 1, x: tornado.x, y: tornado.y };
+        statusEffects["眩晕"] = Math.max(statusEffects["眩晕"] || 0, 1);
+        invulnerableTimer = Math.max(invulnerableTimer, 1);
+        showToast(t("event.tornado_lift"), "warning");
+        addFloatingText(player.x, player.y - 48, t("float.tornado_lift"), "#c7f5ff");
+        return;
+    }
+    const enemy = target.unit;
+    if (!enemy || enemy.tornadoLift || enemy.hp <= 0)
+        return;
+    enemy.tornadoLift = { remaining: 1, x: tornado.x, y: tornado.y };
+    enemy.tornadoInvulnerable = true;
+    enemy.effects["眩晕"] = Math.max(enemy.effects["眩晕"] || 0, 1);
+    showToast(t("event.tornado_enemy"), "warning");
+}
+function finishTornadoLift(target, tornadoX, tornadoY) {
+    const damage = 70 + wave * 12;
+    if (target.player) {
+        const landing = findTornadoLanding(player.x, player.y, tornadoX, tornadoY);
+        player.x = landing.x;
+        player.y = landing.y;
+        tornadoPlayerLift = undefined;
+        invulnerableTimer = 0;
+        delete statusEffects["无敌"];
+        delete statusEffects["眩晕"];
+        if (applyPlayerDamage(damage)) {
+            statusEffects["减速"] = Math.max(statusEffects["减速"] || 0, 1);
+            addFloatingText(player.x, player.y - 52, t("event.tornado_throw", { damage }), "#d9f6ff");
+            showToast(t("event.tornado_throw", { damage }), "warning");
+        }
+        return;
+    }
+    const enemy = target.unit;
+    if (!enemy || !enemy.tornadoLift)
+        return;
+    const landing = findTornadoLanding(enemy.x, enemy.y, tornadoX, tornadoY, enemy);
+    enemy.x = landing.x;
+    enemy.y = landing.y;
+    enemy.tornadoLift = undefined;
+    enemy.tornadoInvulnerable = false;
+    delete enemy.effects["眩晕"];
+    damageEnemyByNpc(enemy, damage);
+    if (enemy.hp > 0)
+        enemy.effects["减速"] = Math.max(enemy.effects["减速"] || 0, 1);
+}
+function updateValleyTornadoes(dt) {
+    enemies.forEach((enemy) => {
+        if (!enemy.tornadoLift)
+            return;
+        enemy.tornadoLift.remaining = Math.max(0, enemy.tornadoLift.remaining - dt);
+        if (enemy.tornadoLift.remaining === 0) {
+            finishTornadoLift({ id: enemy.id || "", x: enemy.x, y: enemy.y, player: false, unit: enemy }, enemy.tornadoLift.x, enemy.tornadoLift.y);
+        }
+    });
+    if (tornadoPlayerLift) {
+        tornadoPlayerLift.remaining = Math.max(0, tornadoPlayerLift.remaining - dt);
+        if (tornadoPlayerLift.remaining === 0) {
+            finishTornadoLift({ id: "player", x: player.x, y: player.y, player: true }, tornadoPlayerLift.x, tornadoPlayerLift.y);
+        }
+    }
+    valleyTornadoes.forEach((tornado) => {
+        tornado.phase += dt * 2;
+        tornado.speed = 100 + Math.min(300, wave * 12);
+        const nextX = tornado.x + tornado.directionX * tornado.speed * dt;
+        const nextY = tornado.y + tornado.directionY * tornado.speed * dt;
+        if (isEnemyPositionBlocked(nextX, nextY, 36)) {
+            tornado.directionX = Math.cos(tornado.phase * 2.7);
+            tornado.directionY = Math.sin(tornado.phase * 2.1);
+        }
+        else {
+            tornado.x = nextX;
+            tornado.y = nextY;
+        }
+        const playerTarget = { id: "player", x: player.x, y: player.y, player: true };
+        if (!tornadoPlayerLift && !grappleOnRooftop &&
+            Math.hypot(player.x - tornado.x, player.y - tornado.y) < player.radius + 34) {
+            beginTornadoLift(playerTarget, tornado);
+        }
+        enemies.forEach((enemy) => {
+            if (enemy.hp <= 0 || enemy.tornadoLift || enemy.tornadoInvulnerable)
+                return;
+            const radius = enemy.kind === "brute" ? 25 : enemy.kind === "runner" ? 14 : 20;
+            if (Math.hypot(enemy.x - tornado.x, enemy.y - tornado.y) < radius + 34) {
+                beginTornadoLift({ id: enemy.id || "", x: enemy.x, y: enemy.y, player: false, unit: enemy }, tornado);
+            }
+        });
+    });
+}
+function drawYearEndDinner() {
+    if (!yearEndDinner)
+        return;
+    const pulse = 1 + Math.sin(performance.now() / 180) * 0.08;
+    context.save();
+    context.translate(yearEndDinner.x, yearEndDinner.y);
+    context.scale(pulse, pulse);
+    context.shadowColor = "#ffcc55";
+    context.shadowBlur = 20;
+    context.fillStyle = "#b52f38";
+    context.beginPath();
+    context.ellipse(0, 2, 27, 16, 0, 0, Math.PI * 2);
+    context.fill();
+    context.shadowBlur = 0;
+    context.fillStyle = "#fff0c1";
+    context.beginPath();
+    context.ellipse(0, 0, 22, 11, 0, 0, Math.PI * 2);
+    context.fill();
+    context.fillStyle = "#d94c37";
+    context.beginPath();
+    context.arc(-7, -2, 4, 0, Math.PI * 2);
+    context.arc(5, 2, 5, 0, Math.PI * 2);
+    context.fill();
+    context.fillStyle = "#ffd76a";
+    context.font = "bold 15px sans-serif";
+    context.textAlign = "center";
+    context.fillText("E", 0, -30);
+    context.restore();
+}
+function drawValleyTornado(tornado) {
+    context.save();
+    context.translate(tornado.x, tornado.y);
+    context.rotate(tornado.phase);
+    context.globalAlpha = 0.78;
+    context.shadowColor = "#b9f5ee";
+    context.shadowBlur = 18;
+    context.strokeStyle = "#d6fff5";
+    context.lineWidth = 4;
+    for (let index = 0; index < 4; index += 1) {
+        const radius = 12 + index * 8 + Math.sin(tornado.phase + index) * 3;
+        context.beginPath();
+        context.ellipse(0, 0, radius, radius * 0.42, index * 0.24, 0, Math.PI * 1.65);
+        context.stroke();
+    }
+    context.restore();
+}
 function updateRandomMapEvents(dt) {
     if (duelArena || runEnded)
         return;
@@ -3623,6 +4033,16 @@ function updateRandomMapEvents(dt) {
         return;
     }
     if (config.multiplayer || waveState !== "active")
+        return;
+    if (mapTheme === "ancient_town") {
+        updateYearEndDinner(dt);
+        return;
+    }
+    if (mapTheme === "windy_valley") {
+        updateValleyTornadoes(dt);
+        return;
+    }
+    if (mapTheme === "neon_beach")
         return;
     if (mapTheme === "airport") {
         updateAirportFlights(dt);
@@ -4480,8 +4900,8 @@ function addEnemyLoot(enemy, source = "player") {
     grantSkillExperience(experience, enemy.x, enemy.y);
 }
 function damageEnemyByNpc(enemy, damage, source = "npc") {
-    if (enemy.hp <= 0)
-        return;
+    if (enemy.hp <= 0 || enemy.tornadoInvulnerable)
+        return false;
     if (schoolClassDuration > 0)
         damage *= 0.8;
     const actualDamage = Math.min(enemy.hp, Math.max(1, Math.round(damage)));
@@ -4495,6 +4915,7 @@ function damageEnemyByNpc(enemy, damage, source = "npc") {
             addEnemyLoot(enemy, source === "minion" ? "minion" : source === "frenzy" ? "frenzy" : "player");
         }
     }
+    return true;
 }
 function getEnemyTarget(enemy) {
     if (enemy.effects["狂舞"] > 0) {
@@ -4590,7 +5011,7 @@ function rollExecute(enemy) {
     return Math.random() < Math.min(0.95, missingRatio * 100 * perPercent);
 }
 function hitEnemy(enemy, damage, effect = "", effectTurns = 0) {
-    if (enemy.hp <= 0)
+    if (enemy.hp <= 0 || enemy.tornadoInvulnerable)
         return 0;
     if (schoolClassDuration > 0)
         damage *= 0.8;
@@ -4639,6 +5060,8 @@ function healFromDamage(damage, x, y) {
     updateHud();
 }
 function applyPlayerDamage(damage, attacker) {
+    if (isGrappleHero() && grappleOnRooftop)
+        return false;
     if (heroPassive.id === "star_energy" && (statusEffects["星环守护"] || 0) > 0 && starGuardCharges > 0) {
         starGuardCharges -= 1;
         starEnergy = Math.min(6, starEnergy + 3);
@@ -5114,7 +5537,7 @@ function grappleHookHit(skill) {
             y: enemy.y,
             radius: enemy.kind === "brute" ? 25 : enemy.kind === "runner" ? 14 : 20,
         }));
-    return castGrappleRay(player.x, player.y, facing.x || 1, facing.y, skill.hook_range || 620, obstacles, targets, onlyStructure);
+    return castGrappleRay(player.x, player.y, facing.x || 1, facing.y, skill.hook_range || 620, obstacles, targets, onlyStructure, map.width, map.height);
 }
 /**
  * 施放飞索·抓。
@@ -5125,7 +5548,6 @@ function grappleHookHit(skill) {
 function castGrappleHook(skill) {
     const tier = skillProgress.get(skill.id)?.tier || 1;
     // 升阶效果优先读 tier_effects patch（配置驱动），tier 只是兜底。
-    const timeStop = (skill.hook_time_stop || 0) > 0 || tier >= 2;
     const deferDamage = (skill.hook_defer_damage || 0) > 0 || tier >= 2;
     const pierceStun = (skill.hook_pierce_stun || 0) > 0 || tier >= 3;
     const rooftopTransfer = grappleOnRooftop;
@@ -5134,8 +5556,11 @@ function castGrappleHook(skill) {
     const directionY = facing.y;
     const range = skill.hook_range || 620;
     const hit = grappleHookHit(skill);
-    const targetX = hit ? hit.x : player.x + directionX * range;
-    const targetY = hit ? hit.y : player.y + directionY * range;
+    const landing = hit
+        ? resolveGrappleLanding(player.x, player.y, hit, player.radius, map.width, map.height)
+        : undefined;
+    const targetX = landing?.x ?? player.x + directionX * range;
+    const targetY = landing?.y ?? player.y + directionY * range;
     if (rooftopTransfer && hit?.kind !== "building")
         return;
     // 命中敌方英雄时，该敌人在自己飞行过程中保持眩晕。
@@ -5145,6 +5570,9 @@ function castGrappleHook(skill) {
     }
     const flightSpeed = skill.hook_flight_speed || 720;
     const distance = Math.hypot(targetX - player.x, targetY - player.y);
+    const duration = Math.max(0.12, distance / flightSpeed);
+    // 2 阶：全图眩晕。配置时长优先，tier 兜底至少覆盖整个拉拽过程。
+    const globalStun = skill.hook_global_stun || (tier >= 2 ? Math.max(1.2, duration) : 0);
     grappleHook = {
         skillId: skill.id,
         skillName: skill.name,
@@ -5155,7 +5583,7 @@ function castGrappleHook(skill) {
         hitKind: hit?.kind || "edge",
         hitEnemy,
         elapsed: 0,
-        duration: Math.max(0.12, distance / flightSpeed),
+        duration,
         flightSpeed,
         flightDamage: skill.hook_flight_damage || 0,
         damageInterval: skill.hook_flight_damage_interval || 0.35,
@@ -5163,13 +5591,27 @@ function castGrappleHook(skill) {
         hitEnemies: new Set(),
         radius: skill.radius || 130,
         damage: skill.damage || 0,
-        timeStop,
+        globalStun,
         deferDamage,
         onlyStructure,
         pierceStun,
         rooftopTransfer,
         pendingDamage: [],
     };
+    // 2 阶：命中瞬间给全场存活敌人挂眩晕。世界不再冻结 ——
+    // 地图事件、状态倒计时、投射物都照常推进，只有敌人行动被眩晕拦住。
+    if (globalStun > 0) {
+        let stunned = 0;
+        enemies.forEach((enemy) => {
+            if (enemy.hp <= 0)
+                return;
+            enemy.effects["眩晕"] = Math.max(enemy.effects["眩晕"] || 0, globalStun);
+            stunned += 1;
+        });
+        if (stunned > 0) {
+            addFloatingText(player.x, player.y - 52, t("float.grapple_global_stun"), "#ffe45c");
+        }
+    }
     addSkillVisual(skill);
     skillVisuals.push({
         type: "beam",
@@ -5611,15 +6053,6 @@ function movementInput() {
     if (keys.has("s") || keys.has("arrowdown") || touchKeys.has("down"))
         y += 1;
     return { x, y };
-}
-/**
- * 2 阶：飞索飞行期间时间停滞。
- *
- * 只在「拉拽阶段」暂停（飞索还在飞的时候世界还在动），
- * 落点结算后世界恢复。
- */
-function grappleTimeStopped() {
-    return !!grappleHook && grappleHook.timeStop && grappleHook.phase === "reel";
 }
 // ───────────────────────── 电音人：音浪冲击 / 碟片风暴 ─────────────────────────
 /** 音浪撞到建筑时原地爆炸。pierce 模式（3 阶）下不触发。 */
@@ -7905,7 +8338,8 @@ function updateCombat(dt) {
         const next = Math.max(0, remaining - dt);
         skillCooldowns.set(id, next);
     });
-    basicAttackTimer = Math.max(0, basicAttackTimer - dt * (schoolClassDuration > 0 ? 0.5 : 1));
+    basicAttackTimer = Math.max(0, basicAttackTimer - dt * terrainAttackSpeedMultiplier(player.x, player.y) *
+        (schoolClassDuration > 0 ? 0.5 : 1));
     // 篮球少年：装填计时与投篮高手计时
     if (heroPassive.id === "bball_magazine") {
         if (bballReloadTimer > 0) {
@@ -8011,102 +8445,120 @@ function updateCombat(dt) {
     // 剧情战斗走剧本事件，不再叠加地图随机事件（避免同一波里两套意外伤害）
     if (!storyBattle)
         updateRandomMapEvents(dt);
-    // 飞索超人 2 阶：飞索飞行期间时间停滞 —— 敌人不动、状态不倒计时。
-    if (grappleTimeStopped()) {
-        // 时间暂停期间跳过整个敌人更新循环。
-    }
-    else {
-        enemies.forEach((enemy) => {
-            if (runEnded || skillIsPaused())
-                return;
-            Object.keys(enemy.effects).forEach((effect) => {
-                enemy.effects[effect] = Math.max(0, enemy.effects[effect] - dt);
-                if (enemy.effects[effect] <= 0) {
-                    delete enemy.effects[effect];
-                    if (effect === "中毒")
-                        enemy.poisonDamage = 0;
-                    if (effect === "引燃")
-                        enemy.igniteDamage = 0;
-                }
-            });
-            if (enemy.hp <= 0)
-                return;
-            if (enemy.anesthetist && enemy.lifeTimer !== undefined) {
-                enemy.lifeTimer -= dt;
-                if (enemy.lifeTimer <= 0) {
-                    enemy.hp = 0;
-                    addFloatingText(enemy.x, enemy.y - 28, tx("医生撤离"), "#c9f4ff");
-                    return;
-                }
-            }
-            if (enemy.poisonDamage > 0) {
-                enemy.poisonTimer -= dt;
-                if (enemy.poisonTimer <= 0) {
-                    enemy.poisonTimer = 1;
-                    const damage = schoolClassDuration > 0 ? enemy.poisonDamage * 0.8 : enemy.poisonDamage;
-                    const poisonDamage = Math.min(enemy.hp, damage);
-                    enemy.hp = Math.max(0, enemy.hp - poisonDamage);
-                    healFromDamage(poisonDamage, enemy.x, enemy.y);
-                    addFloatingText(enemy.x, enemy.y - 30, `-${poisonDamage} 毒`, "#9cff65");
-                    if (enemy.hp <= 0) {
-                        if (enemy.duelBot)
-                            finishDuelRound(true);
-                        else
-                            addEnemyLoot(enemy);
-                    }
-                }
-                if (enemy.hp <= 0)
-                    return;
-            }
-            if ((enemy.igniteDamage || 0) > 0) {
-                enemy.igniteTimer = Math.max(0, (enemy.igniteTimer || 1) - dt);
-                if (enemy.igniteTimer === 0) {
-                    enemy.igniteTimer = 1;
-                    const burn = schoolClassDuration > 0 ? (enemy.igniteDamage || 0) * 0.8 : (enemy.igniteDamage || 0);
-                    const burnDamage = Math.min(enemy.hp, Math.max(1, Math.round(burn)));
-                    enemy.hp = Math.max(0, enemy.hp - burnDamage);
-                    healFromDamage(burnDamage, enemy.x, enemy.y);
-                    addFloatingText(enemy.x, enemy.y - 30, `-${burnDamage} ${tx("引燃")}`, "#ff8fc4");
-                    spawnImpact(enemy.x, enemy.y, "#ff8fc4");
-                    if (enemy.hp <= 0) {
-                        if (enemy.duelBot)
-                            finishDuelRound(true);
-                        else
-                            addEnemyLoot(enemy);
-                    }
-                }
-                if (enemy.hp <= 0)
-                    return;
-            }
-            if (enemy.gymRusher)
-                return;
-            if (enemy.duelBot) {
-                if (enemy.effects["狂舞"] > 0)
-                    updateDuelBotFrenzy(enemy, dt);
-                else
-                    updateDuelBot(enemy, dt);
-                return;
-            }
-            if (enemy.storySkills && enemy.storySkills.length > 0)
-                updateStoryEnemySkill(enemy, dt);
-            const target = getEnemyTarget(enemy);
-            if (!target)
-                return;
-            const distance = Math.hypot(target.x - enemy.x, target.y - enemy.y);
-            const attackRange = enemy.anesthetist ? 54 : enemy.kind === "brute" ? 70 : 48;
-            if (distance > attackRange && !enemy.effects["禁锢"] && !enemy.effects["眩晕"]) {
-                const speed = enemy.speed * enemySlowMultiplier(enemy) *
-                    (schoolClassDuration > 0 ? 0.4 : 1) * dt;
-                moveEnemyToward(enemy, target, speed, dt);
-            }
-            const frenzySpeed = enemy.effects["狂舞"] > 0 ? frenzyAttackSpeedMultiplier() : 1;
-            enemy.attackTimer = Math.max(0, enemy.attackTimer - dt * (schoolClassDuration > 0 ? 0.5 : 1) * frenzySpeed);
-            if (distance < attackRange && enemy.attackTimer === 0 && !enemy.effects["眩晕"]) {
-                enemy.attackTimer = enemy.anesthetist ? 1.3 : enemy.kind === "runner" ? 1.05 : 1.35;
-                attackEnemyTarget(enemy, target);
+    enemies.forEach((enemy) => {
+        if (runEnded || skillIsPaused())
+            return;
+        if (enemy.tornadoLift)
+            return;
+        Object.keys(enemy.effects).forEach((effect) => {
+            enemy.effects[effect] = Math.max(0, enemy.effects[effect] - dt);
+            if (enemy.effects[effect] <= 0) {
+                delete enemy.effects[effect];
+                if (effect === "中毒")
+                    enemy.poisonDamage = 0;
+                if (effect === "引燃")
+                    enemy.igniteDamage = 0;
             }
         });
-    }
+        if (enemy.hp <= 0)
+            return;
+        if (enemy.anesthetist && enemy.lifeTimer !== undefined) {
+            enemy.lifeTimer -= dt;
+            if (enemy.lifeTimer <= 0) {
+                enemy.hp = 0;
+                addFloatingText(enemy.x, enemy.y - 28, tx("医生撤离"), "#c9f4ff");
+                return;
+            }
+        }
+        if (enemy.poisonDamage > 0) {
+            enemy.poisonTimer -= dt;
+            if (enemy.poisonTimer <= 0) {
+                enemy.poisonTimer = 1;
+                const damage = schoolClassDuration > 0 ? enemy.poisonDamage * 0.8 : enemy.poisonDamage;
+                const poisonDamage = Math.min(enemy.hp, damage);
+                enemy.hp = Math.max(0, enemy.hp - poisonDamage);
+                healFromDamage(poisonDamage, enemy.x, enemy.y);
+                addFloatingText(enemy.x, enemy.y - 30, `-${poisonDamage} 毒`, "#9cff65");
+                if (enemy.hp <= 0) {
+                    if (enemy.duelBot)
+                        finishDuelRound(true);
+                    else
+                        addEnemyLoot(enemy);
+                }
+            }
+            if (enemy.hp <= 0)
+                return;
+        }
+        if ((enemy.igniteDamage || 0) > 0) {
+            enemy.igniteTimer = Math.max(0, (enemy.igniteTimer || 1) - dt);
+            if (enemy.igniteTimer === 0) {
+                enemy.igniteTimer = 1;
+                const burn = schoolClassDuration > 0 ? (enemy.igniteDamage || 0) * 0.8 : (enemy.igniteDamage || 0);
+                const burnDamage = Math.min(enemy.hp, Math.max(1, Math.round(burn)));
+                enemy.hp = Math.max(0, enemy.hp - burnDamage);
+                healFromDamage(burnDamage, enemy.x, enemy.y);
+                addFloatingText(enemy.x, enemy.y - 30, `-${burnDamage} ${tx("引燃")}`, "#ff8fc4");
+                spawnImpact(enemy.x, enemy.y, "#ff8fc4");
+                if (enemy.hp <= 0) {
+                    if (enemy.duelBot)
+                        finishDuelRound(true);
+                    else
+                        addEnemyLoot(enemy);
+                }
+            }
+            if (enemy.hp <= 0)
+                return;
+        }
+        if (enemy.gymRusher)
+            return;
+        if (mapTheme === "ancient_town" && yearEndDinner) {
+            const dinnerDistance = Math.hypot(yearEndDinner.x - enemy.x, yearEndDinner.y - enemy.y);
+            if (dinnerDistance < 560) {
+                if (dinnerDistance < 42) {
+                    collectDinnerForEnemy(enemy);
+                }
+                else if (!enemy.effects["眩晕"] && !enemy.effects["禁锢"]) {
+                    const target = {
+                        id: "year-end-dinner",
+                        x: yearEndDinner.x,
+                        y: yearEndDinner.y,
+                        player: false,
+                    };
+                    const speed = enemy.speed * enemySlowMultiplier(enemy) *
+                        (schoolClassDuration > 0 ? 0.4 : 1) * dt;
+                    moveEnemyToward(enemy, target, speed, dt);
+                }
+                return;
+            }
+        }
+        if (enemy.duelBot) {
+            if (enemy.effects["狂舞"] > 0)
+                updateDuelBotFrenzy(enemy, dt);
+            else
+                updateDuelBot(enemy, dt);
+            return;
+        }
+        if (enemy.storySkills && enemy.storySkills.length > 0)
+            updateStoryEnemySkill(enemy, dt);
+        const target = getEnemyTarget(enemy);
+        if (!target)
+            return;
+        const distance = Math.hypot(target.x - enemy.x, target.y - enemy.y);
+        const attackRange = enemy.anesthetist ? 54 : enemy.kind === "brute" ? 70 : 48;
+        if (distance > attackRange && !enemy.effects["禁锢"] && !enemy.effects["眩晕"]) {
+            const speed = enemy.speed * enemySlowMultiplier(enemy) *
+                terrainMovementMultiplier(enemy.x, enemy.y) *
+                (schoolClassDuration > 0 ? 0.4 : 1) * dt;
+            moveEnemyToward(enemy, target, speed, dt);
+        }
+        const frenzySpeed = enemy.effects["狂舞"] > 0 ? frenzyAttackSpeedMultiplier() : 1;
+        enemy.attackTimer = Math.max(0, enemy.attackTimer - dt * terrainAttackSpeedMultiplier(enemy.x, enemy.y) *
+            (schoolClassDuration > 0 ? 0.5 : 1) * frenzySpeed);
+        if (distance < attackRange && enemy.attackTimer === 0 && !enemy.effects["眩晕"]) {
+            enemy.attackTimer = enemy.anesthetist ? 1.3 : enemy.kind === "runner" ? 1.05 : 1.35;
+            attackEnemyTarget(enemy, target);
+        }
+    });
     updatePipaMinions(dt);
     if (skillIsPaused())
         return;
@@ -8133,7 +8585,16 @@ function updateCombat(dt) {
         .filter((supply) => !supply.collected && distanceTo(supply.x, supply.y) < 58)
         .sort((a, b) => distanceTo(a.x, a.y) - distanceTo(b.x, b.y))[0];
     nearestSupply = closest;
-    pickupPrompt.hidden = !closest;
+    const dinnerNearby = Boolean(yearEndDinner && distanceTo(yearEndDinner.x, yearEndDinner.y) < 76);
+    if (dinnerNearby) {
+        pickupKey.textContent = "E";
+        pickupLabel.textContent = t("PICKUP_DINNER");
+    }
+    else {
+        pickupKey.textContent = "F";
+        pickupLabel.textContent = t("PICKUP");
+    }
+    pickupPrompt.hidden = !closest && !dinnerNearby;
     updateWaveSpawner(dt);
     updateSkillButtons();
     if (config.duel)
@@ -8482,6 +8943,14 @@ function drawMinimap() {
         miniContext.fillStyle = "#fff1a3";
         miniContext.fillRect(plane.x * sx - 2, plane.y * sy - 2, 4, 4);
     });
+    if (yearEndDinner) {
+        miniContext.fillStyle = "#ffcf63";
+        miniContext.fillRect(yearEndDinner.x * sx - 3, yearEndDinner.y * sy - 3, 6, 6);
+    }
+    valleyTornadoes.forEach((tornado) => {
+        miniContext.fillStyle = "#c7f5ff";
+        miniContext.fillRect(tornado.x * sx - 3, tornado.y * sy - 3, 6, 6);
+    });
     stationTracks.forEach((state) => {
         if (!state.train)
             return;
@@ -8543,8 +9012,10 @@ function drawFrame(timestamp) {
             facing.y = dy;
         }
         const movementSpeed = player.speed *
+            terrainMovementMultiplier(player.x, player.y) *
             dualToneSpeedMultiplier() *
             ((statusEffects["加速"] || 0) > 0 ? 1.45 : 1) *
+            ((statusEffects["年夜饭加速"] || 0) > 0 ? 1.2 : 1) *
             (sakuraSong && sakuraSong.remaining > 0 ? 1.5 : 1) *
             jianghuFlightSpeedScale() *
             ((statusEffects["强力减速"] || 0) > 0 ? 0.4 : (statusEffects["减速"] || 0) > 0 ? 0.55 : 1) *
@@ -8613,6 +9084,8 @@ document.addEventListener("keydown", (event) => {
     }
     if (event.repeat)
         return;
+    if (key === "e" && collectYearEndDinner())
+        return;
     const skillIndex = { q: 0, e: 1, r: 2 };
     if (skillIndex[key] !== undefined) {
         castSkill(skillIndex[key]);
@@ -8661,7 +9134,10 @@ touchModeToggle.addEventListener("click", () => {
 skillButtons.forEach((button, index) => {
     button.addEventListener("click", () => castSkill(index));
 });
-pickupPrompt.addEventListener("click", collectSupply);
+pickupPrompt.addEventListener("click", () => {
+    if (!collectYearEndDinner())
+        collectSupply();
+});
 basicAttackButton.addEventListener("click", basicAttack);
 // 按住普攻键（含触控模式）持续进攻
 basicAttackButton.addEventListener("pointerdown", (event) => {
@@ -8711,11 +9187,7 @@ else if (storyBattle) {
     showToast(t("story.hint"));
 }
 else {
-    mapMode.textContent = tx(mapTheme === "hospital" ? "赛博医院"
-        : mapTheme === "music" ? "赛博琴房"
-            : mapTheme === "gym" ? "赛博体育馆"
-                : mapTheme === "airport" ? "赛博机场"
-                    : mapTheme === "station" ? "霓虹火车站" : "霓虹城区");
+    mapMode.textContent = mapThemeName();
     showToast(tx("探索提示：靠近闪光物资后按 F 收集；Q / E / R 释放技能。"));
 }
 drawMap();
@@ -8774,8 +9246,7 @@ if (window.__GRAPPLE_TEST_HOOK__) {
         getHookActive() { return !!grappleHook; },
         getHookPhase() { return grappleHook ? grappleHook.phase : "none"; },
         getHookTargetKind() { return grappleHook ? grappleHook.hitKind : "none"; },
-        getHookTimeStop() { return !!grappleHook && grappleHook.timeStop; },
-        getTimeStopped() { return grappleTimeStopped(); },
+        getGlobalStun() { return grappleHook ? grappleHook.globalStun : 0; },
         getTier(skillId) { return skillProgress.get(skillId)?.tier || 1; },
         setTier(skillId, tier) {
             const progress = skillProgress.get(skillId);
@@ -8797,8 +9268,13 @@ if (window.__GRAPPLE_TEST_HOOK__) {
             return enemy ? { x: enemy.x, y: enemy.y } : { x: 0, y: 0 };
         },
         getEnemyHp(index = 0) { return enemies[index]?.hp ?? 0; },
-        getEnemyEffects() {
-            return { ...(enemies[0]?.effects || {}) };
+        getEnemyEffects(index = 0) {
+            return { ...(enemies[index]?.effects || {}) };
+        },
+        getPlayerHp() { return playerState.hp; },
+        damagePlayer(damage) { return applyPlayerDamage(damage); },
+        damagePlayerFromEvent(damage) {
+            return applyEventDamage({ id: "test-player", x: player.x, y: player.y, player: true }, damage);
         },
         /** 用确定的建筑覆盖随机地图布局，让屋顶判定可测。 */
         setTestObstacles(list) {

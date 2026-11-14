@@ -174,6 +174,14 @@ function drawCodexPreview(canvas: HTMLCanvasElement, preview: CodexPreview): voi
 
   if (preview.motif === "station") drawStationMotif(context, preview, hair);
   if (preview.motif === "runways") drawAirportRunways(context, preview, hair);
+  if (preview.motif === "shore") {
+      context.fillStyle = "#d7b979";
+      context.fillRect(0, 1350, mapWidth, 310);
+      context.fillStyle = "#dff0c0";
+      context.fillRect(0, 1638, mapWidth, 26);
+      context.fillStyle = "#17617a";
+      context.fillRect(0, 1660, mapWidth, mapHeight - 1660);
+  }
 
   context.fillStyle = palette.road;
   preview.roads.forEach((road) => context.fillRect(road.x, road.y, road.w, road.h));

@@ -93,6 +93,16 @@ test("火车站：保留建筑，但不画道路", () => {
   assert.equal(space.roads, false);
 });
 
+test("新增自然地图：保留建筑、无道路且使用标准场地", () => {
+  ["ancient_town", "windy_valley", "neon_beach"].forEach((mapTheme) => {
+    const space = resolveBattleSpace({ mapTheme });
+    assert.equal(space.width, 3200);
+    assert.equal(space.height, 2400);
+    assert.equal(space.staticObstacles, true);
+    assert.equal(space.roads, false, `${mapTheme} 不应显示城区道路`);
+  });
+});
+
 test("返回值是副本，改一处不会污染下一次调用", () => {
   const first = resolveBattleSpace({ arena: true });
   first.supplies[0].x = -999;

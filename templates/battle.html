@@ -116,7 +116,7 @@
       </div>
     </div>
   </section>
-  <button class="pickup-prompt" id="pickup-prompt" type="button" hidden><kbd>F</kbd> {{ tr("PICKUP") }}</button>
+  <button class="pickup-prompt" id="pickup-prompt" type="button" hidden><kbd id="pickup-key">F</kbd> <span id="pickup-label">{{ tr("PICKUP") }}</span></button>
   <div class="map-controls"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> {{ tr("MOVE") }}</span><span><kbd>Q</kbd><kbd>E</kbd><kbd>R</kbd> {{ tr("SKILL") }}</span><span><kbd>F</kbd> {{ tr("COLLECT") }}</span><span><kbd>SPACE</kbd> {{ tr("BASIC_ATTACK") }}</span></div>
   <section class="map-skillbar" aria-label="{{ tr('SKILL') }}">
     {% for skill in player.skills %}

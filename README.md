@@ -8,7 +8,7 @@
 
 《2D大击败》是一款赛博风 2D 战斗竞技场游戏，技术栈为 **Flask + 原生 HTML/CSS/TypeScript**，桌面版用 **Electron** 封装、**PyInstaller** 打包后端。选择英雄，在霓虹废墟中迎战敌潮、挑战 AI，或与局域网好友并肩作战。
 
-游戏支持中文 / English / 日本語三种界面，英文名为 **2DFight Arena**，日文名为 **2D大撃破**。当前版本 **2.8.1**。
+游戏支持中文 / English / 日本語三种界面，英文名为 **2DFight Arena**，日文名为 **2D大撃破**。当前版本 **2.8.2**。
 
 ## 目录
 
@@ -29,7 +29,7 @@
 | | |
 | --- | --- |
 | **英雄** | 10 位，7 位免费 + 3 位金币解锁，每位都有独立被动与三技能升阶 |
-| **地图** | 7 张赛博场景，每张带随机事件与独立地形 |
+| **地图** | 10 张赛博场景，每张带随机事件与独立地形 |
 | **模式** | 单机肉鸽 / 人机对抗（先赢四分）/ 局域网联机 |
 | **养成** | 金币结算、英雄商店、存档导入导出、装备抽取与装配 |
 | **装备** | 5 个位置 × 5 种品质，属性直接带进战斗 |
@@ -159,7 +159,7 @@
 
 ## 地图
 
-7 张赛场，每张地形与随机事件不同。数据源为 `map_codex.py`。
+10 张赛场，每张地形与随机事件不同。数据源为 `map_codex.py`。
 
 | 地图 | 地形要点 | 随机事件 |
 | --- | --- | --- |
@@ -170,8 +170,11 @@
 | 赛博机场 `airport` | 八条跑道从中央停机坪放射，外围机库环绕 | 飞机随机使用八条跑道起降，碰撞造成重击与击退 |
 | 霓虹火车站 `station` | 北侧候车厅封死，五条铁轨与六个站台自北向南铺开 | 列车随机进站停靠 10 秒，行驶中撞到车身会被击退并受高额伤害；停靠期间视作建筑 |
 | 赛博学校 `school` | 教学楼与实验楼分列四角，中央办公室切出回廊 | 不定期上课 10 秒，全场减速、攻速与伤害降低 |
+| 古风小镇 `ancient_town` | 古建筑与石桥构成的街巷 | 年夜饭定时出现，按 E 抢先拾取，回复生命并加速 |
+| 风起谷 `windy_valley` | 开阔峡谷、岩壁与巨石 | 三股龙卷风随波次加速，卷起单位后抛掷并造成伤害 |
+| 霓虹海滩 `neon_beach` | 沙滩与海水分区 | 沙滩移速 / 攻速 +20%，海水移速 / 攻速 −20% |
 
-**地图图鉴**：主页底部栏的「图鉴」入口（`/codex`），一次看完全部 7 张赛场的实机布局缩略图、地形特点、随机事件与建筑 / 路障数量。
+**地图图鉴**：主页底部栏的「图鉴」入口（`/codex`），一次看完全部 10 张赛场的实机布局缩略图、地形特点、随机事件与建筑 / 路障数量。
 
 ## 剧情模式
 
@@ -630,7 +633,7 @@ npm run dist:portable  # 便携版 → release-portable/
 
 2DFight Arena is a cyberpunk 2D combat arena built with **Flask + plain HTML/CSS/TypeScript**. The desktop build wraps it in **Electron** with a **PyInstaller**-packaged backend. Pick a hero, fight through neon ruins, challenge an AI opponent, or battle alongside friends over a local network.
 
-The interface ships in Chinese, English, and Japanese (2D大撃破). Current version: **2.8.1**.
+The interface ships in Chinese, English, and Japanese (2D大撃破). Current version: **2.8.2**.
 
 ## Contents
 
