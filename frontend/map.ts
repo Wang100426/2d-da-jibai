@@ -816,11 +816,14 @@ interface RemotePlayer {
 
 interface PendingPvpAttack {
   id: string;
-  kind: "basic" | "skill" | "dash_start" | "dash_hit";
+  kind: "basic" | "skill" | "dash_start" | "dash_hit" | "grapple_landing";
   skill_id?: string;
   skill_tier?: number;
   cast_id?: string;
   target_ids: string[];
+  landing_x?: number;
+  landing_y?: number;
+  landing_radius?: number;
 }
 
 interface UpgradeChoice {
@@ -5823,6 +5826,27 @@ function queuePvpAction(
   });
 }
 
+/** 飞索·移落地包：施法包 250ms 前就发走了，落地伤害必须按真实落点单独上报。 */
+function queueGrappleLanding(
+  skillId: string,
+  x: number,
+  y: number,
+  radius: number,
+  targets: RemotePlayer[],
+): void {
+  if (!config.multiplayer || !friendlyFire) return;
+  pendingPvpAttacks.push({
+    id: `${config.multiplayer.player_id}-${Date.now()}-${attackSequence++}`,
+    kind: "grapple_landing",
+    skill_id: skillId,
+    skill_tier: skillProgress.get(skillId)?.tier || 1,
+    target_ids: [...new Set(targets.map((target) => target.player_id))],
+    landing_x: x,
+    landing_y: y,
+    landing_radius: radius,
+  });
+}
+
 function nearbyPvpTargets(x: number, y: number, radius: number): RemotePlayer[] {
   if (!friendlyFire) return [];
   return [...remotePlayers.values()].filter((remote) =>
@@ -6122,6 +6146,14 @@ function castGrappleHook(skill: SkillConfig): void {
     pendingDamage: [],
   };
 
+  // 联机 1v1：按飞索射线上报对手（圆形判定会把背后的对手也算进来）。
+  const pvpVictims = friendlyFire
+    ? [...remotePlayers.values()].filter((remote) => remote.hp > 0 &&
+        distanceToSegment(remote.x, remote.y, player.x, player.y,
+          player.x + directionX * range, player.y + directionY * range) <= 46)
+    : [];
+  if (pvpVictims.length) queuePvpAttack("skill", pvpVictims, skill.id);
+
   // 2 阶：命中瞬间给全场存活敌人挂眩晕。世界不再冻结 ——
   // 地图事件、状态倒计时、投射物都照常推进，只有敌人行动被眩晕拦住。
   if (globalStun > 0) {
@@ -6419,6 +6451,9 @@ function finishGrappleLeap(leap: GrappleLeapState): void {
       const ratio = Math.round(slowRatio * 100);
       enemy.effects[`双音减速${ratio}`] = Math.max(enemy.effects[`双音减速${ratio}`] || 0, slowTurns);
     });
+    // 联机 1v1：按真实落点补一包，服务端只结算伤害与减速，不重复扣能量/冷却。
+    queueGrappleLanding(leap.skillId, player.x, player.y, radius,
+      nearbyPvpTargets(player.x, player.y, radius));
     skillVisuals.push({
       type: "ring",
       x: player.x,
@@ -6454,6 +6489,8 @@ function finishGrappleLeap(leap: GrappleLeapState): void {
 function updateGrappleLeapCharges(dt: number): void {
   const skill = grappleSkill("grapple_leap");
   if (!skill) return;
+  // 联机 1v1 由服务端权威计数（sync 回写），本地计时会和服务端抢着恢复。
+  if (friendlyFire) return;
   const maxCharges = skill.leap_charges || 5;
   const recharge = skill.leap_recharge || 3;
   if (grappleLeapChargeMax !== maxCharges) {
@@ -6488,11 +6525,14 @@ function castGrappleMyriad(skill: SkillConfig): void {
   const victims = enemies
     .filter((enemy) => enemy.hp > 0 && distanceTo(enemy.x, enemy.y) <= range)
     .slice(0, 12);
+  // 联机 1v1 场里没有 NPC，对手在 remotePlayers；漏判会误报「范围内没有敌人」。
+  const pvpVictims = nearbyPvpTargets(player.x, player.y, range);
 
-  if (!victims.length) {
+  if (!victims.length && !pvpVictims.length) {
     showToast(t("skill.grapple_myriad_miss", { name: skill.name, range }), "warning");
     return;
   }
+  if (pvpVictims.length) queuePvpAttack("skill", pvpVictims, skill.id);
 
   // 牵引终点：在建筑上就拉到建筑边缘。
   let endX = player.x;
@@ -9331,6 +9371,7 @@ async function syncMultiplayer(): Promise<void> {
         max_energy: number;
         star_energy?: number;
         star_guard_charges?: number;
+        grapple_leap_charges?: number;
       };
     };
     if (!response.ok || !result.ok) throw new Error(result.error || "联机同步失败。");
@@ -9360,6 +9401,11 @@ async function syncMultiplayer(): Promise<void> {
         starEnergy = result.self.star_energy ?? starEnergy;
         starEmpowered = starEnergy >= 6;
         starGuardCharges = result.self.star_guard_charges ?? starGuardCharges;
+      }
+      if (typeof result.self.grapple_leap_charges === "number" &&
+          result.self.grapple_leap_charges !== grappleLeapCharges) {
+        grappleLeapCharges = result.self.grapple_leap_charges;
+        updateSkillButtons();
       }
       player.x = result.self.x;
       player.y = result.self.y;

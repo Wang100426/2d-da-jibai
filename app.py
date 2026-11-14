@@ -1247,6 +1247,11 @@ def public_player(player):
         "max_energy": player["max_energy"],
         "star_energy": player.get("star_energy", 0),
         "star_guard_charges": player.get("star_guard_charges", 0),
+        "grapple_leap_charges": player.get(
+            "grapple_leap_charges",
+            next((skill.get("leap_charges", 5) for skill in hero["skills"]
+                  if skill.get("action") == "grapple_leap"), 5),
+        ),
         "effects": effects,
         "invulnerable": player["invulnerable_until"] > time.time() or (
             active_effect(player, "星环守护", time.time()) and player.get("star_guard_charges", 0) > 0
@@ -1265,6 +1270,73 @@ def hero_damage_reduction(hero_id):
 
 def active_effect(player, name, now):
     return player["effects"].get(name, 0) > now
+
+
+def expanded_skill(skill, tier):
+    """按 tier_effects 展开技能数值，与前端 applyTierPatch 的 DSL 顺序一致。
+
+    联机结算只看得到 skill_id / skill_tier；服务端不展开 patch 的话，
+    2/3 阶配置写了也是摆设（前端有 applyTierPatch，服务端没有）。
+    """
+    values = dict(skill)
+    for level in (2, 3):
+        if level > tier:
+            break
+        patch = (skill.get("tier_effects") or {}).get(level, {}).get("patch") or {}
+        for key, rule in patch.items():
+            if not isinstance(rule, dict):
+                continue
+            current = values.get(key, rule.get("base", 0))
+            if "set" in rule:
+                values[key] = rule["set"]
+            elif "scale" in rule:
+                scaled = current * rule["scale"]
+                values[key] = round(scaled, 2) if rule.get("round") is False else round(scaled)
+            elif "add" in rule:
+                values[key] = current + rule["add"]
+    return values
+
+
+def safe_coord(value, fallback, low=-3200.0, high=3200.0):
+    """把客户端上报的坐标夹到地图范围内，非法值回落，避免服务端被脏数据带崩。"""
+    try:
+        return max(low, min(high, float(value)))
+    except (TypeError, ValueError):
+        return fallback
+
+
+def grapple_leap_charges(player, skill, now):
+    """服务端权威的 R 充能计数，返回 (剩余次数, 本次是否允许结算)。
+
+    前端的充能是本地状态，服务端若只按 1 秒冷却放行，联机 1v1 里 R 可以无限连放。
+    """
+    max_charges = max(1, int(skill.get("leap_charges", 5)))
+    recharge = max(0.1, float(skill.get("leap_recharge", 3)))
+    if player.get("grapple_leap_max") != max_charges:
+        player["grapple_leap_max"] = max_charges
+        player["grapple_leap_charges"] = max_charges
+        player["grapple_leap_timer"] = 0.0
+        player["grapple_leap_tick_at"] = now
+    charges = int(player.get("grapple_leap_charges", max_charges))
+    timer = float(player.get("grapple_leap_timer", 0.0))
+    last = float(player.get("grapple_leap_tick_at", now))
+    # 与前端 advanceGrappleCharges 一致：充能未满才累加计时，满了就停表。
+    if charges < max_charges:
+        timer += max(0.0, now - last)
+        while timer >= recharge and charges < max_charges:
+            timer -= recharge
+            charges += 1
+        if charges >= max_charges:
+            timer = 0.0
+    else:
+        timer = 0.0
+    allowed = charges > 0
+    if allowed:
+        charges -= 1
+    player["grapple_leap_charges"] = charges
+    player["grapple_leap_timer"] = timer
+    player["grapple_leap_tick_at"] = now
+    return charges, allowed
 
 
 def apply_player_attack(room, attacker, attack, now):
@@ -1289,17 +1361,24 @@ def apply_player_attack(room, attacker, attack, now):
         if expires_at > now
     }
     attack_kind = attack.get("kind")
-    dash_action = attack_kind in ("dash_start", "dash_hit")
+    is_grapple_landing = attack_kind == "grapple_landing"
+    dash_action = attack_kind in ("dash_start", "dash_hit", "grapple_landing")
     if (
-        active_effect(attacker, "眩晕", now)
-        or (active_effect(attacker, "狂舞", now) and attack_kind != "basic")
-        or (attacker["invulnerable_until"] > now and not dash_action)
+        (
+            active_effect(attacker, "眩晕", now)
+            or (active_effect(attacker, "狂舞", now) and attack_kind != "basic")
+            or (attacker["invulnerable_until"] > now and not dash_action)
+        )
+        and not is_grapple_landing
     ):
         return
 
     hero = hero_by_id(attacker["hero_id"])
     basic_range, basic_damage = player_limits(attacker["hero_id"])
     skill_id = str(attack.get("skill_id", ""))
+    action = ""
+    grapple_leap_allowed = True
+    origin_x, origin_y = attacker["x"], attacker["y"]
     lifesteal_rate = 0
     star_empowered_attack = False
     skill_tier = max(1, min(3, _safe_count(attack.get("skill_tier"), 3)))
@@ -1334,13 +1413,20 @@ def apply_player_attack(room, attacker, attack, now):
             if star_empowered_attack:
                 effect = "眩晕"
                 effect_duration = 1
-    elif attack_kind in ("skill", "dash_hit"):
+    elif attack_kind in ("skill", "dash_hit", "grapple_landing"):
         skill = next((item for item in hero["skills"] if item["id"] == skill_id), None)
         if skill is None:
             return
+        # 联机只上报 skill_tier，服务端自己展开 2/3 阶 patch（飞索超人靠 patch 取数值）。
+        if str(skill.get("action", "")).startswith("grapple_"):
+            skill = expanded_skill(skill, skill_tier)
         is_dash_hit = attack_kind == "dash_hit"
         cast_id = str(attack.get("cast_id", ""))
-        if is_dash_hit:
+        if is_grapple_landing:
+            # 落地包：施法时已扣过能量/冷却，这里只按真实落点结算伤害与减速。
+            if skill.get("action") != "grapple_leap":
+                return
+        elif is_dash_hit:
             if skill_id != "tech-afterimage" or attacker["dash_casts"].get(cast_id, 0) < now:
                 return
             attacker["dash_casts"].pop(cast_id, None)
@@ -1348,6 +1434,8 @@ def apply_player_attack(room, attacker, attack, now):
             cooldowns = attacker["skill_cooldowns"]
             if cooldowns.get(skill_id, 0) > now or attacker["energy"] < skill["cost"]:
                 return
+            if skill.get("action") == "grapple_leap":
+                _, grapple_leap_allowed = grapple_leap_charges(attacker, skill, now)
             attacker["energy"] -= skill["cost"]
             cooldowns[skill_id] = now + skill["cooldown"]
         damage = skill["damage"]
@@ -1377,10 +1465,35 @@ def apply_player_attack(room, attacker, attack, now):
             skill.get("cast_range", 0) + skill.get("radius", 0),
             skill.get("dash_range", 0) + skill.get("radius", 0),
         )
+        # ---- 飞索超人：把单机数值映射到服务端权威结算 ----
+        if action.startswith("grapple_"):
+            if action == "grapple_myriad":
+                # 单机牵引范围 = radius × scale；眩晕按 effect_turns 秒，别被通用 *2 放大。
+                damage = round(skill["damage"] * (skill.get("myriad_damage_scale") or 1))
+                effect = skill.get("effect", "眩晕")
+                effect_duration = skill.get("effect_turns", 1)
+                attack_range = skill.get("radius", 400) * (skill.get("myriad_range_scale") or 2)
+            elif action == "grapple_hook":
+                # 沿途伤害 + 落点范围伤害合并结算；射程是飞索长度而不是普攻距离。
+                damage = skill["damage"] + (skill.get("hook_flight_damage") or 0)
+                effect = "眩晕"
+                effect_duration = 1.0
+                attack_range = skill.get("hook_range", 620)
+            elif action == "grapple_leap":
+                # 落地范围只看 radius，别被 200 的普攻距离撑大。
+                attack_range = skill.get("radius", 150)
+                effect = ""
+                effect_duration = 0
+        if is_grapple_landing:
+            attack_range = max(1.0, safe_coord(attack.get("landing_radius"), attack_range, 1.0, 1000.0))
+            origin_x = safe_coord(attack.get("landing_x"), attacker["x"], 0.0, 3200.0)
+            origin_y = safe_coord(attack.get("landing_y"), attacker["y"], 0.0, 2400.0)
         if not is_dash_hit and skill.get("action") in ("moss_barkskin", "luna_phase", "empower_attack") and effect and effect_duration > 0:
             attacker["effects"][effect] = max(attacker["effects"].get(effect, 0), now + effect_duration)
             if skill.get("action") == "luna_phase":
                 attacker["shield"] = max(attacker.get("shield", 0), skill.get("shield", 30))
+        if action == "grapple_leap" and not grapple_leap_allowed:
+            return
         if damage <= 0:
             return
     else:
@@ -1390,6 +1503,47 @@ def apply_player_attack(room, attacker, attack, now):
     if not isinstance(target_ids, list):
         return
     target_ids = set(str(item) for item in target_ids)
+    # 位移技能的通用派发只发空包（扣蓝进冷却），服务端按真实范围补全目标；
+    # E 是方向型，方向只有前端知道，所以只补全 Q / R 这类半径型技能。
+    if (
+        action in ("grapple_myriad", "grapple_leap")
+        and not target_ids
+        and not active_effect(attacker, "狂舞", now)
+    ):
+        target_ids = {
+            pid for pid, other in room["players"].items()
+            if pid != attacker["player_id"] and other["hp"] > 0
+            and (other["x"] - origin_x) ** 2 + (other["y"] - origin_y) ** 2 <= attack_range ** 2
+        }
+    if (
+        action == "grapple_hook"
+        and not is_grapple_landing
+        and (skill.get("hook_global_stun") or 0) > 0
+    ):
+        # 2 阶：全图眩晕，无视距离与 target_ids；世界照常推进，只锁敌人行动。
+        stun_until = now + float(skill["hook_global_stun"])
+        for other in room["players"].values():
+            if other["player_id"] == attacker["player_id"] or other["hp"] <= 0:
+                continue
+            other["effects"]["眩晕"] = max(other["effects"].get("眩晕", 0), stun_until)
+    if action == "grapple_hook" and not is_grapple_landing:
+        # 拉拽期间施法者无敌，时长按双方距离 / 飞行速度估算。
+        opponents = [
+            ((other["x"] - attacker["x"]) ** 2 + (other["y"] - attacker["y"]) ** 2) ** 0.5
+            for other in room["players"].values()
+            if other["player_id"] != attacker["player_id"] and other["hp"] > 0
+        ]
+        pull = max(0.12, min(min(opponents), skill.get("hook_range", 620)) /
+                   (skill.get("hook_flight_speed") or 720)) if opponents else 0.12
+        attacker["invulnerable_until"] = max(attacker["invulnerable_until"], now + pull)
+    elif (
+        action == "grapple_leap"
+        and grapple_leap_allowed
+        and not is_grapple_landing
+    ):
+        attacker["invulnerable_until"] = max(
+            attacker["invulnerable_until"], now + (skill.get("leap_duration") or 1)
+        )
     if active_effect(attacker, "狂舞", now):
         target_ids.intersection_update({attacker["player_id"]})
     else:
@@ -1398,7 +1552,7 @@ def apply_player_attack(room, attacker, attack, now):
         target = room["players"].get(target_id)
         if target is None or target["hp"] <= 0:
             continue
-        if (target["x"] - attacker["x"]) ** 2 + (target["y"] - attacker["y"]) ** 2 > attack_range ** 2:
+        if (target["x"] - origin_x) ** 2 + (target["y"] - origin_y) ** 2 > attack_range ** 2:
             continue
         if (
             target["hero_id"] == "star_messenger"
@@ -1440,6 +1594,10 @@ def apply_player_attack(room, attacker, attack, now):
                 target["effects"]["减速"] = max(target["effects"].get("减速", 0), now + 3)
             elif (target["x"] - attacker["x"]) ** 2 + (target["y"] - attacker["y"]) ** 2 < 150 ** 2:
                 target["effects"]["减速"] = max(target["effects"].get("减速", 0), now + 0.5)
+        if action == "grapple_leap" and (attack_kind == "skill" or is_grapple_landing):
+            target["effects"]["减速"] = max(
+                target["effects"].get("减速", 0), now + (skill.get("leap_slow_turns") or 2)
+            )
         if attack_kind == "skill" and skill.get("action") == "star_cage":
             target["effects"]["星环禁锢"] = max(
                 target["effects"].get("星环禁锢", 0), now + skill.get("cage_duration", 5)

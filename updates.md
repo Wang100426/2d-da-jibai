@@ -1,5 +1,31 @@
 # 更新日志 / Updates
 
+## 2.9.0
+
+### 中文
+
+- **引入开源动画组件 MotionHarness**：新增三个可编辑的 Standard 动画工程，用纯函数 `prepareFrame(time)` 驱动逐帧渲染，配合 Studio 预览与 ProRes → 60fps MP4 导出流程。
+- **首页开场序列**：9 秒入场动画（3 秒健康游戏忠告 + 6 秒赛博开场）接 4 秒待机循环，按空格 / 回车 / 点击进入；Esc 或「跳过」放行，一个会话只播一次。
+- **战场加载背景视频**：进入战斗时的过场改用 4 秒无缝循环的青粉霓虹擂台动画，静态图兜底；解码失败、自动播放被拦、减少动效偏好自动降级。
+- **飞索超人联机补齐**：联机对战现在结算抓钩、万重飞索、跳跃落地伤害与 2 阶全图眩晕，充能状态与前端同步。
+- **稳定性**：还原测试存档并补充硬性规则，跑 smoke / 单测前必须用 `DAJIBAI_SAVE` 隔离，避免覆盖开发档。
+
+### English
+
+- **MotionHarness, an open-source animation toolkit:** three editable Standard projects now drive frame-accurate `prepareFrame(time)` rendering, Studio previews, and ProRes → 60 fps MP4 exports.
+- **Home intro sequence:** a 9 s intro (3 s health-game compliance splash + 6 s cyber opener) hands off to a 4 s waiting loop; SPACE / ENTER / click enters, Esc or Skip bypasses, once per session.
+- **Battle loading backdrop:** the pre-battle transition now loops a seamless 4 s neon arena animation, with the still image as fallback; decode errors, blocked autoplay, and reduced-motion preferences degrade gracefully.
+- **Grapple Man online:** hook, myriad-grapple and leap landings now resolve damage, Tier 2 global stun, and charge state in multiplayer.
+- **Stability:** restored the test profile and documented `DAJIBAI_SAVE` isolation for smoke tests and unit tests.
+
+### 日本語
+
+- **オープンソースのアニメーション基盤「MotionHarness」を導入**：編集可能な Standard プロジェクトを3つ追加。純関数 `prepareFrame(time)` によるフレーム単位の描画、Studio でのプレビュー、ProRes → 60fps MP4 の書き出しに対応。
+- **ホーム画面のオープニングシーケンス**：9秒の導入映像（健康ゲームの注意書き3秒＋サイバー演出6秒）から4秒の待機ループへ。スペース／Enter／クリックで進み、Esc またはスキップで省略。1セッションにつき1回のみ。
+- **戦闘ロード画面の背景動画**：戦闘開始時の演出を4秒でシームレスにループするネオンアリーナ動画に変更。静止画でフォールバックし、読み込み失敗・自動再生ブロック・動きを減らす設定にも対応。
+- **グラップルマンのオンライン対応**：フック、多重ワイヤー、着地のダメージと2段階の全体スタン、チャージ状態を対戦へ反映。
+- **安定性**：テスト用セーブデータを復元し、smoke / 単体テスト実行時は `DAJIBAI_SAVE` で隔離する規則を整備。
+
 ## 2.8.2
 
 ### 中文

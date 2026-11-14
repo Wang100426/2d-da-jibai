@@ -3,6 +3,8 @@
   "ui": {
     "HOME": "ホーム",
     "HOME_PLAYER": "プレイヤー",
+    "INTRO_HINT": "スペース / クリックで開始",
+    "INTRO_SKIP": "スキップ",
     "HOME_HOUSE_KICKER": "SAFEHOUSE / HOME",
     "HOME_HOUSE_TITLE": "ネオンアパート",
     "HOME_E_INTERACT": "近づいて E キーで操作",

@@ -13,6 +13,7 @@
   <canvas id="world" aria-label="{{ tr('MAP_ACCESSIBLE') }}"></canvas>
   <section class="map-transition" id="map-transition" aria-live="polite" aria-label="{{ tr('MAP_TRANSITION_TITLE') }}">
     <img class="map-transition-art" src="{{ url_for('static', filename='game_loading_1.png') }}" alt="">
+    <video class="map-transition-video" id="map-transition-video" muted playsinline loop preload="auto" aria-hidden="true"></video>
     <div class="map-transition-shade"></div>
     <div class="map-transition-briefing">
       <p class="map-transition-kicker">{{ tr("MAP_TRANSITION_TITLE") }}</p>
@@ -164,6 +165,7 @@
     window.STORY_BATTLE = {{ story_context|tojson }};
   </script>
   <script src="{{ url_for('static', filename='dot-motion-loader.js') }}"></script>
+  <script src="{{ url_for('static', filename='loading-motion.js') }}"></script>
   <script src="{{ url_for('static', filename='app.js') }}"></script>
   <script src="{{ url_for('static', filename='language.js') }}"></script>
   <script src="{{ url_for('static', filename='page-transition.js') }}" defer></script>

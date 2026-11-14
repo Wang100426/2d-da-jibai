@@ -9,6 +9,21 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}">
 </head>
 <body class="home-page">
+  <div class="intro-overlay" id="intro-overlay" hidden data-phase="opening" aria-hidden="true">
+    <video id="intro-video" class="intro-video" muted playsinline preload="auto"></video>
+    <p class="intro-hint" id="intro-hint" hidden>{{ tr("INTRO_HINT") }}</p>
+    <button class="intro-skip" id="intro-skip" type="button">{{ tr("INTRO_SKIP") }}</button>
+  </div>
+  <script>
+    (function () {
+      var el = document.getElementById("intro-overlay");
+      if (!el) return;
+      try { if (sessionStorage.getItem("introShown") === "1") return; } catch (e) {}
+      el.hidden = false;
+      el.setAttribute("data-intro-active", "1");
+      el.removeAttribute("aria-hidden");
+    })();
+  </script>
   <div class="scanlines"></div>
   <header class="home-topbar">
     <div class="home-identity">
@@ -108,6 +123,7 @@
       <div class="save-toast" id="save-toast" role="status" aria-live="polite"></div>
     </div>
   </section>
+  <script src="{{ url_for('static', filename='intro.js') }}" defer></script>
   <script src="{{ url_for('static', filename='home.js') }}" defer></script>
   <script src="{{ url_for('static', filename='save.js') }}" defer></script>
   <script src="{{ url_for('static', filename='language.js') }}"></script>

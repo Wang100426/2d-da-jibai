@@ -3,6 +3,8 @@
   "ui": {
     "HOME": "主界面",
     "HOME_PLAYER": "玩家",
+    "INTRO_HINT": "空格 / 点击进入",
+    "INTRO_SKIP": "跳过",
     "HOME_HOUSE_KICKER": "SAFEHOUSE / HOME",
     "HOME_HOUSE_TITLE": "霓虹公寓",
     "HOME_E_INTERACT": "靠近物件后按 E 交互",

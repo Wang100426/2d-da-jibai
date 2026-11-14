@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "projectType": "standard",
+  "revision": 3,
+  "settings": {
+    "width": 1920,
+    "height": 1080,
+    "duration": 9,
+    "fps": 60
+  },
+  "audio": [],
+  "title": "opening-animation",
+  "markerSequence": 1,
+  "markerTypes": {
+    "#169cff": ""
+  }
+}
