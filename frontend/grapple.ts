@@ -3,13 +3,12 @@
  * `map.ts` 只做消费和状态推进。
  *
  * 为什么要单独一份：
- * - 「站在建筑上方」需要一套独立的坐标语义（屋顶平面 = 建筑矩形的上边缘），
+ * - 「站在建筑上方」需要一套独立的坐标语义（屋顶平台 = 建筑矩形覆盖的区域），
  *   和地面碰撞（`blockedByRects` 用圆心距离）是两套逻辑，混在一起容易算错；
  * - 纯函数能在 Node 里直接测，不用浏览器或 Canvas。
  *
  * 坐标系说明：地图是俯视 2D。建筑是矩形 `(x, y, w, h)`，
- * 「建筑上方」= 站在矩形上边缘 `y` 处 —— 玩家以脚部贴合屋顶平面，
- * 即角色圆心位于 `roofY - playerRadius`。
+ * 「建筑上方」= 玩家脚部落在建筑矩形覆盖的屋顶区域内。
  */
 
 /** 与 `map.ts` 的 Obstacle 保持一致（只取判定需要的字段）。 */
@@ -209,10 +208,9 @@ function castGrappleRay(
 }
 
 /**
- * 找到玩家脚下正对的建筑（用于判定「是否站在建筑上方」）。
+ * 找到玩家脚下的建筑屋顶（用于判定「是否站在建筑上方」）。
  *
- * 判定条件：建筑的水平范围包含玩家 x，且玩家脚部（圆心 + 半径）
- * 落在屋顶平面附近。
+ * 判定条件：建筑矩形覆盖玩家脚部位置；容差用于允许落点轻微越过边缘。
  */
 function findRooftopUnder(
   x: number,
@@ -225,7 +223,7 @@ function findRooftopUnder(
   obstacles.forEach((obstacle) => {
     if (obstacle.type !== "building") return;
     if (x < obstacle.x - 2 || x > obstacle.x + obstacle.w + 2) return;
-    const distance = Math.abs(footY - obstacle.y);
+    const distance = Math.max(obstacle.y - footY, footY - (obstacle.y + obstacle.h), 0);
     if (distance > tolerance) return;
     if (distance < bestDistance) {
       bestDistance = distance;

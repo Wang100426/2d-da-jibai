@@ -2,7 +2,7 @@
  * 飞索超人（2.8.0）：用 DOM stub 真跑 static/app.js，验证核心机制。
  *
  * 覆盖的关键行为：
- * 1. 站在建筑上方（屋顶识别 + 坐标对齐 + 水平移动锁定）；
+ * 1. 站在建筑上方（屋顶识别 + 坐标对齐 + 屋顶移动）；
  * 2. 被动层数规则（每 2 秒 +1 层 / 落地保留 3 秒 / 回到建筑减半）；
  * 3. E「飞索·抓」是**拉拽**而不是瞬移；
  * 4. R「飞索·移」的充能计数与落地判定；
@@ -306,6 +306,14 @@ function step(dt = 0.016) {
   });
 }
 
+function jumpToRoof(x, y, directionX = 0, directionY = 0) {
+  api.setMovementInput(directionX, directionY);
+  api.setPlayerPosition(x, y);
+  api.castSkill(2);
+  for (let i = 0; i < 80; i += 1) step(0.016);
+  api.setMovementInput(0, 0);
+}
+
 console.log("\n=== 飞索超人 2.8.0 行为验证 ===\n");
 
 // 城市地图的建筑是随机抖动的，这里换成确定的布局，屋顶判定才可测。
@@ -316,12 +324,14 @@ api.setTestObstacles([
 
 /* ---------- 1. 站在建筑上方 ---------- */
 
-api.setPlayerPosition(BUILDING.x + BUILDING.w / 2, BUILDING.y - 19);
-step(0.016);
+api.setPlayerPosition(BUILDING.x + BUILDING.w / 2, BUILDING.y + BUILDING.h / 2 - 19);
+check("未使用二技能：不能直接进入屋顶状态", api.getOnRooftop() === false);
+jumpToRoof(BUILDING.x + BUILDING.w / 2, BUILDING.y + BUILDING.h / 2 - 19);
 check("站在建筑上：屋顶识别成功", api.getOnRooftop() === true);
-check("站在建筑上：脚部对齐屋顶平面",
-  Math.abs((api.getPlayerY() + 19) - BUILDING.y) < 0.5,
-  `脚部 y=${api.getPlayerY() + 19}，应为 ${BUILDING.y}`);
+check("站在建筑上：二技能落点保留在屋顶区域",
+  api.getPlayerY() + 19 >= BUILDING.y &&
+  api.getPlayerY() + 19 <= BUILDING.y + BUILDING.h,
+  `脚部 y=${api.getPlayerY() + 19}`);
 
 // 屋顶是俯视角平台，WASD 四向都要能走。
 // 回归：旧实现锁死垂直、水平还过地面碰撞，实机上屋顶后几乎动不了。
@@ -337,8 +347,10 @@ check("站在建筑上：水平移动可用", api.getPlayerX() > beforeX);
 /* ---------- 1b. 实机回归：屋顶状态必须稳定 ---------- */
 
 api.resetAll();
-api.setPlayerPosition(BUILDING.x + BUILDING.w / 2, BUILDING.y - 19);
+api.setPlayerPosition(BUILDING.x + BUILDING.w / 2, BUILDING.y + BUILDING.h / 2 - 19);
 step(0.016);
+check("走到建筑区域不能自动上屋顶", api.getOnRooftop() === false);
+jumpToRoof(BUILDING.x + BUILDING.w / 2, BUILDING.y + BUILDING.h / 2 - 19);
 check("上屋顶后状态生效", api.getOnRooftop() === true);
 // 连续移动多帧，状态不能被逐帧 findRooftopUnder 判掉。
 for (let i = 0; i < 120; i += 1) {
@@ -355,7 +367,7 @@ check("玩家没有被瞬移出屋顶",
 
 /* ---------- 2. 被动层数 ---------- */
 
-api.setPlayerPosition(BUILDING.x + BUILDING.w / 2, BUILDING.y - 19);
+api.setPlayerPosition(BUILDING.x + BUILDING.w / 2, BUILDING.y + BUILDING.h / 2 - 19);
 api.resetPassive();
 step(0.016);
 // 站 4.2 秒 → 2 层
@@ -372,8 +384,9 @@ step(0.016);
 check("落到地面后离开屋顶状态", api.getOnRooftop() === false);
 check("落到地面：层数暂时保留", api.getStacks() === 2, `实际 ${api.getStacks()}`);
 // 宽限期内回到建筑 → 减半
-api.setPlayerPosition(BUILDING.x + BUILDING.w / 2, BUILDING.y - 19);
-step(0.016);
+api.setPlayerPosition(BUILDING.x + BUILDING.w / 2, BUILDING.y + BUILDING.h / 2 - 19);
+api.castSkill(2);
+for (let i = 0; i < 80; i += 1) step(0.016);
 check("宽限期内回到建筑：层数减半", api.getStacks() === 1, `实际 ${api.getStacks()}`);
 
 /* ---------- 4. E「飞索·抓」是拉拽不是瞬移 ---------- */
@@ -433,9 +446,98 @@ check("R 落地后空中状态清空", api.getLeapActive() === false);
 for (let i = 0; i < 200; i += 1) step(0.016);
 check("R 每 3 秒恢复 1 次充能", api.getLeapCharges() === 5, `实际 ${api.getLeapCharges()}`);
 
+/* ---------- 5b. 跳到屋顶内部：不触发地面范围伤害且仍可移动 ---------- */
+
+api.resetAll();
+api.setTestObstacles([BUILDING]);
+api.setPlayerPosition(BUILDING.x + BUILDING.w / 2, BUILDING.y + BUILDING.h / 2 - 19);
+api.spawnEnemy(api.getPlayerX() + 60, api.getPlayerY(), 100);
+api.castSkill(2);
+for (let i = 0; i < 80; i += 1) step(0.016);
+check("R 落在屋顶内部：正确识别为屋顶", api.getOnRooftop() === true);
+check("R 落在屋顶内部：不会触发地面范围伤害", api.getEnemyHp() === 100,
+  `敌人血量 ${api.getEnemyHp()}`);
+const interiorX = api.getPlayerX();
+const interiorY = api.getPlayerY();
+api.movePlayer(24, 24);
+check("R 落在屋顶内部：不被建筑碰撞卡住",
+  api.getPlayerX() > interiorX && api.getPlayerY() > interiorY,
+  `位置 (${interiorX}, ${interiorY}) -> (${api.getPlayerX()}, ${api.getPlayerY()})`);
+check("R 落在屋顶内部：普攻被禁用", api.basicAttack() === false);
+const roofEdgeY = api.getPlayerY();
+api.movePlayer(240, 0);
+check("不使用二技能：不能步行离开屋顶", api.getOnRooftop() === true);
+check("屋顶步行被限制在平台内", api.getPlayerX() >= BUILDING.x && api.getPlayerX() <= BUILDING.x + BUILDING.w);
+api.setMovementInput(1, 0);
+api.castSkill(2);
+for (let i = 0; i < 80; i += 1) step(0.016);
+api.setMovementInput(0, 0);
+check("使用二技能：可以从屋顶跳回地面", api.getOnRooftop() === false);
+check("二技能落在建筑外侧", api.getPlayerX() > BUILDING.x + BUILDING.w,
+  `x=${api.getPlayerX()}，建筑右边缘=${BUILDING.x + BUILDING.w}`);
+const groundX = api.getPlayerX();
+api.movePlayer(-20, 0);
+check("下楼后可以继续在地面移动", api.getPlayerX() < groundX);
+check("下楼操作没有意外改变高度", api.getPlayerY() === roofEdgeY,
+  `y=${api.getPlayerY()}，下楼前 y=${roofEdgeY}`);
+
+/* ---------- 5c. 二技能可以跨建筑跳跃，一技能只连接其他建筑 ---------- */
+
+api.resetAll();
+api.setTestObstacles([
+  BUILDING,
+  { x: 980, y: 250, w: 260, h: 330, type: "building" },
+]);
+jumpToRoof(BUILDING.x + BUILDING.w - 20, BUILDING.y + BUILDING.h / 2 - 19);
+api.setMovementInput(1, 0);
+api.castSkill(2);
+for (let i = 0; i < 80; i += 1) step(0.016);
+api.setMovementInput(0, 0);
+check("二技能：可以从一栋建筑跳到另一栋", api.getOnRooftop() === true);
+check("二技能跨建筑落点在目标平台上", api.getPlayerX() >= 980 && api.getPlayerX() <= 1240,
+  `x=${api.getPlayerX()}`);
+
+api.resetAll();
+api.setTestObstacles([BUILDING]);
+jumpToRoof(BUILDING.x + BUILDING.w / 2, BUILDING.y + BUILDING.h / 2 - 19);
+const energyBeforeInvalidHook = api.getEnergy();
+api.castSkill(1);
+check("屋顶一技能没有其他建筑时不启动", api.getHookActive() === false);
+check("无有效建筑目标时不消耗能量", api.getEnergy() === energyBeforeInvalidHook);
+check("屋顶一技能提示需要其他建筑", ids["map-toast"].textContent.includes("其他建筑"));
+
+api.resetAll();
+api.setTestObstacles([
+  BUILDING,
+  { x: 980, y: 250, w: 260, h: 330, type: "building" },
+]);
+jumpToRoof(BUILDING.x + 40, BUILDING.y + BUILDING.h / 2 - 19);
+api.spawnEnemy(650, api.getPlayerY(), 500);
+api.spawnEnemy(690, api.getPlayerY(), 500);
+api.setTier("grapple-hook", 2);
+api.castSkill(1);
+check("屋顶一技能只锁定另一栋建筑", api.getHookTargetKind() === "building");
+let rooftopDamageDuringTimeStop = false;
+for (let i = 0; i < 200 && api.getHookActive(); i += 1) {
+  // 模拟持续按住与飞索方向相反的移动键，不能被旧屋顶平台边界夹回起点。
+  api.movePlayer(-10000, 0);
+  step(0.016);
+  if (api.getTimeStopped() && (api.getEnemyHp(0) < 500 || api.getEnemyHp(1) < 500)) {
+    rooftopDamageDuringTimeStop = true;
+  }
+}
+check("屋顶一技能转移到目标建筑", api.getOnRooftop() === true &&
+  api.getPlayerX() >= 980 && api.getPlayerX() <= 1240,
+  `位置 (${api.getPlayerX()}, ${api.getPlayerY()})`);
+check("屋顶一技能转移途中对范围内敌人造成伤害",
+  api.getEnemyHp(0) < 500 && api.getEnemyHp(1) < 500,
+  `敌人血量 ${api.getEnemyHp(0)}, ${api.getEnemyHp(1)}`);
+check("二阶时间停滞时屋顶范围伤害仍即时结算", rooftopDamageDuringTimeStop);
+
 /* ---------- 6. Q「万重飞索」牵引 ---------- */
 
 api.resetAll();
+api.setPlayerPosition(100, 1000);
 api.spawnEnemy(200, 1000, 100);
 api.castSkill(0); // Q = 万重飞索
 check("Q 施放后牵引状态激活", api.getMyriadActive() === true);
@@ -449,8 +551,7 @@ check("Q 把敌人拉向自己",
 /* ---------- 7. 建筑上禁用普攻 ---------- */
 
 api.resetAll();
-api.setPlayerPosition(BUILDING.x + BUILDING.w / 2, BUILDING.y - 19);
-step(0.016);
+jumpToRoof(BUILDING.x + BUILDING.w / 2, BUILDING.y + BUILDING.h / 2 - 19);
 check("站在建筑上：普攻被禁用", api.basicAttack() === false);
 check("站在建筑上：普攻被禁用提示已给出", ids["map-toast"].textContent.includes("建筑"));
 
@@ -528,8 +629,7 @@ const groundDamage = hpGroundBefore - api.getEnemyHp();
 api.resetAll();
 api.setTestObstacles(CITY_BLOCKS);
 api.setTier("grapple-leap", 3);
-api.setPlayerPosition(BUILDING.x + BUILDING.w / 2, BUILDING.y - 19);
-step(0.016);
+jumpToRoof(BUILDING.x + BUILDING.w / 2, BUILDING.y + BUILDING.h / 2 - 19);
 api.spawnEnemy(api.getPlayerX() + 60, api.getPlayerY(), 500);
 const hpRoofBefore = api.getEnemyHp();
 check("3 阶：站在建筑上可以普攻", api.basicAttack() === true);

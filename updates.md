@@ -1,5 +1,22 @@
 # 更新日志 / Updates
 
+## 2.8.1
+
+### 中文
+
+- **飞索超人屋顶机制修复**：地面不能直接走上建筑；二技能可跳上、跳下或跳到另一栋建筑。屋顶一技能只连接射程内的其他建筑，转移途中持续造成范围伤害。
+- **飞索动画优化**：补充跳跃腾空与地面影子、飞索伸出与牵引绳索动态、目标锚点脉冲，以及屋顶转移/落地冲击反馈。
+
+### English
+
+- **Fixed Grapple Man's rooftop movement:** walking no longer enters or exits rooftops; Leap can jump onto, off, or between buildings. From a rooftop, Hook only connects to another building in range and deals area damage during transfer.
+- **Grapple animation polish:** added a clearer jump arc and ground shadow, an extending hook line and animated tether, pulsing anchor feedback, and concise transfer/landing impacts.
+
+### 日本語
+
+- **グラップルマンの屋上移動を修正**：歩行では屋上に上がったり降りたりできず、リープで屋上への移動・屋上からの着地・建物間の移動ができます。屋上からのフックは射程内の別の建物のみを狙い、移動中に範囲ダメージを与えます。
+- **アニメーションを改善**：跳躍中の浮遊と影、伸びるワイヤーと牽引ロープ、脈動するアンカー、建物間移動と着地のインパクト演出を追加しました。
+
 ## 2.8.0
 
 ### 中文

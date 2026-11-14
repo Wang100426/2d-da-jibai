@@ -865,14 +865,14 @@
         "grapple-hook": {
           "name": "Grapple Hook",
           "kind": "Skill",
-          "description": "Throw a grapple toward your movement · reel yourself in",
-          "detail_description": "Fire a grapple in your movement direction; it stops on a building, an enemy hero or the map edge, then reels you toward that spot — you actually fly there, no teleporting. You are invincible and pass through buildings while flying, damaging nearby enemies, and land with area damage and knockback. Hit an enemy and it stays stunned for the whole flight."
+          "description": "Ground: grapple to a hit point; rooftop: transfer to another building with area damage",
+          "detail_description": "On the ground, fire in your movement direction and reel toward a building, enemy hero, or map edge. On a rooftop, the hook can only target another building in range and transfers you there, dealing area damage to nearby enemies at intervals during the transfer."
         },
         "grapple-leap": {
           "name": "Grapple Leap",
           "kind": "Skill",
           "description": "Jump into the air · land on a roof or slam the ground",
-          "detail_description": "Jump for 1 second, passing through buildings, invincible and following your movement keys. Land on a building and you stay up there: no basic attacks, and your hook only locks onto buildings (hitting the map edge refunds 70% cooldown), dealing damage without knockback. Land on the ground and nearby enemies take damage and are slowed, and you gain 1 extra second of invincibility."
+          "detail_description": "Jump for 1 second, passing through buildings while invincible and following your movement keys. This is the only way to get onto or off rooftops, and you can jump between buildings. On a rooftop you cannot walk off or basic attack; your hook can only connect to another building and deals area damage during the transfer. Landing on the ground damages and slows nearby enemies and grants 1 extra second of invincibility."
         }
       }
     }
@@ -1717,6 +1717,7 @@
       "story.hint": "Clear the target waves to leave this memory.",
       "skill.grapple_hook_start": "{name} thrown!",
       "skill.grapple_hook_end": "{name} hit {hits} enemies.",
+      "skill.grapple_hook_rooftop_miss": "Grapple Hook can only connect to another building in range.",
       "skill.grapple_leap_no_charge": "Grapple Leap has no charges left.",
       "skill.grapple_leap_rooftop": "{name} landed on a rooftop — hold your ground.",
       "skill.grapple_leap_ground": "{name} slammed the ground, slowing enemies.",

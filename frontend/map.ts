@@ -179,6 +179,8 @@ interface GrappleHookState {
   onlyStructure: boolean;
   /** 3 阶：穿透敌人时眩晕他们。 */
   pierceStun: boolean;
+  /** 从屋顶发射并锁定另一栋建筑的转移飞行。 */
+  rooftopTransfer: boolean;
   /** 延迟结算的伤害队列（2 阶 / 3 阶）。 */
   pendingDamage: { enemy: EnemyUnit; damage: number; effect: string; effectTurns: number }[];
 }
@@ -4540,6 +4542,90 @@ function drawSkillVisuals(): void {
     }
     context.restore();
   });
+  drawGrappleMotionVisuals();
+}
+
+/** 飞索角色的动态绳索与锚点反馈。 */
+function drawGrappleMotionVisuals(): void {
+  const hook = grappleHook;
+  if (!hook) return;
+
+  const color = "#ff8a3d";
+  const castProgress = hook.phase === "cast"
+    ? Math.max(0, Math.min(1, hook.elapsed / hook.duration))
+    : 1;
+  const startX = player.x;
+  const startY = player.y;
+  const endX = hook.phase === "cast"
+    ? startX + (hook.targetX - startX) * castProgress
+    : player.x;
+  const endY = hook.phase === "cast"
+    ? startY + (hook.targetY - startY) * castProgress
+    : player.y;
+  const lineStartX = hook.phase === "cast" ? startX : hook.targetX;
+  const lineStartY = hook.phase === "cast" ? startY : hook.targetY;
+  const lineEndX = endX;
+  const lineEndY = endY;
+  const dx = lineEndX - lineStartX;
+  const dy = lineEndY - lineStartY;
+  const length = Math.hypot(dx, dy) || 1;
+  const sway = hook.phase === "reel" ? Math.sin(hook.elapsed * 16) * Math.min(10, length * 0.025) : 0;
+  const controlX = (lineStartX + lineEndX) / 2 - (dy / length) * sway;
+  const controlY = (lineStartY + lineEndY) / 2 + (dx / length) * sway;
+
+  context.save();
+  context.lineCap = "round";
+  context.lineJoin = "round";
+  context.globalAlpha = hook.phase === "cast" ? 0.72 : 0.9;
+  context.shadowColor = color;
+  context.shadowBlur = 12;
+  context.strokeStyle = color;
+  context.lineWidth = hook.phase === "cast" ? 3 : 6;
+  context.beginPath();
+  context.moveTo(lineStartX, lineStartY);
+  context.quadraticCurveTo(controlX, controlY, lineEndX, lineEndY);
+  context.stroke();
+  context.shadowBlur = 0;
+  context.strokeStyle = "#fff4df";
+  context.lineWidth = hook.phase === "cast" ? 1 : 2;
+  context.setLineDash([8, 10]);
+  context.lineDashOffset = -hook.elapsed * 90;
+  context.beginPath();
+  context.moveTo(lineStartX, lineStartY);
+  context.quadraticCurveTo(controlX, controlY, lineEndX, lineEndY);
+  context.stroke();
+  context.setLineDash([]);
+
+  if (hook.phase === "cast") {
+    const pulse = 1 + Math.sin(hook.elapsed * 28) * 0.18;
+    context.globalAlpha = 0.92;
+    context.fillStyle = "#fff4df";
+    context.shadowColor = color;
+    context.shadowBlur = 14;
+    context.beginPath();
+    context.arc(endX, endY, 5 * pulse, 0, Math.PI * 2);
+    context.fill();
+    context.strokeStyle = color;
+    context.lineWidth = 2;
+    context.beginPath();
+    context.arc(endX, endY, 10 * pulse, 0, Math.PI * 2);
+    context.stroke();
+  } else {
+    const pulse = 1 + Math.sin(hook.elapsed * 20) * 0.12;
+    context.globalAlpha = 0.78;
+    context.shadowColor = color;
+    context.shadowBlur = 12;
+    context.strokeStyle = "#fff4df";
+    context.lineWidth = 2;
+    context.beginPath();
+    context.arc(hook.targetX, hook.targetY, 12 * pulse, 0, Math.PI * 2);
+    context.stroke();
+    context.fillStyle = color;
+    context.beginPath();
+    context.arc(hook.targetX, hook.targetY, 3.5, 0, Math.PI * 2);
+    context.fill();
+  }
+  context.restore();
 }
 
 /**
@@ -4576,6 +4662,9 @@ function collides(x: number, y: number): boolean {
 
 function movePlayer(dx: number, dy: number): void {
   if (playerMovementLocked()) return;
+  // 飞索·抓 / 飞索·移期间，位置由技能状态机独占，避免普通屋顶移动
+  // 将角色每帧夹回起始建筑，抵消飞索的牵引位移。
+  if (grappleHook || grappleLeap) return;
   // 飞索超人站在屋顶上：俯视角下顶面就是平台，WASD 四向都能走。
   // 脚下这栋建筑不参与地面碰撞（人站在顶上而不是地面），否则真实地图里
   // 相邻建筑与路障会把玩家死死卡住，表现成「上屋顶后完全动不了」。
@@ -5434,7 +5523,7 @@ function grappleObstacles(): GrappleObstacle[] {
 /**
  * 判定玩家当前是否站在某个建筑上方。
  *
- * 「上方」= 脚部（圆心 + 半径）贴合建筑矩形的上边缘。
+ * 「上方」= 脚部（圆心 + 半径）位于建筑矩形覆盖的屋顶区域内。
  * 这里用 `findRooftopUnder` 的纯函数判定，和地面碰撞（圆心距矩形）是两套逻辑。
  */
 function updateGrappleRooftop(): void {
@@ -5471,13 +5560,6 @@ function updateGrappleRooftop(): void {
     addFloatingText(player.x, player.y - 46, t("float.grapple_fall"), "#ff9d7a");
     return;
   }
-  // 未上屋顶：脚部贴合某栋建筑上边缘时进入屋顶（R 落地 / 外部放置）。
-  const rooftop = findRooftopUnder(player.x, footY, grappleObstacles(), 10);
-  if (!rooftop) return;
-  grappleOnRooftop = true;
-  grappleRooftopRect = rooftop;
-  // 把脚部贴回屋顶平面，避免被地面碰撞判定推下去。
-  player.y = rooftop.y - player.radius;
 }
 
 /**
@@ -5510,6 +5592,36 @@ function grappleEnergyRegenMultiplier(): number {
 
 /* ---------- E「飞索·抓」 ---------- */
 
+/** 找到飞索命中的实体；从屋顶发射时排除脚下建筑，只允许锁定其他建筑。 */
+function grappleHookHit(skill: SkillConfig): GrappleRayHit | undefined {
+  const tier = skillProgress.get(skill.id)?.tier || 1;
+  const onlyStructure = (skill.hook_only_structure || 0) > 0 || tier >= 3 || grappleOnRooftop;
+  const obstacles = grappleObstacles().filter((obstacle) =>
+    !grappleOnRooftop || !grappleRooftopRect ||
+    obstacle.x !== grappleRooftopRect.x || obstacle.y !== grappleRooftopRect.y ||
+    obstacle.w !== grappleRooftopRect.w || obstacle.h !== grappleRooftopRect.h);
+  const targets: GrappleCircleTarget[] = onlyStructure
+    ? []
+    : enemies
+      .filter((enemy) => enemy.hp > 0)
+      .map((enemy, index) => ({
+        id: enemy.id || `grapple-${index}`,
+        x: enemy.x,
+        y: enemy.y,
+        radius: enemy.kind === "brute" ? 25 : enemy.kind === "runner" ? 14 : 20,
+      }));
+  return castGrappleRay(
+    player.x,
+    player.y,
+    facing.x || 1,
+    facing.y,
+    skill.hook_range || 620,
+    obstacles,
+    targets,
+    onlyStructure,
+  );
+}
+
 /**
  * 施放飞索·抓。
  *
@@ -5522,37 +5634,16 @@ function castGrappleHook(skill: SkillConfig): void {
   const timeStop = (skill.hook_time_stop || 0) > 0 || tier >= 2;
   const deferDamage = (skill.hook_defer_damage || 0) > 0 || tier >= 2;
   const pierceStun = (skill.hook_pierce_stun || 0) > 0 || tier >= 3;
-  // 在建筑上时，一技能只能锁定建筑（3 阶本来也只锁建筑）。
-  const onlyStructure = (skill.hook_only_structure || 0) > 0 || tier >= 3 || grappleOnRooftop;
+  const rooftopTransfer = grappleOnRooftop;
+  const onlyStructure = (skill.hook_only_structure || 0) > 0 || tier >= 3 || rooftopTransfer;
   const directionX = facing.x || 1;
   const directionY = facing.y;
   const range = skill.hook_range || 620;
-
-  // 在建筑上时只锁建筑，敌方英雄不作为目标。
-  const targets: GrappleCircleTarget[] = onlyStructure
-    ? []
-    : enemies
-      .filter((enemy) => enemy.hp > 0)
-      .map((enemy, index) => ({
-        id: enemy.id || `grapple-${index}`,
-        x: enemy.x,
-        y: enemy.y,
-        radius: enemy.kind === "brute" ? 25 : enemy.kind === "runner" ? 14 : 20,
-      }));
-
-  const hit = castGrappleRay(
-    player.x,
-    player.y,
-    directionX,
-    directionY,
-    range,
-    grappleObstacles(),
-    targets,
-    onlyStructure,
-  );
+  const hit = grappleHookHit(skill);
 
   const targetX = hit ? hit.x : player.x + directionX * range;
   const targetY = hit ? hit.y : player.y + directionY * range;
+  if (rooftopTransfer && hit?.kind !== "building") return;
 
   // 命中敌方英雄时，该敌人在自己飞行过程中保持眩晕。
   let hitEnemy: EnemyUnit | undefined;
@@ -5585,6 +5676,7 @@ function castGrappleHook(skill: SkillConfig): void {
     deferDamage,
     onlyStructure,
     pierceStun,
+    rooftopTransfer,
     pendingDamage: [],
   };
 
@@ -5622,6 +5714,7 @@ function advanceGrappleHook(dt: number): void {
       // 进入拉拽阶段时进入无敌。
       player.invulnerable = true;
       invulnerableTimer = hook.duration;
+      if (hook.rooftopTransfer) hook.damageTimer = hook.damageInterval;
       if (hook.hitEnemy && hook.hitEnemy.hp > 0) {
         hook.hitEnemy.effects["眩晕"] = Math.max(hook.hitEnemy.effects["眩晕"] || 0, hook.duration + 0.2);
       }
@@ -5651,10 +5744,22 @@ function advanceGrappleHook(dt: number): void {
   facing.x = deltaX / distance;
   facing.y = deltaY / distance;
 
+  // 屋顶转移期间按间隔对周围区域造成范围伤害。
+  if (hook.rooftopTransfer && hook.flightDamage > 0) {
+    hook.damageTimer += dt;
+    while (hook.damageTimer >= hook.damageInterval) {
+      hook.damageTimer -= hook.damageInterval;
+      enemies.forEach((enemy) => {
+        if (enemy.hp <= 0 || distanceTo(enemy.x, enemy.y) > hook.radius) return;
+        hitEnemy(enemy, hook.flightDamage);
+      });
+    }
+  }
+
   // 飞行途中对附近敌人造成伤害。
   // 必须逐帧检测：拉拽速度 720px/s，按 0.35 秒采样会直接跳过路径上的敌人。
   // hitEnemies 已保证同一敌人只结算一次，不需要再用计时器节流。
-  if (hook.flightDamage > 0 || hook.pierceStun) {
+  if (!hook.rooftopTransfer && (hook.flightDamage > 0 || hook.pierceStun)) {
     enemies.forEach((enemy) => {
       if (enemy.hp <= 0 || hook.hitEnemies.has(enemy)) return;
       const enemyRadius = enemy.kind === "brute" ? 25 : enemy.kind === "runner" ? 14 : 20;
@@ -5692,7 +5797,31 @@ function advanceGrappleHook(dt: number): void {
 
 /** 飞索·抓结束：落点范围伤害 + 击退，并结算延迟伤害。 */
 function finishGrappleHook(hook: GrappleHookState): void {
+  if (hook.rooftopTransfer && hook.hitKind === "building" && hook.targetObstacle) {
+    grappleOnRooftop = true;
+    grappleRooftopRect = hook.targetObstacle;
+    const inset = player.radius * 0.5;
+    player.x = Math.max(
+      hook.targetObstacle.x + inset,
+      Math.min(hook.targetObstacle.x + hook.targetObstacle.w - inset, player.x),
+    );
+    player.y = Math.max(
+      hook.targetObstacle.y - player.radius,
+      Math.min(hook.targetObstacle.y + hook.targetObstacle.h - player.radius, player.y),
+    );
+  }
   const rooftopMode = hook.hitKind === "building";
+  skillVisuals.push({
+    type: "impact",
+    x: player.x,
+    y: player.y,
+    targetX: player.x,
+    targetY: player.y,
+    age: 0,
+    duration: 0.34,
+    color: "#ffd9a8",
+    radius: hook.rooftopTransfer ? 54 : 42,
+  });
   const victims = enemies.filter((enemy) =>
     enemy.hp > 0 && Math.hypot(enemy.x - player.x, enemy.y - player.y) <= hook.radius);
 
@@ -5811,10 +5940,17 @@ function finishGrappleLeap(leap: GrappleLeapState): void {
     // 落在建筑上：留在建筑上。
     grappleOnRooftop = true;
     grappleRooftopRect = rooftop;
-    player.y = rooftop.y - player.radius;
+    const inset = player.radius * 0.5;
+    player.x = Math.max(rooftop.x + inset, Math.min(rooftop.x + rooftop.w - inset, player.x));
+    player.y = Math.max(
+      rooftop.y - player.radius,
+      Math.min(rooftop.y + rooftop.h - player.radius, player.y),
+    );
     addFloatingText(player.x, player.y - 46, t("float.grapple_rooftop"), "#ffd9a8");
     showToast(t("skill.grapple_leap_rooftop", { name: leap.skillName }));
   } else {
+    grappleOnRooftop = false;
+    grappleRooftopRect = undefined;
     // 落在地面：范围伤害 + 减速，额外 1 秒无敌。
     const radius = skill?.radius || 150;
     const damage = skill?.damage || 0;
@@ -5842,6 +5978,17 @@ function finishGrappleLeap(leap: GrappleLeapState): void {
     statusEffects["无敌"] = Math.max(statusEffects["无敌"] || 0, 1);
     showToast(t("skill.grapple_leap_ground", { name: leap.skillName }));
   }
+  skillVisuals.push({
+    type: "impact",
+    x: player.x,
+    y: player.y,
+    targetX: player.x,
+    targetY: player.y,
+    age: 0,
+    duration: 0.42,
+    color: "#ffb15c",
+    radius: rooftop ? 52 : (skill?.radius || 150) * 0.62,
+  });
 
   player.invulnerable = false;
   grappleLeap = undefined;
@@ -7595,6 +7742,10 @@ function castSkill(index: number): void {
     showToast(t("skill.no_energy", { name: skill.name, cost: skill.cost }), "warning");
     return;
   }
+  if (skill.action === "grapple_hook" && grappleOnRooftop && grappleHookHit(skill)?.kind !== "building") {
+    showToast(t("skill.grapple_hook_rooftop_miss"), "warning");
+    return;
+  }
 
   let target: EnemyUnit | undefined;
   if (skill.target === "enemy") {
@@ -8462,22 +8613,45 @@ function updateCombat(dt: number): void {
 }
 
 function drawPlayer(): void {
+  const leapProgress = grappleLeap
+    ? Math.max(0, Math.min(1, grappleLeap.elapsed / grappleLeap.duration))
+    : 0;
+  const hookProgress = grappleHook?.phase === "reel"
+    ? Math.max(0, Math.min(1, grappleHook.elapsed / grappleHook.duration))
+    : 0;
+  const lift = grappleLeap
+    ? Math.sin(leapProgress * Math.PI) * 58
+    : grappleHook?.phase === "reel"
+      ? Math.sin(hookProgress * Math.PI) * (grappleHook.rooftopTransfer ? 46 : 30)
+      : 0;
   context.save();
-  context.translate(player.x, player.y);
+  context.globalAlpha = Math.max(0.28, 1 - lift / 90);
   context.fillStyle = "#0009";
   context.beginPath();
-  context.ellipse(3, 17, 22, 10, 0, 0, Math.PI * 2);
+  context.ellipse(player.x + 3, player.y + 17, 22 - lift * 0.08, 10 - lift * 0.035, 0, 0, Math.PI * 2);
   context.fill();
+  if (grappleLeap || (grappleHook && grappleHook.phase === "reel")) {
+    const pulse = 1 + Math.sin((grappleLeap?.elapsed || grappleHook?.elapsed || 0) * 20) * 0.08;
+    context.globalAlpha = 0.22;
+    context.strokeStyle = "#ffd9a8";
+    context.lineWidth = 2;
+    context.beginPath();
+    context.ellipse(player.x, player.y + 9, (player.radius + 9) * pulse, 7 * pulse, 0, 0, Math.PI * 2);
+    context.stroke();
+  }
+  context.restore();
+  context.save();
+  context.translate(player.x, player.y - lift);
   context.fillStyle = heroColors.dark;
-  if (afterimageDash) {
-  context.shadowColor = "#49e6e0";
-  context.shadowBlur = 24;
-  context.strokeStyle = "#d4fffb";
-  context.lineWidth = 3;
-  context.beginPath();
-  context.arc(0, 0, player.radius + 8, 0, Math.PI * 2);
-  context.stroke();
-  context.shadowBlur = 0;
+  if (afterimageDash || grappleLeap || grappleHook?.phase === "reel") {
+    context.shadowColor = afterimageDash ? "#49e6e0" : "#ff8a3d";
+    context.shadowBlur = 18;
+    context.strokeStyle = afterimageDash ? "#d4fffb" : "#ffe5c7";
+    context.lineWidth = 2.5;
+    context.beginPath();
+    context.arc(0, 0, player.radius + 7, 0, Math.PI * 2);
+    context.stroke();
+    context.shadowBlur = 0;
   }
   context.beginPath();
   context.arc(0, 0, player.radius + 4, 0, Math.PI * 2);
@@ -9065,6 +9239,13 @@ if ((window as unknown as { __GRAPPLE_TEST_HOOK__?: boolean }).__GRAPPLE_TEST_HO
     getPlayerX(): number { return player.x; },
     getPlayerY(): number { return player.y; },
     getEnergy(): number { return playerState.energy; },
+    setMovementInput(x: number, y: number): void {
+      ["a", "d", "w", "s"].forEach((key) => keys.delete(key));
+      if (x < 0) keys.add("a");
+      if (x > 0) keys.add("d");
+      if (y < 0) keys.add("w");
+      if (y > 0) keys.add("s");
+    },
     setPlayerPosition(x: number, y: number): void {
       player.x = x;
       player.y = y;
@@ -9105,7 +9286,7 @@ if ((window as unknown as { __GRAPPLE_TEST_HOOK__?: boolean }).__GRAPPLE_TEST_HO
       const enemy = enemies[0];
       return enemy ? { x: enemy.x, y: enemy.y } : { x: 0, y: 0 };
     },
-    getEnemyHp(): number { return enemies[0]?.hp ?? 0; },
+    getEnemyHp(index = 0): number { return enemies[index]?.hp ?? 0; },
     getEnemyEffects(): Record<string, number> {
       return { ...(enemies[0]?.effects || {}) };
     },
@@ -9128,6 +9309,7 @@ if ((window as unknown as { __GRAPPLE_TEST_HOOK__?: boolean }).__GRAPPLE_TEST_HO
       grapplePassiveState.onRooftop = false;
       grappleEnergyStacks = 0;
       enemies.length = 0;
+      keys.clear();
       skillCooldowns.clear();
       // 测试之间必须完全隔离：升阶进度、普攻冷却、朝向都会影响后续断言。
       skillProgress.forEach((progress) => {

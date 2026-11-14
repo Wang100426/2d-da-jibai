@@ -6,7 +6,7 @@
  *
  * 重点验证三个容易算错的地方：
  * 1. 飞索射线到底先命中建筑还是先命中敌人；
- * 2. 「站在建筑上方」用的是屋顶平面（矩形上边缘），不是地面碰撞；
+ * 2. 「站在建筑上方」覆盖整个屋顶区域，不只是矩形上边缘；
  * 3. 万重飞索「在建筑上就拉到建筑边缘」夹取的是最近那条边。
  */
 const test = require("node:test");
@@ -90,9 +90,15 @@ test("建筑后方还有建筑时命中更近的那个", () => {
   assert.equal(hit.x, 100, "应命中更近的建筑");
 });
 
-test("站在建筑上方：脚部贴合屋顶平面", () => {
+test("站在建筑上方：脚部位于屋顶区域", () => {
   const rooftop = findRooftopUnder(150, 100, [BUILDING]);
   assert.ok(rooftop, "应该识别出屋顶");
+  assert.equal(rooftop.y, 100);
+});
+
+test("落在建筑屋顶内部也算站在屋顶", () => {
+  const rooftop = findRooftopUnder(150, 180, [BUILDING]);
+  assert.ok(rooftop, "屋顶内部应该被识别");
   assert.equal(rooftop.y, 100);
 });
 
@@ -100,8 +106,8 @@ test("不在建筑水平范围内不算站在屋顶", () => {
   assert.equal(findRooftopUnder(400, 100, [BUILDING]), undefined);
 });
 
-test("脚部远离屋顶平面不算站在屋顶", () => {
-  assert.equal(findRooftopUnder(150, 180, [BUILDING]), undefined);
+test("脚部离开屋顶区域不算站在屋顶", () => {
+  assert.equal(findRooftopUnder(150, 220, [BUILDING]), undefined);
 });
 
 test("站在地面上不会被误判为站在建筑上方", () => {
