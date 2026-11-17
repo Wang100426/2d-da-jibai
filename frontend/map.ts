@@ -1647,45 +1647,6 @@ const stationObstacles: Obstacle[] = [
   { x: 2650, y: 2292, w: 340, h: 96, type: "building", name: "检票口" },
 ];
 
-function randomizeObstacleLayout(source: Obstacle[]): Obstacle[] {
-  const layout: Obstacle[] = [];
-  source.forEach((item) => {
-    if (mapTheme === "airport") {
-      layout.push({ ...item });
-      return;
-    }
-    const jitter = item.type === "building" ? 76 : 48;
-    let position: MapPoint | undefined;
-    const isSafe = (x: number, y: number): boolean => {
-      const spawnOverlaps = x < 1630 && x + item.w > 1570 && y < 1230 && y + item.h > 1170;
-      const roadOverlap = item.type === "building" && roads.some((road) =>
-        x < road.x + road.w && x + item.w > road.x &&
-        y < road.y + road.h && y + item.h > road.y);
-      return !spawnOverlaps && !roadOverlap;
-    };
-    for (let attempt = 0; attempt < 48; attempt += 1) {
-      const x = Math.max(70, Math.min(map.width - item.w - 70, item.x + (Math.random() * 2 - 1) * jitter));
-      const y = Math.max(70, Math.min(map.height - item.h - 70, item.y + (Math.random() * 2 - 1) * jitter));
-      if (isSafe(x, y)) {
-        position = { x, y };
-        break;
-      }
-    }
-    if (!position) {
-      for (let y = 70; y <= map.height - item.h - 70 && !position; y += 60) {
-        for (let x = 70; x <= map.width - item.w - 70; x += 60) {
-          if (isSafe(x, y)) {
-            position = { x, y };
-            break;
-          }
-        }
-      }
-    }
-    if (position) layout.push({ ...item, ...position });
-  });
-  return layout;
-}
-
 const airportApron = { x: map.width / 2, y: map.height / 2 };
 const airportRunways: AirportRunway[] = [
   [0, -1], [Math.SQRT1_2, -Math.SQRT1_2], [1, 0], [Math.SQRT1_2, Math.SQRT1_2],
@@ -1718,17 +1679,27 @@ const roads: Rectangle[] = !battleSpace.roads ? [] : mapTheme === "hospital"
       { x: 2240 + Math.random() * 80, y: 0, w: 115, h: map.height },
     ];
 
+const obstacleLayoutConfig = {
+  mapTheme,
+  width: map.width,
+  height: map.height,
+  roads,
+};
+function layoutObstacles(source: Obstacle[]): Obstacle[] {
+  return randomizeObstacleLayout(source, obstacleLayoutConfig) as Obstacle[];
+}
+
 const obstacles: Obstacle[] = !battleSpace.staticObstacles
   ? []
   : mapTheme === "station"
     ? stationObstacles
     : mapTheme === "ancient_town"
-      ? randomizeObstacleLayout(ancientTownObstacles)
+      ? layoutObstacles(ancientTownObstacles)
       : mapTheme === "windy_valley"
-        ? randomizeObstacleLayout(windyValleyObstacles)
+        ? layoutObstacles(windyValleyObstacles)
         : mapTheme === "neon_beach"
-          ? randomizeObstacleLayout(neonBeachObstacles)
-    : randomizeObstacleLayout(
+          ? layoutObstacles(neonBeachObstacles)
+    : layoutObstacles(
       mapTheme === "hospital" ? hospitalObstacles
         : mapTheme === "music" ? musicObstacles
           : mapTheme === "gym" ? gymObstacles

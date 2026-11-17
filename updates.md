@@ -1,5 +1,22 @@
 # 更新日志 / Updates
 
+## 2.9.1
+
+### 中文
+
+- **修复建筑堆叠**：修复部分地图随机布局在建筑找不到安全位置时全部堆叠到左上角、互相重叠的问题；改用就近螺旋搜索并把「不压道路」降级为软约束，建筑不会再叠成一坨。
+- **回归测试**：新增建筑布局纯函数与 10 项单测，覆盖 8 张地图各 100 次随机，验证建筑不重叠、不压出生点、数量守恒。
+
+### English
+
+- **Building stack fix:** buildings that could not find a safe random spot no longer pile up in the top-left corner and overlap each other. Layout now uses a nearest-free spiral search and treats road avoidance as a soft constraint.
+- **Regression tests:** the layout logic is now a pure function with 10 unit tests covering 100 random layouts per map across 8 maps — no overlaps, no spawn blocking, no lost buildings.
+
+### 日本語
+
+- **建物の重なりを修正**：ランダム配置で安全な場所が見つからない建物が左上に集中して重なる問題を解消。最寄りを探す螺旋探索へ変更し、道路回避はソフト制約に格下げしました。
+- **回帰テスト**：配置ロジックを純関数化し、8つのマップそれぞれ100回のランダム配置を検証する10件の単体テストを追加。重なり・出現地点の圧迫・建物の消失を確認します。
+
 ## 2.9.0
 
 ### 中文
