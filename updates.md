@@ -9,6 +9,7 @@
 - **战斗手感修复**：磁轨冲锋改用线段碰撞判定，高速冲锋不会再穿过敌人却零伤害。
 - **回归测试**：新增 28 项前端战斗测试与 12 项联机结算测试，覆盖升阶差异、周期触发、护盾充能与献祭自杀。
 - **上架与动画**：两位新英雄定价 3000 金币；六个技能全部重做视觉层次——处刑三层冲击波、血月法阵脉冲、镰刀弧线拖尾、钢铁领域双层光环、冲锋残影、最后防线周期脉冲与反弹爆心。
+- **触控模式重做**：左侧方向键换成虚拟摇杆（模拟量输入、限长防斜向超速、松手回中）；右侧技能改为王者式弧形摆放——普攻右下角最大圆钮，大招紧邻其左（金色描边最大技能键），E、R 沿 1/4 弧向左上排开；真实浏览器几何核验 9 项全过。
 
 ### English
 
@@ -17,6 +18,7 @@
 - **Combat fix:** Magnetic Rail Charge now uses segment collision, so a fast charge can no longer pass through an enemy without dealing damage.
 - **Regression tests:** 28 frontend combat tests and 12 multiplayer settlement tests cover tier differences, periodic ticks, shield charging and self-sacrifice deaths.
 - **Store and visuals:** both heroes cost 3000 coins; all six skills gained layered effects — triple shockwaves on execution, blood moon sigil pulses, arcing scythe trails, twin domain halos, charge afterimages and periodic shield pulses with an impact burst on reflect.
+- **Touch mode rebuilt:** the left D-pad is now an analog virtual joystick (clamped input, recenters on release); skills adopt an arc layout on the right — basic attack as the largest button in the corner, ultimate beside it with a golden ring, E and R fanned along a quarter arc. Verified with 9 real-browser geometry checks.
 
 ### 日本語
 
@@ -25,6 +27,7 @@
 - **戦闘の修正**：磁軌突撃を線分衝突判定に変更。高速で突進しても敵をすり抜けて無命中になる問題を解消。
 - **回帰テスト**：フロントエンド28件と対戦決済12件のテストを追加。段階差、周期発動、シールドチャージ、献祭死を網羅する。
 - **ショップと演出**：両ヒーローは3000コイン。6スキルすべてに演出を強化——処刑の三重衝撃波、血月の陣脈動、鎌の弧線トレイル、領域の二層オーラ、突撃の残像、防線の周期パルスと反撃の爆心。
+- **タッチ操作の刷新**：左の方向キーを仮想スティック化（アナログ入力、長さ制限、指を離すと自動復帰）。スキルは右下に王者風の円弧配置——通常攻撃が最大、必殺技は金色の縁取りで隣に、E と R は四分円弧に展開。実ブラウザの幾何検証9項目を通過。
 
 ## 2.9.1
 

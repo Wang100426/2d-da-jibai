@@ -138,11 +138,8 @@
     </button>
   </section>
   <canvas id="minimap" aria-label="{{ tr('MAP_OVERVIEW') }}"></canvas>
-  <div class="touch-pad" aria-label="{{ tr('MOVE') }}">
-    <button data-move="up" aria-label="{{ tr('MOVE_UP') }}">▲</button>
-    <button data-move="left" aria-label="{{ tr('MOVE_LEFT') }}">◀</button>
-    <button data-move="down" aria-label="{{ tr('MOVE_DOWN') }}">▼</button>
-    <button data-move="right" aria-label="{{ tr('MOVE_RIGHT') }}">▶</button>
+  <div class="touch-joystick" aria-label="{{ tr('MOVE') }}">
+    <div class="joystick-base" id="joystick-base"><div class="joystick-stick" id="joystick-stick"></div></div>
   </div>
   <script>
     window.MAP_CONFIG = {

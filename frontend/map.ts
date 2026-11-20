@@ -1267,6 +1267,9 @@ let swingWaitTimer = 0;
 const BASIC_SWING_RETRY_DELAY = 0.35;
 const keys = new Set<string>();
 const touchKeys = new Set<Direction>();
+/** 虚拟摇杆输出的模拟量方向（长度 ≤ 1）。 */
+const joystickVector = { x: 0, y: 0 };
+let joystickActive = false;
 const skillCooldowns = new Map<string, number>();
 const skillProgress = new Map<string, SkillProgress>(
   config.skills.map((skill) => [skill.id, { tier: 1, minorUpgrades: 0 }]),
@@ -6787,7 +6790,7 @@ function grappleBlocksBasicAttack(): boolean {
   return grappleTier("grapple_leap") < 3;
 }
 
-/** 取当前的移动输入方向（键盘 + 触屏）。 */
+/** 取当前的移动输入方向（键盘 + 触屏摇杆），合成后长度不超过 1。 */
 function movementInput(): { x: number; y: number } {
   let x = 0;
   let y = 0;
@@ -6795,6 +6798,18 @@ function movementInput(): { x: number; y: number } {
   if (keys.has("d") || keys.has("arrowright") || touchKeys.has("right")) x += 1;
   if (keys.has("w") || keys.has("arrowup") || touchKeys.has("up")) y -= 1;
   if (keys.has("s") || keys.has("arrowdown") || touchKeys.has("down")) y += 1;
+  if (x && y) {
+    x *= Math.SQRT1_2;
+    y *= Math.SQRT1_2;
+  }
+  // 摇杆是模拟量：与键盘叠加后统一限长，避免斜向输入超速。
+  x += joystickVector.x;
+  y += joystickVector.y;
+  const length = Math.hypot(x, y);
+  if (length > 1) {
+    x /= length;
+    y /= length;
+  }
   return { x, y };
 }
 
@@ -10124,16 +10139,9 @@ function drawFrame(timestamp: number): void {
 
   if (mapTransitionComplete) updateDuelBreak(dt);
   if (mapTransitionComplete && !runEnded && !skillIsPaused()) {
-    let dx = 0;
-    let dy = 0;
-    if (keys.has("ArrowLeft") || keys.has("a") || touchKeys.has("left")) dx -= 1;
-    if (keys.has("ArrowRight") || keys.has("d") || touchKeys.has("right")) dx += 1;
-    if (keys.has("ArrowUp") || keys.has("w") || touchKeys.has("up")) dy -= 1;
-    if (keys.has("ArrowDown") || keys.has("s") || touchKeys.has("down")) dy += 1;
-    if (dx && dy) {
-      dx *= Math.SQRT1_2;
-      dy *= Math.SQRT1_2;
-    }
+    const input = movementInput();
+    const dx = input.x;
+    const dy = input.y;
     if (!playerMovementLocked() && !afterimageDash && !jianghuDash && (dx || dy)) {
       facing.x = dx;
       facing.y = dy;
@@ -10235,27 +10243,60 @@ document.addEventListener("keyup", (event: KeyboardEvent) => {
 window.addEventListener("blur", () => {
   keys.clear();
   touchKeys.clear();
+  joystickVector.x = 0;
+  joystickVector.y = 0;
+  joystickActive = false;
   basicAttackHeld = false;
 });
 
-document.querySelectorAll<HTMLButtonElement>(".touch-pad button").forEach((button) => {
-  const direction = button.dataset.move as Direction | undefined;
-  if (!direction) return;
-  const release = (): void => { touchKeys.delete(direction); };
-  button.addEventListener("pointerdown", (event: PointerEvent) => {
+// 虚拟摇杆：按住拖动输出方向向量，松手回中。pointer capture 保证划出底盘也能继续跟随。
+const joystickBase = document.getElementById("joystick-base");
+const joystickStick = document.getElementById("joystick-stick");
+if (joystickBase && joystickStick) {
+  const maxRadius = 44;
+  const applyJoystick = (event: PointerEvent): void => {
+    const rect = joystickBase.getBoundingClientRect();
+    let dx = event.clientX - (rect.left + rect.width / 2);
+    let dy = event.clientY - (rect.top + rect.height / 2);
+    const length = Math.hypot(dx, dy);
+    if (length > maxRadius) {
+      dx = (dx / length) * maxRadius;
+      dy = (dy / length) * maxRadius;
+    }
+    joystickVector.x = dx / maxRadius;
+    joystickVector.y = dy / maxRadius;
+    joystickStick.style.transform = `translate(calc(-50% + ${dx.toFixed(1)}px), calc(-50% + ${dy.toFixed(1)}px))`;
+  };
+  const resetJoystick = (): void => {
+    joystickActive = false;
+    joystickVector.x = 0;
+    joystickVector.y = 0;
+    joystickStick.style.transform = "translate(-50%, -50%)";
+  };
+  joystickBase.addEventListener("pointerdown", (event: PointerEvent) => {
     event.preventDefault();
-    button.setPointerCapture(event.pointerId);
-    touchKeys.add(direction);
+    joystickActive = true;
+    joystickBase.setPointerCapture(event.pointerId);
+    applyJoystick(event);
   });
-  button.addEventListener("pointerup", release);
-  button.addEventListener("pointercancel", release);
-  button.addEventListener("lostpointercapture", release);
-});
+  joystickBase.addEventListener("pointermove", (event: PointerEvent) => {
+    if (!joystickActive) return;
+    applyJoystick(event);
+  });
+  joystickBase.addEventListener("pointerup", resetJoystick);
+  joystickBase.addEventListener("pointercancel", resetJoystick);
+  joystickBase.addEventListener("lostpointercapture", resetJoystick);
+}
 
 touchModeToggle.addEventListener("click", () => {
   const enabled = document.body.classList.toggle("touch-mode-active");
   touchModeToggle.setAttribute("aria-pressed", String(enabled));
-  if (!enabled) touchKeys.clear();
+  if (!enabled) {
+    touchKeys.clear();
+    joystickVector.x = 0;
+    joystickVector.y = 0;
+    joystickActive = false;
+  }
 });
 
 skillButtons.forEach((button, index) => {

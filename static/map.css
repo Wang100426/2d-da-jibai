@@ -96,22 +96,44 @@ body.map-page{height:100dvh;overflow:hidden;background:#101722}
 .run-over-overlay[hidden]{display:none}.run-over-panel{text-align:center}.run-over-panel h2{color:#ff668d}.run-over-panel>p:not(.eyebrow){margin:12px 0 22px}.run-over-panel>p b{color:#ffe45c}
 .run-over-actions{display:flex;justify-content:center;gap:10px}.run-over-actions .button{cursor:pointer}
 .map-controls{position:fixed;z-index:2;left:22px;bottom:22px;display:flex;flex-direction:column;align-items:flex-start;gap:7px;padding:10px 13px;background:#0c111ddd;border:1px solid #3a4659;color:#aab0c3;font:11px 'Chakra Petch'}
-.map-controls kbd,.touch-pad button{display:inline-grid;place-items:center;min-width:23px;height:23px;padding:0 5px;margin-right:3px;background:#1b2531;border:1px solid #556477;color:#e9f0fa;font:11px 'Chakra Petch'}
+.map-controls kbd{display:inline-grid;place-items:center;min-width:23px;height:23px;padding:0 5px;margin-right:3px;background:#1b2531;border:1px solid #556477;color:#e9f0fa;font:11px 'Chakra Petch'}
 #minimap{position:fixed;z-index:2;right:22px;bottom:76px;width:180px;height:132px;border:1px solid #49e6e088;background:#101722cc;box-shadow:0 4px 20px #0008}
-.touch-pad{position:fixed;z-index:3;left:22px;bottom:100px;display:none;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(2,52px);gap:5px;touch-action:none}
-.touch-mode-active .touch-pad{display:grid}
-.touch-pad button{width:52px;height:52px;margin:0;border-radius:9px;background:#111a27eF;border-color:#49e6e088;font-size:18px;touch-action:none}
-.touch-pad button[data-move="up"]{grid-column:2;grid-row:1}.touch-pad button[data-move="left"]{grid-column:1;grid-row:2}.touch-pad button[data-move="down"]{grid-column:2;grid-row:2}.touch-pad button[data-move="right"]{grid-column:3;grid-row:2}
+.touch-joystick{position:fixed;z-index:3;left:24px;bottom:34px;display:none;touch-action:none;user-select:none;-webkit-user-select:none}
+.touch-mode-active .touch-joystick{display:block}
+.joystick-base{position:relative;width:148px;height:148px;border-radius:50%;background:#111a27d9;border:1px solid #49e6e055;box-shadow:0 0 22px #49e6e01f inset;touch-action:none}
+.joystick-stick{position:absolute;left:50%;top:50%;width:62px;height:62px;border-radius:50%;background:#1b2531f2;border:2px solid #49e6e0cc;transform:translate(-50%,-50%);box-shadow:0 0 14px #49e6e033;pointer-events:none}
 @media(max-width:700px){
   .map-transition-art{object-position:58% center}.map-transition-shade{background:linear-gradient(90deg,#0508149e,#0508142b 100%),linear-gradient(0deg,#050814d9 0%,transparent 72%)}.map-transition-briefing{top:clamp(74px,12vh,112px);left:20px;width:calc(100vw - 40px);padding-left:14px}.map-transition-briefing h1{font-size:clamp(31px,9vw,48px)}.map-transition-briefing>span{max-width:330px;font-size:11px}.map-transition-hero{left:16px;bottom:20px;min-width:0;padding:10px 13px;gap:10px}.map-transition-hero .map-portrait{width:44px;height:48px;font-size:21px}.map-transition-hero b{font-size:15px}.map-transition-hero small{font-size:10px}.map-transition-countdown{margin-top:15px;font-size:9px}.map-loading{right:10px;bottom:12px;gap:7px;padding:6px 7px;font-size:8px;letter-spacing:2px}.map-loader-animation{width:38px;height:38px}
   .map-page-actions{top:10px;right:10px;gap:6px}.map-page-actions .language-toggle,.map-page-actions .exit-link,.touch-mode-toggle{padding:6px 8px;font-size:9px}.map-hero-card{top:70px;left:12px;min-width:0;padding:8px 10px}.map-tip{top:auto;right:12px;bottom:190px;max-width:190px;padding:9px;font-size:10px}.map-tip span{font-size:10px}
   .map-vitals{top:132px;left:12px;width:160px;padding:9px 10px}.wave-status{top:68px;min-width:150px;padding:7px 10px}.wave-status b{font-size:11px}.duel-opponent{top:132px;right:12px;width:145px;padding:8px}.map-toast{top:112px;width:max-content;max-width:calc(100vw - 24px);font-size:11px}.map-controls{display:none}
   .pause-toggle{top:128px;right:12px;padding:7px 10px}
   .map-skillbar{left:auto;right:10px;bottom:12px;transform:none;flex-direction:column;gap:5px}.map-page:not(.touch-mode-active) .map-skillbar{display:none}.map-skill{min-width:132px;padding:8px 8px 7px 35px;touch-action:manipulation}.map-skill kbd{left:7px;top:10px;width:21px;height:21px}.map-skill b{font-size:11px}.map-skill small{font-size:9px;margin-top:3px}.map-skill .skill-rank{font-size:8px;margin-top:3px}.map-skill .skill-cooldown{top:8px;right:7px}.map-skill .skill-charges{top:24px;right:7px;font-size:10px}
-  .pickup-prompt{left:50%;bottom:260px;white-space:nowrap}.touch-pad{left:12px;bottom:100px;grid-template-columns:repeat(3,46px);grid-template-rows:repeat(2,46px);gap:4px}
+  .pickup-prompt{left:50%;bottom:260px;white-space:nowrap}.touch-joystick{left:12px;bottom:20px}.joystick-base{width:118px;height:118px}.joystick-stick{width:50px;height:50px}
   #minimap{right:12px;top:68px;bottom:auto;width:128px;height:94px}
   .upgrade-panel{padding:20px}.upgrade-choices{grid-template-columns:1fr}.upgrade-choice{min-height:0;padding:12px}.duel-upgrade-panel .upgrade-choices{max-height:55vh;overflow-y:auto}
   .skill-upgrade-choice{min-height:0}
   .run-over-actions{flex-direction:column}
-  .touch-pad button{width:46px;height:46px;border-radius:8px;font-size:16px}
+}
+
+/* ── 触控模式：右侧技能区改为王者式弧形摆放（普攻圆心，Q/E/R 沿 1/4 弧展开） ── */
+.touch-mode-active .map-skillbar{left:auto;right:10px;bottom:10px;transform:none;flex-direction:row;display:block;width:212px;height:212px;background:none;border:none}
+.touch-mode-active .map-skill{position:absolute;min-width:0;padding:0;border-radius:50%;display:grid;place-items:center;touch-action:manipulation}
+.touch-mode-active .map-skill b,.touch-mode-active .map-skill small,.touch-mode-active .map-skill .skill-rank,.touch-mode-active .map-skill .skill-charges{display:none}
+.touch-mode-active .map-skill kbd{position:static;margin:0;border:none;background:none;font-size:19px;color:#eff3ff}
+.touch-mode-active .map-skill .skill-cooldown{right:auto;left:50%;top:50%;transform:translate(-50%,-50%);font-size:15px}
+/* 普攻：右下角最大圆钮 */
+.touch-mode-active .map-skill.basic-attack{right:0;bottom:0;width:78px;height:78px;font-size:13px}
+.touch-mode-active .map-skill.basic-attack kbd{font-size:12px;letter-spacing:0}
+/* 大招 Q：紧邻普攻左侧，技能里最大 */
+.touch-mode-active .map-skill[data-skill]:nth-of-type(1){right:135px;bottom:5px;width:68px;height:68px;border-color:#ffe45caa;font-size:17px}
+/* E：弧上 135° */
+.touch-mode-active .map-skill[data-skill]:nth-of-type(2){right:102px;bottom:102px;width:58px;height:58px}
+/* R：弧上 90° */
+.touch-mode-active .map-skill[data-skill]:nth-of-type(3){right:10px;bottom:140px;width:58px;height:58px}
+@media(max-width:700px){
+  .touch-mode-active .map-skillbar{right:6px;bottom:6px;width:184px;height:184px}
+  .touch-mode-active .map-skill.basic-attack{width:66px;height:66px}
+  .touch-mode-active .map-skill[data-skill]:nth-of-type(1){right:112px;bottom:2px;width:58px;height:58px}
+  .touch-mode-active .map-skill[data-skill]:nth-of-type(2){right:86px;bottom:86px;width:50px;height:50px}
+  .touch-mode-active .map-skill[data-skill]:nth-of-type(3){right:6px;bottom:118px;width:50px;height:50px}
 }
