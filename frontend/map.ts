@@ -2176,8 +2176,8 @@ function startWave(): void {
     return;
   }
   if (mapTheme === "airport") scheduleAirportFlightsForWave();
-  // 数量成长：叠加二次项，上限 18 → 26，中后期每波人数明显上涨。
-  enemiesToSpawn = Math.min(4 + wave * 2 + Math.floor((wave * wave) / 6), 26);
+  // 数量成长：二次曲线且不设上限，波数越深人越多。
+  enemiesToSpawn = 4 + wave * 2 + Math.floor((wave * wave) / 6);
   spawnTimer = 0.3;
   updateWaveHud();
   showToast(tx(t("wave.incoming", { wave })), "warning");
