@@ -737,7 +737,7 @@ HEROES = [
         "tagline": "杀戮使我强大，而我的生命，就是最后的代价。",
         "initial": "血",
         "accent": "blood",
-        "price": 2000,
+        "price": 3000,
         "palette": {
             "main": "#d92e4f",
             "light": "#ffb3c1",
@@ -902,7 +902,7 @@ HEROES = [
         "tagline": "只要我还站着，你们就别想过去。",
         "initial": "盾",
         "accent": "bastion",
-        "price": 2000,
+        "price": 3000,
         "palette": {
             "main": "#4f9dff",
             "light": "#cfe4ff",

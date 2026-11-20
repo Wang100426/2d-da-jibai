@@ -8,6 +8,7 @@
 - **全新状态机制**：按比例生效的减速、敌方攻速削弱、免疫击退、技能期间禁止吸血、永久最大生命成长，均已接入单机与 duel 对战。
 - **战斗手感修复**：磁轨冲锋改用线段碰撞判定，高速冲锋不会再穿过敌人却零伤害。
 - **回归测试**：新增 28 项前端战斗测试与 12 项联机结算测试，覆盖升阶差异、周期触发、护盾充能与献祭自杀。
+- **上架与动画**：两位新英雄定价 3000 金币；六个技能全部重做视觉层次——处刑三层冲击波、血月法阵脉冲、镰刀弧线拖尾、钢铁领域双层光环、冲锋残影、最后防线周期脉冲与反弹爆心。
 
 ### English
 
@@ -15,6 +16,7 @@
 - **New status mechanics:** ratio-based slows, enemy attack speed reduction, knockback immunity, skill-scoped lifesteal suppression, and permanent max HP growth — all working in both solo and duel.
 - **Combat fix:** Magnetic Rail Charge now uses segment collision, so a fast charge can no longer pass through an enemy without dealing damage.
 - **Regression tests:** 28 frontend combat tests and 12 multiplayer settlement tests cover tier differences, periodic ticks, shield charging and self-sacrifice deaths.
+- **Store and visuals:** both heroes cost 3000 coins; all six skills gained layered effects — triple shockwaves on execution, blood moon sigil pulses, arcing scythe trails, twin domain halos, charge afterimages and periodic shield pulses with an impact burst on reflect.
 
 ### 日本語
 
@@ -22,6 +24,7 @@
 - **新しい状態機構**：割合減速、敵の攻撃速度低下、ノックバック無効、スキル中の吸血停止、永久最大生命値成長を追加。シングルと対戦の両方で機能する。
 - **戦闘の修正**：磁軌突撃を線分衝突判定に変更。高速で突進しても敵をすり抜けて無命中になる問題を解消。
 - **回帰テスト**：フロントエンド28件と対戦決済12件のテストを追加。段階差、周期発動、シールドチャージ、献祭死を網羅する。
+- **ショップと演出**：両ヒーローは3000コイン。6スキルすべてに演出を強化——処刑の三重衝撃波、血月の陣脈動、鎌の弧線トレイル、領域の二層オーラ、突撃の残像、防線の周期パルスと反撃の爆心。
 
 ## 2.9.1
 

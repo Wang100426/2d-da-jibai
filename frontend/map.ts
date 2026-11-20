@@ -1319,6 +1319,8 @@ let steelDomain: SteelDomainState | null = null;
 /** 零号壁垒·磁轨冲锋。 */
 interface MagRailState {
   remaining: number;
+  /** 冲锋残影的节流计时器。 */
+  fxTimer?: number;
   skill: SkillConfig;
   x: number;
   y: number;
@@ -1332,6 +1334,8 @@ let magRailCharge: MagRailState | null = null;
 /** 零号壁垒·最后防线。 */
 interface LastStandState {
   remaining: number;
+  /** 持续期间脉冲圈的节流计时器。 */
+  pulseTimer?: number;
   skill: SkillConfig;
   damageTaken: number;
 }
@@ -8354,9 +8358,22 @@ function castBloodExecute(skill: SkillConfig): void {
   const stun = skill.stun_turns || 1;
   // 必须在 hitEnemy 之前打开，这样本次技能的所有命中都不吸血。
   lifestealSuppressionTimer = Math.max(lifestealSuppressionTimer, 1.2);
+  // 三层冲击波 + 爆心，让「全场处刑」有重量感。 /* WB3:fx */
   skillVisuals.push({
     type: "ring", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
     age: 0, duration: 0.85, color: "#d92e4f", radius: 1400,
+  });
+  skillVisuals.push({
+    type: "ring", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
+    age: 0, duration: 0.5, color: "#ff6b81", radius: 900,
+  });
+  skillVisuals.push({
+    type: "aura", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
+    age: 0, duration: 0.6, color: "#ffffff",
+  });
+  skillVisuals.push({
+    type: "impact", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
+    age: 0, duration: 0.55, color: "#ff4d6d", radius: 260,
   });
   let hits = 0;
   enemies.forEach((enemy) => {
@@ -8384,6 +8401,10 @@ function castBloodMoonRise(skill: SkillConfig): void {
     hits: new Map<string, number>(),
   };
   addSkillVisual(skill);
+  skillVisuals.push({
+    type: "ring", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
+    age: 0, duration: 0.7, color: "#d92e4f", radius: getPlayerAttackRange(),
+  });
   showToast(t("skill.blood_moon_rise", { seconds: skill.moon_duration || 3 }), "success");
 }
 
@@ -8400,6 +8421,10 @@ function advanceBloodMoon(dt: number): void {
       type: "wave", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
       age: 0, duration: 0.45, color: "#d92e4f", radius,
     });
+    skillVisuals.push({
+      type: "aura", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
+      age: 0, duration: 0.5, color: "#8a1024",
+    });
     enemies.forEach((enemy) => {
       if (enemy.hp <= 0) return;
       if (Math.hypot(enemy.x - player.x, enemy.y - player.y) > radius) return;
@@ -8414,6 +8439,10 @@ function advanceBloodMoon(dt: number): void {
       if (count >= (field.skill.root_hits || 3)) {
         field.hits.set(key, 0);
         hitEnemy(enemy, field.skill.wave_damage || 10, "禁锢", field.skill.root_duration || 1.5);
+        skillVisuals.push({
+          type: "impact", x: enemy.x, y: enemy.y, targetX: enemy.x, targetY: enemy.y,
+          age: 0, duration: 0.5, color: "#ff8aa0", radius: 110,
+        });
       }
     });
   }
@@ -8431,8 +8460,8 @@ function castBloodScythe(skill: SkillConfig, target: EnemyUnit): void {
   const scythes: BloodScythe[] = candidates.map((enemy) => {
     hitEnemy(enemy, skill.damage || 45, "眩晕", skill.effect_turns || 1.5);
     skillVisuals.push({
-      type: "beam", x: player.x, y: player.y, targetX: enemy.x, targetY: enemy.y,
-      age: 0, duration: 0.4, color: "#d92e4f",
+      type: "trail", x: player.x, y: player.y, targetX: enemy.x, targetY: enemy.y,
+      age: 0, duration: 0.45, color: "#d92e4f", radius: 26,
     });
     return {
       x: enemy.x, y: enemy.y,
@@ -8465,6 +8494,10 @@ function advanceBloodScythe(dt: number): void {
       type: "impact", x: scythe.x, y: scythe.y, targetX: scythe.x, targetY: scythe.y,
       age: 0, duration: 0.5, color: "#ff6b81", radius,
     });
+    skillVisuals.push({
+      type: "ring", x: scythe.x, y: scythe.y, targetX: scythe.x, targetY: scythe.y,
+      age: 0, duration: 0.45, color: "#ffb3c1", radius,
+    });
     enemies.forEach((enemy) => {
       if (enemy.hp <= 0) return;
       if (Math.hypot(enemy.x - scythe.x, enemy.y - scythe.y) > radius) return;
@@ -8487,9 +8520,15 @@ function castLastStand(skill: SkillConfig): void {
   statusEffects["最后防线"] = Math.max(statusEffects["最后防线"] || 0, duration);
   allyDamageReduction = skill.ally_reduction || 0.5;
   const radius = skill.radius || 300;
+  for (const [index, ringDuration] of [0.35, 0.6, 0.9].entries()) {
+    skillVisuals.push({
+      type: "ring", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
+      age: 0, duration: ringDuration, color: index === 0 ? "#ffffff" : "#8bdcff", radius,
+    });
+  }
   skillVisuals.push({
-    type: "ring", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
-    age: 0, duration, color: "#8bdcff", radius,
+    type: "aura", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
+    age: 0, duration: 0.8, color: "#4f9dff",
   });
   enemies.forEach((enemy) => {
     if (enemy.hp <= 0 || distanceTo(enemy.x, enemy.y) > radius) return;
@@ -8512,6 +8551,14 @@ function advanceLastStand(dt: number): void {
     if (enemy.hp <= 0 || distanceTo(enemy.x, enemy.y) > radius) return;
     enemy.effects["防线攻速削弱"] = Math.max(enemy.effects["防线攻速削弱"] || 0, 0.3);
   });
+  stand.pulseTimer = (stand.pulseTimer || 0) - dt;
+  if (stand.pulseTimer <= 0) {
+    stand.pulseTimer = 0.5;
+    skillVisuals.push({
+      type: "ring", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
+      age: 0, duration: 0.55, color: "#b8d8ff", radius,
+    });
+  }
   if (stand.remaining > 0) return;
   const ratio = stand.skill.reflect_ratio || 0;
   if (ratio > 0 && stand.damageTaken > 0) {
@@ -8523,6 +8570,10 @@ function advanceLastStand(dt: number): void {
       hits += 1;
     });
     showToast(t("skill.last_stand_end", { damage, hits }), "success");
+    skillVisuals.push({
+      type: "impact", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
+      age: 0, duration: 0.6, color: "#cfe4ff", radius,
+    });
     skillVisuals.push({
       type: "ring", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
       age: 0, duration: 0.7, color: "#d0e8ff", radius,
@@ -8540,6 +8591,10 @@ function castSteelDomain(skill: SkillConfig): void {
   statusEffects["钢铁领域"] = Math.max(statusEffects["钢铁领域"] || 0, duration);
   addSkillVisual(skill);
   const radius = skill.radius || getPlayerAttackRange();
+  skillVisuals.push({
+    type: "ring", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
+    age: 0, duration: 0.6, color: "#cfe4ff", radius,
+  });
   let hits = 0;
   enemies.forEach((enemy) => {
     if (enemy.hp > 0 && distanceTo(enemy.x, enemy.y) <= radius) hits += 1;
@@ -8568,6 +8623,10 @@ function advanceSteelDomain(dt: number): void {
       type: "ring", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
       age: 0, duration: 0.5, color: "#7ec8ff", radius,
     });
+    skillVisuals.push({
+      type: "aura", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
+      age: 0, duration: 0.5, color: "#4f9dff",
+    });
   }
   if (domain.remaining > 0) return;
   const burst = domain.skill.end_burst_damage || 0;
@@ -8580,6 +8639,10 @@ function advanceSteelDomain(dt: number): void {
       hits += 1;
     });
     showToast(t("skill.steel_domain_burst", { hits }), "success");
+    skillVisuals.push({
+      type: "impact", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
+      age: 0, duration: 0.55, color: "#cfe4ff", radius: radius + 40,
+    });
     skillVisuals.push({
       type: "ring", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
       age: 0, duration: 0.6, color: "#d0e8ff", radius,
@@ -8616,8 +8679,18 @@ function advanceMagRail(dt: number): void {
   const prevX = player.x;
   const prevY = player.y;
   const travel = Math.min(900 * dt, charge.distanceLeft);
+  const fxPrevX = player.x;
+  const fxPrevY = player.y;
   player.x += charge.dirX * travel;
   player.y += charge.dirY * travel;
+  charge.fxTimer = (charge.fxTimer || 0) - dt;
+  if (charge.fxTimer <= 0 && travel > 0) {
+    charge.fxTimer = 0.05;
+    skillVisuals.push({
+      type: "trail", x: fxPrevX, y: fxPrevY, targetX: player.x, targetY: player.y,
+      age: 0, duration: 0.3, color: "#7ec8ff", radius: 14,
+    });
+  }
   charge.distanceLeft -= travel;
   charge.remaining = Math.max(0, charge.remaining - dt);
   const radius = charge.skill.radius || 90;
@@ -8627,6 +8700,10 @@ function advanceMagRail(dt: number): void {
     // 线段碰撞：大 dt 或高速冲锋时不能用终点距离，否则会直接穿过敌人不结算。
     if (distanceToSegment(enemy.x, enemy.y, prevX, prevY, player.x, player.y) > hitRadius) return;
     charge.hitIds.add(enemy.id || "");
+    skillVisuals.push({
+      type: "impact", x: enemy.x, y: enemy.y, targetX: enemy.x, targetY: enemy.y,
+      age: 0, duration: 0.45, color: "#cfe4ff", radius: 90,
+    });
     hitEnemy(
       enemy, charge.skill.damage || 42,
       charge.skill.stun_turns ? "眩晕" : "",
