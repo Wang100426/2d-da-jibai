@@ -1,5 +1,28 @@
 # 更新日志 / Updates
 
+## 3.0.0
+
+### 中文
+
+- **两位新英雄**：血月死神以击杀换取永久成长（每次 +10 最大生命、+2% 吸血），血月之波叠加减速与禁锢，立即执行献祭生命斩杀全场；零号壁垒以受击充能绝对装甲，钢铁领域减伤、磁轨冲锋撞飞、最后防线为全队撑起屏障并在结束时反弹伤害。
+- **全新状态机制**：按比例生效的减速、敌方攻速削弱、免疫击退、技能期间禁止吸血、永久最大生命成长，均已接入单机与 duel 对战。
+- **战斗手感修复**：磁轨冲锋改用线段碰撞判定，高速冲锋不会再穿过敌人却零伤害。
+- **回归测试**：新增 28 项前端战斗测试与 12 项联机结算测试，覆盖升阶差异、周期触发、护盾充能与献祭自杀。
+
+### English
+
+- **Two new heroes:** the Blood Moon Reaper grows permanently on every kill (+10 max HP, +2% lifesteal), stacks slowing blood waves into roots, and sacrifices health to execute the whole field; Bastion Zero charges Absolute Armor on every hit, reduces damage inside Steel Domain, knocks enemies back with Magnetic Rail Charge, and reflects stored damage when Last Stand ends.
+- **New status mechanics:** ratio-based slows, enemy attack speed reduction, knockback immunity, skill-scoped lifesteal suppression, and permanent max HP growth — all working in both solo and duel.
+- **Combat fix:** Magnetic Rail Charge now uses segment collision, so a fast charge can no longer pass through an enemy without dealing damage.
+- **Regression tests:** 28 frontend combat tests and 12 multiplayer settlement tests cover tier differences, periodic ticks, shield charging and self-sacrifice deaths.
+
+### 日本語
+
+- **新ヒーロー2名**：血月の死神は倒すたびに最大生命値+10・吸血+2%を永久獲得し、血月の波で減速と拘束を重ね、命を犠牲に場上の敵を処刑。零号堡塁は攻撃を受けるたびに絶対装甲をチャージし、鋼鉄領域で軽減、磁軌突撃でノックバック、最後の防線で味方を守り終了時に被ダメージを反撃する。
+- **新しい状態機構**：割合減速、敵の攻撃速度低下、ノックバック無効、スキル中の吸血停止、永久最大生命値成長を追加。シングルと対戦の両方で機能する。
+- **戦闘の修正**：磁軌突撃を線分衝突判定に変更。高速で突進しても敵をすり抜けて無命中になる問題を解消。
+- **回帰テスト**：フロントエンド28件と対戦決済12件のテストを追加。段階差、周期発動、シールドチャージ、献祭死を網羅する。
+
 ## 2.9.1
 
 ### 中文

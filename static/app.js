@@ -771,10 +771,19 @@ const PASSIVE_STAT_FIELDS = {
     basic_range: "basicRange",
     damage: "damageBonus",
     dodge: "dodgeChance",
+    max_hp: "maxHp",
+    /* WB3:maxhp */
 };
 function addPassiveStat(stat, amount) {
     if (stat === "basic_range") {
         playerState.passiveRangeBonus += amount;
+        return;
+    }
+    // 血月死神：永久最大生命值不设上限，并同步补充等量当前生命。
+    if (stat === "max_hp") {
+        playerState.maxHp += amount;
+        if (amount > 0)
+            playerState.hp = Math.min(playerState.maxHp, playerState.hp + amount);
         return;
     }
     const field = PASSIVE_STAT_FIELDS[stat];
@@ -915,6 +924,19 @@ const touchKeys = new Set();
 const skillCooldowns = new Map();
 const skillProgress = new Map(config.skills.map((skill) => [skill.id, { tier: 1, minorUpgrades: 0 }]));
 const statusEffects = {};
+/* WB3:states */
+/** 技能级吸血抑制剩余秒数（血月死神·立即执行期间吸血不生效）。 */
+let lifestealSuppressionTimer = 0;
+let bloodMoonField = null;
+let bloodScythes = [];
+let bloodScytheDash = null;
+/** 零号壁垒·绝对装甲：受击充能层数。 */
+let armorCharges = 0;
+let steelDomain = null;
+let magRailCharge = null;
+let lastStand = null;
+/** 友方减伤光环强度（联机队友受益，单机无友方受伤目标）。 */
+let allyDamageReduction = 0;
 /* ---------- 飞索超人 ---------- */
 /** 当前飞索（E）的状态机；不在飞行时为 undefined。 */
 let grappleHook;
@@ -1056,9 +1078,15 @@ function enemySlowMultiplier(enemy, regularSlowMultiplier = 0.45) {
     const starSlow = enemy.effects["星之压抑减速"] ? 0.6
         : enemy.effects["星环减速"] ? 0.7 : 1;
     const dualToneRatio = [25, 35, 60, 90].reduce((strongest, ratio) => enemy.effects[`双音减速${ratio}`] ? Math.max(strongest, ratio / 100) : strongest, 0);
+    const ratioSlow = [20, 33, 50].reduce((strongest, ratio) => enemy.effects[`比例减速${ratio}`] ? Math.max(strongest, ratio / 100) : strongest, 0);
     const haste = enemy.effects["年夜饭加速"] > 0 ? 1.2 : 1;
-    return Math.min(normalSlow, starSlow, 1 - dualToneRatio) * haste;
+    return Math.min(normalSlow, starSlow, 1 - dualToneRatio, 1 - ratioSlow) * haste;
 }
+/** 最后防线：敌方攻击速度按固定比例削弱（30%）。 */
+function enemyAttackSpeedMultiplier(enemy) {
+    return enemy.effects["防线攻速削弱"] ? 1 - (lastStand?.skill.enemy_attack_speed_reduction || 0.3) : 1;
+}
+/* WB3:slowratio */
 function applyDualToneSlow(enemy, ratio, duration) {
     const effect = `双音减速${Math.round(ratio * 100)}`;
     enemy.effects[effect] = Math.max(enemy.effects[effect] || 0, duration);
@@ -1824,7 +1852,10 @@ function applyStoryEffect(effect, turns, source) {
         return;
     }
     if (effect === "击退") {
+        if (hasPlayerEffect("最后防线"))
+            return;
         const originX = source?.x ?? player.x - facing.x * 40;
+        /* WB3:knockbackimmune */
         const originY = source?.y ?? player.y - facing.y * 40;
         const dx = player.x - originX;
         const dy = player.y - originY;
@@ -2156,8 +2187,11 @@ function updateHud() {
 const ATTACK_SPEED_BASE_CAP = 3.5;
 const LIFESTEAL_BASE_CAP = 0.6;
 function getLifestealCap() {
+    if (heroPassive.lifesteal_cap !== undefined)
+        return heroPassive.lifesteal_cap;
     return passiveUncapped("lifesteal") ? Infinity : LIFESTEAL_BASE_CAP;
 }
+/* WB3:lifestealcap */
 function getAttackSpeedCap() {
     return passiveUncapped("attack_speed") ? Infinity : ATTACK_SPEED_BASE_CAP;
 }
@@ -3161,6 +3195,15 @@ function drawEffectIndicators(x, y, effects) {
         "御剑飞行": "#ffd98e",
         "引燃": "#ff8a5b",
         "无敌": "#ffe9a8",
+        "比例减速20": "#70d8ff",
+        "比例减速33": "#70d8ff",
+        "比例减速50": "#5ec8ff",
+        "防线攻速削弱": "#9fb6ff",
+        "钢铁领域": "#7ec8ff",
+        "最后防线": "#b8d8ff",
+        "装甲护盾": "#8bdcff",
+        "磁轨冲锋": "#cfe4ff",
+        /* WB3:colors */
     };
     const maxDurations = statusEffectMaxDurations.get(effects) || {};
     activeEffects.forEach(([effect, remaining]) => {
@@ -5132,14 +5175,33 @@ function hitEnemy(enemy, damage, effect = "", effectTurns = 0) {
     return actualDamage;
 }
 function healFromDamage(damage, x, y) {
-    if (damage <= 0 || playerState.lifesteal <= 0)
+    if (damage <= 0 || playerState.lifesteal <= 0 || lifestealSuppressionTimer > 0)
         return;
+    /* WB3:lifestealsuppress */
     const restored = Math.min(playerState.maxHp - playerState.hp, Math.floor(damage * playerState.lifesteal));
     if (restored <= 0)
         return;
     playerState.hp += restored;
     addFloatingText(x, y - 46, t("float.heal", { amount: restored }), "#9cff65");
     updateHud();
+}
+/**
+ * 当前技能与被动提供的额外减伤乘子，与装备减伤乘算叠加。
+ * 钢铁领域/最后防线/磁轨冲锋/绝对装甲不会互相覆盖，而是逐层相乘。
+ */
+function activeDamageMultiplier() {
+    let multiplier = 1;
+    if (steelDomain)
+        multiplier *= 1 - (steelDomain.skill.self_reduction || 0);
+    if (lastStand)
+        multiplier *= 1 - (lastStand.skill.self_reduction || 0);
+    if (magRailCharge)
+        multiplier *= 1 - (magRailCharge.skill.charge_reduction || 0);
+    if (heroPassive.id === "absolute_armor") {
+        const maxStacks = heroPassive.armor_max_stacks || 10;
+        multiplier *= 1 - Math.min(maxStacks, armorCharges) * (heroPassive.armor_per_hit || 0.01);
+    }
+    return Math.max(0.02, multiplier);
 }
 function applyPlayerDamage(damage, attacker) {
     if (isGrappleHero() && grappleOnRooftop)
@@ -5186,13 +5248,29 @@ function applyPlayerDamage(damage, attacker) {
     }
     if (schoolClassDuration > 0)
         damage *= 0.8;
+    // 零号壁垒·绝对装甲：每次受击充能；满层时下一次受击消耗全部层数换护盾。
+    if (heroPassive.id === "absolute_armor") {
+        const maxStacks = heroPassive.armor_max_stacks || 10;
+        if (armorCharges >= maxStacks) {
+            const shield = Math.round(playerState.maxHp * (heroPassive.armor_shield_ratio || 0.15));
+            playerState.shield += shield;
+            statusEffects["装甲护盾"] = Math.max(statusEffects["装甲护盾"] || 0, heroPassive.armor_shield_duration || 5);
+            armorCharges = 0;
+            addFloatingText(player.x, player.y - 60, t("passive.absolute_armor", { stacks: maxStacks, max: maxStacks, shield }), "#8bdcff");
+        }
+        else {
+            armorCharges += 1;
+        }
+    }
     const thornArmor = (statusEffects["荆棘护甲"] || 0) > 0;
     const thornMultiplier = thornArmor ? playerState.thornDamageMultiplier : 1;
-    const reducedDamage = Math.max(1, Math.round(damage * (1 - playerState.damageReduction) * thornMultiplier));
+    const reducedDamage = Math.max(1, Math.round(damage * (1 - playerState.damageReduction) * thornMultiplier * activeDamageMultiplier()));
     const absorbed = Math.min(playerState.shield, reducedDamage);
     playerState.shield -= absorbed;
     const healthDamage = reducedDamage - absorbed;
     playerState.hp = Math.max(0, playerState.hp - healthDamage);
+    if (lastStand)
+        lastStand.damageTaken += reducedDamage; /* WB3:armor */
     if (absorbed > 0)
         addFloatingText(player.x, player.y - 28, t("float.shield_absorb", { amount: absorbed }), "#ffffff");
     if (healthDamage > 0)
@@ -7728,6 +7806,332 @@ function advanceStarFields(dt) {
         }
     }
 }
+/* WB3:skills */
+// ==================== 血月死神 ====================
+/** 立即执行：献祭最大生命比例的 HP，全场敌人按自身最大生命比例失血并眩晕。 */
+function castBloodExecute(skill) {
+    const cost = Math.max(1, Math.round(playerState.maxHp * (skill.self_hp_ratio || 0.3)));
+    const damage = Math.round(playerState.maxHp * (skill.enemy_hp_ratio || 0.5));
+    const stun = skill.stun_turns || 1;
+    // 必须在 hitEnemy 之前打开，这样本次技能的所有命中都不吸血。
+    lifestealSuppressionTimer = Math.max(lifestealSuppressionTimer, 1.2);
+    skillVisuals.push({
+        type: "ring", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
+        age: 0, duration: 0.85, color: "#d92e4f", radius: 1400,
+    });
+    let hits = 0;
+    enemies.forEach((enemy) => {
+        if (enemy.hp <= 0)
+            return;
+        hits += 1;
+        hitEnemy(enemy, damage, "眩晕", stun);
+    });
+    playerState.hp -= cost;
+    addFloatingText(player.x, player.y - 52, `-${cost}`, "#ff4d6d");
+    if (playerState.hp <= 0) {
+        playerState.hp = 0;
+        finishRun();
+    }
+    updateHud();
+    showToast(t("skill.blood_execute", { cost, damage, hits, seconds: stun }), "warning");
+}
+/** 血月升起：展开持续领域，状态由 advanceBloodMoon 推进。 */
+function castBloodMoonRise(skill) {
+    bloodMoonField = {
+        remaining: skill.moon_duration || 3,
+        tickTimer: skill.wave_interval || 0.5,
+        skill,
+        castId: 0,
+        hits: new Map(),
+    };
+    addSkillVisual(skill);
+    showToast(t("skill.blood_moon_rise", { seconds: skill.moon_duration || 3 }), "success");
+}
+/** 血月之波：每 0.5 秒结算一次持续伤害 + 波伤害 + 减速，命中计数满则禁锢。 */
+function advanceBloodMoon(dt) {
+    const field = bloodMoonField;
+    if (!field)
+        return;
+    field.remaining = Math.max(0, field.remaining - dt);
+    field.tickTimer -= dt;
+    const radius = getPlayerAttackRange();
+    while (field.tickTimer <= 0 && field.remaining > 0) {
+        field.tickTimer += field.skill.wave_interval || 0.5;
+        skillVisuals.push({
+            type: "wave", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
+            age: 0, duration: 0.45, color: "#d92e4f", radius,
+        });
+        enemies.forEach((enemy) => {
+            if (enemy.hp <= 0)
+                return;
+            if (Math.hypot(enemy.x - player.x, enemy.y - player.y) > radius)
+                return;
+            hitEnemy(enemy, field.skill.damage || 6);
+            hitEnemy(enemy, field.skill.wave_damage || 10);
+            const ratio = field.skill.slow_ratio || 0.33;
+            const effect = `比例减速${Math.round(ratio * 100)}`;
+            enemy.effects[effect] = Math.max(enemy.effects[effect] || 0, 1.5);
+            const key = enemy.id || "";
+            const count = (field.hits.get(key) || 0) + 1;
+            field.hits.set(key, count);
+            if (count >= (field.skill.root_hits || 3)) {
+                field.hits.set(key, 0);
+                hitEnemy(enemy, field.skill.wave_damage || 10, "禁锢", field.skill.root_duration || 1.5);
+            }
+        });
+    }
+    if (field.remaining <= 0)
+        bloodMoonField = null;
+}
+/** 带血镰刀：向最近 N 个敌人投镰，命中眩晕；随后无敌并跳向最近目标。 */
+function castBloodScythe(skill, target) {
+    const count = Math.max(1, skill.target_count || 1);
+    const candidates = enemies
+        .filter((enemy) => enemy.hp > 0)
+        .sort((a, b) => Math.hypot(a.x - player.x, a.y - player.y) - Math.hypot(b.x - player.x, b.y - player.y))
+        .slice(0, count);
+    if (candidates.length === 0)
+        candidates.push(target);
+    const scythes = candidates.map((enemy) => {
+        hitEnemy(enemy, skill.damage || 45, "眩晕", skill.effect_turns || 1.5);
+        skillVisuals.push({
+            type: "beam", x: player.x, y: player.y, targetX: enemy.x, targetY: enemy.y,
+            age: 0, duration: 0.4, color: "#d92e4f",
+        });
+        return {
+            x: enemy.x, y: enemy.y,
+            damage: skill.impact_damage || 12,
+            bonusDamage: skill.scythe_bonus_damage || 0,
+            targetId: enemy.id || "",
+        };
+    });
+    invulnerableTimer = Math.max(invulnerableTimer, skill.invuln_duration || 0.5);
+    const main = candidates[0];
+    bloodScythes = scythes;
+    bloodScytheDash = {
+        delay: skill.invuln_duration || 0.5,
+        x: main.x, y: main.y,
+        skill, scythes,
+    };
+    showToast(t("skill.blood_scythe", { targets: scythes.length, hits: candidates.length }), "success");
+}
+/** 无敌结束后跳向镰刀落点；每一把镰刀独立结算范围伤害，重叠则叠加。 */
+function advanceBloodScythe(dt) {
+    const dash = bloodScytheDash;
+    if (!dash)
+        return;
+    dash.delay -= dt;
+    if (dash.delay > 0)
+        return;
+    movePlayerToward(dash.x, dash.y, 4000);
+    const radius = getPlayerAttackRange();
+    dash.scythes.forEach((scythe) => {
+        skillVisuals.push({
+            type: "impact", x: scythe.x, y: scythe.y, targetX: scythe.x, targetY: scythe.y,
+            age: 0, duration: 0.5, color: "#ff6b81", radius,
+        });
+        enemies.forEach((enemy) => {
+            if (enemy.hp <= 0)
+                return;
+            if (Math.hypot(enemy.x - scythe.x, enemy.y - scythe.y) > radius)
+                return;
+            hitEnemy(enemy, scythe.damage);
+            if (enemy.id === scythe.targetId && scythe.bonusDamage > 0) {
+                hitEnemy(enemy, scythe.bonusDamage);
+            }
+        });
+    });
+    bloodScythes = [];
+    bloodScytheDash = null;
+}
+// ==================== 零号壁垒 ====================
+/** 最后防线：展开巨型护盾，自身与友方减伤、敌人攻速削弱、免疫击退。 */
+function castLastStand(skill) {
+    const duration = skill.stand_duration || 5;
+    lastStand = { remaining: duration, skill, damageTaken: 0 };
+    statusEffects["最后防线"] = Math.max(statusEffects["最后防线"] || 0, duration);
+    allyDamageReduction = skill.ally_reduction || 0.5;
+    const radius = skill.radius || 300;
+    skillVisuals.push({
+        type: "ring", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
+        age: 0, duration, color: "#8bdcff", radius,
+    });
+    enemies.forEach((enemy) => {
+        if (enemy.hp <= 0 || distanceTo(enemy.x, enemy.y) > radius)
+            return;
+        enemy.effects["防线攻速削弱"] = Math.max(enemy.effects["防线攻速削弱"] || 0, duration);
+    });
+    showToast(t("skill.last_stand", {
+        reduction: Math.round((skill.self_reduction || 0.8) * 100),
+        ally: Math.round((skill.ally_reduction || 0.5) * 100),
+        seconds: duration,
+    }), "success");
+}
+/** 持续刷新范围内敌人的攻速削弱；结束时按 3 阶反弹累计承伤。 */
+function advanceLastStand(dt) {
+    const stand = lastStand;
+    if (!stand)
+        return;
+    stand.remaining = Math.max(0, stand.remaining - dt);
+    const radius = stand.skill.radius || 300;
+    enemies.forEach((enemy) => {
+        if (enemy.hp <= 0 || distanceTo(enemy.x, enemy.y) > radius)
+            return;
+        enemy.effects["防线攻速削弱"] = Math.max(enemy.effects["防线攻速削弱"] || 0, 0.3);
+    });
+    if (stand.remaining > 0)
+        return;
+    const ratio = stand.skill.reflect_ratio || 0;
+    if (ratio > 0 && stand.damageTaken > 0) {
+        const damage = Math.round(stand.damageTaken * ratio);
+        let hits = 0;
+        enemies.forEach((enemy) => {
+            if (enemy.hp <= 0 || distanceTo(enemy.x, enemy.y) > radius)
+                return;
+            hitEnemy(enemy, damage);
+            hits += 1;
+        });
+        showToast(t("skill.last_stand_end", { damage, hits }), "success");
+        skillVisuals.push({
+            type: "ring", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
+            age: 0, duration: 0.7, color: "#d0e8ff", radius,
+        });
+    }
+    lastStand = null;
+    delete statusEffects["最后防线"];
+    allyDamageReduction = 0;
+}
+/** 钢铁领域：自身减伤、敌人减速与周期伤害，3 阶结束时冲击波击退。 */
+function castSteelDomain(skill) {
+    const duration = skill.domain_duration || 4;
+    steelDomain = { remaining: duration, tickTimer: skill.tick_interval || 0.5, skill };
+    statusEffects["钢铁领域"] = Math.max(statusEffects["钢铁领域"] || 0, duration);
+    addSkillVisual(skill);
+    const radius = skill.radius || getPlayerAttackRange();
+    let hits = 0;
+    enemies.forEach((enemy) => {
+        if (enemy.hp > 0 && distanceTo(enemy.x, enemy.y) <= radius)
+            hits += 1;
+    });
+    showToast(t("skill.steel_domain", {
+        reduction: Math.round((skill.self_reduction || 0.4) * 100), hits,
+    }), "success");
+}
+function advanceSteelDomain(dt) {
+    const domain = steelDomain;
+    if (!domain)
+        return;
+    domain.remaining = Math.max(0, domain.remaining - dt);
+    domain.tickTimer -= dt;
+    const radius = domain.skill.radius || getPlayerAttackRange();
+    while (domain.tickTimer <= 0 && domain.remaining > 0) {
+        domain.tickTimer += domain.skill.tick_interval || 0.5;
+        enemies.forEach((enemy) => {
+            if (enemy.hp <= 0 || distanceTo(enemy.x, enemy.y) > radius)
+                return;
+            hitEnemy(enemy, domain.skill.damage || 5);
+            const ratio = domain.skill.enemy_slow_ratio || 0.2;
+            const effect = `比例减速${Math.round(ratio * 100)}`;
+            enemy.effects[effect] = Math.max(enemy.effects[effect] || 0, 1.2);
+        });
+        skillVisuals.push({
+            type: "ring", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
+            age: 0, duration: 0.5, color: "#7ec8ff", radius,
+        });
+    }
+    if (domain.remaining > 0)
+        return;
+    const burst = domain.skill.end_burst_damage || 0;
+    if (burst > 0) {
+        let hits = 0;
+        enemies.forEach((enemy) => {
+            if (enemy.hp <= 0 || distanceTo(enemy.x, enemy.y) > radius)
+                return;
+            hitEnemy(enemy, burst);
+            knockbackEnemy(enemy, domain.skill.end_knockback || 160);
+            hits += 1;
+        });
+        showToast(t("skill.steel_domain_burst", { hits }), "success");
+        skillVisuals.push({
+            type: "ring", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
+            age: 0, duration: 0.6, color: "#d0e8ff", radius,
+        });
+    }
+    steelDomain = null;
+    delete statusEffects["钢铁领域"];
+}
+/** 磁轨冲锋：冲锋中减伤、撞击击退与护盾，3 阶穿敌多段 + 结束爆炸。 */
+function castMagRailCharge(skill, target) {
+    const dx = target.x - player.x;
+    const dy = target.y - player.y;
+    const length = Math.hypot(dx, dy) || 1;
+    magRailCharge = {
+        remaining: 0.6,
+        skill,
+        x: target.x, y: target.y,
+        hitIds: new Set(),
+        distanceLeft: skill.dash_range || 320,
+        dirX: dx / length,
+        dirY: dy / length,
+    };
+    statusEffects["磁轨冲锋"] = Math.max(statusEffects["磁轨冲锋"] || 0, 0.6);
+    skillVisuals.push({
+        type: "beam", x: player.x, y: player.y, targetX: target.x, targetY: target.y,
+        age: 0, duration: 0.5, color: "#7ec8ff",
+    });
+}
+function advanceMagRail(dt) {
+    const charge = magRailCharge;
+    if (!charge)
+        return;
+    const prevX = player.x;
+    const prevY = player.y;
+    const travel = Math.min(900 * dt, charge.distanceLeft);
+    player.x += charge.dirX * travel;
+    player.y += charge.dirY * travel;
+    charge.distanceLeft -= travel;
+    charge.remaining = Math.max(0, charge.remaining - dt);
+    const radius = charge.skill.radius || 90;
+    const hitRadius = Math.max(34, radius * 0.5);
+    enemies.forEach((enemy) => {
+        if (enemy.hp <= 0 || charge.hitIds.has(enemy.id || ""))
+            return;
+        // 线段碰撞：大 dt 或高速冲锋时不能用终点距离，否则会直接穿过敌人不结算。
+        if (distanceToSegment(enemy.x, enemy.y, prevX, prevY, player.x, player.y) > hitRadius)
+            return;
+        charge.hitIds.add(enemy.id || "");
+        hitEnemy(enemy, charge.skill.damage || 42, charge.skill.stun_turns ? "眩晕" : "", charge.skill.stun_turns || 0);
+        knockbackEnemyInDirection(enemy, charge.skill.knockback || 120, charge.dirX, charge.dirY);
+        if (charge.skill.pierce && charge.skill.extra_hit_damage) {
+            hitEnemy(enemy, charge.skill.extra_hit_damage);
+        }
+    });
+    if (charge.distanceLeft > 0 && charge.remaining > 0)
+        return;
+    const shield = Math.round(playerState.maxHp * (charge.skill.shield_ratio || 0.1));
+    playerState.shield += shield;
+    statusEffects["月影护盾"] = Math.max(statusEffects["月影护盾"] || 0, charge.skill.shield_duration || 5);
+    addFloatingText(player.x, player.y - 48, `+${shield}`, "#8bdcff");
+    const blast = charge.skill.end_explosion_damage || 0;
+    if (blast > 0) {
+        let hits = 0;
+        enemies.forEach((enemy) => {
+            if (enemy.hp <= 0 || distanceTo(enemy.x, enemy.y) > radius + 40)
+                return;
+            hitEnemy(enemy, blast);
+            hits += 1;
+        });
+        showToast(t("skill.mag_rail_blast", { hits }), "success");
+        skillVisuals.push({
+            type: "ring", x: player.x, y: player.y, targetX: player.x, targetY: player.y,
+            age: 0, duration: 0.6, color: "#cfe4ff", radius: radius + 40,
+        });
+    }
+    showToast(t("skill.mag_rail_charge", { hits: charge.hitIds.size, shield }), "success");
+    magRailCharge = null;
+    delete statusEffects["磁轨冲锋"];
+    updateHud();
+}
 function castSkill(index) {
     if (skillIsPaused())
         return;
@@ -8082,6 +8486,24 @@ function castSkill(index) {
     }
     else if (skill.action === "dual_tone_r") {
         castDualToneR(skill);
+    }
+    else if (skill.action === "blood_execute") {
+        castBloodExecute(skill);
+    }
+    else if (skill.action === "blood_moon_rise") {
+        castBloodMoonRise(skill);
+    }
+    else if (skill.action === "blood_scythe" && target) {
+        castBloodScythe(skill, target);
+    }
+    else if (skill.action === "last_stand") {
+        castLastStand(skill);
+    }
+    else if (skill.action === "steel_domain") {
+        castSteelDomain(skill);
+    }
+    else if (skill.action === "mag_rail_charge" && target) {
+        castMagRailCharge(skill, target);
     }
     else if (skill.target === "self") {
         addSkillVisual(skill);
@@ -8555,6 +8977,12 @@ function updateCombat(dt) {
     advanceSakuraEffects(dt);
     advanceJianghuRain(dt);
     advanceStarFields(dt);
+    lifestealSuppressionTimer = Math.max(0, lifestealSuppressionTimer - dt);
+    advanceBloodMoon(dt);
+    advanceBloodScythe(dt);
+    advanceSteelDomain(dt);
+    advanceMagRail(dt);
+    advanceLastStand(dt);
     // 剧情战斗走剧本事件，不再叠加地图随机事件（避免同一波里两套意外伤害）
     if (!storyBattle)
         updateRandomMapEvents(dt);
@@ -8666,7 +9094,7 @@ function updateCombat(dt) {
         }
         const frenzySpeed = enemy.effects["狂舞"] > 0 ? frenzyAttackSpeedMultiplier() : 1;
         enemy.attackTimer = Math.max(0, enemy.attackTimer - dt * terrainAttackSpeedMultiplier(enemy.x, enemy.y) *
-            (schoolClassDuration > 0 ? 0.5 : 1) * frenzySpeed);
+            (schoolClassDuration > 0 ? 0.5 : 1) * frenzySpeed * enemyAttackSpeedMultiplier(enemy));
         if (distance < attackRange && enemy.attackTimer === 0 && !enemy.effects["眩晕"]) {
             enemy.attackTimer = enemy.anesthetist ? 1.3 : enemy.kind === "runner" ? 1.05 : 1.35;
             attackEnemyTarget(enemy, target);
@@ -9371,6 +9799,17 @@ if (window.__GRAPPLE_TEST_HOOK__) {
             if (progress)
                 progress.tier = tier;
         },
+        /** 测试专用：完整模拟升阶（标记阶级 + 应用 2/3 阶 patch 到技能数值）。 */
+        applySkillTier(skillId, tier) {
+            const progress = skillProgress.get(skillId);
+            if (progress)
+                progress.tier = tier;
+            const skill = config.skills.find((item) => item.id === skillId);
+            if (!skill)
+                return;
+            for (let level = 2; level <= tier; level += 1)
+                applySkillTierEffect(skill, level);
+        },
         getMyriadActive() { return !!grappleMyriad; },
         spawnEnemy(x, y, hp) {
             enemies.push({
@@ -9390,7 +9829,28 @@ if (window.__GRAPPLE_TEST_HOOK__) {
             return { ...(enemies[index]?.effects || {}) };
         },
         getPlayerHp() { return playerState.hp; },
+        setPlayerHp(hp) { playerState.hp = hp; },
+        getMaxHp() { return playerState.maxHp; },
+        getShield() { return playerState.shield; },
+        setPlayerShield(value) { playerState.shield = value; },
+        setPlayerEnergy(value) { playerState.energy = value; },
+        setPlayerMaxHp(value) { playerState.maxHp = value; playerState.hp = value; },
+        getLifesteal() { return playerState.lifesteal; },
+        getEnemyCount() { return enemies.length; },
+        getArmorCharges() { return armorCharges; },
+        getLifestealSuppression() { return lifestealSuppressionTimer; },
+        getBloodMoonRemaining() { return bloodMoonField?.remaining || 0; },
+        getBloodMoonHits(index = 0) {
+            return bloodMoonField?.hits.get(enemies[index]?.id || "") || 0;
+        },
+        getScytheDashRemaining() { return bloodScytheDash?.delay || 0; },
+        getSteelDomainRemaining() { return steelDomain?.remaining || 0; },
+        getLastStandRemaining() { return lastStand?.remaining || 0; },
+        getLastStandDamageTaken() { return lastStand?.damageTaken || 0; },
+        getMagRailRemaining() { return magRailCharge?.remaining || 0; },
+        getAllyReduction() { return allyDamageReduction; },
         damagePlayer(damage) { return applyPlayerDamage(damage); },
+        /* WB3:hook */
         damagePlayerFromEvent(damage) {
             return applyEventDamage({ id: "test-player", x: player.x, y: player.y, player: true }, damage);
         },
@@ -9424,6 +9884,23 @@ if (window.__GRAPPLE_TEST_HOOK__) {
             facing.x = 1;
             facing.y = 0;
             delete statusEffects["无敌"];
+            delete statusEffects["钢铁领域"];
+            delete statusEffects["最后防线"];
+            delete statusEffects["装甲护盾"];
+            delete statusEffects["磁轨冲锋"];
+            delete statusEffects["比例减速20"];
+            delete statusEffects["比例减速33"];
+            delete statusEffects["比例减速50"];
+            delete statusEffects["防线攻速削弱"];
+            bloodMoonField = null;
+            bloodScythes = [];
+            bloodScytheDash = null;
+            armorCharges = 0;
+            steelDomain = null;
+            lastStand = null;
+            magRailCharge = null;
+            allyDamageReduction = 0;
+            lifestealSuppressionTimer = 0;
             player.invulnerable = false;
             invulnerableTimer = 0;
             playerState.energy = playerState.maxEnergy;

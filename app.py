@@ -730,6 +730,345 @@ HEROES = [
                               3: {"label": "可在建筑上使用普攻，但伤害 -50%", "patch": {"leap_rooftop_attack": {"set": 1}, "leap_rooftop_attack_scale": {"set": 0.5}}}}},
         ],
     },
+    {
+        "id": "blood_reaper",
+        "name": "血月死神",
+        "class_name": "收割者",
+        "tagline": "杀戮使我强大，而我的生命，就是最后的代价。",
+        "initial": "血",
+        "accent": "blood",
+        "price": 2000,
+        "palette": {
+            "main": "#d92e4f",
+            "light": "#ffb3c1",
+            "dark": "#4a0818",
+        },
+        "stats": {
+            "攻击": 88,
+            "防御": 62,
+            "机动": 80,
+        },
+        "combat": {
+            "speed": 230,
+            "basic_range": 200,
+            "basic_damage": 14,
+            "basic_effect": "",
+            "basic_effect_turns": 0,
+            "basic_beam": {
+                "color": "#ff4d6d",
+                "duration": 0.16,
+            },
+            "basic_restore_label": "RANGED_RESTORE",
+            "bot_skill_effect": "眩晕",
+            "bot_skill_effect_turns": 0.8,
+            "bot_skill_damage_scale": 2,
+            "thorns_damage": 0,
+        },
+        "passive": {
+            "id": "blood_reaper_passive",
+            "on_kill": {
+                "lifesteal": 0.02,
+                "max_hp": 10,
+            },
+            "uncapped": ["max_hp"],
+            "lifesteal_cap": 1,
+        },
+        "skills": [{
+            "id": "blood-ult",
+            "name": "立即执行",
+            "description": "献祭生命 · 全场敌人按比例失血并眩晕",
+            "kind": "大招",
+            "target": "self",
+            "action": "blood_execute",
+            "cost": 65,
+            "cooldown": 20,
+            "damage": 0,
+            "radius": 0,
+            "effect": "眩晕",
+            "effect_turns": 1,
+            "self_hp_ratio": 0.3,
+            "enemy_hp_ratio": 0.5,
+            "stun_turns": 1,
+            "suppress_lifesteal": 1,
+            "tier_effects": {
+                2: {
+                    "label": "执行伤害提升至自身最大生命的 70%",
+                    "patch": {
+                        "enemy_hp_ratio": {
+                            "set": 0.7,
+                        },
+                    },
+                },
+                3: {
+                    "label": "全场眩晕提升至 3 秒",
+                    "patch": {
+                        "stun_turns": {
+                            "set": 3,
+                        },
+                    },
+                },
+            },
+        }, {
+            "id": "blood-moonrise",
+            "name": "血月升起",
+            "description": "持续波伤害 · 叠加减速与禁锢",
+            "kind": "小技能",
+            "target": "self",
+            "action": "blood_moon_rise",
+            "cost": 30,
+            "cooldown": 10,
+            "damage": 6,
+            "radius": 200,
+            "effect": "禁锢",
+            "effect_turns": 1.5,
+            "moon_duration": 3,
+            "wave_interval": 0.5,
+            "wave_damage": 10,
+            "slow_ratio": 0.33,
+            "root_hits": 3,
+            "root_duration": 1.5,
+            "tier_effects": {
+                2: {
+                    "label": "血月持续时间 3 秒 → 5 秒",
+                    "patch": {
+                        "moon_duration": {
+                            "set": 5,
+                        },
+                    },
+                },
+                3: {
+                    "label": "减速 33% → 50%，命中 2 次即禁锢 2.5 秒",
+                    "patch": {
+                        "slow_ratio": {
+                            "set": 0.5,
+                        },
+                        "root_hits": {
+                            "set": 2,
+                        },
+                        "root_duration": {
+                            "set": 2.5,
+                        },
+                    },
+                },
+            },
+        }, {
+            "id": "blood-scythe",
+            "name": "带血镰刀",
+            "description": "投镰眩晕 · 无敌突进 · 落点范围伤害",
+            "kind": "小技能",
+            "target": "enemy",
+            "action": "blood_scythe",
+            "cost": 35,
+            "cooldown": 12,
+            "damage": 45,
+            "radius": 200,
+            "effect": "眩晕",
+            "effect_turns": 1.5,
+            "impact_damage": 12,
+            "scythe_bonus_damage": 0,
+            "invuln_duration": 0.5,
+            "target_count": 1,
+            "dash_count": 1,
+            "tier_effects": {
+                2: {
+                    "label": "落点伤害提升为巨量，镰刀命中者额外再受一次巨量伤害",
+                    "patch": {
+                        "impact_damage": {
+                            "set": 45,
+                        },
+                        "scythe_bonus_damage": {
+                            "set": 45,
+                        },
+                    },
+                },
+                3: {
+                    "label": "向最近 3 个敌人投镰刀，只冲向最近敌人，重叠范围伤害叠加",
+                    "patch": {
+                        "target_count": {
+                            "set": 3,
+                        },
+                        "dash_count": {
+                            "set": 1,
+                        },
+                    },
+                },
+            },
+        }],
+    },
+    {
+        "id": "void_bastion",
+        "name": "零号壁垒",
+        "class_name": "绝对防御",
+        "tagline": "只要我还站着，你们就别想过去。",
+        "initial": "盾",
+        "accent": "bastion",
+        "price": 2000,
+        "palette": {
+            "main": "#4f9dff",
+            "light": "#cfe4ff",
+            "dark": "#133a70",
+        },
+        "stats": {
+            "攻击": 58,
+            "防御": 98,
+            "机动": 42,
+        },
+        "combat": {
+            "speed": 195,
+            "basic_range": 150,
+            "basic_damage": 14,
+            "basic_effect": "",
+            "basic_effect_turns": 0,
+            "basic_beam": None,
+            "basic_restore_label": "MELEE_RESTORE",
+            "bot_skill_effect": "眩晕",
+            "bot_skill_effect_turns": 0.8,
+            "bot_skill_damage_scale": 2,
+            "thorns_damage": 0,
+        },
+        "passive": {
+            "id": "absolute_armor",
+            "armor_per_hit": 0.01,
+            "armor_max_stacks": 10,
+            "armor_shield_ratio": 0.15,
+            "armor_shield_duration": 5,
+        },
+        "skills": [{
+            "id": "void-ult",
+            "name": "最后防线",
+            "description": "巨型护盾 · 自身与友方减伤 · 免疫击退",
+            "kind": "大招",
+            "target": "self",
+            "action": "last_stand",
+            "cost": 65,
+            "cooldown": 22,
+            "damage": 0,
+            "radius": 300,
+            "effect": "",
+            "effect_turns": 0,
+            "stand_duration": 5,
+            "self_reduction": 0.8,
+            "ally_reduction": 0.5,
+            "enemy_attack_speed_reduction": 0.3,
+            "reflect_ratio": 0,
+            "tier_effects": {
+                2: {
+                    "label": "持续时间 5 → 7 秒，自身减伤 80% → 90%",
+                    "patch": {
+                        "stand_duration": {
+                            "set": 7,
+                        },
+                        "self_reduction": {
+                            "set": 0.9,
+                        },
+                    },
+                },
+                3: {
+                    "label": "护盾结束时反弹期间受到伤害的 30%",
+                    "patch": {
+                        "reflect_ratio": {
+                            "set": 0.3,
+                        },
+                    },
+                },
+            },
+        }, {
+            "id": "void-domain",
+            "name": "钢铁领域",
+            "description": "范围减伤 · 敌人减速 · 周期伤害",
+            "kind": "小技能",
+            "target": "self",
+            "action": "steel_domain",
+            "cost": 30,
+            "cooldown": 11,
+            "damage": 5,
+            "radius": 200,
+            "effect": "",
+            "effect_turns": 0,
+            "domain_duration": 4,
+            "self_reduction": 0.4,
+            "enemy_slow_ratio": 0.2,
+            "tick_interval": 0.5,
+            "end_burst_damage": 0,
+            "end_knockback": 0,
+            "tier_effects": {
+                2: {
+                    "label": "持续时间 4 → 6 秒，自身减伤 40% → 50%",
+                    "patch": {
+                        "domain_duration": {
+                            "set": 6,
+                        },
+                        "self_reduction": {
+                            "set": 0.5,
+                        },
+                    },
+                },
+                3: {
+                    "label": "减伤提升至 65%，结束时冲击波造成巨量伤害并击退",
+                    "patch": {
+                        "self_reduction": {
+                            "set": 0.65,
+                        },
+                        "end_burst_damage": {
+                            "set": 60,
+                        },
+                        "end_knockback": {
+                            "set": 160,
+                        },
+                    },
+                },
+            },
+        }, {
+            "id": "void-charge",
+            "name": "磁轨冲锋",
+            "description": "冲锋撞击 · 减伤护盾 · 击退",
+            "kind": "小技能",
+            "target": "enemy",
+            "action": "mag_rail_charge",
+            "cost": 35,
+            "cooldown": 12,
+            "damage": 42,
+            "radius": 90,
+            "dash_range": 320,
+            "effect": "",
+            "effect_turns": 0,
+            "charge_reduction": 0.5,
+            "shield_ratio": 0.1,
+            "shield_duration": 5,
+            "knockback": 120,
+            "stun_turns": 0,
+            "pierce": 0,
+            "extra_hit_damage": 0,
+            "end_explosion_damage": 0,
+            "tier_effects": {
+                2: {
+                    "label": "冲锋距离 +50%，撞击额外眩晕 1 秒",
+                    "patch": {
+                        "dash_range": {
+                            "scale": 1.5,
+                        },
+                        "stun_turns": {
+                            "set": 1,
+                        },
+                    },
+                },
+                3: {
+                    "label": "穿敌而过，每撞一名额外中量伤害，结束范围爆炸",
+                    "patch": {
+                        "pierce": {
+                            "set": 1,
+                        },
+                        "extra_hit_damage": {
+                            "set": 24,
+                        },
+                        "end_explosion_damage": {
+                            "set": 70,
+                        },
+                    },
+                },
+            },
+        }],
+    },
 ]
 
 
@@ -1418,7 +1757,10 @@ def apply_player_attack(room, attacker, attack, now):
         if skill is None:
             return
         # 联机只上报 skill_tier，服务端自己展开 2/3 阶 patch（飞索超人靠 patch 取数值）。
-        if str(skill.get("action", "")).startswith("grapple_"):
+        # 新英雄的 2/3 阶数值同样由服务端展开，不能只信前端上报的 skill_id。
+        if str(skill.get("action", "")).startswith(
+            ("grapple_", "blood_", "steel_", "mag_", "last_")
+        ):
             skill = expanded_skill(skill, skill_tier)
         is_dash_hit = attack_kind == "dash_hit"
         cast_id = str(attack.get("cast_id", ""))
@@ -1465,6 +1807,72 @@ def apply_player_attack(room, attacker, attack, now):
             skill.get("cast_range", 0) + skill.get("radius", 0),
             skill.get("dash_range", 0) + skill.get("radius", 0),
         )
+        # ---- 3.0.0 新英雄：把单机数值映射到 duel 服务端权威结算 ----
+        # duel 是 1V1，周期技能按首波 + 一次持续结算，避免服务端也跑一套计时器。
+        if action == "blood_execute":
+            cost = max(1, round(attacker["max_hp"] * (skill.get("self_hp_ratio") or 0.3)))
+            attacker["hp"] = max(0, attacker["hp"] - cost)
+            damage = round(attacker["max_hp"] * (skill.get("enemy_hp_ratio") or 0.5))
+            effect = "眩晕"
+            effect_duration = skill.get("stun_turns") or 1
+            attack_range = 3000.0
+            lifesteal_rate = 0
+            if attacker["hp"] <= 0:
+                room["winner_id"] = next(
+                    (pid for pid in room["players"] if pid != attacker["player_id"]), ""
+                )
+                room["status"] = "finished"
+        elif action == "blood_moon_rise":
+            damage = (skill.get("damage") or 6) + (skill.get("wave_damage") or 10)
+            attack_range = basic_range
+            effect = "比例减速" + str(round((skill.get("slow_ratio") or 0.33) * 100))
+            effect_duration = 1.5
+            if (skill.get("root_hits") or 3) <= 2:
+                effect = "禁锢"
+                effect_duration = skill.get("root_duration") or 2.5
+        elif action == "blood_scythe":
+            damage = (
+                (skill.get("damage") or 45) + (skill.get("impact_damage") or 12)
+                + (skill.get("scythe_bonus_damage") or 0) * (skill.get("target_count") or 1)
+            )
+            effect = "眩晕"
+            effect_duration = skill.get("effect_turns") or 1.5
+            attacker["invulnerable_until"] = max(
+                attacker["invulnerable_until"], now + (skill.get("invuln_duration") or 0.5)
+            )
+            attack_range = basic_range
+        elif action == "steel_domain":
+            damage = (skill.get("damage") or 5) * 4
+            attack_range = skill.get("radius") or 200
+            effect = "比例减速" + str(round((skill.get("enemy_slow_ratio") or 0.2) * 100))
+            effect_duration = 1.2
+            attacker["steel_reduction"] = skill.get("self_reduction") or 0.4
+            attacker["steel_until"] = now + (skill.get("domain_duration") or 4)
+            if skill_tier >= 3:
+                damage += skill.get("end_burst_damage") or 0
+        elif action == "mag_rail_charge":
+            damage = skill.get("damage") or 42
+            attack_range = max(basic_range, skill.get("dash_range") or 320)
+            attacker["charge_reduction"] = skill.get("charge_reduction") or 0.5
+            attacker["charge_until"] = now + 0.6
+            attacker["shield"] = attacker.get("shield", 0) + round(
+                attacker["max_hp"] * (skill.get("shield_ratio") or 0.1)
+            )
+            if skill_tier >= 3:
+                damage += (skill.get("extra_hit_damage") or 0) + (skill.get("end_explosion_damage") or 0)
+            else:
+                effect = "眩晕"
+                effect_duration = skill.get("stun_turns") or 0
+        elif action == "last_stand":
+            # 纯防御技能：服务端只写自身减伤与免控标记，不结算伤害。
+            attacker["stand_reduction"] = skill.get("self_reduction") or 0.8
+            attacker["stand_until"] = now + (skill.get("stand_duration") or 5)
+            attacker["ally_reduction"] = skill.get("ally_reduction") or 0.5
+            attacker["effects"]["最后防线"] = max(
+                attacker["effects"].get("最后防线", 0), now + (skill.get("stand_duration") or 5)
+            )
+            return
+
         # ---- 飞索超人：把单机数值映射到服务端权威结算 ----
         if action.startswith("grapple_"):
             if action == "grapple_myriad":
@@ -1498,6 +1906,11 @@ def apply_player_attack(room, attacker, attack, now):
             return
     else:
         return
+
+    # 血月死神的击杀成长写在这里，普攻与技能都能吃到累积吸血。
+    if attacker["hero_id"] == "blood_reaper" and action != "blood_execute":
+        # 立即执行明确禁止吸血，不能被这里的通用累积值覆盖。
+        lifesteal_rate = min(1.0, attacker.get("lifesteal_rate", 0))
 
     target_ids = attack.get("target_ids", [])
     if not isinstance(target_ids, list):
@@ -1575,6 +1988,15 @@ def apply_player_attack(room, attacker, attack, now):
         damage_multiplier = (0.45 if active_effect(target, "荆棘护甲", now) else 1) * (
             1 - hero_damage_reduction(target["hero_id"])
         )
+        # 3.0.0：临时减伤状态按乘算叠加，避免多技能互相覆盖。
+        if target.get("steel_until", 0) > now:
+            damage_multiplier *= 1 - target.get("steel_reduction", 0.4)
+        if target.get("stand_until", 0) > now:
+            damage_multiplier *= 1 - target.get("stand_reduction", 0.8)
+        if target.get("charge_until", 0) > now:
+            damage_multiplier *= 1 - target.get("charge_reduction", 0.5)
+        if target["hero_id"] == "void_bastion":
+            damage_multiplier *= 1 - min(10, target.get("armor_charges", 0)) * 0.01
         incoming_damage = max(1, round(damage * damage_multiplier))
         absorbed = min(target.get("shield", 0), incoming_damage)
         target["shield"] = max(0, target.get("shield", 0) - absorbed)
@@ -1627,7 +2049,22 @@ def apply_player_attack(room, attacker, attack, now):
         thorns = hero_by_id(target["hero_id"])["combat"]["thorns_damage"]
         if thorns > 0 and active_effect(target, "荆棘护甲", now):
             attacker["hp"] = max(0, attacker["hp"] - thorns)
+        # 零号壁垒·绝对装甲：受击充能，满 10 层时下一次受击换护盾。
+        if target["hero_id"] == "void_bastion":
+            stacks = min(10, target.get("armor_charges", 0))
+            if stacks >= 10:
+                target["shield"] = target.get("shield", 0) + round(target["max_hp"] * 0.15)
+                target["armor_charges"] = 0
+            else:
+                target["armor_charges"] = stacks + 1
         if target["hp"] <= 0 and attacker["hp"] > 0:
+            # 血月死神：每次击杀永久 +10 最大生命、+2% 吸血（上限 100%）。
+            if attacker["hero_id"] == "blood_reaper":
+                attacker["max_hp"] = attacker.get("max_hp", 100) + 10
+                attacker["lifesteal_rate"] = min(1.0, attacker.get("lifesteal_rate", 0) + 0.02)
+                attacker["hp"] = min(
+                    attacker["max_hp"], attacker["hp"] + 10
+                )
             room["winner_id"] = attacker["player_id"]
             room["status"] = "finished"
 

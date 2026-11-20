@@ -888,7 +888,78 @@
         }
       }
     }
-  },
+  ,
+    "blood_reaper": {
+      "name": "Blood Moon Reaper",
+      "class_name": "Reaper",
+      "tagline": "Killing makes me stronger, and my life is the final price.",
+      "initial": "血",
+      "stats": [
+        "Attack",
+        "Defense",
+        "Mobility"
+      ],
+      "skills": {
+        "blood-ult": {
+          "name": "Immediate Execution",
+          "description": "Sacrifice health · drain all enemies by ratio and stun",
+          "detail_description": "Pay 30% of your max HP. Every enemy on the field loses 50% of your max HP and is stunned for 1 second. Lifesteal is disabled during the cast; if your HP is below 30%, you die on the spot.",
+          "kind": "Ultimate"
+        },
+        "blood-moonrise": {
+          "name": "Blood Moon Rising",
+          "description": "Sustained waves · stacking slow and root",
+          "detail_description": "Deals continuous damage in melee range and releases a blood moon wave every 0.5 seconds, slowing by 33%. Three hits on the same target deal extra damage and root them for 1.5 seconds.",
+          "kind": "Skill"
+        },
+        "blood-scythe": {
+          "name": "Bloody Scythe",
+          "description": "Throwing scythe · invulnerable dash · impact burst",
+          "detail_description": "Hurl a bloody scythe at the nearest enemy for heavy damage and a stun. Become invulnerable for 0.5 seconds, leap to the scythe, and deal light damage around the landing point.",
+          "kind": "Skill"
+        }
+      },
+      "passive": {
+        "name": "Blood Fed",
+        "description": "Each kill permanently grants +10 max HP and +2% lifesteal (lifesteal capped at 100%, max HP uncapped)."
+      }
+    },
+    "void_bastion": {
+      "name": "Bastion Zero",
+      "class_name": "Absolute Defense",
+      "tagline": "As long as I stand, you shall not pass.",
+      "initial": "盾",
+      "stats": [
+        "Attack",
+        "Defense",
+        "Mobility"
+      ],
+      "skills": {
+        "void-ult": {
+          "name": "Last Stand",
+          "description": "Giant shield · self and ally damage reduction · knockback immune",
+          "detail_description": "Deploy a huge shield for 5 seconds: 80% damage reduction for you, 50% for allies in range, 30% attack speed reduction for enemies, and full knockback immunity.",
+          "kind": "Ultimate"
+        },
+        "void-domain": {
+          "name": "Steel Domain",
+          "description": "Area damage reduction · enemy slow · periodic damage",
+          "detail_description": "Expand a steel domain for 4 seconds: 40% damage reduction for you, 20% movement slow for enemies, and light damage every 0.5 seconds.",
+          "kind": "Skill"
+        },
+        "void-charge": {
+          "name": "Magnetic Rail Charge",
+          "description": "Charge · damage reduction shield · knockback",
+          "detail_description": "Charge the nearest enemy with 50% damage reduction. The impact deals heavy damage and knockback, then grants a shield equal to 10% of your max HP.",
+          "kind": "Skill"
+        }
+      },
+      "passive": {
+        "name": "Absolute Armor",
+        "description": "Each hit grants 1 armor charge, reducing incoming damage by 1% per stack up to 10. At full stacks the next hit consumes all charges and grants a shield equal to 15% of max HP for 5 seconds."
+      }
+    }
+},
   "upgrades": {
     "attack-speed": {
       "name": "Rapid-Fire Drive",
@@ -1583,7 +1654,15 @@
       "月影护盾": "Moon shield",
       "引燃": "Ignite",
       "御剑飞行": "Sword Flight"
-    },
+    ,
+    "比例减速20": "Slow 20%",
+    "比例减速33": "Slow 33%",
+    "比例减速50": "Slow 50%",
+    "防线攻速削弱": "Attack Speed Down",
+    "钢铁领域": "Steel Domain",
+    "最后防线": "Last Stand",
+    "装甲护盾": "Armor Shield"
+},
     "basic_hit": {
       "volt": "Basic hit for {damage} damage, restores 5 energy.",
       "moss": "Thorn strike deals {damage} damage and briefly roots the target.",
@@ -1596,7 +1675,10 @@
       "skater": "Board strike deals {damage} damage; faster speed means more damage.",
       "bball": "Basketball hits for {damage} damage.",
       "star_messenger": "Star shot hits for {damage} damage."
-    },
+    ,
+    "blood_reaper": "Crimson blade hits for {damage} damage.",
+    "void_bastion": "Bastion slam hits for {damage} damage."
+},
     "templates": {
       "skill.cooling": "{name} is on cooldown for {seconds}s more.",
       "skill.no_energy": "Not enough energy: {name} needs {cost} energy.",
@@ -1773,7 +1855,18 @@
       "basic.grapple_rooftop_blocked": "Cannot basic attack from a rooftop (unlocks at Tier 3).",
       "float.grapple_fall": "Back to ground",
       "float.grapple_global_stun": "GLOBAL STUN"
-    }
+    ,
+    "skill.blood_execute": "Immediate Execution: sacrificed {cost} HP; {hits} enemies each lost {damage} HP and were stunned for {seconds} seconds.",
+    "skill.blood_moon_rise": "Blood Moon Rising: damaging nearby enemies for {seconds} seconds, waves land every 0.5 seconds.",
+    "skill.blood_scythe": "Bloody Scythe: {targets} scythes hit {hits} enemies before an invulnerable dash and landing burst.",
+    "skill.last_stand": "Last Stand deployed: {reduction}% self damage reduction, {ally}% ally damage reduction, {seconds} seconds.",
+    "skill.last_stand_end": "Last Stand ended: reflected {damage} damage across {hits} enemies.",
+    "skill.steel_domain": "Steel Domain deployed: {reduction}% damage reduction, {hits} enemies slowed and damaged.",
+    "skill.steel_domain_burst": "Steel Domain shockwave: hit {hits} enemies and knocked them back.",
+    "skill.mag_rail_charge": "Magnetic Rail Charge: hit {hits} enemies and gained {shield} shield.",
+    "skill.mag_rail_blast": "Magnetic blast: hit {hits} enemies.",
+    "passive.absolute_armor": "Absolute Armor charged: {stacks}/{max} stacks, gained {shield} shield."
+}
   },
   "lobby": {
     "messages": {
@@ -1918,7 +2011,20 @@
     "古琴链接目标 7 → 10；竖琴音波 3 → 5": "Guqin links 7 → 10 targets; Harp waves 3 → 5",
     "竹林之梦与甜蜜和弦持续时间 3 → 5 秒": "Dream of the Bamboo Grove and Sweet Chord duration 3s → 5s",
     "竹林之梦持续伤害；甜蜜和弦吸血比例 50% → 100%": "Dream of the Bamboo Grove deals damage; Sweet Chord lifesteal 50% → 100%"
-  },
+  ,
+    "执行伤害提升至自身最大生命的 70%": "Execution damage raised to 70% of max HP",
+    "全场眩晕提升至 3 秒": "Global stun extended to 3 seconds",
+    "血月持续时间 3 秒 → 5 秒": "Blood Moon duration 3s → 5s",
+    "减速 33% → 50%，命中 2 次即禁锢 2.5 秒": "Slow 33% → 50%, root after 2 hits for 2.5s",
+    "落点伤害提升为巨量，镰刀命中者额外再受一次巨量伤害": "Massive landing damage; scythe victims take massive damage again",
+    "向最近 3 个敌人投镰刀，只冲向最近敌人，重叠范围伤害叠加": "Throw scythes at 3 nearest enemies, dash only to the closest, overlapping damage stacks",
+    "持续时间 5 → 7 秒，自身减伤 80% → 90%": "Duration 5s → 7s, self reduction 80% → 90%",
+    "护盾结束时反弹期间受到伤害的 30%": "Reflect 30% of damage taken when the shield ends",
+    "持续时间 4 → 6 秒，自身减伤 40% → 50%": "Duration 4s → 6s, self reduction 40% → 50%",
+    "减伤提升至 65%，结束时冲击波造成巨量伤害并击退": "Reduction raised to 65%; ending shockwave deals massive damage and knockback",
+    "冲锋距离 +50%，撞击额外眩晕 1 秒": "Charge distance +50%, impact stuns for 1 extra second",
+    "穿敌而过，每撞一名额外中量伤害，结束范围爆炸": "Pierce enemies, extra medium damage per hit, final area explosion"
+},
   "story": {
     "categories": {
       "cyber": {

@@ -1,6 +1,6 @@
 {
   "name": "2d-da-jibai",
-  "version": "2.9.1",
+  "version": "3.0.0",
   "description": "2D大击败 - 赛博风肉鸽竞技场",
   "main": "electron/main.cjs",
   "author": "2D大击败",
@@ -39,14 +39,15 @@
     "test:story-map": "node --test tests/story_map.test.cjs",
     "test:multiplayer": "npm run build:lobby && node tests/multiplayer_lobby.test.cjs",
     "test:mode-picker": "npm run build:mode && node tests/mode_selection.test.cjs && python -m unittest discover -s tests -p test_mode_picker.py",
-    "test:all": "npm run test:story && npm run test:multiplayer && npm run test:voice && npm run test:grapple && npm run test:obstacle-layout",
+    "test:all": "npm run test:story && npm run test:multiplayer && npm run test:voice && npm run test:grapple && npm run test:obstacle-layout && npm run test:heroes-300",
     "test:voice": "npm run build:select && node tests/hero_voice.test.cjs && node tests/audio_toggle.test.cjs",
     "test:audio": "node tests/audio_toggle.test.cjs",
     "build:grapple": "tsc -p tsconfig.grapple.json",
     "test:grapple": "npm run build:grapple && npm run build:map && node --test tests/grapple_geometry.test.cjs && npm run test:grapple-hero",
     "test:grapple-hero": "node tests/grapple_hero.test.cjs",
     "build:obstacle-layout": "tsc -p tsconfig.obstacle-layout.json",
-    "test:obstacle-layout": "npm run build:obstacle-layout && node --test tests/obstacle_layout.test.cjs"
+    "test:obstacle-layout": "npm run build:obstacle-layout && node --test tests/obstacle_layout.test.cjs",
+    "test:heroes-300": "node tests/heroes_300.test.cjs"
   },
   "devDependencies": {
     "electron": "^44.4.5",
