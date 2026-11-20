@@ -2053,7 +2053,9 @@ function spawnEnemyForWave(): void {
   const { x, y } = pickSpawnPoint();
   const roll = Math.random();
   const kind: EnemyUnit["kind"] = wave >= 3 && roll > 0.78 ? "brute" : wave >= 2 && roll > 0.5 ? "runner" : "grunt";
-  const hpScale = 1 + (wave - 1) * 0.16;
+  // 血量成长：线性斜率 0.16 → 0.2，再加二次项，波数越往后压力越大。
+  const waveStep = wave - 1;
+  const hpScale = 1 + waveStep * 0.2 + waveStep * waveStep * 0.02;
   const base = kind === "brute" ? { hp: 150, attack: 13, speed: 34 } : kind === "runner" ? { hp: 62, attack: 7, speed: 88 } : { hp: 88, attack: 9, speed: 54 };
   enemies.push({
     id: `enemy-${++eventSerial}`,
@@ -2174,7 +2176,8 @@ function startWave(): void {
     return;
   }
   if (mapTheme === "airport") scheduleAirportFlightsForWave();
-  enemiesToSpawn = Math.min(4 + wave * 2, 18);
+  // 数量成长：叠加二次项，上限 18 → 26，中后期每波人数明显上涨。
+  enemiesToSpawn = Math.min(4 + wave * 2 + Math.floor((wave * wave) / 6), 26);
   spawnTimer = 0.3;
   updateWaveHud();
   showToast(tx(t("wave.incoming", { wave })), "warning");
