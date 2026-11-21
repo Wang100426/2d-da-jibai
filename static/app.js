@@ -617,6 +617,11 @@ let context = requireContext(world);
 const minimap = requireElement("#minimap");
 const miniContext = requireContext(minimap);
 const config = getMapConfig();
+/** 技能数值初始快照：测试钩子 resetAll 用它还原升阶/小升级对 skill 的就地修改。 */
+const baseSkillNumbers = new Map(config.skills.map((skill) => [
+    skill.id,
+    Object.fromEntries(Object.entries(skill).filter(([, value]) => typeof value === "number")),
+]));
 const locale = config.locale;
 const onlineDuel = config.multiplayer?.mode === "duel";
 const duelArena = config.duel || onlineDuel;
@@ -10126,6 +10131,9 @@ if (window.__GRAPPLE_TEST_HOOK__) {
         getMaxHpGrowthMultiplier() { return maxHpGrowthMultiplier; },
         getSoulReapedCount() { return enemies.filter((enemy) => enemy.soulReaped).length; },
         getScytheChainCount() { return bloodScytheChainCount; },
+        getScytheTargetCount() {
+            return config.skills.find((item) => item.action === "blood_scythe")?.target_count || 1;
+        },
         setPlayerHpDirect(value) { playerState.hp = value; },
         getEnemyCount() { return enemies.length; },
         getArmorCharges() { return armorCharges; },
@@ -10170,6 +10178,13 @@ if (window.__GRAPPLE_TEST_HOOK__) {
             skillProgress.forEach((progress) => {
                 progress.tier = 1;
                 progress.minorUpgrades = 0;
+            });
+            config.skills.forEach((skill) => {
+                const base = baseSkillNumbers.get(skill.id);
+                if (!base)
+                    return;
+                const mutableSkill = skill;
+                Object.entries(base).forEach(([key, value]) => { mutableSkill[key] = value; });
             });
             basicAttackTimer = 0;
             facing.x = 1;

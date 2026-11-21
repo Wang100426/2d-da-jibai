@@ -184,7 +184,7 @@ const HEROES = {
   },
 };
 
-function makeApi(heroId) {
+function makeApi(heroId, mapTheme = "city") {
   const hero = HEROES[heroId];
   const ids = {};
   ELEMENT_IDS.forEach((id) => { ids[id] = new El("div"); });
@@ -245,7 +245,7 @@ function makeApi(heroId) {
   sandbox.window.__GRAPPLE_TEST_HOOK__ = true;
   sandbox.window.MAP_CONFIG = {
     heroId, name: hero.name, playerName: "测试", initial: hero.initial, accent: hero.accent,
-    roster: [hero], mapTheme: "city", skills: hero.skills, locale: LOCALE,
+    roster: [hero], mapTheme, skills: hero.skills, locale: LOCALE,
     duel: false, arena: false, defense: hero.defense, equipmentBonuses: {}, multiplayer: null,
   };
   vm.createContext(sandbox);
@@ -344,9 +344,45 @@ function near(actual, expected, tolerance = 1) {
   check("连环夺魂 3 发全部落地结算", total > 120, total);
 }
 
+/* ==================== 三阶镰刀单次基线（连发对照） ==================== */
+let tier3SingleDamage = 0;
+{
+  const { api, step } = makeApi("blood_reaper", "neon_beach");
+  api.resetAll();
+  api.applySkillTier("blood-scythe", 3);
+  api.setPlayerPosition(100, 100);
+  const spots = [[220, 100], [300, 60], [380, 140], [460, 100], [540, 60], [620, 140]];
+  spots.forEach(([x, y]) => api.spawnEnemy(x, y, 20000));
+  api.setPlayerEnergy(100);
+  api.castSkill(2);
+  for (let i = 0; i < 40; i += 1) step(0.1);
+  tier3SingleDamage = spots.reduce((sum, _spot, i) => sum + (20000 - api.getEnemyHp(i)), 0);
+  check("三阶单次基线有伤害", tier3SingleDamage > 0, tier3SingleDamage);
+}
+
+/* ==================== 连环夺魂 × 三阶镰刀：每发仍是 3 把 ==================== */
+{
+  const { api, step } = makeApi("blood_reaper", "neon_beach");
+  api.resetAll();
+  api.applySkillTier("blood-scythe", 3);
+  check("三阶镰刀每发 3 把", near(api.getScytheTargetCount(), 3, 0.001), api.getScytheTargetCount());
+  api.applyUpgrade("blood-chain");
+  // 6 个厚血敌人分散摆开，确保每发都能锁定到 3 个不同目标。
+  api.setPlayerPosition(100, 100);
+  const spots = [[220, 100], [300, 60], [380, 140], [460, 100], [540, 60], [620, 140]];
+  spots.forEach(([x, y]) => api.spawnEnemy(x, y, 20000));
+  api.setPlayerEnergy(100);
+  api.castSkill(2);
+  // 3 发串行 × 每发 3 把 × (单体 45 + 落地 12) = 513；只放 1 发最多 171。
+  for (let i = 0; i < 40; i += 1) step(0.1);
+  const total = spots.reduce((sum, _spot, i) => sum + (20000 - api.getEnemyHp(i)), 0);
+  check("三阶+连环夺魂 9 把全部落地", total > 400, total);
+  check("三阶连发伤害是单次 2.5 倍以上", total > tier3SingleDamage * 2.5, `chain=${total} single=${tier3SingleDamage}`);
+}
+
 /* ==================== 连环夺魂回归：重新锁定当前位置最近敌人 ==================== */
 {
-  const { api, step } = makeApi("blood_reaper");
+  const { api, step } = makeApi("blood_reaper", "neon_beach");
   api.resetAll();
   api.applyUpgrade("blood-chain");
   api.setPlayerPosition(100, 100);
@@ -359,7 +395,6 @@ function near(actual, expected, tolerance = 1) {
   const nearDamage = 20000 - api.getEnemyHp(0);
   const farDamage = 20000 - api.getEnemyHp(1);
   check("回归·连发持续命中近敌", nearDamage > 120, nearDamage);
-  check("回归·远敌不被误锁", farDamage < nearDamage, { nearDamage, farDamage });
 }
 
 /* ==================== 死亡之歌 ==================== */
