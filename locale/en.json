@@ -1012,7 +1012,12 @@
     "blood-burn": {"name": "Burning Life", "description": "Immediate Execution costs 70% max HP instead of 30%, but deals 150% damage (210% at tier 2)."},
     "blood-chain": {"name": "Chain of Souls", "description": "Blood Scythe fires 3 times, retargeting the nearest enemy each time. Unused casts refund part of the cooldown."},
     "blood-death-song": {"name": "Death Song", "description": "Survive one lethal hit, fully heal, and permanently double max HP and all future max HP growth."},
-    "blood-soul-reap": {"name": "Soul Reap", "description": "Enemies you kill are spared at death instead entering 5 seconds of invulnerable frenzy, attacking their own allies."}
+    "blood-soul-reap": {"name": "Soul Reap", "description": "Enemies you kill are spared at death instead entering 5 seconds of invulnerable frenzy, attacking their own allies."},
+    "tech-smart": {"name": "Smart Tech", "description": "The afterimage from your second skill never fades. It follows you through buildings (still bound by the arena edge) and casts alongside you."},
+    "tech-shock": {"name": "Electrocute", "description": "Every skill hit electrifies all enemies around the target for bonus damage. This damage is not counted as skill damage."},
+    "tech-zero-one": {"name": "Between 0 and 1", "description": "Your first skill leaves a 01 zone at the tablet convergence point, damaging enemies inside it over time."},
+    "tech-rampage": {"name": "Mecha Rampage", "description": "Deal double damage and move twice as fast, but also take double damage."},
+    "tech-infinite": {"name": "Infinite Energy", "description": "Cast your ultimate 3 times in a row; the 2nd and 3rd casts fire in the opposite direction of the previous one."}
 
   },
   "battle": {
@@ -1765,6 +1770,7 @@
       "float.dodge": "Dodge",
       "float.hp_full": "Health full",
       "float.energy_full": "Energy full",
+      "float.tech_shock": "Shocked",
       "float.tablets_start": "Tablets online",
       "float.knockback": "Knockback",
       "float.afterimage_knockback": "Afterimage knockback",

@@ -1556,6 +1556,55 @@ const heroUpgradePool = {
             apply: () => { soulReapActive = true; },
         },
     ],
+    /** 科技男专属卡：智能科技 / 电死你 / 0与1之间 / 机甲失控 / 无限能源。 */
+    tech: [
+        {
+            id: "tech-smart",
+            name: locale.upgrades["tech-smart"].name,
+            description: locale.upgrades["tech-smart"].description,
+            once: true,
+            heroId: "tech",
+            apply: () => {
+                techHologramActive = true;
+                techHologram = { x: player.x, y: player.y };
+            },
+        },
+        {
+            id: "tech-shock",
+            name: locale.upgrades["tech-shock"].name,
+            description: locale.upgrades["tech-shock"].description,
+            once: true,
+            heroId: "tech",
+            apply: () => { techElectrocuteActive = true; },
+        },
+        {
+            id: "tech-zero-one",
+            name: locale.upgrades["tech-zero-one"].name,
+            description: locale.upgrades["tech-zero-one"].description,
+            once: true,
+            heroId: "tech",
+            apply: () => { techZoneActive = true; },
+        },
+        {
+            id: "tech-rampage",
+            name: locale.upgrades["tech-rampage"].name,
+            description: locale.upgrades["tech-rampage"].description,
+            once: true,
+            heroId: "tech",
+            apply: () => {
+                playerState.damageMultiplier += 1;
+                techDamageTakenDoubled = true;
+            },
+        },
+        {
+            id: "tech-infinite",
+            name: locale.upgrades["tech-infinite"].name,
+            description: locale.upgrades["tech-infinite"].description,
+            once: true,
+            heroId: "tech",
+            apply: () => { techUltimateCharges = 3; },
+        },
+    ],
 };
 /** 本局已选的专属卡（每张只能选一次）。 */
 const selectedUpgradeIds = new Set();
@@ -1567,6 +1616,15 @@ let deathSongCharges = 0;
 let soulReapActive = false;
 /** 死亡之歌触发后：所有最大生命值成长永久翻倍。 */
 let maxHpGrowthMultiplier = 1;
+/** 科技男专属卡：全息幻影 / 感电 / 01 领域 / 机甲失控 / 无限能源 */
+let techHologramActive = false;
+let techHologram;
+let techElectrocuteActive = false;
+let techZoneActive = false;
+let techDamageTakenDoubled = false;
+let techZone;
+let techUltimateCharges = 0;
+let techUltimateCasts = 0;
 function getAvailableUpgrades(excludeCoolant = false) {
     const pool = [...upgradePool, ...(heroUpgradePool[config.heroId] || [])];
     return pool.filter((choice) => (!excludeCoolant || choice.id !== "coolant") &&
@@ -2790,6 +2848,37 @@ function drawMap() {
     drawFloatingTexts();
 }
 function drawWorldEffects() {
+    if (techZone) {
+        const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 180);
+        context.save();
+        context.globalAlpha = 0.16 + pulse * 0.12;
+        context.fillStyle = "#38bdf8";
+        context.beginPath();
+        context.arc(techZone.x, techZone.y, techZone.radius, 0, Math.PI * 2);
+        context.fill();
+        context.globalAlpha = 0.85;
+        context.fillStyle = "#7df9ff";
+        context.font = "700 26px system-ui";
+        context.textAlign = "center";
+        context.fillText("0 / 1", techZone.x, techZone.y - 8);
+        context.restore();
+    }
+    if (techHologramActive && techHologram) {
+        context.save();
+        context.globalAlpha = 0.55;
+        context.shadowColor = "#7df9ff";
+        context.shadowBlur = 14;
+        context.strokeStyle = "#7df9ff";
+        context.lineWidth = 3;
+        context.beginPath();
+        context.arc(techHologram.x, techHologram.y, player.radius + 4, 0, Math.PI * 2);
+        context.stroke();
+        context.fillStyle = "#d8fbff";
+        context.font = "700 18px system-ui";
+        context.textAlign = "center";
+        context.fillText("01", techHologram.x, techHologram.y + 6);
+        context.restore();
+    }
     impactParticles.forEach((particle) => {
         context.save();
         context.globalAlpha = Math.max(0, particle.life / particle.maxLife);
@@ -5266,7 +5355,28 @@ function rollExecute(enemy) {
         return false;
     return Math.random() < Math.min(0.95, missingRatio * 100 * perPercent);
 }
-function hitEnemy(enemy, damage, effect = "", effectTurns = 0) {
+/** 机甲失控：同时作用于移动速度与输出/承伤的倍率。 */
+function techSpeedMultiplier() {
+    return techDamageTakenDoubled ? 2 : 1;
+}
+/** 电死你：技能命中后连带电击目标周围的敌人，走 NPC 伤害通道（非技能伤害）。 */
+function triggerTechElectrocute(source) {
+    const radius = 140;
+    const damage = 10 + wave * 2;
+    skillVisuals.push({
+        type: "beam", x: source.x, y: source.y, targetX: source.x, targetY: source.y,
+        age: 0, duration: 0.34, color: "#7df9ff",
+    });
+    enemies.forEach((other) => {
+        if (other === source || other.hp <= 0 || other.tornadoInvulnerable)
+            return;
+        if (Math.hypot(other.x - source.x, other.y - source.y) > radius)
+            return;
+        damageEnemyByNpc(other, damage, "npc");
+        addFloatingText(other.x, other.y - 44, t("float.tech_shock"), "#7df9ff");
+    });
+}
+function hitEnemy(enemy, damage, effect = "", effectTurns = 0, electrify = false) {
     if (enemy.hp <= 0 || enemy.tornadoInvulnerable)
         return 0;
     if (schoolClassDuration > 0)
@@ -5316,6 +5426,8 @@ function hitEnemy(enemy, damage, effect = "", effectTurns = 0) {
         else
             addEnemyLoot(enemy);
     }
+    if (electrify && techElectrocuteActive)
+        triggerTechElectrocute(enemy);
     spawnImpact(enemy.x, enemy.y, heroColors.main);
     return actualDamage;
 }
@@ -5393,6 +5505,8 @@ function applyPlayerDamage(damage, attacker) {
     }
     if (schoolClassDuration > 0)
         damage *= 0.8;
+    if (techDamageTakenDoubled)
+        damage *= 2;
     // 零号壁垒·绝对装甲：每次受击充能；满层时下一次受击消耗全部层数换护盾。
     if (heroPassive.id === "absolute_armor") {
         const maxStacks = heroPassive.armor_max_stacks || 10;
@@ -5714,6 +5828,8 @@ function startAfterimageDash(skill, extraTrips = 0) {
     const distance = skill.dash_range || 180;
     const castId = `${config.multiplayer?.player_id || "local"}-dash-${Date.now()}-${attackSequence++}`;
     afterimage = { x: player.x, y: player.y, age: 0, duration: 3.2 };
+    if (techHologramActive)
+        techHologram = { x: player.x, y: player.y };
     afterimageDash = {
         castId,
         originX: player.x,
@@ -6612,7 +6728,7 @@ function advanceTabletVolley(dt) {
             if (distanceToSegment(enemy.x, enemy.y, previousX, previousY, currentX, currentY) > 28)
                 return;
             tablet.hitEnemies.add(enemy);
-            hitEnemy(enemy, tabletVolley.damage * 0.35, tabletVolley.effect, tabletVolley.effectTurns);
+            hitEnemy(enemy, tabletVolley.damage * 0.35, tabletVolley.effect, tabletVolley.effectTurns, true);
             knockbackEnemyInDirection(enemy, 54 + tabletExtraKnockback, tablet.directionX, tablet.directionY);
             addFloatingText(enemy.x, enemy.y - 40, t("float.knockback"), "#49e6e0");
         });
@@ -6630,7 +6746,7 @@ function advanceTabletVolley(dt) {
     const victims = enemies.filter((enemy) => enemy.hp > 0 && Math.hypot(enemy.x - volley.x, enemy.y - volley.y) <= volley.radius);
     nearbyPvpTargets(volley.x, volley.y, volley.radius).forEach((remote) => volley.targetIds.add(remote.player_id));
     queuePvpAttack("skill", [...volley.targetIds].map((id) => remotePlayers.get(id)).filter((remote) => !!remote), config.skills.find((skill) => skill.action === "tech_tablets")?.id);
-    victims.forEach((enemy) => hitEnemy(enemy, volley.damage, volley.effect, volley.effectTurns));
+    victims.forEach((enemy) => hitEnemy(enemy, volley.damage, volley.effect, volley.effectTurns, true));
     skillVisuals.push({
         type: "impact", x: volley.x, y: volley.y, targetX: volley.x, targetY: volley.y,
         age: 0, duration: 0.65, color: "#438dff", radius: volley.radius,
@@ -6645,6 +6761,13 @@ function advanceTabletVolley(dt) {
             size: 2 + Math.random() * 5, color: index % 4 === 0 ? "#ffffff" : "#438dff",
             life, maxLife: life,
         });
+    }
+    if (techZoneActive) {
+        techZone = {
+            x: volley.x, y: volley.y, radius: volley.radius * 1.4,
+            remaining: 4, tickTimer: 0.5,
+            damage: Math.max(4, Math.round(volley.damage * 0.5)),
+        };
     }
     showToast(t("skill.tech_tablets_blast", { hits: victims.length }));
     tabletProjectiles.length = 0;
@@ -6685,7 +6808,7 @@ function advanceAfterimageDash(dt) {
             if (distanceToSegment(enemy.x, enemy.y, previousX, previousY, player.x, player.y) > player.radius + enemyRadius + 5)
                 return;
             dash.hitEnemies.add(enemy);
-            hitEnemy(enemy, dash.damage);
+            hitEnemy(enemy, dash.damage, "", 0, true);
             knockbackEnemyInDirection(enemy, 72, travelX / travelLength, travelY / travelLength);
             addFloatingText(enemy.x, enemy.y - 40, t("float.afterimage_knockback"), "#49e6e0");
         });
@@ -8380,6 +8503,23 @@ function advanceMagRail(dt) {
     delete statusEffects["磁轨冲锋"];
     updateHud();
 }
+/** 智能科技：幻影跟随玩家并从自身位置同步施法。 */
+function castTechHologramEcho(skill) {
+    if (!techHologramActive || !techHologram)
+        return;
+    const x = techHologram.x;
+    const y = techHologram.y;
+    const radius = skill.radius || 150;
+    const damage = Math.max(6, Math.round((skill.damage || 20) * 0.6));
+    const victims = enemies.filter((enemy) => enemy.hp > 0 && !enemy.tornadoInvulnerable && Math.hypot(enemy.x - x, enemy.y - y) <= radius);
+    victims.forEach((enemy) => {
+        hitEnemy(enemy, damage, skill.effect, skill.effect_turns, true);
+        skillVisuals.push({
+            type: "beam", x, y, targetX: enemy.x, targetY: enemy.y,
+            age: 0, duration: 0.3, color: "#7df9ff",
+        });
+    });
+}
 function castSkill(index) {
     if (skillIsPaused())
         return;
@@ -8410,7 +8550,9 @@ function castSkill(index) {
         return;
     }
     const remaining = skillCooldowns.get(skill.id) || 0;
-    if (remaining > 0) {
+    // 无限能源：大招可连续释放 3 次，期间无视冷却；第 2/3 次反向释放。
+    const techFreeUltimate = skill.action === "tech_overdrive" && techUltimateCasts < techUltimateCharges;
+    if (remaining > 0 && !techFreeUltimate) {
         showToast(t("skill.cooling", { name: skill.name, seconds: remaining.toFixed(1) }), "warning");
         return;
     }
@@ -8454,6 +8596,18 @@ function castSkill(index) {
     playerState.energy -= skill.cost;
     const cooldown = calculateSkillCooldown(skill);
     skillCooldowns.set(skill.id, cooldown);
+    if (techFreeUltimate) {
+        techUltimateCasts += 1;
+        if (techUltimateCasts > 1) {
+            facing.x *= -1;
+            facing.y *= -1;
+        }
+        // 第三次用完后正常进入冷却，避免无限连发第四次。
+        if (techUltimateCasts < techUltimateCharges)
+            skillCooldowns.set(skill.id, 0);
+    }
+    if (techHologramActive)
+        castTechHologramEcho(skill);
     if (skill.action !== "tech_afterimage")
         queuePvpAttack("skill", [], skill.id);
     if (skill.action === "moss_barkskin") {
@@ -8564,7 +8718,7 @@ function castSkill(index) {
         const stacks = techStacks();
         const scale = 1 + ((heroPassive.tech_burst?.ultimate_damage_scale || 1) - 1) * stacks;
         const damage = Math.round(skill.damage * scale);
-        victims.forEach((enemy) => hitEnemy(enemy, damage, skill.effect, skill.effect_turns * 2));
+        victims.forEach((enemy) => hitEnemy(enemy, damage, skill.effect, skill.effect_turns * 2, true));
         const travelled = movePlayerToward(player.x + facing.x * (skill.dash_range || 300), player.y + facing.y * (skill.dash_range || 300), skill.dash_range || 300);
         queuePvpAttack("skill", nearbyPvpTargets(startX, startY, radius), skill.id);
         skillVisuals.push({
@@ -9086,6 +9240,34 @@ function updateCombat(dt) {
         afterimage.age += dt;
         if (afterimage.age >= afterimage.duration)
             afterimage = undefined;
+    }
+    if (techHologramActive && techHologram) {
+        // 幻影只受地图边界约束，穿过建筑追随玩家。
+        const dx = player.x - techHologram.x;
+        const dy = player.y - techHologram.y;
+        const distance = Math.hypot(dx, dy);
+        if (distance > 6) {
+            const step = Math.min(distance, player.speed * 1.8 * dt);
+            const inset = player.radius;
+            techHologram.x = Math.max(inset, Math.min(map.width - inset, techHologram.x + dx / distance * step));
+            techHologram.y = Math.max(inset, Math.min(map.height - inset, techHologram.y + dy / distance * step));
+        }
+    }
+    if (techZone) {
+        techZone.remaining -= dt;
+        techZone.tickTimer -= dt;
+        if (techZone.tickTimer <= 0) {
+            techZone.tickTimer += 0.5;
+            const zone = techZone;
+            enemies.forEach((enemy) => {
+                if (enemy.hp > 0 && !enemy.tornadoInvulnerable &&
+                    Math.hypot(enemy.x - zone.x, enemy.y - zone.y) <= zone.radius) {
+                    damageEnemyByNpc(enemy, zone.damage, "npc");
+                }
+            });
+        }
+        if (techZone.remaining <= 0)
+            techZone = undefined;
     }
     advanceTabletVolley(dt);
     advanceDiscVolley(dt);
@@ -9811,6 +9993,7 @@ function drawFrame(timestamp) {
             ((statusEffects["加速"] || 0) > 0 ? 1.45 : 1) *
             ((statusEffects["年夜饭加速"] || 0) > 0 ? 1.2 : 1) *
             (sakuraSong && sakuraSong.remaining > 0 ? 1.5 : 1) *
+            techSpeedMultiplier() *
             jianghuFlightSpeedScale() *
             ((statusEffects["强力减速"] || 0) > 0 ? 0.4 : (statusEffects["减速"] || 0) > 0 ? 0.55 : 1) *
             (schoolClassDuration > 0 ? 0.4 : 1);
@@ -10131,6 +10314,19 @@ if (window.__GRAPPLE_TEST_HOOK__) {
         getMaxHpGrowthMultiplier() { return maxHpGrowthMultiplier; },
         getSoulReapedCount() { return enemies.filter((enemy) => enemy.soulReaped).length; },
         getScytheChainCount() { return bloodScytheChainCount; },
+        getTechHologram() {
+            return { active: techHologramActive, x: techHologram?.x || 0, y: techHologram?.y || 0 };
+        },
+        getTechElectrocuteActive() { return techElectrocuteActive; },
+        getTechZone() {
+            return techZone ? { x: techZone.x, y: techZone.y, radius: techZone.radius, remaining: techZone.remaining } : null;
+        },
+        getTechDamageMultiplier() { return playerState.damageMultiplier; },
+        getTechTakenDoubled() { return techDamageTakenDoubled; },
+        getTechSpeedMultiplier() { return techSpeedMultiplier(); },
+        getTechUltimateCharges() { return techUltimateCharges; },
+        getTechUltimateCasts() { return techUltimateCasts; },
+        getFacing() { return { ...facing }; },
         getScytheTargetCount() {
             return config.skills.find((item) => item.action === "blood_scythe")?.target_count || 1;
         },
@@ -10215,6 +10411,15 @@ if (window.__GRAPPLE_TEST_HOOK__) {
             deathSongCharges = 0;
             soulReapActive = false;
             maxHpGrowthMultiplier = 1;
+            techHologramActive = false;
+            techHologram = undefined;
+            techElectrocuteActive = false;
+            techZoneActive = false;
+            techDamageTakenDoubled = false;
+            techZone = undefined;
+            techUltimateCharges = 0;
+            techUltimateCasts = 0;
+            playerState.damageMultiplier = 1;
             playerState.critChance = 0;
             playerState.critMultiplier = 2;
             player.invulnerable = false;

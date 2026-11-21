@@ -1012,7 +1012,12 @@
     "blood-burn": {"name": "命の燃焼", "description": "即時処刑の自損が30%から70%に上昇するが、ダメージが150%（2段階では210%）まで高まる。"},
     "blood-chain": {"name": "魂の連鎖", "description": "血の鎌が3回連続で発動し、そのたびに最寄りの敵を狙う。敵がいない場合は回数に応じてクールダウンを返還。"},
     "blood-death-song": {"name": "死の歌", "description": "致命傷を1回だけ無効化し、即座に全回復。最大HPと今後の最大HP成長が永久に2倍になる。"},
-    "blood-soul-reap": {"name": "魂喰らい", "description": "自身が倒した敵は死亡せず、5秒間無敵の狂舞状態となり味方を攻撃する。"}
+    "blood-soul-reap": {"name": "魂喰らい", "description": "自身が倒した敵は死亡せず、5秒間無敵の狂舞状態となり味方を攻撃する。"},
+    "tech-smart": {"name": "スマートテクノロジー", "description": "2スキルの残像は消えず、建物をすり抜けてプレイヤーを追従し（マップ境界内のみ）、一緒に魔法を唱える。"},
+    "tech-shock": {"name": "感電させちゃう", "description": "スキルが命中するたび、対象の周囲の敵全員に追加ダメージ。このダメージはスキルダメージとして扱われない。"},
+    "tech-zero-one": {"name": "0と1の間", "description": "1スキルのタブレット集結地点に01エリアを形成し、内部の敵に継続ダメージを与える。"},
+    "tech-rampage": {"name": "メカ暴走", "description": "与えるダメージと移動速度が2倍になるが、受けるダメージも2倍になる。"},
+    "tech-infinite": {"name": "無限エネルギー", "description": "必殺技を3回連続で発動可能。2回目と3回目は前回と逆方向に放つ。"}
 
   },
   "battle": {
@@ -1765,6 +1770,7 @@
       "float.dodge": "回避",
       "float.hp_full": "体力満タン",
       "float.energy_full": "エネルギー満タン",
+      "float.tech_shock": "感電",
       "float.tablets_start": "タブレット起動",
       "float.knockback": "ノックバック",
       "float.afterimage_knockback": "残像ノックバック",

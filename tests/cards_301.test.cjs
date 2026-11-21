@@ -151,6 +151,33 @@ const BASTION_SKILLS = [
   },
 ];
 
+const TECH_SKILLS = [
+  {
+    id: "tech-ult", name: "超频突袭", kind: "大招", target: "self", action: "tech_overdrive",
+    cost: 60, cooldown: 16, damage: 36, radius: 330, dash_range: 300, effect: "眩晕", effect_turns: 2,
+    tier_effects: {
+      2: { label: "半径 +40", patch: { radius: { add: 40 } } },
+      3: { label: "眩晕 +0.5", patch: { effect_turns: { add: 0.5 } } },
+    },
+  },
+  {
+    id: "tech-tablets", name: "五屏合击", kind: "小技能", target: "self", action: "tech_tablets",
+    cost: 30, cooldown: 10, damage: 18, radius: 100, dash_range: 200, effect: "减速", effect_turns: 3,
+    tier_effects: {
+      2: { label: "爆炸半径 +35", patch: { radius: { add: 35 } } },
+      3: { label: "减速 +1", patch: { effect_turns: { add: 1 } } },
+    },
+  },
+  {
+    id: "tech-afterimage", name: "残影折返", kind: "小技能", target: "self", action: "tech_afterimage",
+    cost: 35, cooldown: 12, damage: 16, radius: 180, dash_range: 180, effect: "", effect_turns: 0,
+    tier_effects: {
+      2: { label: "伤害 +30%", patch: { damage: { scale: 1.3 } } },
+      3: { label: "往返 +1", patch: { extra_round_trips: { add: 1 } } },
+    },
+  },
+];
+
 const HEROES = {
   blood_reaper: {
     id: "blood_reaper", name: "血月死神", initial: "血", accent: "blood",
@@ -166,6 +193,22 @@ const HEROES = {
       on_kill: { lifesteal: 0.02, max_hp: 10 }, uncapped: ["max_hp"], lifesteal_cap: 1,
     },
     stats: { 攻击: 88, 防御: 62, 机动: 80 }, skills: BLOOD_SKILLS, price: 0, locked: false,
+  },
+  tech: {
+    id: "tech", name: "科技男", initial: "科", accent: "tech",
+    palette: { main: "#438dff", light: "#e1eeff", dark: "#183c88" }, defense: 0,
+    combat: {
+      speed: 235, basic_range: 330, basic_damage: 14, basic_effect: "",
+      basic_effect_turns: 0, basic_beam: { color: "#49e6e0", duration: 0.24 },
+      basic_restore_label: "RANGED_RESTORE", basic_hit_message: "命中，造成 {damage} 点伤害。",
+      bot_skill_effect: "眩晕", bot_skill_effect_turns: 0.8, bot_skill_damage_scale: 2.2, thorns_damage: 0,
+    },
+    passive: {
+      id: "tech_overclock", name: "超频协议", description: "d",
+      every_kills: 20, threshold_effect: "tech_stack",
+      tech_burst: { extra_round_trips: 1, extra_tablets: 1, ultimate_damage_scale: 1.2 },
+    },
+    stats: { 攻击: 84, 防御: 58, 机动: 90 }, skills: TECH_SKILLS, price: 0, locked: false,
   },
   void_bastion: {
     id: "void_bastion", name: "零号壁垒", initial: "盾", accent: "bastion",
@@ -447,6 +490,142 @@ let tier3SingleDamage = 0;
   check("回归·已死敌人不会二次吸魂", api.getEnemyHp(0) <= 0, api.getEnemyHp(0));
 }
 
+/* ==================== 科技男：卡池 ==================== */
+{
+  const { api } = makeApi("tech", "neon_beach");
+  api.resetAll();
+  const ids = ["tech-smart", "tech-shock", "tech-zero-one", "tech-rampage", "tech-infinite"];
+  check("科技男专属池含 5 张卡", ids.every((id) => api.getUpgradePoolIds().includes(id)), api.getUpgradePoolIds().filter((id) => id.startsWith("tech-")));
+  ids.forEach((id) => check(`科技男卡 ${id} 可选`, api.applyUpgrade(id) === true));
+  ids.forEach((id) => check(`科技男卡 ${id} 只能选一次`, api.applyUpgrade(id) === false));
+  check("科技男卡计入已选列表", ids.every((id) => api.getSelectedUpgradeIds().includes(id)));
+}
+
+/* ==================== 科技男：智能科技 ==================== */
+{
+  const { api } = makeApi("tech", "neon_beach");
+  api.resetAll();
+  api.setPlayerPosition(100, 100);
+  api.applyUpgrade("tech-smart");
+  const h = api.getTechHologram();
+  check("智能科技生成幻影", h.active && near(h.x, 100) && near(h.y, 100), h);
+  api.setPlayerPosition(200, 100);
+  api.setPlayerEnergy(100);
+  api.castSkill(2);
+  check("二技能把幻影重置到施法点", near(api.getTechHologram().x, 200), api.getTechHologram());
+}
+{
+  const { api, step } = makeApi("tech", "neon_beach");
+  api.resetAll();
+  api.setPlayerPosition(100, 100);
+  api.applyUpgrade("tech-smart");
+  api.setTestObstacles([{ x: 150, y: 60, w: 40, h: 80, type: "wall" }]);
+  api.setPlayerPosition(400, 100);
+  for (let i = 0; i < 120; i += 1) step(0.016);
+  check("幻影穿墙跟随玩家", api.getTechHologram().x > 350, api.getTechHologram());
+  api.setPlayerPosition(-500, 100);
+  for (let i = 0; i < 300; i += 1) step(0.016);
+  check("幻影仍受边界限制", api.getTechHologram().x >= 0, api.getTechHologram());
+}
+{
+  const { api } = makeApi("tech", "neon_beach");
+  api.resetAll();
+  api.setPlayerPosition(120, 100);
+  api.applyUpgrade("tech-smart");
+  api.setPlayerPosition(600, 600);
+  api.spawnEnemy(140, 100, 5000);
+  api.setPlayerEnergy(100);
+  api.castSkill(1);
+  check("幻影与自己共同施法", api.getEnemyHp(0) < 5000, api.getEnemyHp(0));
+}
+
+/* ==================== 科技男：电死你 ==================== */
+{
+  const { api } = makeApi("tech", "neon_beach");
+  api.resetAll();
+  api.applyUpgrade("tech-shock");
+  check("电死你标记生效", api.getTechElectrocuteActive() === true);
+  api.setPlayerPosition(100, 300);
+  api.spawnEnemy(420, 300, 5000);
+  api.spawnEnemy(540, 300, 5000);
+  api.spawnEnemy(900, 300, 5000);
+  api.setPlayerEnergy(100);
+  api.castSkill(0);
+  const shockLoss = 5000 - api.getEnemyHp(1);
+  check("电死你电击目标周围敌人", shockLoss > 0, shockLoss);
+  check("感电伤害为基础值", shockLoss >= 8 && shockLoss <= 16, shockLoss);
+  check("电死你不波及远处敌人", near(api.getEnemyHp(2), 5000, 0.001), api.getEnemyHp(2));
+}
+{
+  const { api } = makeApi("tech", "neon_beach");
+  api.resetAll();
+  api.applyUpgrade("tech-shock");
+  api.applyUpgrade("tech-rampage");
+  api.setPlayerPosition(100, 300);
+  api.spawnEnemy(420, 300, 5000);
+  api.spawnEnemy(540, 300, 5000);
+  api.setPlayerEnergy(100);
+  api.castSkill(0);
+  const shockLoss = 5000 - api.getEnemyHp(1);
+  check("感电伤害不视作技能伤害（不吃翻倍）", shockLoss >= 8 && shockLoss <= 16, shockLoss);
+}
+
+/* ==================== 科技男：0与1之间 ==================== */
+{
+  const { api, step } = makeApi("tech", "neon_beach");
+  api.resetAll();
+  api.applyUpgrade("tech-zero-one");
+  api.setPlayerPosition(100, 300);
+  api.spawnEnemy(300, 300, 5000);
+  api.setPlayerEnergy(100);
+  api.castSkill(1);
+  for (let i = 0; i < 50; i += 1) step(0.016);
+  const zone = api.getTechZone();
+  check("一技能平板汇聚点生成 01 区域", !!zone, zone);
+  const before = api.getEnemyHp(0);
+  for (let i = 0; i < 40; i += 1) step(0.016);
+  check("01 区域持续造成伤害", api.getEnemyHp(0) < before, before - api.getEnemyHp(0));
+  for (let i = 0; i < 280; i += 1) step(0.016);
+  check("01 区域到期消失", api.getTechZone() === null, api.getTechZone());
+}
+
+/* ==================== 科技男：机甲失控 ==================== */
+{
+  const { api } = makeApi("tech", "neon_beach");
+  api.resetAll();
+  check("初始伤害倍率 1x", near(api.getTechDamageMultiplier(), 1, 0.001));
+  api.applyUpgrade("tech-rampage");
+  check("机甲失控伤害翻倍", near(api.getTechDamageMultiplier(), 2, 0.001), api.getTechDamageMultiplier());
+  check("机甲失控移速翻倍", near(api.getTechSpeedMultiplier(), 2, 0.001), api.getTechSpeedMultiplier());
+  check("机甲失控承伤翻倍标记", api.getTechTakenDoubled() === true);
+  api.setPlayerHp(1000);
+  api.damagePlayer(10);
+  check("机甲失控实际承伤翻倍", near(api.getPlayerHp(), 980, 0.001), api.getPlayerHp());
+}
+
+/* ==================== 科技男：无限能源 ==================== */
+{
+  const { api } = makeApi("tech", "neon_beach");
+  api.resetAll();
+  api.applyUpgrade("tech-infinite");
+  check("无限能源充能 3 次", near(api.getTechUltimateCharges(), 3, 0.001));
+  api.setPlayerPosition(100, 300);
+  const f0 = api.getFacing().x;
+  api.setPlayerEnergy(500);
+  api.castSkill(0);
+  api.setPlayerEnergy(500);
+  api.castSkill(0);
+  const f2 = api.getFacing().x;
+  api.setPlayerEnergy(500);
+  api.castSkill(0);
+  check("大招可连续释放三次", near(api.getTechUltimateCasts(), 3, 0.001), api.getTechUltimateCasts());
+  check("第二次朝相反方向", near(f2, -f0, 0.001), `${f0} -> ${f2}`);
+  check("第三次再次反向", near(api.getFacing().x, f0, 0.001), api.getFacing());
+  api.setPlayerEnergy(500);
+  api.castSkill(0);
+  check("第四次进入冷却无法连发", near(api.getTechUltimateCasts(), 3, 0.001), api.getTechUltimateCasts());
+}
+
 /* ==================== resetAll 隔离 ==================== */
 {
   const { api } = makeApi("blood_reaper");
@@ -457,6 +636,15 @@ let tier3SingleDamage = 0;
   check("resetAll 重置暴击", near(api.getCritChance(), 0, 0.001), api.getCritChance());
   check("resetAll 重置吸血上限", near(api.getLifestealCap(), 1, 0.001), api.getLifestealCap());
 }
+{
+  const { api } = makeApi("tech", "neon_beach");
+  api.applyUpgrade("tech-rampage");
+  api.applyUpgrade("tech-infinite");
+  api.resetAll();
+  check("resetAll 清空科技男卡", api.getSelectedUpgradeIds().length === 0);
+  check("resetAll 重置伤害倍率", near(api.getTechDamageMultiplier(), 1, 0.001));
+  check("resetAll 重置大招充能", near(api.getTechUltimateCasts(), 0, 0.001));
+}
 
 /* ==================== 三语 locale 一致性 ==================== */
 {
@@ -465,14 +653,15 @@ let tier3SingleDamage = 0;
   langs.forEach((lang) => {
     data[lang] = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "locale", `${lang}.json`), "utf8"));
   });
-  const cardIds = ["crit", "blood-thirst", "blood-burn", "blood-chain", "blood-death-song", "blood-soul-reap"];
+  const cardIds = ["crit", "blood-thirst", "blood-burn", "blood-chain", "blood-death-song", "blood-soul-reap",
+    "tech-smart", "tech-shock", "tech-zero-one", "tech-rampage", "tech-infinite"];
   cardIds.forEach((id) => {
     check(`三语都有卡 ${id}`, langs.every((lang) => {
       const card = data[lang].upgrades[id];
       return card && typeof card.name === "string" && typeof card.description === "string";
     }));
   });
-  const tmplKeys = ["float.crit", "float.soul_reap", "float.death_song", "skill.blood_chain_refund", "skill.blood_death_song", "pause_stats.crit"];
+  const tmplKeys = ["float.crit", "float.soul_reap", "float.death_song", "float.tech_shock", "skill.blood_chain_refund", "skill.blood_death_song", "pause_stats.crit"];
   tmplKeys.forEach((key) => {
     check(`三语都有文案 ${key}`, langs.every((lang) => !!data[lang].battle.templates[key]));
   });
