@@ -734,6 +734,9 @@ const playerState = {
     passiveRangeBonus: 0,
     /** 装备提供的攻击加成，加到普攻基础伤害上。 */
     equipmentAttackBonus: equipmentBonuses.attack || 0,
+    /** 波次强化卡：暴击率与暴击倍率。 */
+    critChance: 0,
+    critMultiplier: 2,
 };
 const heroPassive = rosterById.get(config.heroId)?.passive || {
     id: "none",
@@ -765,6 +768,10 @@ function passiveUncapped(stat) {
  * 配置用 snake_case（与 app.py 的 HEROES 保持一致），运行时字段是 camelCase，
  * 这里显式映射，避免两边命名漂移导致加成写到不存在的字段上。
  */
+/* WB3:capconst */
+const LIFESTEAL_BASE_CAP = 0.6;
+/** 卡牌可动态抬高吸血上限（血月死神·嗜血 → 700%）。 */
+let lifestealCapOverride;
 const PASSIVE_STAT_FIELDS = {
     attack_speed: "attackSpeed",
     lifesteal: "lifesteal",
@@ -781,15 +788,21 @@ function addPassiveStat(stat, amount) {
     }
     // 血月死神：永久最大生命值不设上限，并同步补充等量当前生命。
     if (stat === "max_hp") {
-        playerState.maxHp += amount;
+        const grown = amount * maxHpGrowthMultiplier;
+        playerState.maxHp += grown;
         if (amount > 0)
-            playerState.hp = Math.min(playerState.maxHp, playerState.hp + amount);
+            playerState.hp = Math.min(playerState.maxHp, playerState.hp + grown);
         return;
     }
     const field = PASSIVE_STAT_FIELDS[stat];
     if (!field)
         return;
     const mutable = playerState;
+    // 吸血成长必须受上限约束：此前这里裸加，击杀 100 次就 200% 吸血。
+    if (stat === "lifesteal") {
+        mutable[field] = Math.min(getLifestealCap(), (mutable[field] || 0) + amount);
+        return;
+    }
     mutable[field] = (mutable[field] || 0) + amount;
 }
 // 篮球少年：弹夹系统必须在被动初始化前声明
@@ -1046,6 +1059,8 @@ const skillUpgradeSubtitle = requireElement("#skill-upgrade-subtitle");
 const pauseOverlay = document.querySelector("#pause-overlay");
 const pauseToggle = document.querySelector("#pause-toggle");
 const pauseStats = document.querySelector("#pause-stats");
+const pauseUpgradeList = document.querySelector("#pause-upgrade-list");
+const pauseUpgradeSection = document.querySelector("#pause-upgrade-section");
 const resumeRunButton = document.querySelector("#resume-run");
 const runLevelLabel = requireElement("#run-level");
 const runOverOverlay = requireElement("#run-over-overlay");
@@ -1414,6 +1429,13 @@ const upgradePool = [
         apply: () => { playerState.attackSpeed = Math.min(ATTACK_SPEED_BASE_CAP, playerState.attackSpeed + 0.25); },
     },
     {
+        id: "crit",
+        name: locale.upgrades.crit.name,
+        description: locale.upgrades.crit.description,
+        available: () => playerState.critChance < 0.75,
+        apply: () => { playerState.critChance = Math.min(0.75, playerState.critChance + 0.08); },
+    },
+    {
         id: "armor",
         name: locale.upgrades.armor.name,
         description: locale.upgrades.armor.description,
@@ -1485,6 +1507,72 @@ const upgradePool = [
         },
     },
 ];
+/** 血月死神专属卡：嗜血 / 生命的燃烧 / 连环夺魂 / 死亡之歌 / 吸魂。 */
+const heroUpgradePool = {
+    blood_reaper: [
+        {
+            id: "blood-thirst",
+            name: locale.upgrades["blood-thirst"].name,
+            description: locale.upgrades["blood-thirst"].description,
+            once: true,
+            heroId: "blood_reaper",
+            apply: () => { lifestealCapOverride = 7; },
+        },
+        {
+            id: "blood-burn",
+            name: locale.upgrades["blood-burn"].name,
+            description: locale.upgrades["blood-burn"].description,
+            once: true,
+            heroId: "blood_reaper",
+            apply: () => { bloodExecuteCostRatio = 0.7; bloodExecuteRatioScale = 3; },
+        },
+        {
+            id: "blood-chain",
+            name: locale.upgrades["blood-chain"].name,
+            description: locale.upgrades["blood-chain"].description,
+            once: true,
+            heroId: "blood_reaper",
+            apply: () => { bloodScytheChainCount = 3; },
+        },
+        {
+            id: "blood-death-song",
+            name: locale.upgrades["blood-death-song"].name,
+            description: locale.upgrades["blood-death-song"].description,
+            once: true,
+            heroId: "blood_reaper",
+            apply: () => { deathSongCharges = 1; },
+        },
+        {
+            id: "blood-soul-reap",
+            name: locale.upgrades["blood-soul-reap"].name,
+            description: locale.upgrades["blood-soul-reap"].description,
+            once: true,
+            heroId: "blood_reaper",
+            apply: () => { soulReapActive = true; },
+        },
+    ],
+};
+/** 本局已选的专属卡（每张只能选一次）。 */
+const selectedUpgradeIds = new Set();
+/** 血月死神卡牌驱动的技能覆写值。 */
+let bloodExecuteCostRatio;
+let bloodExecuteRatioScale = 1;
+let bloodScytheChainCount = 1;
+let deathSongCharges = 0;
+let soulReapActive = false;
+/** 死亡之歌触发后：所有最大生命值成长永久翻倍。 */
+let maxHpGrowthMultiplier = 1;
+function getAvailableUpgrades(excludeCoolant = false) {
+    const pool = [...upgradePool, ...(heroUpgradePool[config.heroId] || [])];
+    return pool.filter((choice) => (!excludeCoolant || choice.id !== "coolant") &&
+        !(choice.once && selectedUpgradeIds.has(choice.id)) &&
+        (!choice.available || choice.available()));
+}
+function pickUpgrade(choice) {
+    choice.apply();
+    if (choice.once)
+        selectedUpgradeIds.add(choice.id);
+}
 function updateWaveHud() {
     if (config.duel) {
         updateDuelHud();
@@ -1747,8 +1835,7 @@ function startWave() {
 function showWaveUpgrade() {
     waveState = "upgrade";
     updateWaveHud();
-    const choices = upgradePool
-        .filter((choice) => !choice.available || choice.available())
+    const choices = getAvailableUpgrades()
         .sort(() => Math.random() - 0.5)
         .slice(0, 3);
     upgradeChoices.replaceChildren();
@@ -1762,7 +1849,7 @@ function showWaveUpgrade() {
         description.textContent = choice.description;
         button.append(name, description);
         button.addEventListener("click", () => {
-            choice.apply();
+            pickUpgrade(choice);
             runLevel += 1;
             runLevelLabel.textContent = `Lv.${String(runLevel).padStart(2, "0")}`;
             playerState.energy = Math.min(playerState.maxEnergy, playerState.energy + 25);
@@ -1930,6 +2017,21 @@ function finishStoryBattle(result) {
     }, 260);
 }
 function finishRun() {
+    // 死亡之歌：消耗一次充能后免死，最大生命值当前值与后续增长都永久翻倍。
+    if (deathSongCharges > 0 && !runEnded) {
+        deathSongCharges -= 1;
+        maxHpGrowthMultiplier *= 2;
+        const newMax = Math.round(playerState.maxHp * 2);
+        const heal = newMax - playerState.maxHp;
+        playerState.maxHp = newMax;
+        playerState.hp = newMax;
+        playerState.shield = 0;
+        lifestealSuppressionTimer = 0;
+        addFloatingText(player.x, player.y - 60, t("float.death_song"), "#ffd75e");
+        showToast(t("skill.blood_death_song", { maxHp: newMax }), "warning");
+        updateHud();
+        return;
+    }
     if (onlineDuel) {
         finishOnlineDuel(false);
         return;
@@ -2093,8 +2195,7 @@ function showDuelUpgrade() {
     duelUpgradePicked = false;
     duelUpgradeTitle.textContent = tx(t("duel.round_over", { round: duelRound }));
     duelUpgradeSubtitle.textContent = tx("选择一项强化，十秒后自动开始下一回合。");
-    duelUpgradeChoicesCurrent = upgradePool
-        .filter((choice) => choice.id !== "coolant" && (!choice.available || choice.available()))
+    duelUpgradeChoicesCurrent = getAvailableUpgrades(true)
         .sort(() => Math.random() - 0.5)
         .slice(0, 3);
     duelUpgradeChoices.replaceChildren();
@@ -2110,7 +2211,7 @@ function showDuelUpgrade() {
         button.addEventListener("click", () => {
             if (duelUpgradePicked || duelRoundActive)
                 return;
-            choice.apply();
+            pickUpgrade(choice);
             duelUpgradePicked = true;
             duelUpgradeSubtitle.textContent = tx(t("duel.upgrade_chosen", { name: choice.name }));
             duelUpgradeChoices.querySelectorAll("button").forEach((item) => {
@@ -2131,7 +2232,7 @@ function updateDuelBreak(dt) {
         duelCountdown.textContent = String(Math.ceil(duelBreakRemaining));
     if (duelBreakRemaining === 0) {
         if (!duelUpgradePicked && duelUpgradeChoicesCurrent.length) {
-            duelUpgradeChoicesCurrent[Math.floor(Math.random() * duelUpgradeChoicesCurrent.length)].apply();
+            pickUpgrade(duelUpgradeChoicesCurrent[Math.floor(Math.random() * duelUpgradeChoicesCurrent.length)]);
         }
         duelRound += 1;
         startDuelRound();
@@ -2191,8 +2292,9 @@ function updateHud() {
     }
 }
 const ATTACK_SPEED_BASE_CAP = 3.5;
-const LIFESTEAL_BASE_CAP = 0.6;
 function getLifestealCap() {
+    if (lifestealCapOverride !== undefined)
+        return lifestealCapOverride;
     if (heroPassive.lifesteal_cap !== undefined)
         return heroPassive.lifesteal_cap;
     return passiveUncapped("lifesteal") ? Infinity : LIFESTEAL_BASE_CAP;
@@ -2250,6 +2352,7 @@ function renderPauseStats() {
         [t("pause_stats.defense"), `${Math.round(playerState.damageReduction * 100)}%`],
         [t("pause_stats.lifesteal"), `${Math.round(playerState.lifesteal * 100)}%`],
         [t("pause_stats.dodge"), `${Math.round(playerState.dodgeChance * 100)}%`],
+        [t("pause_stats.crit"), `${Math.round(playerState.critChance * 100)}%`],
         [t("pause_stats.range"), String(heroCombat.basic_range + playerState.passiveRangeBonus)],
         [t("pause_stats.energy_regen"), `${playerState.energyRegen.toFixed(1)} /s`],
         [t("pause_stats.supplies"), String(lootCollected)],
@@ -2265,6 +2368,23 @@ function renderPauseStats() {
         item.append(dt, dd);
         return item;
     }));
+    if (pauseUpgradeList) {
+        const picked = [...selectedUpgradeIds]
+            .map((id) => [...upgradePool, ...(heroUpgradePool[config.heroId] || [])].find((card) => card.id === id))
+            .filter((card) => !!card);
+        pauseUpgradeList.replaceChildren(...picked.map((card) => {
+            const item = document.createElement("div");
+            item.className = "pause-upgrade-item";
+            const name = document.createElement("b");
+            name.textContent = card.name;
+            const desc = document.createElement("span");
+            desc.textContent = card.description;
+            item.append(name, desc);
+            return item;
+        }));
+        if (pauseUpgradeSection)
+            pauseUpgradeSection.hidden = picked.length === 0;
+    }
 }
 function grantSkillExperience(amount, x, y) {
     skillExperience += amount;
@@ -5148,6 +5268,9 @@ function hitEnemy(enemy, damage, effect = "", effectTurns = 0) {
         damage *= 0.8;
     damage = Math.max(1, Math.round(damage * playerState.damageMultiplier * frenzyDamageScale(enemy)
         * (1 - (enemy.defenseReduction || 0))));
+    const critical = playerState.critChance > 0 && Math.random() < playerState.critChance;
+    if (critical)
+        damage = Math.round(damage * playerState.critMultiplier);
     if (isDualToneHero() && dualToneUltimateRemaining > 0) {
         damage = Math.round(damage * (config.skills[0]?.ultimate_damage_scale || 1));
     }
@@ -5156,6 +5279,15 @@ function hitEnemy(enemy, damage, effect = "", effectTurns = 0) {
         damage = Math.max(damage, enemy.hp);
     const actualDamage = Math.min(enemy.hp, damage);
     enemy.hp = Math.max(0, enemy.hp - actualDamage);
+    // 吸魂：被自己打死的敌人临死免死一次，进入 5 秒无敌狂舞转而攻击同伴。
+    if (soulReapActive && enemy.hp <= 0 && !enemy.soulReaped && !enemy.duelBot &&
+        !enemy.friendlySummon && !enemy.tornadoInvulnerable) {
+        enemy.soulReaped = true;
+        enemy.hp = Math.max(1, Math.round(enemy.maxHp * 0.35));
+        enemy.tornadoInvulnerable = true;
+        enemy.effects["狂舞"] = 5;
+        addFloatingText(enemy.x, enemy.y - 60, t("float.soul_reap"), "#ff5cf0");
+    }
     healFromDamage(actualDamage, enemy.x, enemy.y);
     if (effect && effectTurns > 0) {
         enemy.effects[effect] = Math.max(enemy.effects[effect] || 0, effectTurns);
@@ -5168,7 +5300,9 @@ function hitEnemy(enemy, damage, effect = "", effectTurns = 0) {
     // 樱花少女被动：任何技能命中都会引燃目标
     if (heroPassive.id === "sakura_ignite")
         igniteSakuraTarget(enemy);
-    addFloatingText(enemy.x, enemy.y - 28, `-${actualDamage}`, "#ff668d");
+    addFloatingText(enemy.x, enemy.y - 28, `-${actualDamage}`, critical ? "#ffd75e" : "#ff668d");
+    if (critical)
+        addFloatingText(enemy.x, enemy.y - 52, t("float.crit"), "#ffd75e");
     if (executed)
         addFloatingText(enemy.x, enemy.y - 56, t("float.execute"), "#fff2b0");
     if (enemy.hp <= 0) {
@@ -7828,8 +7962,8 @@ function advanceStarFields(dt) {
 // ==================== 血月死神 ====================
 /** 立即执行：献祭最大生命比例的 HP，全场敌人按自身最大生命比例失血并眩晕。 */
 function castBloodExecute(skill) {
-    const cost = Math.max(1, Math.round(playerState.maxHp * (skill.self_hp_ratio || 0.3)));
-    const damage = Math.round(playerState.maxHp * (skill.enemy_hp_ratio || 0.5));
+    const cost = Math.max(1, Math.round(playerState.maxHp * (bloodExecuteCostRatio ?? skill.self_hp_ratio ?? 0.3)));
+    const damage = Math.round(playerState.maxHp * (skill.enemy_hp_ratio || 0.5) * bloodExecuteRatioScale);
     const stun = skill.stun_turns || 1;
     // 必须在 hitEnemy 之前打开，这样本次技能的所有命中都不吸血。
     lifestealSuppressionTimer = Math.max(lifestealSuppressionTimer, 1.2);
@@ -8585,7 +8719,26 @@ function castSkill(index) {
         castBloodMoonRise(skill);
     }
     else if (skill.action === "blood_scythe" && target) {
+        // 连环夺魂：连放 N 次，每次重新锁定玩家当前位置最近的敌人。
         castBloodScythe(skill, target);
+        if (bloodScytheChainCount > 1) {
+            let refundCount = 0;
+            for (let chain = 1; chain < bloodScytheChainCount; chain += 1) {
+                const nextTarget = enemies
+                    .filter((enemy) => enemy.hp > 0)
+                    .sort((left, right) => Math.hypot(left.x - player.x, left.y - player.y) -
+                    Math.hypot(right.x - player.x, right.y - player.y))[0];
+                if (nextTarget)
+                    castBloodScythe(skill, nextTarget);
+                else
+                    refundCount += 1;
+            }
+            if (refundCount > 0) {
+                const refund = Math.max(1, Math.round(cooldown * 0.25 * refundCount));
+                skillCooldowns.set(skill.id, Math.max(0, (skillCooldowns.get(skill.id) || 0) - refund));
+                showToast(t("skill.blood_chain_refund", { seconds: refund }), "success");
+            }
+        }
     }
     else if (skill.action === "last_stand") {
         castLastStand(skill);
@@ -9090,6 +9243,11 @@ function updateCombat(dt) {
                     enemy.poisonDamage = 0;
                 if (effect === "引燃")
                     enemy.igniteDamage = 0;
+                if (effect === "狂舞" && enemy.soulReaped) {
+                    enemy.tornadoInvulnerable = false;
+                    enemy.soulReaped = false;
+                    enemy.hp = 1;
+                }
             }
         });
         if (enemy.hp <= 0)
@@ -9948,6 +10106,22 @@ if (window.__GRAPPLE_TEST_HOOK__) {
         setPlayerEnergy(value) { playerState.energy = value; },
         setPlayerMaxHp(value) { playerState.maxHp = value; playerState.hp = value; },
         getLifesteal() { return playerState.lifesteal; },
+        getLifestealCap() { return getLifestealCap(); },
+        getCritChance() { return playerState.critChance; },
+        getUpgradePoolIds() { return getAvailableUpgrades().map((card) => card.id); },
+        applyUpgrade(id) {
+            const card = [...upgradePool, ...(heroUpgradePool[config.heroId] || [])].find((item) => item.id === id);
+            if (!card || (card.once && selectedUpgradeIds.has(id)))
+                return false;
+            pickUpgrade(card);
+            return true;
+        },
+        getSelectedUpgradeIds() { return [...selectedUpgradeIds]; },
+        getDeathSongCharges() { return deathSongCharges; },
+        getMaxHpGrowthMultiplier() { return maxHpGrowthMultiplier; },
+        getSoulReapedCount() { return enemies.filter((enemy) => enemy.soulReaped).length; },
+        getScytheChainCount() { return bloodScytheChainCount; },
+        setPlayerHpDirect(value) { playerState.hp = value; },
         getEnemyCount() { return enemies.length; },
         getArmorCharges() { return armorCharges; },
         getLifestealSuppression() { return lifestealSuppressionTimer; },
@@ -10013,6 +10187,16 @@ if (window.__GRAPPLE_TEST_HOOK__) {
             magRailCharge = null;
             allyDamageReduction = 0;
             lifestealSuppressionTimer = 0;
+            selectedUpgradeIds.clear();
+            lifestealCapOverride = undefined;
+            bloodExecuteCostRatio = undefined;
+            bloodExecuteRatioScale = 1;
+            bloodScytheChainCount = 1;
+            deathSongCharges = 0;
+            soulReapActive = false;
+            maxHpGrowthMultiplier = 1;
+            playerState.critChance = 0;
+            playerState.critMultiplier = 2;
             player.invulnerable = false;
             invulnerableTimer = 0;
             playerState.energy = playerState.maxEnergy;

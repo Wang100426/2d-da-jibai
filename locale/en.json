@@ -398,7 +398,9 @@
     "VOICE_PLAY": "PLAY VOICE",
     "VOICE_STOP": "STOP",
     "AUDIO_ON": "VOICE ON",
-    "AUDIO_OFF": "MUTED"
+    "AUDIO_OFF": "MUTED",
+    "PAUSED_UPGRADES": "Run Upgrades"
+
   },
   "heroes": {
     "volt": {
@@ -1004,7 +1006,14 @@
     "cooldown": {
       "name": "Time Fold",
       "description": "Reduce skill cooldowns by 8%, up to 40%."
-    }
+    },
+    "crit": {"name": "Critical Beat", "description": "Increase crit chance by 8% (max 75%); critical hits deal 2x damage."},
+    "blood-thirst": {"name": "Blood Thirst", "description": "Raise the lifesteal cap from 100% to 700%. Combined with +2% lifesteal per kill, the more you slay, the more you heal."},
+    "blood-burn": {"name": "Burning Life", "description": "Immediate Execution costs 70% max HP instead of 30%, but deals 150% damage (210% at tier 2)."},
+    "blood-chain": {"name": "Chain of Souls", "description": "Blood Scythe fires 3 times, retargeting the nearest enemy each time. Unused casts refund part of the cooldown."},
+    "blood-death-song": {"name": "Death Song", "description": "Survive one lethal hit, fully heal, and permanently double max HP and all future max HP growth."},
+    "blood-soul-reap": {"name": "Soul Reap", "description": "Enemies you kill are spared at death instead entering 5 seconds of invulnerable frenzy, attacking their own allies."}
+
   },
   "battle": {
     "messages": {
@@ -1865,7 +1874,14 @@
     "skill.steel_domain_burst": "Steel Domain shockwave: hit {hits} enemies and knocked them back.",
     "skill.mag_rail_charge": "Magnetic Rail Charge: hit {hits} enemies and gained {shield} shield.",
     "skill.mag_rail_blast": "Magnetic blast: hit {hits} enemies.",
-    "passive.absolute_armor": "Absolute Armor charged: {stacks}/{max} stacks, gained {shield} shield."
+    "passive.absolute_armor": "Absolute Armor charged: {stacks}/{max} stacks, gained {shield} shield.",
+    "float.crit": "CRIT!",
+    "float.soul_reap": "SOUL REAP!",
+    "float.death_song": "DEATH SONG!",
+    "skill.blood_chain_refund": "Chain of Souls: {seconds}s cooldown refunded",
+    "skill.blood_death_song": "Death Song: max HP doubled to {maxHp}!",
+    "pause_stats.crit": "Crit chance"
+
 }
   },
   "lobby": {

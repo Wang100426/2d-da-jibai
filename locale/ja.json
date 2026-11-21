@@ -398,7 +398,9 @@
     "VOICE_PLAY": "ボイスを再生",
     "VOICE_STOP": "停止",
     "AUDIO_ON": "ボイスON",
-    "AUDIO_OFF": "ミュート中"
+    "AUDIO_OFF": "ミュート中",
+    "PAUSED_UPGRADES": "今回の強化"
+
   },
   "heroes": {
     "volt": {
@@ -1004,7 +1006,14 @@
     "cooldown": {
       "name": "時の折り畳み",
       "description": "スキルクールダウン 8%減、最大40%。"
-    }
+    },
+    "crit": {"name": "クリティカルビート", "description": "クリティカル率が8%上昇（上限75%）。クリティカルは2倍のダメージ。"},
+    "blood-thirst": {"name": "渇血", "description": "吸血上限が100%から700%に上昇。撃破ごとの吸血+2%と合わせ、倒すほど回復する。"},
+    "blood-burn": {"name": "命の燃焼", "description": "即時処刑の自損が30%から70%に上昇するが、ダメージが150%（2段階では210%）まで高まる。"},
+    "blood-chain": {"name": "魂の連鎖", "description": "血の鎌が3回連続で発動し、そのたびに最寄りの敵を狙う。敵がいない場合は回数に応じてクールダウンを返還。"},
+    "blood-death-song": {"name": "死の歌", "description": "致命傷を1回だけ無効化し、即座に全回復。最大HPと今後の最大HP成長が永久に2倍になる。"},
+    "blood-soul-reap": {"name": "魂喰らい", "description": "自身が倒した敵は死亡せず、5秒間無敵の狂舞状態となり味方を攻撃する。"}
+
   },
   "battle": {
     "messages": {
@@ -1865,7 +1874,14 @@
     "skill.steel_domain_burst": "鋼鉄領域の衝撃波：{hits} 体に命中しノックバックした。",
     "skill.mag_rail_charge": "磁軌突撃：{hits} 体に命中し、{shield} のシールドを獲得した。",
     "skill.mag_rail_blast": "磁軌爆発：{hits} 体に命中した。",
-    "passive.absolute_armor": "絶対装甲チャージ：{stacks}/{max} 層、{shield} のシールドを獲得。"
+    "passive.absolute_armor": "絶対装甲チャージ：{stacks}/{max} 層、{shield} のシールドを獲得。",
+    "float.crit": "クリティカル！",
+    "float.soul_reap": "魂喰らい！",
+    "float.death_song": "死の歌！",
+    "skill.blood_chain_refund": "魂の連鎖：クールダウン{seconds}秒を返還",
+    "skill.blood_death_song": "死の歌：最大HPが{maxHp}に倍増！",
+    "pause_stats.crit": "クリティカル率"
+
 }
   },
   "lobby": {

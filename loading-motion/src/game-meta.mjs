@@ -2,6 +2,6 @@
 // 真值源：D:/code/2d-da-jibai/package.json
 // 运行时可用 window.__2DFIGHT_VERSION__ 或 ?version= 覆盖，见 src/version.mjs
 export default {
-  version: "3.0.0",
+  version: "3.0.1",
   source: "D:/code/2d-da-jibai/package.json",
 };

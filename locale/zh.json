@@ -398,7 +398,9 @@
     "VOICE_PLAY": "试听语音",
     "VOICE_STOP": "停止播放",
     "AUDIO_ON": "语音开",
-    "AUDIO_OFF": "已静音"
+    "AUDIO_OFF": "已静音",
+    "PAUSED_UPGRADES": "本局强化"
+
   },
   "heroes": {
     "volt": {
@@ -1004,7 +1006,14 @@
     "cooldown": {
       "name": "时间折叠",
       "description": "技能冷却时间缩短 8%，最多缩短 40%。"
-    }
+    },
+    "crit": {"name": "致命节拍", "description": "暴击率提升 8%，暴击造成 2 倍伤害（上限 75%）。"},
+    "blood-thirst": {"name": "嗜血", "description": "吸血上限从 100% 提升至 700%；配合被动每击杀 +2% 吸血，杀得越多回得越猛。"},
+    "blood-burn": {"name": "生命的燃烧", "description": "立即执行的自损从 30% 提升至 70%，但全场伤害提升至 150%（2 阶 210%）。"},
+    "blood-chain": {"name": "连环夺魂", "description": "带血镰刀连续释放 3 次，每次锁定当前最近敌人；无敌人时按次数返还冷却。"},
+    "blood-death-song": {"name": "死亡之歌", "description": "免疫 1 次死亡，触发后立刻回满并永久翻倍最大生命值及其后续成长。"},
+    "blood-soul-reap": {"name": "吸魂", "description": "被你击杀的敌人临死免死，进入 5 秒无敌狂舞转而攻击自己的同伴。"}
+
   },
   "battle": {
     "messages": {
@@ -1484,7 +1493,14 @@
     "skill.steel_domain_burst": "钢铁领域冲击波：命中 {hits} 个敌人并击退。",
     "skill.mag_rail_charge": "磁轨冲锋：命中 {hits} 个敌人，获得 {shield} 点护盾。",
     "skill.mag_rail_blast": "磁轨爆炸：命中 {hits} 个敌人。",
-    "passive.absolute_armor": "绝对装甲充能：{stacks}/{max} 层，获得 {shield} 点护盾。"
+    "passive.absolute_armor": "绝对装甲充能：{stacks}/{max} 层，获得 {shield} 点护盾。",
+    "float.crit": "暴击！",
+    "float.soul_reap": "吸魂！",
+    "float.death_song": "死亡之歌！",
+    "skill.blood_chain_refund": "连环夺魂：返还 {seconds} 秒冷却",
+    "skill.blood_death_song": "死亡之歌：最大生命值翻倍至 {maxHp}！",
+    "pause_stats.crit": "暴击率"
+
 }
   },
   "lobby": {

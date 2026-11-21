@@ -1,5 +1,31 @@
 # 更新日志 / Updates
 
+## 3.0.1
+
+### 中文
+
+- **吸血上限修复**：血月死神被动击杀吸血此前绕过了 100% 上限（裸加不封顶），现已接入上限判定；同时新增卡牌动态抬高上限的入口。
+- **全新卡池机制**：每波强化新增通用「致命节拍」暴击卡（+8% 暴击率、2 倍伤害、上限 75%）；专属卡支持「一局只能选一次」，选完即从卡池移除。
+- **血月死神专属五卡**：嗜血（上限 100%→700%）、生命的燃烧（自损 70% 换 3 倍伤害）、连环夺魂（镰刀连发 3 次，空场返还冷却）、死亡之歌（免疫一次死亡并永久翻倍最大生命成长）、吸魂（致命伤改为 5 秒无敌狂舞，敌人倒戈攻击同伴）。
+- **暂停页改版**：新增「本局强化」区块，可随时查看已选卡牌；属性面板补充暴击率。
+- **回归测试**：新增 44 项卡池测试覆盖上限、去重、五卡效果、三语一致性。
+
+### English
+
+- **Lifesteal cap fixed**: Blood Moon Reaper's on-kill lifesteal previously ignored the 100% cap; it is now clamped, with a new entry point for cards to raise the cap dynamically.
+- **New upgrade pool**: every wave now offers the generic "Critical Beat" card (+8% crit chance, 2x damage, 75% cap); hero-exclusive cards support once-per-run selection and disappear from the pool after being picked.
+- **Five Blood Moon Reaper exclusives**: Blood Thirst (cap 100%→700%), Burning Life (70% self-damage for 3x damage), Chain of Souls (3 scythe casts with cooldown refund on empty targets), Death Song (survive one death and permanently double max HP growth), Soul Reap (lethal hits become 5 seconds of invulnerable frenzy, turning enemies against their allies).
+- **Pause screen**: a new "Run Upgrades" section lists all picked cards, and the stats panel now shows crit chance.
+- **Regression tests**: 44 new card-pool tests cover caps, deduplication, all five card effects and tri-language consistency.
+
+### 日本語
+
+- **吸血上限の修正**：血月死神の撃破ごとの吸血が100%の上限を無視していた問題を修正。カードで上限を動的に引き上げる仕組みも追加。
+- **新しい強化プール**：各ウェーブに共通「クリティカルビート」カード（クリティカル率+8%、2倍ダメージ、上限75%）が登場。英雄専用カードは1回のみ選択でき、選ぶとプールから消える。
+- **血月死神の専用5カード**：渇血（上限100%→700%）、命の燃焼（自損70%で3倍ダメージ）、魂の連鎖（鎌3連発、対象なしでクールダウン返還）、死の歌（致命傷を1回無効化し最大HP成長を永久に2倍）、魂喰らい（致命傷が5秒間無敵の狂舞となり味方を攻撃）。
+- **ポーズ画面**：「今回の強化」セクションで選択済みカードを確認でき、ステータスにクリティカル率を追加。
+- **回帰テスト**：上限、重複防止、5カードの効果、三言語の整合性を網羅する44件のテストを追加。
+
 ## 3.0.0
 
 ### 中文
