@@ -1323,6 +1323,10 @@ interface BloodScytheDash {
   y: number;
   skill: SkillConfig;
   scythes: BloodScythe[];
+  /** 连环夺魂剩余链次，0 表示本把是最后一发。 */
+  chainRemaining: number;
+  /** 本次施法算出的冷却，链上找不到目标时按剩余次数返还。 */
+  cooldown: number;
 }
 let bloodScythes: BloodScythe[] = [];
 let bloodScytheDash: BloodScytheDash | null = null;
@@ -8610,7 +8614,7 @@ function advanceBloodMoon(dt: number): void {
 }
 
 /** 带血镰刀：向最近 N 个敌人投镰，命中眩晕；随后无敌并跳向最近目标。 */
-function castBloodScythe(skill: SkillConfig, target: EnemyUnit): void {
+function castBloodScythe(skill: SkillConfig, target: EnemyUnit, chainRemaining = 0, cooldown = 0): void {
   const count = Math.max(1, skill.target_count || 1);
   const candidates = enemies
     .filter((enemy) => enemy.hp > 0)
@@ -8636,7 +8640,7 @@ function castBloodScythe(skill: SkillConfig, target: EnemyUnit): void {
   bloodScytheDash = {
     delay: skill.invuln_duration || 0.5,
     x: main.x, y: main.y,
-    skill, scythes,
+    skill, scythes, chainRemaining, cooldown,
   };
   showToast(t("skill.blood_scythe", { targets: scythes.length, hits: candidates.length }), "success");
 }
@@ -8667,8 +8671,25 @@ function advanceBloodScythe(dt: number): void {
       }
     });
   });
+  // 连环夺魂：本把落地且玩家已冲刺后，基于新位置继续锁定下一发。
+  const nextChain = dash.chainRemaining;
+  const chainSkill = dash.skill;
+  const chainCooldown = dash.cooldown;
   bloodScythes = [];
   bloodScytheDash = null;
+  if (runEnded || nextChain <= 0) return;
+  const nextTarget = enemies
+    .filter((enemy) => enemy.hp > 0 && !enemy.friendlySummon)
+    .sort((a, b) =>
+      Math.hypot(a.x - player.x, a.y - player.y) -
+      Math.hypot(b.x - player.x, b.y - player.y))[0];
+  if (nextTarget) {
+    castBloodScythe(chainSkill, nextTarget, nextChain - 1, chainCooldown);
+  } else {
+    const refund = Math.max(1, Math.round(chainCooldown * 0.25 * nextChain));
+    skillCooldowns.set(chainSkill.id, Math.max(0, (skillCooldowns.get(chainSkill.id) || 0) - refund));
+    showToast(t("skill.blood_chain_refund", { seconds: refund }), "success");
+  }
 }
 
 // ==================== 零号壁垒 ====================
@@ -9238,25 +9259,8 @@ function castSkill(index: number): void {
   } else if (skill.action === "blood_moon_rise") {
     castBloodMoonRise(skill);
   } else if (skill.action === "blood_scythe" && target) {
-    // 连环夺魂：连放 N 次，每次重新锁定玩家当前位置最近的敌人。
-    castBloodScythe(skill, target);
-    if (bloodScytheChainCount > 1) {
-      let refundCount = 0;
-      for (let chain = 1; chain < bloodScytheChainCount; chain += 1) {
-        const nextTarget = enemies
-          .filter((enemy) => enemy.hp > 0)
-          .sort((left, right) =>
-            Math.hypot(left.x - player.x, left.y - player.y) -
-            Math.hypot(right.x - player.x, right.y - player.y))[0];
-        if (nextTarget) castBloodScythe(skill, nextTarget);
-        else refundCount += 1;
-      }
-      if (refundCount > 0) {
-        const refund = Math.max(1, Math.round(cooldown * 0.25 * refundCount));
-        skillCooldowns.set(skill.id, Math.max(0, (skillCooldowns.get(skill.id) || 0) - refund));
-        showToast(t("skill.blood_chain_refund", { seconds: refund }), "success");
-      }
-    }
+    // 连环夺魂：串行连放 N 发，每把落地冲刺后再锁定玩家新位置的最近敌人。
+    castBloodScythe(skill, target, bloodScytheChainCount - 1, cooldown);
   } else if (skill.action === "last_stand") {
     castLastStand(skill);
   } else if (skill.action === "steel_domain") {

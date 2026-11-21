@@ -326,20 +326,40 @@ function near(actual, expected, tolerance = 1) {
 
 /* ==================== 连环夺魂 ==================== */
 {
-  const { api, place } = makeApi("blood_reaper");
+  const { api, step } = makeApi("blood_reaper");
   api.resetAll();
   check("镰刀默认单次", near(api.getScytheChainCount(), 1, 0.001), api.getScytheChainCount());
   api.applyUpgrade("blood-chain");
   check("连环夺魂后 3 次", near(api.getScytheChainCount(), 3, 0.001), api.getScytheChainCount());
-  // 放 3 个敌人，一发技能应该命中 3 个（每个镰刀都带眩晕伤害）
+  // 单敌人厚血：串行 3 发，每发 = 单体 45 + 落地 12，总计约 171。
   api.setPlayerPosition(100, 100);
-  api.spawnEnemy(300, 100, 2000);
-  api.spawnEnemy(400, 100, 2000);
-  api.spawnEnemy(500, 100, 2000);
+  api.spawnEnemy(300, 100, 20000);
   api.setPlayerEnergy(100);
   api.castSkill(2);
-  const totalDamage = [0, 1, 2].reduce((sum, i) => sum + (2000 - api.getEnemyHp(i)), 0);
-  check("连环夺魂命中多个敌人", totalDamage > 100, totalDamage);
+  const immediate = 20000 - api.getEnemyHp(0);
+  check("连环夺魂同帧只结算首发", near(immediate, 45, 2), immediate);
+  for (let i = 0; i < 30; i += 1) step(0.1);
+  const total = 20000 - api.getEnemyHp(0);
+  // 后两发必须各自落地：只有首发能拿到 45，三发全落地才 > 120。
+  check("连环夺魂 3 发全部落地结算", total > 120, total);
+}
+
+/* ==================== 连环夺魂回归：重新锁定当前位置最近敌人 ==================== */
+{
+  const { api, step } = makeApi("blood_reaper");
+  api.resetAll();
+  api.applyUpgrade("blood-chain");
+  api.setPlayerPosition(100, 100);
+  api.spawnEnemy(220, 100, 20000);
+  api.spawnEnemy(520, 100, 20000);
+  api.setPlayerEnergy(100);
+  api.castSkill(2);
+  // 首发锁定近敌；玩家冲到近敌位置后，后续两发仍应锁定它（近敌未被打死）。
+  for (let i = 0; i < 30; i += 1) step(0.1);
+  const nearDamage = 20000 - api.getEnemyHp(0);
+  const farDamage = 20000 - api.getEnemyHp(1);
+  check("回归·连发持续命中近敌", nearDamage > 120, nearDamage);
+  check("回归·远敌不被误锁", farDamage < nearDamage, { nearDamage, farDamage });
 }
 
 /* ==================== 死亡之歌 ==================== */
