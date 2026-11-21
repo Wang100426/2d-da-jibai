@@ -371,6 +371,27 @@ function near(actual, expected, tolerance = 1) {
   check("吸魂敌人被标记", api.getSoulReapedCount() > 0, api.getSoulReapedCount());
 }
 
+/* ==================== 吸魂回归：狂舞到期必须真正死亡 ==================== */
+{
+  const { api, step } = makeApi("blood_reaper");
+  api.resetAll();
+  api.applyUpgrade("blood-soul-reap");
+  api.setPlayerPosition(100, 100);
+  api.spawnEnemy(220, 100, 10);
+  api.setPlayerEnergy(100);
+  api.castSkill(0);
+  check("回归·吸魂触发后敌人暂活", api.getEnemyHp(0) > 0, api.getEnemyHp(0));
+  check("回归·狂舞期间标记存在", api.getSoulReapedCount() === 1, api.getSoulReapedCount());
+  // 推进 6 秒（狂舞 5 秒 + 余量），到期必须判死而不是留 1 血复活
+  for (let i = 0; i < 30; i += 1) step(0.2);
+  check("回归·狂舞结束敌人真正死亡", api.getEnemyHp(0) <= 0, api.getEnemyHp(0));
+  check("回归·狂舞结束标记清除", api.getSoulReapedCount() === 0, api.getSoulReapedCount());
+  // 已死敌人再挨一次大招，绝不能再次触发吸魂复活
+  api.setPlayerEnergy(100);
+  api.castSkill(0);
+  check("回归·已死敌人不会二次吸魂", api.getEnemyHp(0) <= 0, api.getEnemyHp(0));
+}
+
 /* ==================== resetAll 隔离 ==================== */
 {
   const { api } = makeApi("blood_reaper");

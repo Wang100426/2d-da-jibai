@@ -9747,9 +9747,14 @@ function updateCombat(dt: number): void {
         if (effect === "中毒") enemy.poisonDamage = 0;
         if (effect === "引燃") enemy.igniteDamage = 0;
         if (effect === "狂舞" && enemy.soulReaped) {
+          // 吸魂只是把致命伤推迟 5 秒：狂舞结束必须真正死亡并走正常结算。
+          // 原实现给 hp=1 还清标记，敌人复活后能再次被「击杀」再次吸魂，
+          // 变成杀不死的永动机。这里直接判死，靠 hp<=0 兜住二次触发。
           enemy.tornadoInvulnerable = false;
+          enemy.hp = 0;
           enemy.soulReaped = false;
-          enemy.hp = 1;
+          spawnImpact(enemy.x, enemy.y, "#ff5cf0");
+          addEnemyLoot(enemy);
         }
       }
     });
