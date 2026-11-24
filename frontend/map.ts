@@ -2017,10 +2017,8 @@ const heroUpgradePool: Record<string, UpgradeChoice[]> = {
       description: locale.upgrades["tech-smart"].description,
       once: true,
       heroId: "tech",
-      apply: () => {
-        techHologramActive = true;
-        techHologram = { x: player.x, y: player.y };
-      },
+      // 幻影由第一次二技能留下，之后固定不动。
+      apply: () => { techHologramActive = true; },
     },
     {
       id: "tech-shock",
@@ -2080,6 +2078,31 @@ let techDamageTakenDoubled = false;
 let techZone: { x: number; y: number; radius: number; remaining: number; tickTimer: number; damage: number } | undefined;
 let techUltimateCharges = 0;
 let techUltimateCasts = 0;
+
+/** 幻影独立施法状态：残影往返最终回到原地，平板从幻影位置同向发射。 */
+interface HologramDashState {
+  x: number;
+  y: number;
+  originX: number;
+  originY: number;
+  directionX: number;
+  directionY: number;
+  distance: number;
+  elapsed: number;
+  duration: number;
+  phase: "out" | "back";
+  segmentStartX: number;
+  segmentStartY: number;
+  hitEnemies: Set<EnemyUnit>;
+  damage: number;
+  completedSegments: number;
+  totalSegments: number;
+}
+let hologramDash: HologramDashState | undefined;
+let hologramVolley: {
+  x: number; y: number; radius: number; remaining: number; damage: number;
+  effect: string; effectTurns: number;
+} | undefined;
 
 function getAvailableUpgrades(excludeCoolant = false): UpgradeChoice[] {
   const pool = [...upgradePool, ...(heroUpgradePool[config.heroId] || [])];
@@ -6354,7 +6377,6 @@ function startAfterimageDash(skill: SkillConfig, extraTrips = 0): void {
   const distance = skill.dash_range || 180;
   const castId = `${config.multiplayer?.player_id || "local"}-dash-${Date.now()}-${attackSequence++}`;
   afterimage = { x: player.x, y: player.y, age: 0, duration: 3.2 };
-  if (techHologramActive) techHologram = { x: player.x, y: player.y };
   afterimageDash = {
     castId,
     originX: player.x,
@@ -9051,22 +9073,172 @@ function advanceMagRail(dt: number): void {
   updateHud();
 }
 
-/** 智能科技：幻影跟随玩家并从自身位置同步施法。 */
+/** 幻影回响的统一起手特效：即使空放也能看到施法动作。 */
+function showHologramCast(x: number, y: number, radius: number): void {
+  skillVisuals.push({
+    type: "aura", x, y, targetX: x, targetY: y,
+    age: 0, duration: 0.5, color: "#7df9ff", radius,
+  });
+  skillVisuals.push({
+    type: "ring", x, y, targetX: x, targetY: y,
+    age: 0, duration: 0.45, color: "#7df9ff", radius: Math.max(40, radius * 0.55),
+  });
+}
+
+/** 智能科技：幻影留在原地，按技能类型同步施放专属回响。 */
 function castTechHologramEcho(skill: SkillConfig): void {
   if (!techHologramActive || !techHologram) return;
   const x = techHologram.x;
   const y = techHologram.y;
-  const radius = skill.radius || 150;
-  const damage = Math.max(6, Math.round((skill.damage || 20) * 0.6));
-  const victims = enemies.filter((enemy) =>
-    enemy.hp > 0 && !enemy.tornadoInvulnerable && Math.hypot(enemy.x - x, enemy.y - y) <= radius);
-  victims.forEach((enemy) => {
+  showHologramCast(x, y, skill.radius || 150);
+  if (skill.action === "tech_afterimage") {
+    startHologramDash(skill);
+  } else if (skill.action === "tech_tablets") {
+    startHologramTablets(skill);
+  } else if (skill.action === "tech_overdrive") {
+    castHologramUltimate(skill);
+  } else {
+    // 其它技能兜底：原地范围回响
+    const damage = Math.max(6, Math.round((skill.damage || 20) * 0.6));
+    enemies.forEach((enemy) => {
+      if (enemy.hp <= 0 || enemy.tornadoInvulnerable) return;
+      if (Math.hypot(enemy.x - x, enemy.y - y) > (skill.radius || 150)) return;
+      hitEnemy(enemy, damage, skill.effect, skill.effect_turns, true);
+    });
+  }
+}
+
+/** 大招回响：只在幻影原地爆炸，不推动玩家也不移动幻影。 */
+function castHologramUltimate(skill: SkillConfig): void {
+  if (!techHologram) return;
+  const x = techHologram.x;
+  const y = techHologram.y;
+  const radius = skill.radius || 330;
+  skillVisuals.push({
+    type: "ring", x, y, targetX: x, targetY: y,
+    age: 0, duration: 0.6, color: "#8be9ff", radius,
+  });
+  const stacks = techStacks();
+  const scale = 1 + ((heroPassive.tech_burst?.ultimate_damage_scale || 1) - 1) * stacks;
+  const damage = Math.max(6, Math.round((skill.damage || 36) * scale * 0.6));
+  enemies.forEach((enemy) => {
+    if (enemy.hp <= 0 || enemy.tornadoInvulnerable) return;
+    if (Math.hypot(enemy.x - x, enemy.y - y) > radius) return;
     hitEnemy(enemy, damage, skill.effect, skill.effect_turns, true);
+  });
+}
+
+/** 一技能回响：从幻影原位朝玩家当前方向发射平板，飞行后在落点爆炸。 */
+function startHologramTablets(skill: SkillConfig): void {
+  if (!techHologram) return;
+  const x = techHologram.x;
+  const y = techHologram.y;
+  const directionX = facing.x || 1;
+  const directionY = facing.y;
+  const distance = skill.dash_range || 200;
+  const targetX = Math.max(30, Math.min(map.width - 30, x + directionX * distance));
+  const targetY = Math.max(30, Math.min(map.height - 30, y + directionY * distance));
+  [-2, -1, 0, 1, 2].forEach((lane) => {
+    const spread = lane * 30;
     skillVisuals.push({
-      type: "beam", x, y, targetX: enemy.x, targetY: enemy.y,
-      age: 0, duration: 0.3, color: "#7df9ff",
+      type: "beam",
+      x: x - directionY * spread,
+      y: y + directionX * spread,
+      targetX: targetX - directionY * spread,
+      targetY: targetY + directionX * spread,
+      age: 0, duration: 0.62, color: "#7df9ff",
     });
   });
+  hologramVolley = {
+    x: targetX, y: targetY, radius: skill.radius || 100,
+    remaining: 0.75, damage: Math.max(4, Math.round((skill.damage || 18) * 0.6)),
+    effect: skill.effect, effectTurns: skill.effect_turns * 2,
+  };
+}
+
+function advanceHologramVolley(dt: number): void {
+  if (!hologramVolley) return;
+  hologramVolley.remaining -= dt;
+  if (hologramVolley.remaining > 0) return;
+  const volley = hologramVolley;
+  skillVisuals.push({
+    type: "wave", x: volley.x, y: volley.y, targetX: volley.x, targetY: volley.y,
+    age: 0, duration: 0.5, color: "#7df9ff", radius: volley.radius,
+  });
+  enemies.forEach((enemy) => {
+    if (enemy.hp <= 0 || enemy.tornadoInvulnerable) return;
+    if (Math.hypot(enemy.x - volley.x, enemy.y - volley.y) > volley.radius) return;
+    hitEnemy(enemy, volley.damage, volley.effect, volley.effectTurns, true);
+  });
+  hologramVolley = undefined;
+}
+
+/** 二技能回响：幻影自己做往返残影，结束后精确回到原位。 */
+function startHologramDash(skill: SkillConfig): void {
+  if (!techHologram) return;
+  const x = techHologram.x;
+  const y = techHologram.y;
+  const distance = skill.dash_range || 180;
+  const extraTrips = (heroPassive.tech_burst?.extra_round_trips || 0) * techStacks();
+  hologramDash = {
+    x, y, originX: x, originY: y,
+    directionX: facing.x || 1, directionY: facing.y,
+    distance,
+    elapsed: 0,
+    duration: distance / (player.speed * 2.4),
+    phase: "out",
+    segmentStartX: x, segmentStartY: y,
+    hitEnemies: new Set<EnemyUnit>(),
+    damage: Math.max(6, Math.round((skill.damage || 16) * 0.6)),
+    completedSegments: 0,
+    totalSegments: 2 + extraTrips * 2,
+  };
+}
+
+function advanceHologramDash(dt: number): void {
+  const dash = hologramDash;
+  if (!dash) return;
+  const targetX = dash.phase === "out"
+    ? dash.originX + dash.directionX * dash.distance
+    : dash.originX;
+  const targetY = dash.phase === "out"
+    ? dash.originY + dash.directionY * dash.distance
+    : dash.originY;
+  const dx = targetX - dash.x;
+  const dy = targetY - dash.y;
+  const length = Math.hypot(dx, dy);
+  if (length > 0.5) {
+    const previousX = dash.x;
+    const previousY = dash.y;
+    const step = Math.min(length, player.speed * 2.4 * dt);
+    dash.x += dx / length * step;
+    dash.y += dy / length * step;
+    skillVisuals.push({
+      type: "beam", x: previousX, y: previousY, targetX: dash.x, targetY: dash.y,
+      age: 0, duration: 0.24, color: "#7df9ff",
+    });
+    enemies.forEach((enemy) => {
+      if (enemy.hp <= 0 || dash.hitEnemies.has(enemy)) return;
+      const enemyRadius = enemy.kind === "brute" ? 25 : enemy.kind === "runner" ? 14 : 18;
+      if (distanceToSegment(enemy.x, enemy.y, previousX, previousY, dash.x, dash.y) > player.radius + enemyRadius + 5) return;
+      dash.hitEnemies.add(enemy);
+      hitEnemy(enemy, dash.damage, "", 0, true);
+    });
+  }
+  dash.elapsed += dt;
+  const reached = Math.hypot(dash.x - targetX, dash.y - targetY) < 12;
+  if (dash.elapsed < dash.duration && !reached) return;
+  dash.completedSegments += 1;
+  if (dash.completedSegments >= dash.totalSegments) {
+    // 偶数段结束，位置强制归位，幻影本体始终留在原地。
+    dash.x = dash.originX;
+    dash.y = dash.originY;
+    hologramDash = undefined;
+    return;
+  }
+  dash.phase = dash.phase === "out" ? "back" : "out";
+  dash.elapsed = 0;
+  dash.hitEnemies.clear();
 }
 
 function castSkill(index: number): void {
@@ -9154,6 +9326,10 @@ function castSkill(index: number): void {
     }
     // 第三次用完后正常进入冷却，避免无限连发第四次。
     if (techUltimateCasts < techUltimateCharges) skillCooldowns.set(skill.id, 0);
+  }
+  // 第一次二技能在施法点留下幻影；之后幻影始终留在原地。
+  if (techHologramActive && !techHologram && skill.action === "tech_afterimage") {
+    techHologram = { x: player.x, y: player.y };
   }
   if (techHologramActive) castTechHologramEcho(skill);
   if (skill.action !== "tech_afterimage") queuePvpAttack("skill", [], skill.id);
@@ -9760,18 +9936,8 @@ function updateCombat(dt: number): void {
     afterimage.age += dt;
     if (afterimage.age >= afterimage.duration) afterimage = undefined;
   }
-  if (techHologramActive && techHologram) {
-    // 幻影只受地图边界约束，穿过建筑追随玩家。
-    const dx = player.x - techHologram.x;
-    const dy = player.y - techHologram.y;
-    const distance = Math.hypot(dx, dy);
-    if (distance > 6) {
-      const step = Math.min(distance, player.speed * 1.8 * dt);
-      const inset = player.radius;
-      techHologram.x = Math.max(inset, Math.min(map.width - inset, techHologram.x + dx / distance * step));
-      techHologram.y = Math.max(inset, Math.min(map.height - inset, techHologram.y + dy / distance * step));
-    }
-  }
+  advanceHologramDash(dt);
+  advanceHologramVolley(dt);
   if (techZone) {
     techZone.remaining -= dt;
     techZone.tickTimer -= dt;
@@ -10820,8 +10986,26 @@ if ((window as unknown as { __GRAPPLE_TEST_HOOK__?: boolean }).__GRAPPLE_TEST_HO
     getMaxHpGrowthMultiplier(): number { return maxHpGrowthMultiplier; },
     getSoulReapedCount(): number { return enemies.filter((enemy) => enemy.soulReaped).length; },
     getScytheChainCount(): number { return bloodScytheChainCount; },
-    getTechHologram(): { active: boolean; x: number; y: number } {
-      return { active: techHologramActive, x: techHologram?.x || 0, y: techHologram?.y || 0 };
+    getHologramDash(): { active: boolean; x: number; y: number; originX: number; originY: number; directionX: number; directionY: number } {
+      return hologramDash
+        ? { active: true, x: hologramDash.x, y: hologramDash.y, originX: hologramDash.originX, originY: hologramDash.originY, directionX: hologramDash.directionX, directionY: hologramDash.directionY }
+        : { active: false, x: 0, y: 0, originX: 0, originY: 0, directionX: 0, directionY: 0 };
+    },
+    getHologramVolley(): { x: number; y: number; radius: number; remaining: number } | null {
+      return hologramVolley
+        ? { x: hologramVolley.x, y: hologramVolley.y, radius: hologramVolley.radius, remaining: hologramVolley.remaining }
+        : null;
+    },
+    getSkillVisualTypes(): string[] { return skillVisuals.map((visual) => visual.type); },
+    setFacing(x: number, y: number): void { facing.x = x; facing.y = y; },
+    setTechHologramPosition(x: number, y: number): void { techHologram = { x, y }; },
+    getTechHologram(): { active: boolean; placed: boolean; x: number; y: number } {
+      return {
+        active: techHologramActive,
+        placed: !!techHologram,
+        x: techHologram?.x || 0,
+        y: techHologram?.y || 0,
+      };
     },
     getTechElectrocuteActive(): boolean { return techElectrocuteActive; },
     getTechZone(): { x: number; y: number; radius: number; remaining: number } | null {
@@ -10918,6 +11102,8 @@ if ((window as unknown as { __GRAPPLE_TEST_HOOK__?: boolean }).__GRAPPLE_TEST_HO
       maxHpGrowthMultiplier = 1;
       techHologramActive = false;
       techHologram = undefined;
+      hologramDash = undefined;
+      hologramVolley = undefined;
       techElectrocuteActive = false;
       techZoneActive = false;
       techDamageTakenDoubled = false;

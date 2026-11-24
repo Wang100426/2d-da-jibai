@@ -503,40 +503,81 @@ let tier3SingleDamage = 0;
 
 /* ==================== 科技男：智能科技 ==================== */
 {
-  const { api } = makeApi("tech", "neon_beach");
+  const { api, step } = makeApi("tech", "neon_beach");
   api.resetAll();
   api.setPlayerPosition(100, 100);
   api.applyUpgrade("tech-smart");
+  check("选卡后尚未生成幻影实体", !api.getTechHologram().placed, api.getTechHologram());
+  api.setPlayerEnergy(100);
+  api.castSkill(2);
   const h = api.getTechHologram();
-  check("智能科技生成幻影", h.active && near(h.x, 100) && near(h.y, 100), h);
+  check("第一次二技能在施法点留下幻影", h.active && near(h.x, 100) && near(h.y, 100), h);
+  for (let i = 0; i < 150; i += 1) step(0.016);
   api.setPlayerPosition(200, 100);
   api.setPlayerEnergy(100);
   api.castSkill(2);
-  check("二技能把幻影重置到施法点", near(api.getTechHologram().x, 200), api.getTechHologram());
+  check("再次二技能不重置幻影位置", near(api.getTechHologram().x, 100) && near(api.getTechHologram().y, 100), api.getTechHologram());
 }
 {
   const { api, step } = makeApi("tech", "neon_beach");
   api.resetAll();
   api.setPlayerPosition(100, 100);
   api.applyUpgrade("tech-smart");
+  api.setTechHologramPosition(100, 100);
   api.setTestObstacles([{ x: 150, y: 60, w: 40, h: 80, type: "wall" }]);
   api.setPlayerPosition(400, 100);
   for (let i = 0; i < 120; i += 1) step(0.016);
-  check("幻影穿墙跟随玩家", api.getTechHologram().x > 350, api.getTechHologram());
-  api.setPlayerPosition(-500, 100);
-  for (let i = 0; i < 300; i += 1) step(0.016);
-  check("幻影仍受边界限制", api.getTechHologram().x >= 0, api.getTechHologram());
+  check("幻影留在原地不追随玩家", near(api.getTechHologram().x, 100) && near(api.getTechHologram().y, 100), api.getTechHologram());
 }
 {
   const { api } = makeApi("tech", "neon_beach");
   api.resetAll();
-  api.setPlayerPosition(120, 100);
+  api.setPlayerPosition(100, 300);
   api.applyUpgrade("tech-smart");
+  api.setTechHologramPosition(100, 300);
   api.setPlayerPosition(600, 600);
   api.spawnEnemy(140, 100, 5000);
   api.setPlayerEnergy(100);
+  api.castSkill(0);
+  check("大招回响打到幻影附近敌人", api.getEnemyHp(0) < 5000, api.getEnemyHp(0));
+  check("大招回响不移动幻影", near(api.getTechHologram().x, 100) && near(api.getTechHologram().y, 300), api.getTechHologram());
+  check("大招回响有可见特效", api.getSkillVisualTypes().includes("ring"), api.getSkillVisualTypes());
+}
+{
+  const { api, step } = makeApi("tech", "neon_beach");
+  api.resetAll();
+  api.setPlayerPosition(100, 100);
+  api.applyUpgrade("tech-smart");
+  api.setTechHologramPosition(100, 100);
+  api.setPlayerPosition(600, 600);
+  api.spawnEnemy(190, 100, 5000);
+  api.setPlayerEnergy(100);
+  api.castSkill(2);
+  const dash = api.getHologramDash();
+  check("二技能幻影同步残影折返", dash.active && near(dash.originX, 100) && near(dash.originY, 100), dash);
+  step(0.016);
+  check("幻影残影有可见特效", api.getSkillVisualTypes().includes("beam"), api.getSkillVisualTypes());
+  for (let i = 0; i < 100; i += 1) step(0.016);
+  check("幻影残影结束后回到原处", !api.getHologramDash().active && near(api.getTechHologram().x, 100) && near(api.getTechHologram().y, 100), api.getTechHologram());
+  check("幻影残影命中路径敌人", api.getEnemyHp(0) < 5000, api.getEnemyHp(0));
+}
+{
+  const { api, step } = makeApi("tech", "neon_beach");
+  api.resetAll();
+  api.setPlayerPosition(100, 100);
+  api.applyUpgrade("tech-smart");
+  api.setTechHologramPosition(100, 100);
+  api.setPlayerPosition(600, 600);
+  api.setFacing(1, 0);
+  api.spawnEnemy(300, 100, 5000);
+  api.setPlayerEnergy(100);
   api.castSkill(1);
-  check("幻影与自己共同施法", api.getEnemyHp(0) < 5000, api.getEnemyHp(0));
+  const volley = api.getHologramVolley();
+  check("一技能幻影朝同方向发射", !!volley && near(volley.x, 300) && near(volley.y, 100), volley);
+  check("一技能幻影平板有可见特效", api.getSkillVisualTypes().includes("beam"), api.getSkillVisualTypes());
+  for (let i = 0; i < 55; i += 1) step(0.016);
+  check("一技能幻影平板落地命中", api.getEnemyHp(0) < 5000, api.getEnemyHp(0));
+  check("一技能幻影平板落地后清空", api.getHologramVolley() === null, api.getHologramVolley());
 }
 
 /* ==================== 科技男：电死你 ==================== */
