@@ -1603,6 +1603,49 @@ const heroUpgradePool = {
             apply: () => { techUltimateCharges = 3; },
         },
     ],
+    /** 电音人专属卡：唱片不要钱 / 劲爆DJ / 多重音浪 / 唱海战术 / 大音浪。 */
+    volt2: [
+        {
+            id: "volt2-free-discs",
+            name: locale.upgrades["volt2-free-discs"].name,
+            description: locale.upgrades["volt2-free-discs"].description,
+            once: true,
+            heroId: "volt2",
+            apply: () => { volt2FreeDiscs = true; },
+        },
+        {
+            id: "volt2-dj",
+            name: locale.upgrades["volt2-dj"].name,
+            description: locale.upgrades["volt2-dj"].description,
+            once: true,
+            heroId: "volt2",
+            apply: () => { volt2DjActive = true; },
+        },
+        {
+            id: "volt2-octa-wave",
+            name: locale.upgrades["volt2-octa-wave"].name,
+            description: locale.upgrades["volt2-octa-wave"].description,
+            once: true,
+            heroId: "volt2",
+            apply: () => { volt2OctaWave = true; },
+        },
+        {
+            id: "volt2-disc-flood",
+            name: locale.upgrades["volt2-disc-flood"].name,
+            description: locale.upgrades["volt2-disc-flood"].description,
+            once: true,
+            heroId: "volt2",
+            apply: () => { volt2DiscFlood = true; },
+        },
+        {
+            id: "volt2-big-wave",
+            name: locale.upgrades["volt2-big-wave"].name,
+            description: locale.upgrades["volt2-big-wave"].description,
+            once: true,
+            heroId: "volt2",
+            apply: () => { volt2BigWave = true; },
+        },
+    ],
 };
 /** 本局已选的专属卡（每张只能选一次）。 */
 const selectedUpgradeIds = new Set();
@@ -1623,6 +1666,21 @@ let techDamageTakenDoubled = false;
 let techZone;
 let techUltimateCharges = 0;
 let techUltimateCasts = 0;
+/** 电音人专属卡：唱片不要钱 / 劲爆DJ / 多重音浪 / 唱海战术 / 大音浪。 */
+let volt2FreeDiscs = false;
+let volt2DjActive = false;
+let volt2OctaWave = false;
+let volt2DiscFlood = false;
+let volt2BigWave = false;
+const djPulses = [];
+/** 两张唱片卡的发射数量倍率可叠乘：2 × 3 = 6。 */
+function volt2DiscCountMultiplier() {
+    return (volt2FreeDiscs ? 2 : 1) * (volt2DiscFlood ? 3 : 1);
+}
+/** 击杀追加数量跟随唱海战术同步翻 3 倍：2 → 6。 */
+function volt2DiscKillBonus() {
+    return volt2FreeDiscs ? (volt2DiscFlood ? 6 : 2) : 0;
+}
 let hologramDash;
 let hologramVolley;
 function getAvailableUpgrades(excludeCoolant = false) {
@@ -6525,10 +6583,7 @@ function waveHitsObstacle(x, y, radius) {
         return (x - nearestX) ** 2 + (y - nearestY) ** 2 < radius ** 2;
     });
 }
-function startSoundWave(skill) {
-    const castId = ++attackSequence;
-    const directionX = facing.x || 1;
-    const directionY = facing.y;
+function pushSoundWave(skill, castId, directionX, directionY) {
     soundWaves.push({
         castId,
         x: player.x + directionX * 26,
@@ -6538,12 +6593,26 @@ function startSoundWave(skill) {
         travelled: 0,
         maxDistance: skill.dash_range || 420,
         speed: 720,
-        radius: skill.radius || 130,
-        damage: skill.damage,
+        radius: (skill.radius || 130) * (volt2BigWave ? 1.5 : 1),
+        damage: skill.damage * (volt2BigWave ? 1.5 : 1),
         pierce: (skill.wave_pierce || 0) > 0,
         maxTargets: skill.wave_max_targets || 0,
         hitEnemies: new Set(),
     });
+}
+function startSoundWave(skill) {
+    const castId = ++attackSequence;
+    const baseAngle = Math.atan2(facing.y, facing.x || 1);
+    if (volt2OctaWave) {
+        // 八道音浪共用一次施法 castId，同一敌人仍只计 1 层被动。
+        for (let index = 0; index < 8; index += 1) {
+            const angle = baseAngle + index * Math.PI / 4;
+            pushSoundWave(skill, castId, Math.cos(angle), Math.sin(angle));
+        }
+    }
+    else {
+        pushSoundWave(skill, castId, facing.x || 1, facing.y);
+    }
     showToast(t("skill.volt2_wave_launch", { distance: Math.round(skill.dash_range || 420) }));
 }
 /** 音浪或唱片命中敌人时的统一处理：伤害 + 击退 + 被动层数。 */
@@ -6622,24 +6691,34 @@ function advanceSoundWaves(dt) {
     }
 }
 /** 碟片风暴：先记录待发射的唱片，再按间隔逐枚放出。 */
+function discVolleyTotal(volley) {
+    return Math.round((volley.skill.disc_count || 10) * volt2DiscCountMultiplier()) + volley.bonus;
+}
 function startDiscVolley(skill) {
-    discVolley = { skill, castId: ++attackSequence, launched: 0, timer: 0 };
-    showToast(t("skill.volt2_disc_launch", { count: skill.disc_count || 10 }));
+    discVolley = { skill, castId: ++attackSequence, launched: 0, timer: 0, bonus: 0, linger: 2 };
+    showToast(t("skill.volt2_disc_launch", { count: discVolleyTotal(discVolley) }));
 }
 function advanceDiscVolley(dt) {
     if (!discVolley)
         return;
     const volley = discVolley;
     volley.timer -= dt;
-    const total = volley.skill.disc_count || 10;
+    const total = discVolleyTotal(volley);
     const interval = volley.skill.disc_interval || 0.09;
     while (volley.timer <= 0 && volley.launched < total) {
         launchDisc(volley.skill, volley.castId);
         volley.launched += 1;
         volley.timer += interval;
     }
-    if (volley.launched >= total)
-        discVolley = undefined;
+    // 唱片仍在飞行时保留齐射状态，唱片击杀才能追加发射。
+    if (volley.launched >= total) {
+        volley.linger -= dt;
+        if (volley.linger <= 0)
+            discVolley = undefined;
+    }
+    else {
+        volley.linger = 2;
+    }
 }
 function launchDisc(skill, castId) {
     // 每枚唱片各自锁定当前最近的敌人
@@ -6655,7 +6734,7 @@ function launchDisc(skill, castId) {
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         speed,
-        damage: skill.damage,
+        damage: skill.damage * (volt2DiscFlood ? 0.5 : 1),
         knockback: skill.disc_knockback || 40,
         radius: 26,
         age: 0,
@@ -6698,11 +6777,42 @@ function advanceHomingDiscs(dt) {
             hitEnemy(enemy, disc.damage);
             knockbackEnemyInDirection(enemy, disc.knockback, disc.vx / disc.speed, disc.vy / disc.speed);
             addResonanceStack(enemy, disc.castId);
+            if (enemy.hp <= 0 && discVolley && volt2DiscKillBonus() > 0) {
+                discVolley.bonus += volt2DiscKillBonus();
+                discVolley.linger = 2;
+            }
         }
         if (disc.age >= disc.life || disc.hitEnemies.size > 0
             || disc.x < 20 || disc.y < 20 || disc.x > map.width - 20 || disc.y > map.height - 20) {
             homingDiscs.splice(index, 1);
         }
+    }
+}
+/** 劲爆DJ：命中目标周围每秒一次范围伤害，走 NPC 伤害通道。 */
+function advanceDjPulses(dt) {
+    for (let index = djPulses.length - 1; index >= 0; index -= 1) {
+        const pulse = djPulses[index];
+        if (pulse.enemy.hp > 0) {
+            pulse.x = pulse.enemy.x;
+            pulse.y = pulse.enemy.y;
+        }
+        pulse.remaining -= dt;
+        pulse.tickTimer -= dt;
+        if (pulse.tickTimer <= 0) {
+            pulse.tickTimer += 1;
+            const radius = 110;
+            skillVisuals.push({
+                type: "impact", x: pulse.x, y: pulse.y, targetX: pulse.x, targetY: pulse.y,
+                age: 0, duration: 0.45, color: "#ff5cf0", radius,
+            });
+            enemies.forEach((enemy) => {
+                if (enemy.hp > 0 && Math.hypot(enemy.x - pulse.x, enemy.y - pulse.y) <= radius) {
+                    damageEnemyByNpc(enemy, pulse.damage, "npc");
+                }
+            });
+        }
+        if (pulse.remaining <= 0)
+            djPulses.splice(index, 1);
     }
 }
 function advanceTabletVolley(dt) {
@@ -9184,6 +9294,8 @@ function basicAttack() {
         : heroCombat.basic_damage + playerState.equipmentAttackBonus;
     // 飞索超人 3 阶：在建筑上可以用普攻，但伤害 -50%
     damage = Math.round(damage * grappleRooftopAttackScale());
+    if (wasEmpowered && isResonanceEmpower && volt2DjActive)
+        damage = Math.round(damage * 2);
     // 滑板小子被动：附加（移速倍率 - 1）× 基础伤害 的额外伤害
     if (heroPassive.id === "skater_momentum") {
         damage += Math.round(heroCombat.basic_damage * (skaterSpeedMultiplier - 1));
@@ -9203,6 +9315,13 @@ function basicAttack() {
             addResonanceStack(target, empoweredCastId);
         else
             target.effects["狂舞"] = Math.max(target.effects["狂舞"] || 0, resonanceFrenzy);
+    }
+    if (wasEmpowered && isResonanceEmpower && volt2DjActive) {
+        djPulses.push({
+            enemy: target, x: target.x, y: target.y,
+            remaining: 3, tickTimer: 1,
+            damage: Math.max(1, Math.round(damage * 0.5)),
+        });
     }
     if (wasEmpowered) {
         empoweredAttack = false;
@@ -9408,6 +9527,7 @@ function updateCombat(dt) {
     }
     advanceHologramDash(dt);
     advanceHologramVolley(dt);
+    advanceDjPulses(dt);
     if (techZone) {
         techZone.remaining -= dt;
         techZone.tickTimer -= dt;
@@ -10499,6 +10619,26 @@ if (window.__GRAPPLE_TEST_HOOK__) {
         getTechSpeedMultiplier() { return techSpeedMultiplier(); },
         getTechUltimateCharges() { return techUltimateCharges; },
         getTechUltimateCasts() { return techUltimateCasts; },
+        getVolt2CardState() {
+            return {
+                freeDiscs: volt2FreeDiscs,
+                dj: volt2DjActive,
+                octaWave: volt2OctaWave,
+                discFlood: volt2DiscFlood,
+                bigWave: volt2BigWave,
+                countMultiplier: volt2DiscCountMultiplier(),
+                killBonus: volt2DiscKillBonus(),
+                waveCount: soundWaves.length,
+                waveRadii: soundWaves.map((wave) => wave.radius),
+                waveDamages: soundWaves.map((wave) => wave.damage),
+                discCount: homingDiscs.length,
+                discDamages: homingDiscs.map((disc) => disc.damage),
+                volley: discVolley
+                    ? { total: discVolleyTotal(discVolley), launched: discVolley.launched, bonus: discVolley.bonus }
+                    : null,
+                djPulses: djPulses.length,
+            };
+        },
         getFacing() { return { ...facing }; },
         getScytheTargetCount() {
             return config.skills.find((item) => item.action === "blood_scythe")?.target_count || 1;
@@ -10594,6 +10734,13 @@ if (window.__GRAPPLE_TEST_HOOK__) {
             techZone = undefined;
             techUltimateCharges = 0;
             techUltimateCasts = 0;
+            volt2FreeDiscs = false;
+            volt2DjActive = false;
+            volt2OctaWave = false;
+            volt2DiscFlood = false;
+            volt2BigWave = false;
+            djPulses.length = 0;
+            discVolley = undefined;
             playerState.damageMultiplier = 1;
             playerState.critChance = 0;
             playerState.critMultiplier = 2;

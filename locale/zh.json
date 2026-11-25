@@ -1017,7 +1017,12 @@
     "tech-shock": {"name": "电死你", "description": "技能每次命中都会电击目标周围所有敌人，造成额外伤害；该伤害不视为技能伤害。"},
     "tech-zero-one": {"name": "0与1之间", "description": "一技能平板汇聚点形成 01 区域，内部敌人持续受到伤害。"},
     "tech-rampage": {"name": "机甲失控", "description": "造成的伤害与移动速度翻倍，但受到的伤害也翻倍。"},
-    "tech-infinite": {"name": "无限能源", "description": "大招可连续释放 3 次，第 2、3 次朝上一次的相反方向释放。"}
+    "tech-infinite": {"name": "无限能源", "description": "大招可连续释放 3 次，第 2、3 次朝上一次的相反方向释放。"},
+    "volt2-free-discs": {"name": "唱片不要钱", "description": "大招发射的唱片数量翻倍；大招期间每有一枚唱片击杀敌人，额外再发射 2 枚唱片。"},
+    "volt2-dj": {"name": "劲爆DJ", "description": "二技能强化普攻伤害翻倍；命中后 3 秒内，每秒在目标周围造成一次范围伤害（目标死亡也会在原地爆发）。"},
+    "volt2-octa-wave": {"name": "多重音浪", "description": "一技能改为朝周围八个方向同时发射音浪。"},
+    "volt2-disc-flood": {"name": "唱海战术", "description": "大招唱片伤害 -50%，数量 ×3；可与「唱片不要钱」叠乘，两卡齐备时唱片击杀追加数从 2 变为 6。"},
+    "volt2-big-wave": {"name": "大音浪", "description": "一技能的伤害与音浪碰撞体积都 +50%。"}
 
   },
   "battle": {

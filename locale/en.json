@@ -1017,7 +1017,12 @@
     "tech-shock": {"name": "Electrocute", "description": "Every skill hit electrifies all enemies around the target for bonus damage. This damage is not counted as skill damage."},
     "tech-zero-one": {"name": "Between 0 and 1", "description": "Your first skill leaves a 01 zone at the tablet convergence point, damaging enemies inside it over time."},
     "tech-rampage": {"name": "Mecha Rampage", "description": "Deal double damage and move twice as fast, but also take double damage."},
-    "tech-infinite": {"name": "Infinite Energy", "description": "Cast your ultimate 3 times in a row; the 2nd and 3rd casts fire in the opposite direction of the previous one."}
+    "tech-infinite": {"name": "Infinite Energy", "description": "Cast your ultimate 3 times in a row; the 2nd and 3rd casts fire in the opposite direction of the previous one."},
+    "volt2-free-discs": {"name": "Free Vinyl", "description": "Double the number of discs fired by your ultimate. Each enemy killed by a disc during the volley launches 2 extra discs."},
+    "volt2-dj": {"name": "Boom DJ", "description": "Double the damage of the second skill's empowered attack. For 3 seconds after it hits, deal area damage around the target every second (the burst still fires at the spot if the target dies)."},
+    "volt2-octa-wave": {"name": "Multi-Wave", "description": "The first skill fires sound waves in all eight directions at once."},
+    "volt2-disc-flood": {"name": "Disc Sea Tactics", "description": "Ultimate discs deal 50% less damage but fire 3 times as many. Stacks with Free Vinyl: with both cards a disc kill adds 6 discs instead of 2."},
+    "volt2-big-wave": {"name": "Big Wave", "description": "First skill damage and sound wave hitbox size are both increased by 50%."}
 
   },
   "battle": {

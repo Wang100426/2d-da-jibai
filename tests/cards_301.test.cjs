@@ -178,6 +178,35 @@ const TECH_SKILLS = [
   },
 ];
 
+const VOLT2_SKILLS = [
+  {
+    id: "volt2-ult", name: "碟片风暴", kind: "大招", target: "self", action: "volt2_discs",
+    cost: 65, cooldown: 18, damage: 16, radius: 90, effect: "", effect_turns: 0,
+    disc_count: 10, disc_interval: 0.09, disc_speed: 620, disc_knockback: 40,
+    tier_effects: {
+      2: { label: "唱片数量 +4", patch: { disc_count: { add: 4, base: 10 } } },
+      3: { label: "唱片伤害 +50%", patch: { damage: { scale: 1.5 } } },
+    },
+  },
+  {
+    id: "volt2-wave", name: "音浪冲击", kind: "小技能", target: "self", action: "volt2_wave",
+    cost: 35, cooldown: 11, damage: 30, dash_range: 420, radius: 130, effect: "", effect_turns: 0,
+    tier_effects: {
+      2: { label: "音浪飞行更远", patch: { dash_range: { add: 130 } } },
+      3: { label: "穿透 · 命中 2 个后爆炸", patch: { wave_pierce: { set: 1 }, wave_max_targets: { set: 2 } } },
+    },
+  },
+  {
+    id: "volt2-empower", name: "低音震荡", kind: "小技能", target: "self", action: "volt2_empower",
+    cost: 25, cooldown: 10, damage: 0, radius: 0, effect: "强化普攻", effect_turns: 1,
+    empowered_damage: 20, empower_frenzy_turns: 3,
+    tier_effects: {
+      2: { label: "强化普攻 200%", patch: { empower_damage_scale: { scale: 2, base: 1.5 } } },
+      3: { label: "计入被动", patch: { empower_counts_as_skill: { set: 1 } } },
+    },
+  },
+];
+
 const HEROES = {
   blood_reaper: {
     id: "blood_reaper", name: "血月死神", initial: "血", accent: "blood",
@@ -224,6 +253,21 @@ const HEROES = {
       armor_per_hit: 0.01, armor_max_stacks: 10, armor_shield_ratio: 0.15, armor_shield_duration: 5,
     },
     stats: { 攻击: 58, 防御: 98, 机动: 42 }, skills: BASTION_SKILLS, price: 0, locked: false,
+  },
+  volt2: {
+    id: "volt2", name: "电音人", initial: "音", accent: "volt2",
+    palette: { main: "#ff5cf0", light: "#ffd6fb", dark: "#7a1f6d" }, defense: 55,
+    combat: {
+      speed: 245, basic_range: 300, basic_damage: 13, basic_effect: "",
+      basic_effect_turns: 0, basic_beam: { color: "#ff5cf0", duration: 0.22 },
+      basic_restore_label: "RANGED_RESTORE", basic_hit_message: "命中，造成 {damage} 点伤害。",
+      bot_skill_effect: "眩晕", bot_skill_effect_turns: 0.8, bot_skill_damage_scale: 2.2, thorns_damage: 0,
+    },
+    passive: {
+      id: "volt2_resonance", name: "声浪共鸣", description: "d",
+      stack_required: 3, stack_effect: "frenzy", frenzy_turns: 3, frenzy_damage_scale: 1.5,
+    },
+    stats: { 攻击: 86, 防御: 55, 机动: 85 }, skills: VOLT2_SKILLS, price: 0, locked: false,
   },
 };
 
@@ -667,6 +711,106 @@ let tier3SingleDamage = 0;
   check("第四次进入冷却无法连发", near(api.getTechUltimateCasts(), 3, 0.001), api.getTechUltimateCasts());
 }
 
+/* ==================== 电音人专属卡 ==================== */
+const VOLT2_CARDS = ["volt2-free-discs", "volt2-dj", "volt2-octa-wave", "volt2-disc-flood", "volt2-big-wave"];
+{
+  const { api } = makeApi("volt2", "neon_beach");
+  const ids = api.getUpgradePoolIds();
+  check("电音人卡池含 5 张专属卡", VOLT2_CARDS.every((id) => ids.includes(id)), ids);
+  const other = makeApi("tech", "neon_beach").api.getUpgradePoolIds();
+  check("电音人专属卡不会出现在其它英雄卡池", VOLT2_CARDS.every((id) => !other.includes(id)), other);
+}
+
+{
+  const { api, step } = makeApi("volt2", "neon_beach");
+  api.setPlayerPosition(300, 300);
+  api.setPlayerEnergy(100);
+  api.spawnEnemy(360, 300, 5);
+  api.applyUpgrade("volt2-free-discs");
+  check("唱片不要钱数量倍率 2", near(api.getVolt2CardState().countMultiplier, 2, 0.001));
+  check("唱片不要钱击杀追加 2", near(api.getVolt2CardState().killBonus, 2, 0.001));
+  api.castSkill(0);
+  check("唱片不要钱齐射 20 枚", api.getVolt2CardState().volley?.total === 20, api.getVolt2CardState().volley);
+  for (let i = 0; i < 10; i += 1) step(0.016);
+  const state = api.getVolt2CardState();
+  check("唱片击杀后追加发射", !!state.volley && state.volley.bonus >= 2, state.volley);
+  check("追加后齐射总数变 22", !!state.volley && state.volley.total >= 22, state.volley);
+}
+
+{
+  const { api, step } = makeApi("volt2", "neon_beach");
+  api.setPlayerPosition(300, 300);
+  api.setPlayerEnergy(100);
+  api.applyUpgrade("volt2-disc-flood");
+  check("唱海战术数量倍率 3", near(api.getVolt2CardState().countMultiplier, 3, 0.001));
+  api.castSkill(0);
+  check("唱海战术齐射 30 枚", api.getVolt2CardState().volley?.total === 30, api.getVolt2CardState().volley);
+  step(0.016);
+  const damage = api.getVolt2CardState().discDamages[0];
+  check("唱海战术唱片伤害减半", near(damage, 8, 0.001), api.getVolt2CardState().discDamages);
+}
+
+{
+  const { api, step } = makeApi("volt2", "neon_beach");
+  api.setPlayerPosition(300, 300);
+  api.setPlayerEnergy(100);
+  api.spawnEnemy(360, 300, 5);
+  api.applyUpgrade("volt2-free-discs");
+  api.applyUpgrade("volt2-disc-flood");
+  check("两卡齐备数量倍率 6", near(api.getVolt2CardState().countMultiplier, 6, 0.001));
+  check("两卡齐备击杀追加 6", near(api.getVolt2CardState().killBonus, 6, 0.001));
+  api.castSkill(0);
+  check("两卡齐备齐射 60 枚", api.getVolt2CardState().volley?.total === 60, api.getVolt2CardState().volley);
+  for (let i = 0; i < 10; i += 1) step(0.016);
+  const state = api.getVolt2CardState();
+  check("两卡齐备唱片击杀追加 6 枚", !!state.volley && state.volley.bonus >= 6, state.volley);
+}
+
+{
+  const { api } = makeApi("volt2", "neon_beach");
+  api.setPlayerEnergy(100);
+  api.castSkill(1);
+  check("基础一技能单方向音浪", api.getVolt2CardState().waveCount === 1, api.getVolt2CardState().waveCount);
+}
+{
+  const { api } = makeApi("volt2", "neon_beach");
+  api.setPlayerEnergy(100);
+  api.applyUpgrade("volt2-octa-wave");
+  api.castSkill(1);
+  check("多重音浪发出 8 道", api.getVolt2CardState().waveCount === 8, api.getVolt2CardState().waveCount);
+}
+
+{
+  const { api, step } = makeApi("volt2", "neon_beach");
+  api.setPlayerPosition(300, 300);
+  api.setPlayerEnergy(100);
+  api.spawnEnemy(450, 300, 1000);
+  api.applyUpgrade("volt2-big-wave");
+  api.castSkill(1);
+  const state = api.getVolt2CardState();
+  check("大音浪伤害 +50%", near(state.waveDamages[0], 45, 0.001), state.waveDamages);
+  check("大音浪碰撞半径 +50%", near(state.waveRadii[0], 195, 0.001), state.waveRadii);
+  for (let i = 0; i < 12; i += 1) step(0.016);
+  check("大音浪扩大命中范围", api.getEnemyHp(0) < 1000, api.getEnemyHp(0));
+}
+
+{
+  const { api, step } = makeApi("volt2", "neon_beach");
+  api.setPlayerPosition(300, 300);
+  api.setPlayerEnergy(100);
+  api.spawnEnemy(380, 300, 500);
+  api.applyUpgrade("volt2-dj");
+  api.castSkill(2);
+  api.basicAttack();
+  check("劲爆DJ强化普攻伤害翻倍", near(api.getEnemyHp(0), 460, 1), api.getEnemyHp(0));
+  check("劲爆DJ命中后挂载脉冲", api.getVolt2CardState().djPulses === 1, api.getVolt2CardState().djPulses);
+  api.spawnEnemy(390, 300, 500);
+  for (let i = 0; i < 68; i += 1) step(0.016);
+  check("劲爆DJ每秒造成范围伤害", api.getEnemyHp(1) < 500, api.getEnemyHp(1));
+  for (let i = 0; i < 135; i += 1) step(0.016);
+  check("劲爆DJ脉冲 3 秒后结束", api.getVolt2CardState().djPulses === 0, api.getVolt2CardState().djPulses);
+}
+
 /* ==================== resetAll 隔离 ==================== */
 {
   const { api } = makeApi("blood_reaper");
@@ -686,6 +830,15 @@ let tier3SingleDamage = 0;
   check("resetAll 重置伤害倍率", near(api.getTechDamageMultiplier(), 1, 0.001));
   check("resetAll 重置大招充能", near(api.getTechUltimateCasts(), 0, 0.001));
 }
+{
+  const { api } = makeApi("volt2", "neon_beach");
+  VOLT2_CARDS.forEach((id) => api.applyUpgrade(id));
+  api.resetAll();
+  const state = api.getVolt2CardState();
+  check("resetAll 清空电音人卡", api.getSelectedUpgradeIds().length === 0);
+  check("resetAll 重置唱片倍率", near(state.countMultiplier, 1, 0.001) && near(state.killBonus, 0, 0.001), state);
+  check("resetAll 重置音浪与DJ状态", !state.octaWave && !state.bigWave && !state.dj && state.djPulses === 0, state);
+}
 
 /* ==================== 三语 locale 一致性 ==================== */
 {
@@ -695,7 +848,8 @@ let tier3SingleDamage = 0;
     data[lang] = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "locale", `${lang}.json`), "utf8"));
   });
   const cardIds = ["crit", "blood-thirst", "blood-burn", "blood-chain", "blood-death-song", "blood-soul-reap",
-    "tech-smart", "tech-shock", "tech-zero-one", "tech-rampage", "tech-infinite"];
+    "tech-smart", "tech-shock", "tech-zero-one", "tech-rampage", "tech-infinite",
+    "volt2-free-discs", "volt2-dj", "volt2-octa-wave", "volt2-disc-flood", "volt2-big-wave"];
   cardIds.forEach((id) => {
     check(`三语都有卡 ${id}`, langs.every((lang) => {
       const card = data[lang].upgrades[id];
